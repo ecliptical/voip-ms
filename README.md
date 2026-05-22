@@ -172,7 +172,10 @@ The 222 typed request structs and `Client` methods are generated from
 voip.ms updates the WSDL:
 
 ```bash
-# Replace tools/server.wsdl with the new version, then:
+# Download the latest WSDL from voip.ms:
+curl -o tools/server.wsdl https://voip.ms/api/v1/server.wsdl
+
+# Then regenerate and verify:
 cargo xtask gen
 cargo fmt --all
 cargo clippy --all -- -D warnings
