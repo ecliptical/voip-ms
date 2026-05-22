@@ -1,0 +1,33 @@
+[package]
+name = "voip-ms"
+description = "Async client for the voip.ms REST API"
+version = "0.1.0"
+repository = "https://github.com/ecliptical/voip-ms"
+authors = ["Peter Nehrer <pnehrer@eclipticalsoftware.com>"]
+license = "MIT"
+keywords = ["voip", "voipms", "telephony", "sms", "async"]
+categories = ["api-bindings", "asynchronous"]
+edition = "2024"
+rust-version = "1.88"
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+url = "2"
+
+[features]
+default = ["rustls-tls-native-roots"]
+
+# TLS backend selection — pick one that matches your deployment.
+# `rustls-tls-native-roots` (default): rustls + system CA roots.
+# `rustls-tls-webpki-roots`: rustls + embedded Mozilla roots (good for scratch/distroless).
+# `native-tls`: use the platform's native TLS stack.
+rustls-tls-native-roots = ["reqwest/rustls-tls-native-roots"]
+rustls-tls-webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
+native-tls = ["reqwest/native-tls"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6"
