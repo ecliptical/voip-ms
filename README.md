@@ -203,6 +203,23 @@ cargo test
 
 See [AGENTS.md](AGENTS.md) for the design notes behind the generator.
 
+## Releasing
+
+Publishing is automated via [`.github/workflows/release.yaml`](.github/workflows/release.yaml).
+
+1. Ensure `Cargo.toml` has the target version (for the first release: `0.1.0`).
+2. Move release notes from `Unreleased` into a versioned section in `CHANGELOG.md`.
+3. Push a tag in the form `vX.Y.Z`.
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+On tag push, the workflow verifies the tag version matches `Cargo.toml`, runs
+fmt/clippy/tests, performs `cargo publish --dry-run`, publishes to crates.io
+using `CRATES_IO_TOKEN`, and creates a GitHub release.
+
 ## License
 
 Licensed under the [MIT license](LICENSE).

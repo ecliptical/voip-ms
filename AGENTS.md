@@ -197,7 +197,7 @@ voip-ms/
 
 ## Dependencies
 
-* **reqwest 0.12** (`json`, no default features): HTTP client + JSON
+* **reqwest 0.13** (`json`, no default features): HTTP client + JSON
   deserialization. TLS backend is feature-gated.
 * **serde 1** + **serde_json 1**: Request serialization, response
   deserialization.
@@ -249,6 +249,13 @@ both rustls feature sets is wasteful.
 
 * **`dependabot-automerge.yaml`**: Auto-approves and merges patch/minor
   Cargo updates from Dependabot.
+
+* **`release.yaml`**: Runs on `v*` tag push.
+  * Validates tag version matches `Cargo.toml`
+  * Runs `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace --all-targets`
+  * Verifies publishability with `cargo publish --locked --dry-run`
+  * Publishes to crates.io with `CRATES_IO_TOKEN`
+  * Creates a GitHub release from the tag
 
 ## Evolution Notes
 

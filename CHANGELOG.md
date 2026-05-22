@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-22
+
 ### Changed
 
 - Bumped `reqwest` to `0.13` and adjusted feature flag mappings to its
@@ -36,3 +38,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   patch/minor cargo updates.
 
 [Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.0
