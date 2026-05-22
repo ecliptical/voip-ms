@@ -8,20 +8,24 @@
 //!     cargo run --example get_balance
 //! ```
 
-use voip_ms::{Client, GetBalanceParams};
+use voip_ms::{Client, GetBalanceParams, GetBalanceResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (username, password) = credentials()?;
     let client = Client::new(username, password);
 
-    let response = client
-        .get_balance(&GetBalanceParams {
+    let response: GetBalanceResponse = client
+        .get_balance_typed(&GetBalanceParams {
             advanced: Some(true),
         })
         .await?;
 
-    println!("{response:#}");
+    println!("status: {}", response.status);
+    println!(
+        "current balance: {}",
+        response.balance.current_balance.unwrap_or_default()
+    );
     Ok(())
 }
 

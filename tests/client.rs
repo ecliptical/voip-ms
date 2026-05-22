@@ -161,3 +161,96 @@ async fn typed_response_via_call_helper() {
     let balance: Balance = serde_json::from_value(body["balance"].clone()).unwrap();
     assert_eq!(balance.current_balance, "5.00");
 }
+
+#[tokio::test]
+async fn typed_response_via_call_typed_helper() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "balance": {"current_balance": "7.50"}
+        })))
+        .mount(&server)
+        .await;
+
+    #[derive(serde::Deserialize)]
+    struct Envelope {
+        balance: Balance,
+        status: String,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct Balance {
+        current_balance: String,
+    }
+
+    let envelope: Envelope = client
+        .call_typed("getBalance", &GetBalanceParams::default())
+        .await
+        .unwrap();
+
+    assert_eq!(envelope.status, "success");
+    assert_eq!(envelope.balance.current_balance, "7.50");
+}
+
+#[tokio::test]
+async fn typed_response_via_call_typed_at_helper() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "balance": {"current_balance": "9.99"}
+        })))
+        .mount(&server)
+        .await;
+
+    #[derive(serde::Deserialize)]
+    struct Balance {
+        current_balance: String,
+    }
+
+    let balance: Balance = client
+        .call_typed_at("getBalance", &GetBalanceParams::default(), "/balance")
+        .await
+        .unwrap();
+
+    assert_eq!(balance.current_balance, "9.99");
+}
+
+#[tokio::test]
+async fn typed_response_via_generated_typed_method() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "balance": {"current_balance": "12.00"}
+        })))
+        .mount(&server)
+        .await;
+
+    #[derive(serde::Deserialize)]
+    struct Envelope {
+        balance: Balance,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct Balance {
+        current_balance: String,
+    }
+
+    let envelope: Envelope = client
+        .get_balance_typed(&GetBalanceParams::default())
+        .await
+        .unwrap();
+
+    assert_eq!(envelope.balance.current_balance, "12.00");
+}

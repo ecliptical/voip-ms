@@ -157,6 +157,7 @@ fn emit(wsdl: &Wsdl) -> String {
          #![allow(clippy::too_many_arguments)]\n\
          #![allow(non_snake_case)]\n\
          \n\
+         use serde::de::DeserializeOwned;\n\
          use serde::Serialize;\n\
          use serde_json::Value;\n\
          \n\
@@ -201,6 +202,13 @@ fn emit(wsdl: &Wsdl) -> String {
             "    /// Call the `{op}` API method.\n    \
              pub async fn {method}(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                 self.call(\"{op}\", params).await\n    \
+             }}\n\n\
+             /// Call the `{op}` API method and deserialize the response body into `T`.\n    \
+             pub async fn {method}_typed<T>(&self, params: &{struct_name}) -> Result<T>\n    \
+             where\n    \
+                 T: DeserializeOwned,\n    \
+             {{\n        \
+                 self.call_typed(\"{op}\", params).await\n    \
              }}\n\n"
         ));
     }

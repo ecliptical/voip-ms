@@ -62,8 +62,11 @@ async fn main() -> voip_ms::Result<()> {
 ```
 
 Every API method follows the same pattern: construct a `*Params` struct
-(every field is `Option<T>` and omitted from the request when `None`), pass
-it to the matching `Client` method, and read the resulting JSON value.
+(every field is `Option<T>` and omitted from the request when `None`), then
+call either:
+
+* `client.some_method(...)` for a raw `serde_json::Value`, or
+* `client.some_method_typed::<T>(...)` for typed deserialization.
 
 ```rust
 use voip_ms::{Client, SendSmsParams};
@@ -105,25 +108,41 @@ let client = Client::builder("you@example.com", "api-password")
 
 The WSDL doesn't describe response shapes (all 222 operations declare the
 same generic `arrayResponse`), so this crate intentionally hands back
-`serde_json::Value`. When you know the shape, deserialize on your side:
+`serde_json::Value` by default. To reduce boilerplate, every generated method
+also has a typed variant named `*_typed`:
+
+```rust
+use voip_ms::{Client, GetBalanceParams, GetBalanceResponse};
+
+# async fn run(client: Client) -> voip_ms::Result<()> {
+let resp: GetBalanceResponse = client
+    .get_balance_typed(&GetBalanceParams { advanced: Some(true) })
+    .await?;
+println!("{}", resp.balance.current_balance);
+# Ok(()) }
+```
+
+For methods where you only want a nested field, use
+[`Client::call_typed_at`] with a JSON pointer:
 
 ```rust
 use serde::Deserialize;
-use voip_ms::{Client, GetBalanceParams};
+use voip_ms::{Client, GetDidsInfoParams};
 
-#[derive(Deserialize)]
-struct Balance {
-    current_balance: String,
-    spent_total: String,
+#[derive(Debug, Deserialize)]
+struct Did {
+    did: String,
 }
 
 # async fn run(client: Client) -> voip_ms::Result<()> {
-let body = client
-    .get_balance(&GetBalanceParams { advanced: Some(true) })
+let dids: Vec<Did> = client
+    .call_typed_at("getDIDsInfo", &GetDidsInfoParams::default(), "/dids")
     .await?;
-let balance: Balance = serde_json::from_value(body["balance"].clone()).unwrap();
 # Ok(()) }
 ```
+
+The crate also includes starter partial response types that keep unknown
+fields in `extra`, such as `GetBalanceResponse` and `GetDidsInfoResponse`.
 
 ### Running the examples
 

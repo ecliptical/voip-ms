@@ -1,9 +1,4 @@
-//! List the DIDs on the account, deserializing the response into a typed struct.
-//!
-//! Demonstrates the recommended pattern for turning the generic
-//! [`serde_json::Value`] response into something with field access: define a
-//! struct that matches just the parts you care about, then
-//! `serde_json::from_value` the relevant subtree.
+//! List the DIDs on the account with partial typed response structs.
 //!
 //! Run with:
 //!
@@ -13,31 +8,24 @@
 //!     cargo run --example list_dids
 //! ```
 
-use serde::Deserialize;
-use voip_ms::{Client, GetDidsInfoParams};
-
-#[derive(Debug, Deserialize)]
-struct Did {
-    did: String,
-    description: Option<String>,
-    routing: Option<String>,
-}
+use voip_ms::{Client, GetDidsInfoParams, GetDidsInfoResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (username, password) = credentials()?;
     let client = Client::new(username, password);
 
-    let response = client.get_dids_info(&GetDidsInfoParams::default()).await?;
+    let response: GetDidsInfoResponse = client
+        .get_dids_info_typed(&GetDidsInfoParams::default())
+        .await?;
 
-    let dids: Vec<Did> = serde_json::from_value(response["dids"].clone())?;
-    if dids.is_empty() {
+    if response.dids.is_empty() {
         println!("No DIDs found.");
     } else {
-        for did in &dids {
+        for did in &response.dids {
             println!(
                 "{}  {}  -> {}",
-                did.did,
+                did.did.as_deref().unwrap_or("(unknown DID)"),
                 did.description.as_deref().unwrap_or("(no description)"),
                 did.routing.as_deref().unwrap_or("(no routing)"),
             );

@@ -34,7 +34,9 @@
 mod client;
 mod error;
 mod generated;
+mod responses;
 
 pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL};
 pub use error::{ApiStatus, Error, Result};
 pub use generated::*;
+pub use responses::*;

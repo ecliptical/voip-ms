@@ -5,6 +5,7 @@
 #![allow(non_snake_case)]
 
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::client::Client;
@@ -3022,14 +3023,38 @@ impl Client {
         self.call("addCharge", params).await
     }
 
+    /// Call the `addCharge` API method and deserialize the response body into `T`.
+    pub async fn add_charge_typed<T>(&self, params: &AddChargeParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("addCharge", params).await
+    }
+
     /// Call the `addLNPFile` API method.
     pub async fn add_lnp_file(&self, params: &AddLnpFileParams) -> Result<Value> {
         self.call("addLNPFile", params).await
     }
 
+    /// Call the `addLNPFile` API method and deserialize the response body into `T`.
+    pub async fn add_lnp_file_typed<T>(&self, params: &AddLnpFileParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("addLNPFile", params).await
+    }
+
     /// Call the `addLNPPort` API method.
     pub async fn add_lnp_port(&self, params: &AddLnpPortParams) -> Result<Value> {
         self.call("addLNPPort", params).await
+    }
+
+    /// Call the `addLNPPort` API method and deserialize the response body into `T`.
+    pub async fn add_lnp_port_typed<T>(&self, params: &AddLnpPortParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("addLNPPort", params).await
     }
 
     /// Call the `addMemberToConference` API method.
@@ -3040,9 +3065,28 @@ impl Client {
         self.call("addMemberToConference", params).await
     }
 
+    /// Call the `addMemberToConference` API method and deserialize the response body into `T`.
+    pub async fn add_member_to_conference_typed<T>(
+        &self,
+        params: &AddMemberToConferenceParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("addMemberToConference", params).await
+    }
+
     /// Call the `addPayment` API method.
     pub async fn add_payment(&self, params: &AddPaymentParams) -> Result<Value> {
         self.call("addPayment", params).await
+    }
+
+    /// Call the `addPayment` API method and deserialize the response body into `T`.
+    pub async fn add_payment_typed<T>(&self, params: &AddPaymentParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("addPayment", params).await
     }
 
     /// Call the `assignDIDvPRI` API method.
@@ -3050,9 +3094,25 @@ impl Client {
         self.call("assignDIDvPRI", params).await
     }
 
+    /// Call the `assignDIDvPRI` API method and deserialize the response body into `T`.
+    pub async fn assign_did_vpri_typed<T>(&self, params: &AssignDidVpriParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("assignDIDvPRI", params).await
+    }
+
     /// Call the `backOrderDIDCAN` API method.
     pub async fn back_order_did_can(&self, params: &BackOrderDidCanParams) -> Result<Value> {
         self.call("backOrderDIDCAN", params).await
+    }
+
+    /// Call the `backOrderDIDCAN` API method and deserialize the response body into `T`.
+    pub async fn back_order_did_can_typed<T>(&self, params: &BackOrderDidCanParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("backOrderDIDCAN", params).await
     }
 
     /// Call the `backOrderDIDUSA` API method.
@@ -3060,9 +3120,25 @@ impl Client {
         self.call("backOrderDIDUSA", params).await
     }
 
+    /// Call the `backOrderDIDUSA` API method and deserialize the response body into `T`.
+    pub async fn back_order_did_usa_typed<T>(&self, params: &BackOrderDidUsaParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("backOrderDIDUSA", params).await
+    }
+
     /// Call the `cancelDID` API method.
     pub async fn cancel_did(&self, params: &CancelDidParams) -> Result<Value> {
         self.call("cancelDID", params).await
+    }
+
+    /// Call the `cancelDID` API method and deserialize the response body into `T`.
+    pub async fn cancel_did_typed<T>(&self, params: &CancelDidParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("cancelDID", params).await
     }
 
     /// Call the `cancelFaxNumber` API method.
@@ -3070,9 +3146,25 @@ impl Client {
         self.call("cancelFaxNumber", params).await
     }
 
+    /// Call the `cancelFaxNumber` API method and deserialize the response body into `T`.
+    pub async fn cancel_fax_number_typed<T>(&self, params: &CancelFaxNumberParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("cancelFaxNumber", params).await
+    }
+
     /// Call the `connectDID` API method.
     pub async fn connect_did(&self, params: &ConnectDidParams) -> Result<Value> {
         self.call("connectDID", params).await
+    }
+
+    /// Call the `connectDID` API method and deserialize the response body into `T`.
+    pub async fn connect_did_typed<T>(&self, params: &ConnectDidParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("connectDID", params).await
     }
 
     /// Call the `connectFAX` API method.
@@ -3080,9 +3172,25 @@ impl Client {
         self.call("connectFAX", params).await
     }
 
+    /// Call the `connectFAX` API method and deserialize the response body into `T`.
+    pub async fn connect_fax_typed<T>(&self, params: &ConnectFaxParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("connectFAX", params).await
+    }
+
     /// Call the `createSubAccount` API method.
     pub async fn create_sub_account(&self, params: &CreateSubAccountParams) -> Result<Value> {
         self.call("createSubAccount", params).await
+    }
+
+    /// Call the `createSubAccount` API method and deserialize the response body into `T`.
+    pub async fn create_sub_account_typed<T>(&self, params: &CreateSubAccountParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("createSubAccount", params).await
     }
 
     /// Call the `createVoicemail` API method.
@@ -3090,9 +3198,25 @@ impl Client {
         self.call("createVoicemail", params).await
     }
 
+    /// Call the `createVoicemail` API method and deserialize the response body into `T`.
+    pub async fn create_voicemail_typed<T>(&self, params: &CreateVoicemailParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("createVoicemail", params).await
+    }
+
     /// Call the `delCallHunting` API method.
     pub async fn del_call_hunting(&self, params: &DelCallHuntingParams) -> Result<Value> {
         self.call("delCallHunting", params).await
+    }
+
+    /// Call the `delCallHunting` API method and deserialize the response body into `T`.
+    pub async fn del_call_hunting_typed<T>(&self, params: &DelCallHuntingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delCallHunting", params).await
     }
 
     /// Call the `delCallParking` API method.
@@ -3100,14 +3224,38 @@ impl Client {
         self.call("delCallParking", params).await
     }
 
+    /// Call the `delCallParking` API method and deserialize the response body into `T`.
+    pub async fn del_call_parking_typed<T>(&self, params: &DelCallParkingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delCallParking", params).await
+    }
+
     /// Call the `delCallRecording` API method.
     pub async fn del_call_recording(&self, params: &DelCallRecordingParams) -> Result<Value> {
         self.call("delCallRecording", params).await
     }
 
+    /// Call the `delCallRecording` API method and deserialize the response body into `T`.
+    pub async fn del_call_recording_typed<T>(&self, params: &DelCallRecordingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delCallRecording", params).await
+    }
+
     /// Call the `delCallback` API method.
     pub async fn del_callback(&self, params: &DelCallbackParams) -> Result<Value> {
         self.call("delCallback", params).await
+    }
+
+    /// Call the `delCallback` API method and deserialize the response body into `T`.
+    pub async fn del_callback_typed<T>(&self, params: &DelCallbackParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delCallback", params).await
     }
 
     /// Call the `delCallerIDFiltering` API method.
@@ -3118,9 +3266,28 @@ impl Client {
         self.call("delCallerIDFiltering", params).await
     }
 
+    /// Call the `delCallerIDFiltering` API method and deserialize the response body into `T`.
+    pub async fn del_caller_id_filtering_typed<T>(
+        &self,
+        params: &DelCallerIdFilteringParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delCallerIDFiltering", params).await
+    }
+
     /// Call the `delClient` API method.
     pub async fn del_client(&self, params: &DelClientParams) -> Result<Value> {
         self.call("delClient", params).await
+    }
+
+    /// Call the `delClient` API method and deserialize the response body into `T`.
+    pub async fn del_client_typed<T>(&self, params: &DelClientParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delClient", params).await
     }
 
     /// Call the `delConference` API method.
@@ -3128,9 +3295,28 @@ impl Client {
         self.call("delConference", params).await
     }
 
+    /// Call the `delConference` API method and deserialize the response body into `T`.
+    pub async fn del_conference_typed<T>(&self, params: &DelConferenceParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delConference", params).await
+    }
+
     /// Call the `delConferenceMember` API method.
     pub async fn del_conference_member(&self, params: &DelConferenceMemberParams) -> Result<Value> {
         self.call("delConferenceMember", params).await
+    }
+
+    /// Call the `delConferenceMember` API method and deserialize the response body into `T`.
+    pub async fn del_conference_member_typed<T>(
+        &self,
+        params: &DelConferenceMemberParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delConferenceMember", params).await
     }
 
     /// Call the `delDISA` API method.
@@ -3138,9 +3324,25 @@ impl Client {
         self.call("delDISA", params).await
     }
 
+    /// Call the `delDISA` API method and deserialize the response body into `T`.
+    pub async fn del_disa_typed<T>(&self, params: &DelDisaParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delDISA", params).await
+    }
+
     /// Call the `delEmailToFax` API method.
     pub async fn del_email_to_fax(&self, params: &DelEmailToFaxParams) -> Result<Value> {
         self.call("delEmailToFax", params).await
+    }
+
+    /// Call the `delEmailToFax` API method and deserialize the response body into `T`.
+    pub async fn del_email_to_fax_typed<T>(&self, params: &DelEmailToFaxParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delEmailToFax", params).await
     }
 
     /// Call the `delFaxFolder` API method.
@@ -3148,9 +3350,25 @@ impl Client {
         self.call("delFaxFolder", params).await
     }
 
+    /// Call the `delFaxFolder` API method and deserialize the response body into `T`.
+    pub async fn del_fax_folder_typed<T>(&self, params: &DelFaxFolderParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delFaxFolder", params).await
+    }
+
     /// Call the `delForwarding` API method.
     pub async fn del_forwarding(&self, params: &DelForwardingParams) -> Result<Value> {
         self.call("delForwarding", params).await
+    }
+
+    /// Call the `delForwarding` API method and deserialize the response body into `T`.
+    pub async fn del_forwarding_typed<T>(&self, params: &DelForwardingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delForwarding", params).await
     }
 
     /// Call the `delIVR` API method.
@@ -3158,9 +3376,25 @@ impl Client {
         self.call("delIVR", params).await
     }
 
+    /// Call the `delIVR` API method and deserialize the response body into `T`.
+    pub async fn del_ivr_typed<T>(&self, params: &DelIvrParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delIVR", params).await
+    }
+
     /// Call the `delLocation` API method.
     pub async fn del_location(&self, params: &DelLocationParams) -> Result<Value> {
         self.call("delLocation", params).await
+    }
+
+    /// Call the `delLocation` API method and deserialize the response body into `T`.
+    pub async fn del_location_typed<T>(&self, params: &DelLocationParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delLocation", params).await
     }
 
     /// Call the `delMemberFromConference` API method.
@@ -3171,9 +3405,28 @@ impl Client {
         self.call("delMemberFromConference", params).await
     }
 
+    /// Call the `delMemberFromConference` API method and deserialize the response body into `T`.
+    pub async fn del_member_from_conference_typed<T>(
+        &self,
+        params: &DelMemberFromConferenceParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delMemberFromConference", params).await
+    }
+
     /// Call the `delMessages` API method.
     pub async fn del_messages(&self, params: &DelMessagesParams) -> Result<Value> {
         self.call("delMessages", params).await
+    }
+
+    /// Call the `delMessages` API method and deserialize the response body into `T`.
+    pub async fn del_messages_typed<T>(&self, params: &DelMessagesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delMessages", params).await
     }
 
     /// Call the `delMusicOnHold` API method.
@@ -3181,9 +3434,25 @@ impl Client {
         self.call("delMusicOnHold", params).await
     }
 
+    /// Call the `delMusicOnHold` API method and deserialize the response body into `T`.
+    pub async fn del_music_on_hold_typed<T>(&self, params: &DelMusicOnHoldParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delMusicOnHold", params).await
+    }
+
     /// Call the `delPhonebook` API method.
     pub async fn del_phonebook(&self, params: &DelPhonebookParams) -> Result<Value> {
         self.call("delPhonebook", params).await
+    }
+
+    /// Call the `delPhonebook` API method and deserialize the response body into `T`.
+    pub async fn del_phonebook_typed<T>(&self, params: &DelPhonebookParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delPhonebook", params).await
     }
 
     /// Call the `delPhonebookGroup` API method.
@@ -3191,9 +3460,25 @@ impl Client {
         self.call("delPhonebookGroup", params).await
     }
 
+    /// Call the `delPhonebookGroup` API method and deserialize the response body into `T`.
+    pub async fn del_phonebook_group_typed<T>(&self, params: &DelPhonebookGroupParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delPhonebookGroup", params).await
+    }
+
     /// Call the `delQueue` API method.
     pub async fn del_queue(&self, params: &DelQueueParams) -> Result<Value> {
         self.call("delQueue", params).await
+    }
+
+    /// Call the `delQueue` API method and deserialize the response body into `T`.
+    pub async fn del_queue_typed<T>(&self, params: &DelQueueParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delQueue", params).await
     }
 
     /// Call the `delRecording` API method.
@@ -3201,9 +3486,25 @@ impl Client {
         self.call("delRecording", params).await
     }
 
+    /// Call the `delRecording` API method and deserialize the response body into `T`.
+    pub async fn del_recording_typed<T>(&self, params: &DelRecordingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delRecording", params).await
+    }
+
     /// Call the `delRingGroup` API method.
     pub async fn del_ring_group(&self, params: &DelRingGroupParams) -> Result<Value> {
         self.call("delRingGroup", params).await
+    }
+
+    /// Call the `delRingGroup` API method and deserialize the response body into `T`.
+    pub async fn del_ring_group_typed<T>(&self, params: &DelRingGroupParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delRingGroup", params).await
     }
 
     /// Call the `delSIPURI` API method.
@@ -3211,9 +3512,25 @@ impl Client {
         self.call("delSIPURI", params).await
     }
 
+    /// Call the `delSIPURI` API method and deserialize the response body into `T`.
+    pub async fn del_sip_uri_typed<T>(&self, params: &DelSipUriParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delSIPURI", params).await
+    }
+
     /// Call the `delStaticMember` API method.
     pub async fn del_static_member(&self, params: &DelStaticMemberParams) -> Result<Value> {
         self.call("delStaticMember", params).await
+    }
+
+    /// Call the `delStaticMember` API method and deserialize the response body into `T`.
+    pub async fn del_static_member_typed<T>(&self, params: &DelStaticMemberParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delStaticMember", params).await
     }
 
     /// Call the `delSubAccount` API method.
@@ -3221,9 +3538,25 @@ impl Client {
         self.call("delSubAccount", params).await
     }
 
+    /// Call the `delSubAccount` API method and deserialize the response body into `T`.
+    pub async fn del_sub_account_typed<T>(&self, params: &DelSubAccountParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delSubAccount", params).await
+    }
+
     /// Call the `delTimeCondition` API method.
     pub async fn del_time_condition(&self, params: &DelTimeConditionParams) -> Result<Value> {
         self.call("delTimeCondition", params).await
+    }
+
+    /// Call the `delTimeCondition` API method and deserialize the response body into `T`.
+    pub async fn del_time_condition_typed<T>(&self, params: &DelTimeConditionParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delTimeCondition", params).await
     }
 
     /// Call the `delVoicemail` API method.
@@ -3231,9 +3564,25 @@ impl Client {
         self.call("delVoicemail", params).await
     }
 
+    /// Call the `delVoicemail` API method and deserialize the response body into `T`.
+    pub async fn del_voicemail_typed<T>(&self, params: &DelVoicemailParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("delVoicemail", params).await
+    }
+
     /// Call the `deleteFaxMessage` API method.
     pub async fn delete_fax_message(&self, params: &DeleteFaxMessageParams) -> Result<Value> {
         self.call("deleteFaxMessage", params).await
+    }
+
+    /// Call the `deleteFaxMessage` API method and deserialize the response body into `T`.
+    pub async fn delete_fax_message_typed<T>(&self, params: &DeleteFaxMessageParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("deleteFaxMessage", params).await
     }
 
     /// Call the `deleteMMS` API method.
@@ -3241,9 +3590,25 @@ impl Client {
         self.call("deleteMMS", params).await
     }
 
+    /// Call the `deleteMMS` API method and deserialize the response body into `T`.
+    pub async fn delete_mms_typed<T>(&self, params: &DeleteMmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("deleteMMS", params).await
+    }
+
     /// Call the `deleteSMS` API method.
     pub async fn delete_sms(&self, params: &DeleteSmsParams) -> Result<Value> {
         self.call("deleteSMS", params).await
+    }
+
+    /// Call the `deleteSMS` API method and deserialize the response body into `T`.
+    pub async fn delete_sms_typed<T>(&self, params: &DeleteSmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("deleteSMS", params).await
     }
 
     /// Call the `e911AddressTypes` API method.
@@ -3251,9 +3616,25 @@ impl Client {
         self.call("e911AddressTypes", params).await
     }
 
+    /// Call the `e911AddressTypes` API method and deserialize the response body into `T`.
+    pub async fn e911_address_types_typed<T>(&self, params: &E911AddressTypesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("e911AddressTypes", params).await
+    }
+
     /// Call the `e911Cancel` API method.
     pub async fn e911_cancel(&self, params: &E911CancelParams) -> Result<Value> {
         self.call("e911Cancel", params).await
+    }
+
+    /// Call the `e911Cancel` API method and deserialize the response body into `T`.
+    pub async fn e911_cancel_typed<T>(&self, params: &E911CancelParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("e911Cancel", params).await
     }
 
     /// Call the `e911Info` API method.
@@ -3261,9 +3642,25 @@ impl Client {
         self.call("e911Info", params).await
     }
 
+    /// Call the `e911Info` API method and deserialize the response body into `T`.
+    pub async fn e911_info_typed<T>(&self, params: &E911InfoParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("e911Info", params).await
+    }
+
     /// Call the `e911Provision` API method.
     pub async fn e911_provision(&self, params: &E911ProvisionParams) -> Result<Value> {
         self.call("e911Provision", params).await
+    }
+
+    /// Call the `e911Provision` API method and deserialize the response body into `T`.
+    pub async fn e911_provision_typed<T>(&self, params: &E911ProvisionParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("e911Provision", params).await
     }
 
     /// Call the `e911ProvisionManually` API method.
@@ -3274,9 +3671,28 @@ impl Client {
         self.call("e911ProvisionManually", params).await
     }
 
+    /// Call the `e911ProvisionManually` API method and deserialize the response body into `T`.
+    pub async fn e911_provision_manually_typed<T>(
+        &self,
+        params: &E911ProvisionManuallyParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("e911ProvisionManually", params).await
+    }
+
     /// Call the `e911Update` API method.
     pub async fn e911_update(&self, params: &E911UpdateParams) -> Result<Value> {
         self.call("e911Update", params).await
+    }
+
+    /// Call the `e911Update` API method and deserialize the response body into `T`.
+    pub async fn e911_update_typed<T>(&self, params: &E911UpdateParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("e911Update", params).await
     }
 
     /// Call the `e911Validate` API method.
@@ -3284,9 +3700,25 @@ impl Client {
         self.call("e911Validate", params).await
     }
 
+    /// Call the `e911Validate` API method and deserialize the response body into `T`.
+    pub async fn e911_validate_typed<T>(&self, params: &E911ValidateParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("e911Validate", params).await
+    }
+
     /// Call the `getAllowedCodecs` API method.
     pub async fn get_allowed_codecs(&self, params: &GetAllowedCodecsParams) -> Result<Value> {
         self.call("getAllowedCodecs", params).await
+    }
+
+    /// Call the `getAllowedCodecs` API method and deserialize the response body into `T`.
+    pub async fn get_allowed_codecs_typed<T>(&self, params: &GetAllowedCodecsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getAllowedCodecs", params).await
     }
 
     /// Call the `getAuthTypes` API method.
@@ -3294,14 +3726,38 @@ impl Client {
         self.call("getAuthTypes", params).await
     }
 
+    /// Call the `getAuthTypes` API method and deserialize the response body into `T`.
+    pub async fn get_auth_types_typed<T>(&self, params: &GetAuthTypesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getAuthTypes", params).await
+    }
+
     /// Call the `getBackOrders` API method.
     pub async fn get_back_orders(&self, params: &GetBackOrdersParams) -> Result<Value> {
         self.call("getBackOrders", params).await
     }
 
+    /// Call the `getBackOrders` API method and deserialize the response body into `T`.
+    pub async fn get_back_orders_typed<T>(&self, params: &GetBackOrdersParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getBackOrders", params).await
+    }
+
     /// Call the `getBalance` API method.
     pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<Value> {
         self.call("getBalance", params).await
+    }
+
+    /// Call the `getBalance` API method and deserialize the response body into `T`.
+    pub async fn get_balance_typed<T>(&self, params: &GetBalanceParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getBalance", params).await
     }
 
     /// Call the `getBalanceManagement` API method.
@@ -3312,9 +3768,28 @@ impl Client {
         self.call("getBalanceManagement", params).await
     }
 
+    /// Call the `getBalanceManagement` API method and deserialize the response body into `T`.
+    pub async fn get_balance_management_typed<T>(
+        &self,
+        params: &GetBalanceManagementParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getBalanceManagement", params).await
+    }
+
     /// Call the `getCDR` API method.
     pub async fn get_cdr(&self, params: &GetCdrParams) -> Result<Value> {
         self.call("getCDR", params).await
+    }
+
+    /// Call the `getCDR` API method and deserialize the response body into `T`.
+    pub async fn get_cdr_typed<T>(&self, params: &GetCdrParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCDR", params).await
     }
 
     /// Call the `getCallAccounts` API method.
@@ -3322,9 +3797,25 @@ impl Client {
         self.call("getCallAccounts", params).await
     }
 
+    /// Call the `getCallAccounts` API method and deserialize the response body into `T`.
+    pub async fn get_call_accounts_typed<T>(&self, params: &GetCallAccountsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallAccounts", params).await
+    }
+
     /// Call the `getCallBilling` API method.
     pub async fn get_call_billing(&self, params: &GetCallBillingParams) -> Result<Value> {
         self.call("getCallBilling", params).await
+    }
+
+    /// Call the `getCallBilling` API method and deserialize the response body into `T`.
+    pub async fn get_call_billing_typed<T>(&self, params: &GetCallBillingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallBilling", params).await
     }
 
     /// Call the `getCallHuntings` API method.
@@ -3332,9 +3823,25 @@ impl Client {
         self.call("getCallHuntings", params).await
     }
 
+    /// Call the `getCallHuntings` API method and deserialize the response body into `T`.
+    pub async fn get_call_huntings_typed<T>(&self, params: &GetCallHuntingsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallHuntings", params).await
+    }
+
     /// Call the `getCallParking` API method.
     pub async fn get_call_parking(&self, params: &GetCallParkingParams) -> Result<Value> {
         self.call("getCallParking", params).await
+    }
+
+    /// Call the `getCallParking` API method and deserialize the response body into `T`.
+    pub async fn get_call_parking_typed<T>(&self, params: &GetCallParkingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallParking", params).await
     }
 
     /// Call the `getCallRecording` API method.
@@ -3342,9 +3849,25 @@ impl Client {
         self.call("getCallRecording", params).await
     }
 
+    /// Call the `getCallRecording` API method and deserialize the response body into `T`.
+    pub async fn get_call_recording_typed<T>(&self, params: &GetCallRecordingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallRecording", params).await
+    }
+
     /// Call the `getCallRecordings` API method.
     pub async fn get_call_recordings(&self, params: &GetCallRecordingsParams) -> Result<Value> {
         self.call("getCallRecordings", params).await
+    }
+
+    /// Call the `getCallRecordings` API method and deserialize the response body into `T`.
+    pub async fn get_call_recordings_typed<T>(&self, params: &GetCallRecordingsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallRecordings", params).await
     }
 
     /// Call the `getCallTranscriptions` API method.
@@ -3355,14 +3878,41 @@ impl Client {
         self.call("getCallTranscriptions", params).await
     }
 
+    /// Call the `getCallTranscriptions` API method and deserialize the response body into `T`.
+    pub async fn get_call_transcriptions_typed<T>(
+        &self,
+        params: &GetCallTranscriptionsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallTranscriptions", params).await
+    }
+
     /// Call the `getCallTypes` API method.
     pub async fn get_call_types(&self, params: &GetCallTypesParams) -> Result<Value> {
         self.call("getCallTypes", params).await
     }
 
+    /// Call the `getCallTypes` API method and deserialize the response body into `T`.
+    pub async fn get_call_types_typed<T>(&self, params: &GetCallTypesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallTypes", params).await
+    }
+
     /// Call the `getCallbacks` API method.
     pub async fn get_callbacks(&self, params: &GetCallbacksParams) -> Result<Value> {
         self.call("getCallbacks", params).await
+    }
+
+    /// Call the `getCallbacks` API method and deserialize the response body into `T`.
+    pub async fn get_callbacks_typed<T>(&self, params: &GetCallbacksParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallbacks", params).await
     }
 
     /// Call the `getCallerIDFiltering` API method.
@@ -3373,9 +3923,28 @@ impl Client {
         self.call("getCallerIDFiltering", params).await
     }
 
+    /// Call the `getCallerIDFiltering` API method and deserialize the response body into `T`.
+    pub async fn get_caller_id_filtering_typed<T>(
+        &self,
+        params: &GetCallerIdFilteringParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCallerIDFiltering", params).await
+    }
+
     /// Call the `getCarriers` API method.
     pub async fn get_carriers(&self, params: &GetCarriersParams) -> Result<Value> {
         self.call("getCarriers", params).await
+    }
+
+    /// Call the `getCarriers` API method and deserialize the response body into `T`.
+    pub async fn get_carriers_typed<T>(&self, params: &GetCarriersParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCarriers", params).await
     }
 
     /// Call the `getCharges` API method.
@@ -3383,9 +3952,25 @@ impl Client {
         self.call("getCharges", params).await
     }
 
+    /// Call the `getCharges` API method and deserialize the response body into `T`.
+    pub async fn get_charges_typed<T>(&self, params: &GetChargesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCharges", params).await
+    }
+
     /// Call the `getClientPackages` API method.
     pub async fn get_client_packages(&self, params: &GetClientPackagesParams) -> Result<Value> {
         self.call("getClientPackages", params).await
+    }
+
+    /// Call the `getClientPackages` API method and deserialize the response body into `T`.
+    pub async fn get_client_packages_typed<T>(&self, params: &GetClientPackagesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getClientPackages", params).await
     }
 
     /// Call the `getClientThreshold` API method.
@@ -3393,14 +3978,41 @@ impl Client {
         self.call("getClientThreshold", params).await
     }
 
+    /// Call the `getClientThreshold` API method and deserialize the response body into `T`.
+    pub async fn get_client_threshold_typed<T>(
+        &self,
+        params: &GetClientThresholdParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getClientThreshold", params).await
+    }
+
     /// Call the `getClients` API method.
     pub async fn get_clients(&self, params: &GetClientsParams) -> Result<Value> {
         self.call("getClients", params).await
     }
 
+    /// Call the `getClients` API method and deserialize the response body into `T`.
+    pub async fn get_clients_typed<T>(&self, params: &GetClientsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getClients", params).await
+    }
+
     /// Call the `getConference` API method.
     pub async fn get_conference(&self, params: &GetConferenceParams) -> Result<Value> {
         self.call("getConference", params).await
+    }
+
+    /// Call the `getConference` API method and deserialize the response body into `T`.
+    pub async fn get_conference_typed<T>(&self, params: &GetConferenceParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getConference", params).await
     }
 
     /// Call the `getConferenceMembers` API method.
@@ -3411,12 +4023,34 @@ impl Client {
         self.call("getConferenceMembers", params).await
     }
 
+    /// Call the `getConferenceMembers` API method and deserialize the response body into `T`.
+    pub async fn get_conference_members_typed<T>(
+        &self,
+        params: &GetConferenceMembersParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getConferenceMembers", params).await
+    }
+
     /// Call the `getConferenceRecordingFile` API method.
     pub async fn get_conference_recording_file(
         &self,
         params: &GetConferenceRecordingFileParams,
     ) -> Result<Value> {
         self.call("getConferenceRecordingFile", params).await
+    }
+
+    /// Call the `getConferenceRecordingFile` API method and deserialize the response body into `T`.
+    pub async fn get_conference_recording_file_typed<T>(
+        &self,
+        params: &GetConferenceRecordingFileParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getConferenceRecordingFile", params).await
     }
 
     /// Call the `getConferenceRecordings` API method.
@@ -3427,9 +4061,28 @@ impl Client {
         self.call("getConferenceRecordings", params).await
     }
 
+    /// Call the `getConferenceRecordings` API method and deserialize the response body into `T`.
+    pub async fn get_conference_recordings_typed<T>(
+        &self,
+        params: &GetConferenceRecordingsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getConferenceRecordings", params).await
+    }
+
     /// Call the `getCountries` API method.
     pub async fn get_countries(&self, params: &GetCountriesParams) -> Result<Value> {
         self.call("getCountries", params).await
+    }
+
+    /// Call the `getCountries` API method and deserialize the response body into `T`.
+    pub async fn get_countries_typed<T>(&self, params: &GetCountriesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getCountries", params).await
     }
 
     /// Call the `getDIDCountries` API method.
@@ -3437,14 +4090,38 @@ impl Client {
         self.call("getDIDCountries", params).await
     }
 
+    /// Call the `getDIDCountries` API method and deserialize the response body into `T`.
+    pub async fn get_did_countries_typed<T>(&self, params: &GetDidCountriesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDCountries", params).await
+    }
+
     /// Call the `getDIDsCAN` API method.
     pub async fn get_dids_can(&self, params: &GetDidsCanParams) -> Result<Value> {
         self.call("getDIDsCAN", params).await
     }
 
+    /// Call the `getDIDsCAN` API method and deserialize the response body into `T`.
+    pub async fn get_dids_can_typed<T>(&self, params: &GetDidsCanParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDsCAN", params).await
+    }
+
     /// Call the `getDIDsInfo` API method.
     pub async fn get_dids_info(&self, params: &GetDidsInfoParams) -> Result<Value> {
         self.call("getDIDsInfo", params).await
+    }
+
+    /// Call the `getDIDsInfo` API method and deserialize the response body into `T`.
+    pub async fn get_dids_info_typed<T>(&self, params: &GetDidsInfoParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDsInfo", params).await
     }
 
     /// Call the `getDIDsInternationalGeographic` API method.
@@ -3455,12 +4132,36 @@ impl Client {
         self.call("getDIDsInternationalGeographic", params).await
     }
 
+    /// Call the `getDIDsInternationalGeographic` API method and deserialize the response body into `T`.
+    pub async fn get_dids_international_geographic_typed<T>(
+        &self,
+        params: &GetDidsInternationalGeographicParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDsInternationalGeographic", params)
+            .await
+    }
+
     /// Call the `getDIDsInternationalNational` API method.
     pub async fn get_dids_international_national(
         &self,
         params: &GetDidsInternationalNationalParams,
     ) -> Result<Value> {
         self.call("getDIDsInternationalNational", params).await
+    }
+
+    /// Call the `getDIDsInternationalNational` API method and deserialize the response body into `T`.
+    pub async fn get_dids_international_national_typed<T>(
+        &self,
+        params: &GetDidsInternationalNationalParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDsInternationalNational", params)
+            .await
     }
 
     /// Call the `getDIDsInternationalTollFree` API method.
@@ -3471,9 +4172,29 @@ impl Client {
         self.call("getDIDsInternationalTollFree", params).await
     }
 
+    /// Call the `getDIDsInternationalTollFree` API method and deserialize the response body into `T`.
+    pub async fn get_dids_international_toll_free_typed<T>(
+        &self,
+        params: &GetDidsInternationalTollFreeParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDsInternationalTollFree", params)
+            .await
+    }
+
     /// Call the `getDIDsUSA` API method.
     pub async fn get_dids_usa(&self, params: &GetDidsUsaParams) -> Result<Value> {
         self.call("getDIDsUSA", params).await
+    }
+
+    /// Call the `getDIDsUSA` API method and deserialize the response body into `T`.
+    pub async fn get_dids_usa_typed<T>(&self, params: &GetDidsUsaParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDsUSA", params).await
     }
 
     /// Call the `getDIDvPRI` API method.
@@ -3481,9 +4202,25 @@ impl Client {
         self.call("getDIDvPRI", params).await
     }
 
+    /// Call the `getDIDvPRI` API method and deserialize the response body into `T`.
+    pub async fn get_did_vpri_typed<T>(&self, params: &GetDidVpriParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDIDvPRI", params).await
+    }
+
     /// Call the `getDISAs` API method.
     pub async fn get_disas(&self, params: &GetDisasParams) -> Result<Value> {
         self.call("getDISAs", params).await
+    }
+
+    /// Call the `getDISAs` API method and deserialize the response body into `T`.
+    pub async fn get_disas_typed<T>(&self, params: &GetDisasParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDISAs", params).await
     }
 
     /// Call the `getDTMFModes` API method.
@@ -3491,9 +4228,25 @@ impl Client {
         self.call("getDTMFModes", params).await
     }
 
+    /// Call the `getDTMFModes` API method and deserialize the response body into `T`.
+    pub async fn get_dtmf_modes_typed<T>(&self, params: &GetDtmfModesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDTMFModes", params).await
+    }
+
     /// Call the `getDeposits` API method.
     pub async fn get_deposits(&self, params: &GetDepositsParams) -> Result<Value> {
         self.call("getDeposits", params).await
+    }
+
+    /// Call the `getDeposits` API method and deserialize the response body into `T`.
+    pub async fn get_deposits_typed<T>(&self, params: &GetDepositsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDeposits", params).await
     }
 
     /// Call the `getDeviceTypes` API method.
@@ -3501,9 +4254,25 @@ impl Client {
         self.call("getDeviceTypes", params).await
     }
 
+    /// Call the `getDeviceTypes` API method and deserialize the response body into `T`.
+    pub async fn get_device_types_typed<T>(&self, params: &GetDeviceTypesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getDeviceTypes", params).await
+    }
+
     /// Call the `getEmailToFax` API method.
     pub async fn get_email_to_fax(&self, params: &GetEmailToFaxParams) -> Result<Value> {
         self.call("getEmailToFax", params).await
+    }
+
+    /// Call the `getEmailToFax` API method and deserialize the response body into `T`.
+    pub async fn get_email_to_fax_typed<T>(&self, params: &GetEmailToFaxParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getEmailToFax", params).await
     }
 
     /// Call the `getFaxFolders` API method.
@@ -3511,9 +4280,25 @@ impl Client {
         self.call("getFaxFolders", params).await
     }
 
+    /// Call the `getFaxFolders` API method and deserialize the response body into `T`.
+    pub async fn get_fax_folders_typed<T>(&self, params: &GetFaxFoldersParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxFolders", params).await
+    }
+
     /// Call the `getFaxMessagePDF` API method.
     pub async fn get_fax_message_pdf(&self, params: &GetFaxMessagePdfParams) -> Result<Value> {
         self.call("getFaxMessagePDF", params).await
+    }
+
+    /// Call the `getFaxMessagePDF` API method and deserialize the response body into `T`.
+    pub async fn get_fax_message_pdf_typed<T>(&self, params: &GetFaxMessagePdfParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxMessagePDF", params).await
     }
 
     /// Call the `getFaxMessages` API method.
@@ -3521,9 +4306,25 @@ impl Client {
         self.call("getFaxMessages", params).await
     }
 
+    /// Call the `getFaxMessages` API method and deserialize the response body into `T`.
+    pub async fn get_fax_messages_typed<T>(&self, params: &GetFaxMessagesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxMessages", params).await
+    }
+
     /// Call the `getFaxNumbersInfo` API method.
     pub async fn get_fax_numbers_info(&self, params: &GetFaxNumbersInfoParams) -> Result<Value> {
         self.call("getFaxNumbersInfo", params).await
+    }
+
+    /// Call the `getFaxNumbersInfo` API method and deserialize the response body into `T`.
+    pub async fn get_fax_numbers_info_typed<T>(&self, params: &GetFaxNumbersInfoParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxNumbersInfo", params).await
     }
 
     /// Call the `getFaxNumbersPortability` API method.
@@ -3534,9 +4335,28 @@ impl Client {
         self.call("getFaxNumbersPortability", params).await
     }
 
+    /// Call the `getFaxNumbersPortability` API method and deserialize the response body into `T`.
+    pub async fn get_fax_numbers_portability_typed<T>(
+        &self,
+        params: &GetFaxNumbersPortabilityParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxNumbersPortability", params).await
+    }
+
     /// Call the `getFaxProvinces` API method.
     pub async fn get_fax_provinces(&self, params: &GetFaxProvincesParams) -> Result<Value> {
         self.call("getFaxProvinces", params).await
+    }
+
+    /// Call the `getFaxProvinces` API method and deserialize the response body into `T`.
+    pub async fn get_fax_provinces_typed<T>(&self, params: &GetFaxProvincesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxProvinces", params).await
     }
 
     /// Call the `getFaxRateCentersCAN` API method.
@@ -3547,6 +4367,17 @@ impl Client {
         self.call("getFaxRateCentersCAN", params).await
     }
 
+    /// Call the `getFaxRateCentersCAN` API method and deserialize the response body into `T`.
+    pub async fn get_fax_rate_centers_can_typed<T>(
+        &self,
+        params: &GetFaxRateCentersCanParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxRateCentersCAN", params).await
+    }
+
     /// Call the `getFaxRateCentersUSA` API method.
     pub async fn get_fax_rate_centers_usa(
         &self,
@@ -3555,9 +4386,28 @@ impl Client {
         self.call("getFaxRateCentersUSA", params).await
     }
 
+    /// Call the `getFaxRateCentersUSA` API method and deserialize the response body into `T`.
+    pub async fn get_fax_rate_centers_usa_typed<T>(
+        &self,
+        params: &GetFaxRateCentersUsaParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxRateCentersUSA", params).await
+    }
+
     /// Call the `getFaxStates` API method.
     pub async fn get_fax_states(&self, params: &GetFaxStatesParams) -> Result<Value> {
         self.call("getFaxStates", params).await
+    }
+
+    /// Call the `getFaxStates` API method and deserialize the response body into `T`.
+    pub async fn get_fax_states_typed<T>(&self, params: &GetFaxStatesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getFaxStates", params).await
     }
 
     /// Call the `getForwardings` API method.
@@ -3565,14 +4415,38 @@ impl Client {
         self.call("getForwardings", params).await
     }
 
+    /// Call the `getForwardings` API method and deserialize the response body into `T`.
+    pub async fn get_forwardings_typed<T>(&self, params: &GetForwardingsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getForwardings", params).await
+    }
+
     /// Call the `getIP` API method.
     pub async fn get_ip(&self, params: &GetIpParams) -> Result<Value> {
         self.call("getIP", params).await
     }
 
+    /// Call the `getIP` API method and deserialize the response body into `T`.
+    pub async fn get_ip_typed<T>(&self, params: &GetIpParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getIP", params).await
+    }
+
     /// Call the `getIVRs` API method.
     pub async fn get_ivrs(&self, params: &GetIvrsParams) -> Result<Value> {
         self.call("getIVRs", params).await
+    }
+
+    /// Call the `getIVRs` API method and deserialize the response body into `T`.
+    pub async fn get_ivrs_typed<T>(&self, params: &GetIvrsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getIVRs", params).await
     }
 
     /// Call the `getInternationalTypes` API method.
@@ -3583,6 +4457,17 @@ impl Client {
         self.call("getInternationalTypes", params).await
     }
 
+    /// Call the `getInternationalTypes` API method and deserialize the response body into `T`.
+    pub async fn get_international_types_typed<T>(
+        &self,
+        params: &GetInternationalTypesParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getInternationalTypes", params).await
+    }
+
     /// Call the `getJoinWhenEmptyTypes` API method.
     pub async fn get_join_when_empty_types(
         &self,
@@ -3591,9 +4476,28 @@ impl Client {
         self.call("getJoinWhenEmptyTypes", params).await
     }
 
+    /// Call the `getJoinWhenEmptyTypes` API method and deserialize the response body into `T`.
+    pub async fn get_join_when_empty_types_typed<T>(
+        &self,
+        params: &GetJoinWhenEmptyTypesParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getJoinWhenEmptyTypes", params).await
+    }
+
     /// Call the `getLNPAttach` API method.
     pub async fn get_lnp_attach(&self, params: &GetLnpAttachParams) -> Result<Value> {
         self.call("getLNPAttach", params).await
+    }
+
+    /// Call the `getLNPAttach` API method and deserialize the response body into `T`.
+    pub async fn get_lnp_attach_typed<T>(&self, params: &GetLnpAttachParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLNPAttach", params).await
     }
 
     /// Call the `getLNPAttachList` API method.
@@ -3601,9 +4505,25 @@ impl Client {
         self.call("getLNPAttachList", params).await
     }
 
+    /// Call the `getLNPAttachList` API method and deserialize the response body into `T`.
+    pub async fn get_lnp_attach_list_typed<T>(&self, params: &GetLnpAttachListParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLNPAttachList", params).await
+    }
+
     /// Call the `getLNPDetails` API method.
     pub async fn get_lnp_details(&self, params: &GetLnpDetailsParams) -> Result<Value> {
         self.call("getLNPDetails", params).await
+    }
+
+    /// Call the `getLNPDetails` API method and deserialize the response body into `T`.
+    pub async fn get_lnp_details_typed<T>(&self, params: &GetLnpDetailsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLNPDetails", params).await
     }
 
     /// Call the `getLNPList` API method.
@@ -3611,9 +4531,25 @@ impl Client {
         self.call("getLNPList", params).await
     }
 
+    /// Call the `getLNPList` API method and deserialize the response body into `T`.
+    pub async fn get_lnp_list_typed<T>(&self, params: &GetLnpListParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLNPList", params).await
+    }
+
     /// Call the `getLNPListStatus` API method.
     pub async fn get_lnp_list_status(&self, params: &GetLnpListStatusParams) -> Result<Value> {
         self.call("getLNPListStatus", params).await
+    }
+
+    /// Call the `getLNPListStatus` API method and deserialize the response body into `T`.
+    pub async fn get_lnp_list_status_typed<T>(&self, params: &GetLnpListStatusParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLNPListStatus", params).await
     }
 
     /// Call the `getLNPNotes` API method.
@@ -3621,9 +4557,25 @@ impl Client {
         self.call("getLNPNotes", params).await
     }
 
+    /// Call the `getLNPNotes` API method and deserialize the response body into `T`.
+    pub async fn get_lnp_notes_typed<T>(&self, params: &GetLnpNotesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLNPNotes", params).await
+    }
+
     /// Call the `getLNPStatus` API method.
     pub async fn get_lnp_status(&self, params: &GetLnpStatusParams) -> Result<Value> {
         self.call("getLNPStatus", params).await
+    }
+
+    /// Call the `getLNPStatus` API method and deserialize the response body into `T`.
+    pub async fn get_lnp_status_typed<T>(&self, params: &GetLnpStatusParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLNPStatus", params).await
     }
 
     /// Call the `getLanguages` API method.
@@ -3631,14 +4583,38 @@ impl Client {
         self.call("getLanguages", params).await
     }
 
+    /// Call the `getLanguages` API method and deserialize the response body into `T`.
+    pub async fn get_languages_typed<T>(&self, params: &GetLanguagesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLanguages", params).await
+    }
+
     /// Call the `getLocales` API method.
     pub async fn get_locales(&self, params: &GetLocalesParams) -> Result<Value> {
         self.call("getLocales", params).await
     }
 
+    /// Call the `getLocales` API method and deserialize the response body into `T`.
+    pub async fn get_locales_typed<T>(&self, params: &GetLocalesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLocales", params).await
+    }
+
     /// Call the `getLocations` API method.
     pub async fn get_locations(&self, params: &GetLocationsParams) -> Result<Value> {
         self.call("getLocations", params).await
+    }
+
+    /// Call the `getLocations` API method and deserialize the response body into `T`.
+    pub async fn get_locations_typed<T>(&self, params: &GetLocationsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLocations", params).await
     }
 
     /// Call the `getLockInternational` API method.
@@ -3649,9 +4625,28 @@ impl Client {
         self.call("getLockInternational", params).await
     }
 
+    /// Call the `getLockInternational` API method and deserialize the response body into `T`.
+    pub async fn get_lock_international_typed<T>(
+        &self,
+        params: &GetLockInternationalParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getLockInternational", params).await
+    }
+
     /// Call the `getMMS` API method.
     pub async fn get_mms(&self, params: &GetMmsParams) -> Result<Value> {
         self.call("getMMS", params).await
+    }
+
+    /// Call the `getMMS` API method and deserialize the response body into `T`.
+    pub async fn get_mms_typed<T>(&self, params: &GetMmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getMMS", params).await
     }
 
     /// Call the `getMediaMMS` API method.
@@ -3659,9 +4654,25 @@ impl Client {
         self.call("getMediaMMS", params).await
     }
 
+    /// Call the `getMediaMMS` API method and deserialize the response body into `T`.
+    pub async fn get_media_mms_typed<T>(&self, params: &GetMediaMmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getMediaMMS", params).await
+    }
+
     /// Call the `getMusicOnHold` API method.
     pub async fn get_music_on_hold(&self, params: &GetMusicOnHoldParams) -> Result<Value> {
         self.call("getMusicOnHold", params).await
+    }
+
+    /// Call the `getMusicOnHold` API method and deserialize the response body into `T`.
+    pub async fn get_music_on_hold_typed<T>(&self, params: &GetMusicOnHoldParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getMusicOnHold", params).await
     }
 
     /// Call the `getNAT` API method.
@@ -3669,9 +4680,25 @@ impl Client {
         self.call("getNAT", params).await
     }
 
+    /// Call the `getNAT` API method and deserialize the response body into `T`.
+    pub async fn get_nat_typed<T>(&self, params: &GetNatParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getNAT", params).await
+    }
+
     /// Call the `getPackages` API method.
     pub async fn get_packages(&self, params: &GetPackagesParams) -> Result<Value> {
         self.call("getPackages", params).await
+    }
+
+    /// Call the `getPackages` API method and deserialize the response body into `T`.
+    pub async fn get_packages_typed<T>(&self, params: &GetPackagesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getPackages", params).await
     }
 
     /// Call the `getPhonebook` API method.
@@ -3679,9 +4706,28 @@ impl Client {
         self.call("getPhonebook", params).await
     }
 
+    /// Call the `getPhonebook` API method and deserialize the response body into `T`.
+    pub async fn get_phonebook_typed<T>(&self, params: &GetPhonebookParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getPhonebook", params).await
+    }
+
     /// Call the `getPhonebookGroups` API method.
     pub async fn get_phonebook_groups(&self, params: &GetPhonebookGroupsParams) -> Result<Value> {
         self.call("getPhonebookGroups", params).await
+    }
+
+    /// Call the `getPhonebookGroups` API method and deserialize the response body into `T`.
+    pub async fn get_phonebook_groups_typed<T>(
+        &self,
+        params: &GetPhonebookGroupsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getPhonebookGroups", params).await
     }
 
     /// Call the `getPlayInstructions` API method.
@@ -3689,9 +4735,28 @@ impl Client {
         self.call("getPlayInstructions", params).await
     }
 
+    /// Call the `getPlayInstructions` API method and deserialize the response body into `T`.
+    pub async fn get_play_instructions_typed<T>(
+        &self,
+        params: &GetPlayInstructionsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getPlayInstructions", params).await
+    }
+
     /// Call the `getPortability` API method.
     pub async fn get_portability(&self, params: &GetPortabilityParams) -> Result<Value> {
         self.call("getPortability", params).await
+    }
+
+    /// Call the `getPortability` API method and deserialize the response body into `T`.
+    pub async fn get_portability_typed<T>(&self, params: &GetPortabilityParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getPortability", params).await
     }
 
     /// Call the `getProtocols` API method.
@@ -3699,9 +4764,25 @@ impl Client {
         self.call("getProtocols", params).await
     }
 
+    /// Call the `getProtocols` API method and deserialize the response body into `T`.
+    pub async fn get_protocols_typed<T>(&self, params: &GetProtocolsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getProtocols", params).await
+    }
+
     /// Call the `getProvinces` API method.
     pub async fn get_provinces(&self, params: &GetProvincesParams) -> Result<Value> {
         self.call("getProvinces", params).await
+    }
+
+    /// Call the `getProvinces` API method and deserialize the response body into `T`.
+    pub async fn get_provinces_typed<T>(&self, params: &GetProvincesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getProvinces", params).await
     }
 
     /// Call the `getQueues` API method.
@@ -3709,9 +4790,25 @@ impl Client {
         self.call("getQueues", params).await
     }
 
+    /// Call the `getQueues` API method and deserialize the response body into `T`.
+    pub async fn get_queues_typed<T>(&self, params: &GetQueuesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getQueues", params).await
+    }
+
     /// Call the `getRateCentersCAN` API method.
     pub async fn get_rate_centers_can(&self, params: &GetRateCentersCanParams) -> Result<Value> {
         self.call("getRateCentersCAN", params).await
+    }
+
+    /// Call the `getRateCentersCAN` API method and deserialize the response body into `T`.
+    pub async fn get_rate_centers_can_typed<T>(&self, params: &GetRateCentersCanParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRateCentersCAN", params).await
     }
 
     /// Call the `getRateCentersUSA` API method.
@@ -3719,9 +4816,25 @@ impl Client {
         self.call("getRateCentersUSA", params).await
     }
 
+    /// Call the `getRateCentersUSA` API method and deserialize the response body into `T`.
+    pub async fn get_rate_centers_usa_typed<T>(&self, params: &GetRateCentersUsaParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRateCentersUSA", params).await
+    }
+
     /// Call the `getRates` API method.
     pub async fn get_rates(&self, params: &GetRatesParams) -> Result<Value> {
         self.call("getRates", params).await
+    }
+
+    /// Call the `getRates` API method and deserialize the response body into `T`.
+    pub async fn get_rates_typed<T>(&self, params: &GetRatesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRates", params).await
     }
 
     /// Call the `getRecordingFile` API method.
@@ -3729,9 +4842,25 @@ impl Client {
         self.call("getRecordingFile", params).await
     }
 
+    /// Call the `getRecordingFile` API method and deserialize the response body into `T`.
+    pub async fn get_recording_file_typed<T>(&self, params: &GetRecordingFileParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRecordingFile", params).await
+    }
+
     /// Call the `getRecordings` API method.
     pub async fn get_recordings(&self, params: &GetRecordingsParams) -> Result<Value> {
         self.call("getRecordings", params).await
+    }
+
+    /// Call the `getRecordings` API method and deserialize the response body into `T`.
+    pub async fn get_recordings_typed<T>(&self, params: &GetRecordingsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRecordings", params).await
     }
 
     /// Call the `getRegistrationStatus` API method.
@@ -3742,6 +4871,17 @@ impl Client {
         self.call("getRegistrationStatus", params).await
     }
 
+    /// Call the `getRegistrationStatus` API method and deserialize the response body into `T`.
+    pub async fn get_registration_status_typed<T>(
+        &self,
+        params: &GetRegistrationStatusParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRegistrationStatus", params).await
+    }
+
     /// Call the `getReportEstimatedHoldTime` API method.
     pub async fn get_report_estimated_hold_time(
         &self,
@@ -3750,9 +4890,31 @@ impl Client {
         self.call("getReportEstimatedHoldTime", params).await
     }
 
+    /// Call the `getReportEstimatedHoldTime` API method and deserialize the response body into `T`.
+    pub async fn get_report_estimated_hold_time_typed<T>(
+        &self,
+        params: &GetReportEstimatedHoldTimeParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getReportEstimatedHoldTime", params).await
+    }
+
     /// Call the `getResellerBalance` API method.
     pub async fn get_reseller_balance(&self, params: &GetResellerBalanceParams) -> Result<Value> {
         self.call("getResellerBalance", params).await
+    }
+
+    /// Call the `getResellerBalance` API method and deserialize the response body into `T`.
+    pub async fn get_reseller_balance_typed<T>(
+        &self,
+        params: &GetResellerBalanceParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getResellerBalance", params).await
     }
 
     /// Call the `getResellerCDR` API method.
@@ -3760,9 +4922,25 @@ impl Client {
         self.call("getResellerCDR", params).await
     }
 
+    /// Call the `getResellerCDR` API method and deserialize the response body into `T`.
+    pub async fn get_reseller_cdr_typed<T>(&self, params: &GetResellerCdrParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getResellerCDR", params).await
+    }
+
     /// Call the `getResellerMMS` API method.
     pub async fn get_reseller_mms(&self, params: &GetResellerMmsParams) -> Result<Value> {
         self.call("getResellerMMS", params).await
+    }
+
+    /// Call the `getResellerMMS` API method and deserialize the response body into `T`.
+    pub async fn get_reseller_mms_typed<T>(&self, params: &GetResellerMmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getResellerMMS", params).await
     }
 
     /// Call the `getResellerSMS` API method.
@@ -3770,9 +4948,25 @@ impl Client {
         self.call("getResellerSMS", params).await
     }
 
+    /// Call the `getResellerSMS` API method and deserialize the response body into `T`.
+    pub async fn get_reseller_sms_typed<T>(&self, params: &GetResellerSmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getResellerSMS", params).await
+    }
+
     /// Call the `getRingGroups` API method.
     pub async fn get_ring_groups(&self, params: &GetRingGroupsParams) -> Result<Value> {
         self.call("getRingGroups", params).await
+    }
+
+    /// Call the `getRingGroups` API method and deserialize the response body into `T`.
+    pub async fn get_ring_groups_typed<T>(&self, params: &GetRingGroupsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRingGroups", params).await
     }
 
     /// Call the `getRingStrategies` API method.
@@ -3780,9 +4974,25 @@ impl Client {
         self.call("getRingStrategies", params).await
     }
 
+    /// Call the `getRingStrategies` API method and deserialize the response body into `T`.
+    pub async fn get_ring_strategies_typed<T>(&self, params: &GetRingStrategiesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRingStrategies", params).await
+    }
+
     /// Call the `getRoutes` API method.
     pub async fn get_routes(&self, params: &GetRoutesParams) -> Result<Value> {
         self.call("getRoutes", params).await
+    }
+
+    /// Call the `getRoutes` API method and deserialize the response body into `T`.
+    pub async fn get_routes_typed<T>(&self, params: &GetRoutesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getRoutes", params).await
     }
 
     /// Call the `getSIPURIs` API method.
@@ -3790,9 +5000,25 @@ impl Client {
         self.call("getSIPURIs", params).await
     }
 
+    /// Call the `getSIPURIs` API method and deserialize the response body into `T`.
+    pub async fn get_sip_uris_typed<T>(&self, params: &GetSipUrisParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getSIPURIs", params).await
+    }
+
     /// Call the `getSMS` API method.
     pub async fn get_sms(&self, params: &GetSmsParams) -> Result<Value> {
         self.call("getSMS", params).await
+    }
+
+    /// Call the `getSMS` API method and deserialize the response body into `T`.
+    pub async fn get_sms_typed<T>(&self, params: &GetSmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getSMS", params).await
     }
 
     /// Call the `getServersInfo` API method.
@@ -3800,9 +5026,25 @@ impl Client {
         self.call("getServersInfo", params).await
     }
 
+    /// Call the `getServersInfo` API method and deserialize the response body into `T`.
+    pub async fn get_servers_info_typed<T>(&self, params: &GetServersInfoParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getServersInfo", params).await
+    }
+
     /// Call the `getStates` API method.
     pub async fn get_states(&self, params: &GetStatesParams) -> Result<Value> {
         self.call("getStates", params).await
+    }
+
+    /// Call the `getStates` API method and deserialize the response body into `T`.
+    pub async fn get_states_typed<T>(&self, params: &GetStatesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getStates", params).await
     }
 
     /// Call the `getStaticMembers` API method.
@@ -3810,9 +5052,25 @@ impl Client {
         self.call("getStaticMembers", params).await
     }
 
+    /// Call the `getStaticMembers` API method and deserialize the response body into `T`.
+    pub async fn get_static_members_typed<T>(&self, params: &GetStaticMembersParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getStaticMembers", params).await
+    }
+
     /// Call the `getSubAccounts` API method.
     pub async fn get_sub_accounts(&self, params: &GetSubAccountsParams) -> Result<Value> {
         self.call("getSubAccounts", params).await
+    }
+
+    /// Call the `getSubAccounts` API method and deserialize the response body into `T`.
+    pub async fn get_sub_accounts_typed<T>(&self, params: &GetSubAccountsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getSubAccounts", params).await
     }
 
     /// Call the `getTerminationRates` API method.
@@ -3820,14 +5078,41 @@ impl Client {
         self.call("getTerminationRates", params).await
     }
 
+    /// Call the `getTerminationRates` API method and deserialize the response body into `T`.
+    pub async fn get_termination_rates_typed<T>(
+        &self,
+        params: &GetTerminationRatesParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getTerminationRates", params).await
+    }
+
     /// Call the `getTimeConditions` API method.
     pub async fn get_time_conditions(&self, params: &GetTimeConditionsParams) -> Result<Value> {
         self.call("getTimeConditions", params).await
     }
 
+    /// Call the `getTimeConditions` API method and deserialize the response body into `T`.
+    pub async fn get_time_conditions_typed<T>(&self, params: &GetTimeConditionsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getTimeConditions", params).await
+    }
+
     /// Call the `getTimezones` API method.
     pub async fn get_timezones(&self, params: &GetTimezonesParams) -> Result<Value> {
         self.call("getTimezones", params).await
+    }
+
+    /// Call the `getTimezones` API method and deserialize the response body into `T`.
+    pub async fn get_timezones_typed<T>(&self, params: &GetTimezonesParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getTimezones", params).await
     }
 
     /// Call the `getTransactionHistory` API method.
@@ -3838,9 +5123,28 @@ impl Client {
         self.call("getTransactionHistory", params).await
     }
 
+    /// Call the `getTransactionHistory` API method and deserialize the response body into `T`.
+    pub async fn get_transaction_history_typed<T>(
+        &self,
+        params: &GetTransactionHistoryParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getTransactionHistory", params).await
+    }
+
     /// Call the `getVPRIs` API method.
     pub async fn get_vpris(&self, params: &GetVprisParams) -> Result<Value> {
         self.call("getVPRIs", params).await
+    }
+
+    /// Call the `getVPRIs` API method and deserialize the response body into `T`.
+    pub async fn get_vpris_typed<T>(&self, params: &GetVprisParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVPRIs", params).await
     }
 
     /// Call the `getVoicemailAttachmentFormats` API method.
@@ -3851,9 +5155,32 @@ impl Client {
         self.call("getVoicemailAttachmentFormats", params).await
     }
 
+    /// Call the `getVoicemailAttachmentFormats` API method and deserialize the response body into `T`.
+    pub async fn get_voicemail_attachment_formats_typed<T>(
+        &self,
+        params: &GetVoicemailAttachmentFormatsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVoicemailAttachmentFormats", params)
+            .await
+    }
+
     /// Call the `getVoicemailFolders` API method.
     pub async fn get_voicemail_folders(&self, params: &GetVoicemailFoldersParams) -> Result<Value> {
         self.call("getVoicemailFolders", params).await
+    }
+
+    /// Call the `getVoicemailFolders` API method and deserialize the response body into `T`.
+    pub async fn get_voicemail_folders_typed<T>(
+        &self,
+        params: &GetVoicemailFoldersParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVoicemailFolders", params).await
     }
 
     /// Call the `getVoicemailMessageFile` API method.
@@ -3864,6 +5191,17 @@ impl Client {
         self.call("getVoicemailMessageFile", params).await
     }
 
+    /// Call the `getVoicemailMessageFile` API method and deserialize the response body into `T`.
+    pub async fn get_voicemail_message_file_typed<T>(
+        &self,
+        params: &GetVoicemailMessageFileParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVoicemailMessageFile", params).await
+    }
+
     /// Call the `getVoicemailMessages` API method.
     pub async fn get_voicemail_messages(
         &self,
@@ -3872,9 +5210,31 @@ impl Client {
         self.call("getVoicemailMessages", params).await
     }
 
+    /// Call the `getVoicemailMessages` API method and deserialize the response body into `T`.
+    pub async fn get_voicemail_messages_typed<T>(
+        &self,
+        params: &GetVoicemailMessagesParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVoicemailMessages", params).await
+    }
+
     /// Call the `getVoicemailSetups` API method.
     pub async fn get_voicemail_setups(&self, params: &GetVoicemailSetupsParams) -> Result<Value> {
         self.call("getVoicemailSetups", params).await
+    }
+
+    /// Call the `getVoicemailSetups` API method and deserialize the response body into `T`.
+    pub async fn get_voicemail_setups_typed<T>(
+        &self,
+        params: &GetVoicemailSetupsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVoicemailSetups", params).await
     }
 
     /// Call the `getVoicemailTranscriptions` API method.
@@ -3885,14 +5245,41 @@ impl Client {
         self.call("getVoicemailTranscriptions", params).await
     }
 
+    /// Call the `getVoicemailTranscriptions` API method and deserialize the response body into `T`.
+    pub async fn get_voicemail_transcriptions_typed<T>(
+        &self,
+        params: &GetVoicemailTranscriptionsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVoicemailTranscriptions", params).await
+    }
+
     /// Call the `getVoicemails` API method.
     pub async fn get_voicemails(&self, params: &GetVoicemailsParams) -> Result<Value> {
         self.call("getVoicemails", params).await
     }
 
+    /// Call the `getVoicemails` API method and deserialize the response body into `T`.
+    pub async fn get_voicemails_typed<T>(&self, params: &GetVoicemailsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("getVoicemails", params).await
+    }
+
     /// Call the `mailFaxMessagePDF` API method.
     pub async fn mail_fax_message_pdf(&self, params: &MailFaxMessagePdfParams) -> Result<Value> {
         self.call("mailFaxMessagePDF", params).await
+    }
+
+    /// Call the `mailFaxMessagePDF` API method and deserialize the response body into `T`.
+    pub async fn mail_fax_message_pdf_typed<T>(&self, params: &MailFaxMessagePdfParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("mailFaxMessagePDF", params).await
     }
 
     /// Call the `markListenedVoicemailMessage` API method.
@@ -3903,6 +5290,18 @@ impl Client {
         self.call("markListenedVoicemailMessage", params).await
     }
 
+    /// Call the `markListenedVoicemailMessage` API method and deserialize the response body into `T`.
+    pub async fn mark_listened_voicemail_message_typed<T>(
+        &self,
+        params: &MarkListenedVoicemailMessageParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("markListenedVoicemailMessage", params)
+            .await
+    }
+
     /// Call the `markUrgentVoicemailMessage` API method.
     pub async fn mark_urgent_voicemail_message(
         &self,
@@ -3911,9 +5310,28 @@ impl Client {
         self.call("markUrgentVoicemailMessage", params).await
     }
 
+    /// Call the `markUrgentVoicemailMessage` API method and deserialize the response body into `T`.
+    pub async fn mark_urgent_voicemail_message_typed<T>(
+        &self,
+        params: &MarkUrgentVoicemailMessageParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("markUrgentVoicemailMessage", params).await
+    }
+
     /// Call the `moveFaxMessage` API method.
     pub async fn move_fax_message(&self, params: &MoveFaxMessageParams) -> Result<Value> {
         self.call("moveFaxMessage", params).await
+    }
+
+    /// Call the `moveFaxMessage` API method and deserialize the response body into `T`.
+    pub async fn move_fax_message_typed<T>(&self, params: &MoveFaxMessageParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("moveFaxMessage", params).await
     }
 
     /// Call the `moveFolderVoicemailMessage` API method.
@@ -3924,9 +5342,28 @@ impl Client {
         self.call("moveFolderVoicemailMessage", params).await
     }
 
+    /// Call the `moveFolderVoicemailMessage` API method and deserialize the response body into `T`.
+    pub async fn move_folder_voicemail_message_typed<T>(
+        &self,
+        params: &MoveFolderVoicemailMessageParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("moveFolderVoicemailMessage", params).await
+    }
+
     /// Call the `orderDID` API method.
     pub async fn order_did(&self, params: &OrderDidParams) -> Result<Value> {
         self.call("orderDID", params).await
+    }
+
+    /// Call the `orderDID` API method and deserialize the response body into `T`.
+    pub async fn order_did_typed<T>(&self, params: &OrderDidParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderDID", params).await
     }
 
     /// Call the `orderDIDInternationalGeographic` API method.
@@ -3937,12 +5374,36 @@ impl Client {
         self.call("orderDIDInternationalGeographic", params).await
     }
 
+    /// Call the `orderDIDInternationalGeographic` API method and deserialize the response body into `T`.
+    pub async fn order_did_international_geographic_typed<T>(
+        &self,
+        params: &OrderDidInternationalGeographicParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderDIDInternationalGeographic", params)
+            .await
+    }
+
     /// Call the `orderDIDInternationalNational` API method.
     pub async fn order_did_international_national(
         &self,
         params: &OrderDidInternationalNationalParams,
     ) -> Result<Value> {
         self.call("orderDIDInternationalNational", params).await
+    }
+
+    /// Call the `orderDIDInternationalNational` API method and deserialize the response body into `T`.
+    pub async fn order_did_international_national_typed<T>(
+        &self,
+        params: &OrderDidInternationalNationalParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderDIDInternationalNational", params)
+            .await
     }
 
     /// Call the `orderDIDInternationalTollFree` API method.
@@ -3953,9 +5414,29 @@ impl Client {
         self.call("orderDIDInternationalTollFree", params).await
     }
 
+    /// Call the `orderDIDInternationalTollFree` API method and deserialize the response body into `T`.
+    pub async fn order_did_international_toll_free_typed<T>(
+        &self,
+        params: &OrderDidInternationalTollFreeParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderDIDInternationalTollFree", params)
+            .await
+    }
+
     /// Call the `orderDIDVirtual` API method.
     pub async fn order_did_virtual(&self, params: &OrderDidVirtualParams) -> Result<Value> {
         self.call("orderDIDVirtual", params).await
+    }
+
+    /// Call the `orderDIDVirtual` API method and deserialize the response body into `T`.
+    pub async fn order_did_virtual_typed<T>(&self, params: &OrderDidVirtualParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderDIDVirtual", params).await
     }
 
     /// Call the `orderFaxNumber` API method.
@@ -3963,9 +5444,25 @@ impl Client {
         self.call("orderFaxNumber", params).await
     }
 
+    /// Call the `orderFaxNumber` API method and deserialize the response body into `T`.
+    pub async fn order_fax_number_typed<T>(&self, params: &OrderFaxNumberParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderFaxNumber", params).await
+    }
+
     /// Call the `orderTollFree` API method.
     pub async fn order_toll_free(&self, params: &OrderTollFreeParams) -> Result<Value> {
         self.call("orderTollFree", params).await
+    }
+
+    /// Call the `orderTollFree` API method and deserialize the response body into `T`.
+    pub async fn order_toll_free_typed<T>(&self, params: &OrderTollFreeParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderTollFree", params).await
     }
 
     /// Call the `orderVanity` API method.
@@ -3973,9 +5470,25 @@ impl Client {
         self.call("orderVanity", params).await
     }
 
+    /// Call the `orderVanity` API method and deserialize the response body into `T`.
+    pub async fn order_vanity_typed<T>(&self, params: &OrderVanityParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("orderVanity", params).await
+    }
+
     /// Call the `removeDIDvPRI` API method.
     pub async fn remove_did_vpri(&self, params: &RemoveDidVpriParams) -> Result<Value> {
         self.call("removeDIDvPRI", params).await
+    }
+
+    /// Call the `removeDIDvPRI` API method and deserialize the response body into `T`.
+    pub async fn remove_did_vpri_typed<T>(&self, params: &RemoveDidVpriParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("removeDIDvPRI", params).await
     }
 
     /// Call the `searchDIDsCAN` API method.
@@ -3983,9 +5496,25 @@ impl Client {
         self.call("searchDIDsCAN", params).await
     }
 
+    /// Call the `searchDIDsCAN` API method and deserialize the response body into `T`.
+    pub async fn search_dids_can_typed<T>(&self, params: &SearchDidsCanParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("searchDIDsCAN", params).await
+    }
+
     /// Call the `searchDIDsUSA` API method.
     pub async fn search_dids_usa(&self, params: &SearchDidsUsaParams) -> Result<Value> {
         self.call("searchDIDsUSA", params).await
+    }
+
+    /// Call the `searchDIDsUSA` API method and deserialize the response body into `T`.
+    pub async fn search_dids_usa_typed<T>(&self, params: &SearchDidsUsaParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("searchDIDsUSA", params).await
     }
 
     /// Call the `searchFaxAreaCodeCAN` API method.
@@ -3996,12 +5525,34 @@ impl Client {
         self.call("searchFaxAreaCodeCAN", params).await
     }
 
+    /// Call the `searchFaxAreaCodeCAN` API method and deserialize the response body into `T`.
+    pub async fn search_fax_area_code_can_typed<T>(
+        &self,
+        params: &SearchFaxAreaCodeCanParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("searchFaxAreaCodeCAN", params).await
+    }
+
     /// Call the `searchFaxAreaCodeUSA` API method.
     pub async fn search_fax_area_code_usa(
         &self,
         params: &SearchFaxAreaCodeUsaParams,
     ) -> Result<Value> {
         self.call("searchFaxAreaCodeUSA", params).await
+    }
+
+    /// Call the `searchFaxAreaCodeUSA` API method and deserialize the response body into `T`.
+    pub async fn search_fax_area_code_usa_typed<T>(
+        &self,
+        params: &SearchFaxAreaCodeUsaParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("searchFaxAreaCodeUSA", params).await
     }
 
     /// Call the `searchTollFreeCanUS` API method.
@@ -4012,14 +5563,41 @@ impl Client {
         self.call("searchTollFreeCanUS", params).await
     }
 
+    /// Call the `searchTollFreeCanUS` API method and deserialize the response body into `T`.
+    pub async fn search_toll_free_can_us_typed<T>(
+        &self,
+        params: &SearchTollFreeCanUsParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("searchTollFreeCanUS", params).await
+    }
+
     /// Call the `searchTollFreeUSA` API method.
     pub async fn search_toll_free_usa(&self, params: &SearchTollFreeUsaParams) -> Result<Value> {
         self.call("searchTollFreeUSA", params).await
     }
 
+    /// Call the `searchTollFreeUSA` API method and deserialize the response body into `T`.
+    pub async fn search_toll_free_usa_typed<T>(&self, params: &SearchTollFreeUsaParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("searchTollFreeUSA", params).await
+    }
+
     /// Call the `searchVanity` API method.
     pub async fn search_vanity(&self, params: &SearchVanityParams) -> Result<Value> {
         self.call("searchVanity", params).await
+    }
+
+    /// Call the `searchVanity` API method and deserialize the response body into `T`.
+    pub async fn search_vanity_typed<T>(&self, params: &SearchVanityParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("searchVanity", params).await
     }
 
     /// Call the `sendCallRecordingEmail` API method.
@@ -4030,9 +5608,28 @@ impl Client {
         self.call("sendCallRecordingEmail", params).await
     }
 
+    /// Call the `sendCallRecordingEmail` API method and deserialize the response body into `T`.
+    pub async fn send_call_recording_email_typed<T>(
+        &self,
+        params: &SendCallRecordingEmailParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("sendCallRecordingEmail", params).await
+    }
+
     /// Call the `sendFaxMessage` API method.
     pub async fn send_fax_message(&self, params: &SendFaxMessageParams) -> Result<Value> {
         self.call("sendFaxMessage", params).await
+    }
+
+    /// Call the `sendFaxMessage` API method and deserialize the response body into `T`.
+    pub async fn send_fax_message_typed<T>(&self, params: &SendFaxMessageParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("sendFaxMessage", params).await
     }
 
     /// Call the `sendMMS` API method.
@@ -4040,9 +5637,25 @@ impl Client {
         self.call("sendMMS", params).await
     }
 
+    /// Call the `sendMMS` API method and deserialize the response body into `T`.
+    pub async fn send_mms_typed<T>(&self, params: &SendMmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("sendMMS", params).await
+    }
+
     /// Call the `sendSMS` API method.
     pub async fn send_sms(&self, params: &SendSmsParams) -> Result<Value> {
         self.call("sendSMS", params).await
+    }
+
+    /// Call the `sendSMS` API method and deserialize the response body into `T`.
+    pub async fn send_sms_typed<T>(&self, params: &SendSmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("sendSMS", params).await
     }
 
     /// Call the `sendVoicemailEmail` API method.
@@ -4050,9 +5663,28 @@ impl Client {
         self.call("sendVoicemailEmail", params).await
     }
 
+    /// Call the `sendVoicemailEmail` API method and deserialize the response body into `T`.
+    pub async fn send_voicemail_email_typed<T>(
+        &self,
+        params: &SendVoicemailEmailParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("sendVoicemailEmail", params).await
+    }
+
     /// Call the `setCallHunting` API method.
     pub async fn set_call_hunting(&self, params: &SetCallHuntingParams) -> Result<Value> {
         self.call("setCallHunting", params).await
+    }
+
+    /// Call the `setCallHunting` API method and deserialize the response body into `T`.
+    pub async fn set_call_hunting_typed<T>(&self, params: &SetCallHuntingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setCallHunting", params).await
     }
 
     /// Call the `setCallParking` API method.
@@ -4060,9 +5692,25 @@ impl Client {
         self.call("setCallParking", params).await
     }
 
+    /// Call the `setCallParking` API method and deserialize the response body into `T`.
+    pub async fn set_call_parking_typed<T>(&self, params: &SetCallParkingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setCallParking", params).await
+    }
+
     /// Call the `setCallback` API method.
     pub async fn set_callback(&self, params: &SetCallbackParams) -> Result<Value> {
         self.call("setCallback", params).await
+    }
+
+    /// Call the `setCallback` API method and deserialize the response body into `T`.
+    pub async fn set_callback_typed<T>(&self, params: &SetCallbackParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setCallback", params).await
     }
 
     /// Call the `setCallerIDFiltering` API method.
@@ -4073,9 +5721,28 @@ impl Client {
         self.call("setCallerIDFiltering", params).await
     }
 
+    /// Call the `setCallerIDFiltering` API method and deserialize the response body into `T`.
+    pub async fn set_caller_id_filtering_typed<T>(
+        &self,
+        params: &SetCallerIdFilteringParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setCallerIDFiltering", params).await
+    }
+
     /// Call the `setClient` API method.
     pub async fn set_client(&self, params: &SetClientParams) -> Result<Value> {
         self.call("setClient", params).await
+    }
+
+    /// Call the `setClient` API method and deserialize the response body into `T`.
+    pub async fn set_client_typed<T>(&self, params: &SetClientParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setClient", params).await
     }
 
     /// Call the `setClientThreshold` API method.
@@ -4083,9 +5750,28 @@ impl Client {
         self.call("setClientThreshold", params).await
     }
 
+    /// Call the `setClientThreshold` API method and deserialize the response body into `T`.
+    pub async fn set_client_threshold_typed<T>(
+        &self,
+        params: &SetClientThresholdParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setClientThreshold", params).await
+    }
+
     /// Call the `setConference` API method.
     pub async fn set_conference(&self, params: &SetConferenceParams) -> Result<Value> {
         self.call("setConference", params).await
+    }
+
+    /// Call the `setConference` API method and deserialize the response body into `T`.
+    pub async fn set_conference_typed<T>(&self, params: &SetConferenceParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setConference", params).await
     }
 
     /// Call the `setConferenceMember` API method.
@@ -4093,9 +5779,28 @@ impl Client {
         self.call("setConferenceMember", params).await
     }
 
+    /// Call the `setConferenceMember` API method and deserialize the response body into `T`.
+    pub async fn set_conference_member_typed<T>(
+        &self,
+        params: &SetConferenceMemberParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setConferenceMember", params).await
+    }
+
     /// Call the `setDIDBillingType` API method.
     pub async fn set_did_billing_type(&self, params: &SetDidBillingTypeParams) -> Result<Value> {
         self.call("setDIDBillingType", params).await
+    }
+
+    /// Call the `setDIDBillingType` API method and deserialize the response body into `T`.
+    pub async fn set_did_billing_type_typed<T>(&self, params: &SetDidBillingTypeParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setDIDBillingType", params).await
     }
 
     /// Call the `setDIDInfo` API method.
@@ -4103,9 +5808,25 @@ impl Client {
         self.call("setDIDInfo", params).await
     }
 
+    /// Call the `setDIDInfo` API method and deserialize the response body into `T`.
+    pub async fn set_did_info_typed<T>(&self, params: &SetDidInfoParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setDIDInfo", params).await
+    }
+
     /// Call the `setDIDPOP` API method.
     pub async fn set_did_pop(&self, params: &SetDidPopParams) -> Result<Value> {
         self.call("setDIDPOP", params).await
+    }
+
+    /// Call the `setDIDPOP` API method and deserialize the response body into `T`.
+    pub async fn set_did_pop_typed<T>(&self, params: &SetDidPopParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setDIDPOP", params).await
     }
 
     /// Call the `setDIDRouting` API method.
@@ -4113,9 +5834,25 @@ impl Client {
         self.call("setDIDRouting", params).await
     }
 
+    /// Call the `setDIDRouting` API method and deserialize the response body into `T`.
+    pub async fn set_did_routing_typed<T>(&self, params: &SetDidRoutingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setDIDRouting", params).await
+    }
+
     /// Call the `setDIDVoicemail` API method.
     pub async fn set_did_voicemail(&self, params: &SetDidVoicemailParams) -> Result<Value> {
         self.call("setDIDVoicemail", params).await
+    }
+
+    /// Call the `setDIDVoicemail` API method and deserialize the response body into `T`.
+    pub async fn set_did_voicemail_typed<T>(&self, params: &SetDidVoicemailParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setDIDVoicemail", params).await
     }
 
     /// Call the `setDISA` API method.
@@ -4123,9 +5860,25 @@ impl Client {
         self.call("setDISA", params).await
     }
 
+    /// Call the `setDISA` API method and deserialize the response body into `T`.
+    pub async fn set_disa_typed<T>(&self, params: &SetDisaParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setDISA", params).await
+    }
+
     /// Call the `setEmailToFax` API method.
     pub async fn set_email_to_fax(&self, params: &SetEmailToFaxParams) -> Result<Value> {
         self.call("setEmailToFax", params).await
+    }
+
+    /// Call the `setEmailToFax` API method and deserialize the response body into `T`.
+    pub async fn set_email_to_fax_typed<T>(&self, params: &SetEmailToFaxParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setEmailToFax", params).await
     }
 
     /// Call the `setFaxFolder` API method.
@@ -4133,14 +5886,38 @@ impl Client {
         self.call("setFaxFolder", params).await
     }
 
+    /// Call the `setFaxFolder` API method and deserialize the response body into `T`.
+    pub async fn set_fax_folder_typed<T>(&self, params: &SetFaxFolderParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setFaxFolder", params).await
+    }
+
     /// Call the `setFaxNumberEmail` API method.
     pub async fn set_fax_number_email(&self, params: &SetFaxNumberEmailParams) -> Result<Value> {
         self.call("setFaxNumberEmail", params).await
     }
 
+    /// Call the `setFaxNumberEmail` API method and deserialize the response body into `T`.
+    pub async fn set_fax_number_email_typed<T>(&self, params: &SetFaxNumberEmailParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setFaxNumberEmail", params).await
+    }
+
     /// Call the `setFaxNumberInfo` API method.
     pub async fn set_fax_number_info(&self, params: &SetFaxNumberInfoParams) -> Result<Value> {
         self.call("setFaxNumberInfo", params).await
+    }
+
+    /// Call the `setFaxNumberInfo` API method and deserialize the response body into `T`.
+    pub async fn set_fax_number_info_typed<T>(&self, params: &SetFaxNumberInfoParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setFaxNumberInfo", params).await
     }
 
     /// Call the `setFaxNumberURLCallback` API method.
@@ -4151,9 +5928,28 @@ impl Client {
         self.call("setFaxNumberURLCallback", params).await
     }
 
+    /// Call the `setFaxNumberURLCallback` API method and deserialize the response body into `T`.
+    pub async fn set_fax_number_url_callback_typed<T>(
+        &self,
+        params: &SetFaxNumberUrlCallbackParams,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setFaxNumberURLCallback", params).await
+    }
+
     /// Call the `setForwarding` API method.
     pub async fn set_forwarding(&self, params: &SetForwardingParams) -> Result<Value> {
         self.call("setForwarding", params).await
+    }
+
+    /// Call the `setForwarding` API method and deserialize the response body into `T`.
+    pub async fn set_forwarding_typed<T>(&self, params: &SetForwardingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setForwarding", params).await
     }
 
     /// Call the `setIVR` API method.
@@ -4161,9 +5957,25 @@ impl Client {
         self.call("setIVR", params).await
     }
 
+    /// Call the `setIVR` API method and deserialize the response body into `T`.
+    pub async fn set_ivr_typed<T>(&self, params: &SetIvrParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setIVR", params).await
+    }
+
     /// Call the `setLocation` API method.
     pub async fn set_location(&self, params: &SetLocationParams) -> Result<Value> {
         self.call("setLocation", params).await
+    }
+
+    /// Call the `setLocation` API method and deserialize the response body into `T`.
+    pub async fn set_location_typed<T>(&self, params: &SetLocationParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setLocation", params).await
     }
 
     /// Call the `setMusicOnHold` API method.
@@ -4171,9 +5983,25 @@ impl Client {
         self.call("setMusicOnHold", params).await
     }
 
+    /// Call the `setMusicOnHold` API method and deserialize the response body into `T`.
+    pub async fn set_music_on_hold_typed<T>(&self, params: &SetMusicOnHoldParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setMusicOnHold", params).await
+    }
+
     /// Call the `setPhonebook` API method.
     pub async fn set_phonebook(&self, params: &SetPhonebookParams) -> Result<Value> {
         self.call("setPhonebook", params).await
+    }
+
+    /// Call the `setPhonebook` API method and deserialize the response body into `T`.
+    pub async fn set_phonebook_typed<T>(&self, params: &SetPhonebookParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setPhonebook", params).await
     }
 
     /// Call the `setPhonebookGroup` API method.
@@ -4181,9 +6009,25 @@ impl Client {
         self.call("setPhonebookGroup", params).await
     }
 
+    /// Call the `setPhonebookGroup` API method and deserialize the response body into `T`.
+    pub async fn set_phonebook_group_typed<T>(&self, params: &SetPhonebookGroupParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setPhonebookGroup", params).await
+    }
+
     /// Call the `setQueue` API method.
     pub async fn set_queue(&self, params: &SetQueueParams) -> Result<Value> {
         self.call("setQueue", params).await
+    }
+
+    /// Call the `setQueue` API method and deserialize the response body into `T`.
+    pub async fn set_queue_typed<T>(&self, params: &SetQueueParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setQueue", params).await
     }
 
     /// Call the `setRecording` API method.
@@ -4191,9 +6035,25 @@ impl Client {
         self.call("setRecording", params).await
     }
 
+    /// Call the `setRecording` API method and deserialize the response body into `T`.
+    pub async fn set_recording_typed<T>(&self, params: &SetRecordingParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setRecording", params).await
+    }
+
     /// Call the `setRingGroup` API method.
     pub async fn set_ring_group(&self, params: &SetRingGroupParams) -> Result<Value> {
         self.call("setRingGroup", params).await
+    }
+
+    /// Call the `setRingGroup` API method and deserialize the response body into `T`.
+    pub async fn set_ring_group_typed<T>(&self, params: &SetRingGroupParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setRingGroup", params).await
     }
 
     /// Call the `setSIPURI` API method.
@@ -4201,9 +6061,25 @@ impl Client {
         self.call("setSIPURI", params).await
     }
 
+    /// Call the `setSIPURI` API method and deserialize the response body into `T`.
+    pub async fn set_sip_uri_typed<T>(&self, params: &SetSipUriParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setSIPURI", params).await
+    }
+
     /// Call the `setSMS` API method.
     pub async fn set_sms(&self, params: &SetSmsParams) -> Result<Value> {
         self.call("setSMS", params).await
+    }
+
+    /// Call the `setSMS` API method and deserialize the response body into `T`.
+    pub async fn set_sms_typed<T>(&self, params: &SetSmsParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setSMS", params).await
     }
 
     /// Call the `setStaticMember` API method.
@@ -4211,9 +6087,25 @@ impl Client {
         self.call("setStaticMember", params).await
     }
 
+    /// Call the `setStaticMember` API method and deserialize the response body into `T`.
+    pub async fn set_static_member_typed<T>(&self, params: &SetStaticMemberParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setStaticMember", params).await
+    }
+
     /// Call the `setSubAccount` API method.
     pub async fn set_sub_account(&self, params: &SetSubAccountParams) -> Result<Value> {
         self.call("setSubAccount", params).await
+    }
+
+    /// Call the `setSubAccount` API method and deserialize the response body into `T`.
+    pub async fn set_sub_account_typed<T>(&self, params: &SetSubAccountParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setSubAccount", params).await
     }
 
     /// Call the `setTimeCondition` API method.
@@ -4221,9 +6113,25 @@ impl Client {
         self.call("setTimeCondition", params).await
     }
 
+    /// Call the `setTimeCondition` API method and deserialize the response body into `T`.
+    pub async fn set_time_condition_typed<T>(&self, params: &SetTimeConditionParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setTimeCondition", params).await
+    }
+
     /// Call the `setVoicemail` API method.
     pub async fn set_voicemail(&self, params: &SetVoicemailParams) -> Result<Value> {
         self.call("setVoicemail", params).await
+    }
+
+    /// Call the `setVoicemail` API method and deserialize the response body into `T`.
+    pub async fn set_voicemail_typed<T>(&self, params: &SetVoicemailParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("setVoicemail", params).await
     }
 
     /// Call the `signupClient` API method.
@@ -4231,13 +6139,37 @@ impl Client {
         self.call("signupClient", params).await
     }
 
+    /// Call the `signupClient` API method and deserialize the response body into `T`.
+    pub async fn signup_client_typed<T>(&self, params: &SignupClientParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("signupClient", params).await
+    }
+
     /// Call the `unconnectDID` API method.
     pub async fn unconnect_did(&self, params: &UnconnectDidParams) -> Result<Value> {
         self.call("unconnectDID", params).await
     }
 
+    /// Call the `unconnectDID` API method and deserialize the response body into `T`.
+    pub async fn unconnect_did_typed<T>(&self, params: &UnconnectDidParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("unconnectDID", params).await
+    }
+
     /// Call the `unconnectFAX` API method.
     pub async fn unconnect_fax(&self, params: &UnconnectFaxParams) -> Result<Value> {
         self.call("unconnectFAX", params).await
+    }
+
+    /// Call the `unconnectFAX` API method and deserialize the response body into `T`.
+    pub async fn unconnect_fax_typed<T>(&self, params: &UnconnectFaxParams) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        self.call_typed("unconnectFAX", params).await
     }
 }

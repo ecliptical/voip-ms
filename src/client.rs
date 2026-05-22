@@ -1,5 +1,6 @@
 use reqwest::Url;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::error::{ApiStatus, Error, Result};
@@ -80,6 +81,43 @@ impl Client {
         let body: Value = response.json().await?;
         check_status(&body)?;
         Ok(body)
+    }
+
+    /// Issue a request and deserialize the full JSON response body into `T`.
+    ///
+    /// This still applies the same status validation as [`Client::call`]: any
+    /// non-`success` status is returned as [`Error::Api`].
+    pub async fn call_typed<P, T>(&self, method: &str, params: &P) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let body = self.call(method, params).await?;
+        serde_json::from_value(body)
+            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
+    }
+
+    /// Issue a request and deserialize a JSON subtree selected by JSON pointer.
+    ///
+    /// Use this when the API wraps the interesting data under a known key
+    /// (e.g. `/balance` or `/dids`).
+    pub async fn call_typed_at<P, T>(&self, method: &str, params: &P, pointer: &str) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let body = self.call(method, params).await?;
+        let subtree = body.pointer(pointer).cloned().ok_or_else(|| {
+            Error::InvalidResponse(format!(
+                "response missing JSON pointer `{pointer}` for method `{method}`"
+            ))
+        })?;
+
+        serde_json::from_value(subtree).map_err(|e| {
+            Error::InvalidResponse(format!(
+                "failed to deserialize JSON pointer `{pointer}` for method `{method}`: {e}"
+            ))
+        })
     }
 
     /// The base URL this client posts to.
