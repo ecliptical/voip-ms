@@ -125,6 +125,19 @@ let balance: Balance = serde_json::from_value(body["balance"].clone()).unwrap();
 # Ok(()) }
 ```
 
+### Running the examples
+
+The [`examples/`](examples/) directory contains small runnable programs that
+read credentials from `VOIP_MS_USERNAME` and `VOIP_MS_PASSWORD`:
+
+```bash
+VOIP_MS_USERNAME=you@example.com \
+VOIP_MS_PASSWORD=your-api-password \
+    cargo run --example get_balance
+```
+
+Available examples: `get_balance`, `list_dids`, `send_sms`.
+
 ### Calling methods this crate hasn't been regenerated for
 
 If voip.ms adds an API method that isn't yet in this crate, use
