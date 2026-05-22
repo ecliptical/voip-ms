@@ -22,21 +22,28 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Auto-approve patch and minor updates for Cargo
+      # In Cargo's SemVer interpretation, a 0.x.y → 0.z.y bump is breaking
+      # (https://doc.rust-lang.org/cargo/reference/semver.html). Dependabot
+      # classifies it as `version-update:semver-minor` per the strict SemVer
+      # 2.0.0 spec, so we additionally exclude minor bumps when the current
+      # major is 0 — those land as deliberate, reviewed PRs instead.
+      - name: Auto-approve safe Cargo updates
         if: |
           steps.metadata.outputs.package-ecosystem == 'cargo' &&
           (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-           steps.metadata.outputs.update-type == 'version-update:semver-minor')
+           (steps.metadata.outputs.update-type == 'version-update:semver-minor' &&
+            !startsWith(steps.metadata.outputs.previous-version, '0.')))
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge for patch and minor Cargo updates
+      - name: Enable auto-merge for safe Cargo updates
         if: |
           steps.metadata.outputs.package-ecosystem == 'cargo' &&
           (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-           steps.metadata.outputs.update-type == 'version-update:semver-minor')
+           (steps.metadata.outputs.update-type == 'version-update:semver-minor' &&
+            !startsWith(steps.metadata.outputs.previous-version, '0.')))
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}

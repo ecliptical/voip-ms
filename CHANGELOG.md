@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped `reqwest` to `0.13` and adjusted feature flag mappings to its
+  reorganized TLS surface. User-facing feature names
+  (`rustls-tls-native-roots`, `rustls-tls-webpki-roots`, `native-tls`)
+  are unchanged.
+- Dependabot auto-merge now skips `0.x → 0.y` Cargo updates, which are
+  classified as `semver-minor` by Dependabot but are breaking under
+  Cargo's SemVer interpretation. Those land as reviewed PRs.
+
 ### Added
 
 - Initial release skeleton: async `Client` over `reqwest`, typed
