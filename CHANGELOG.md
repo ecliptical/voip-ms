@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release skeleton: async `Client` over `reqwest`, typed
   `*Params` request structs and `Client` methods for all 222 voip.ms
-  REST operations, generated from `tools/server.wsdl` by
-  `tools/gen.py`.
+  REST operations, generated from `tools/server.wsdl` by the
+  `xtask` workspace member (`cargo xtask gen`).
 - `Client::call` for invoking methods not yet covered by the
   generator and for typed deserialization via `serde_json::from_value`.
 - `Error::Http` / `Error::Api(ApiStatus)` / `Error::InvalidResponse`

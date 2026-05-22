@@ -17,8 +17,9 @@ more — no retry layer, no credential discovery, no configuration loading.
 ### 1. WSDL is the source of truth for inputs
 
 **Decision**: The 222 `*Params` structs and `Client` methods in
-`src/generated.rs` are generated from `tools/server.wsdl` by
-`tools/gen.py`. Both the generator and the WSDL snapshot are committed.
+`src/generated.rs` are generated from `tools/server.wsdl` by the
+`xtask` workspace member (`xtask/src/main.rs`). Both the generator
+and the WSDL snapshot are committed.
 
 **Rationale**:
 
@@ -28,11 +29,12 @@ more — no retry layer, no credential discovery, no configuration loading.
   parseable programmatically.
 * Code-generating is the only practical way to keep ~5 kLOC of mechanical
   Rust honest as voip.ms adds methods.
-* The generator is committed (not a `build.rs`) so end-users don't pay a
-  Python dependency on `cargo build`.
+* The generator is an `xtask` (not a `build.rs`) so end-users don't pay
+  codegen cost on `cargo build`. It's a pure-Rust workspace member, not
+  a Python script, so contributors don't need a separate toolchain.
 
 **How to apply**: When voip.ms adds an API method, replace
-`tools/server.wsdl` and run `python3 tools/gen.py`. Do not hand-edit
+`tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
 `src/generated.rs` — the `@generated` banner reflects reality.
 
 ### 2. Responses are `serde_json::Value`, not typed structs
@@ -92,7 +94,7 @@ encourages copy-paste of secrets through code paths. One `Client::new` /
 
 ### 5. Acronym-aware camelCase → snake_case conversion
 
-**Decision**: `tools/gen.py` tokenizes method names with an explicit
+**Decision**: `xtask/src/main.rs` tokenizes method names with an explicit
 acronym list (`DID`, `SMS`, `IVR`, `LNP`, `CDR`, `URI`, `PDF`, `ID`, …)
 sorted longest-first.
 
@@ -104,9 +106,8 @@ developer would have chosen by hand. New acronyms get added to the
 `ACRONYMS` set in the generator.
 
 **How to apply**: When a new voip.ms method introduces an acronym that
-produces a single-letter token in `tokenize()`, add it to `ACRONYMS`
-and regenerate. The generator's main routine flags single-letter tokens
-when run interactively.
+produces a single-letter token in `tokenize()`, add it to the `ACRONYMS`
+constant in `xtask/src/main.rs` and regenerate.
 
 ### 6. No HTTP-level retry, no auth caching, no rate limiting
 
@@ -167,10 +168,12 @@ Three variants, no more:
 
 ```
 voip-ms/
-├── Cargo.toml
+├── Cargo.toml           # Workspace root + library package
 ├── LICENSE              # MIT
 ├── README.md            # User-facing docs
 ├── AGENTS.md            # This file
+├── CHANGELOG.md
+├── .cargo/config.toml   # `cargo xtask` alias
 ├── .rustfmt.toml        # edition = "2024"
 ├── .gitignore
 ├── .github/
@@ -185,9 +188,11 @@ voip-ms/
 │   └── generated.rs     # 222 *Params structs + Client methods (generated)
 ├── tests/
 │   └── client.rs        # wiremock-based integration tests
-└── tools/
-    ├── gen.py           # WSDL → src/generated.rs
-    └── server.wsdl      # Committed WSDL snapshot
+├── tools/
+│   └── server.wsdl      # Committed WSDL snapshot
+└── xtask/
+    ├── Cargo.toml
+    └── src/main.rs      # WSDL → src/generated.rs (run via `cargo xtask gen`)
 ```
 
 ## Dependencies

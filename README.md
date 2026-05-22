@@ -167,12 +167,13 @@ All errors surface through [`voip_ms::Error`]. The three variants are:
 ## Regenerating the API surface
 
 The 222 typed request structs and `Client` methods are generated from
-[`tools/server.wsdl`](tools/server.wsdl) by [`tools/gen.py`](tools/gen.py).
-To pick up new methods after voip.ms updates the WSDL:
+[`tools/server.wsdl`](tools/server.wsdl) by the `xtask` workspace member
+([`xtask/src/main.rs`](xtask/src/main.rs)). To pick up new methods after
+voip.ms updates the WSDL:
 
 ```bash
 # Replace tools/server.wsdl with the new version, then:
-python3 tools/gen.py
+cargo xtask gen
 cargo fmt --all
 cargo clippy --all -- -D warnings
 cargo test
