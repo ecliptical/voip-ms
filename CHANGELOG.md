@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-22
+
+### Changed
+
+- Added and documented typed response ergonomics more clearly across user and
+  maintainer docs: raw `serde_json::Value` methods, generated `*_typed`
+  methods, `call_typed` / `call_typed_at`, and starter partial typed response
+  structs.
+- Moved contributor and maintainer workflows out of `README.md` into a new
+  `DEVELOPMENT.md` guide (regeneration, testing strategy, CI/CD behavior,
+  and release process), keeping README focused on crate usage.
+
 ## [0.1.0] - 2026-05-22
 
 ### Changed
@@ -37,5 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.0

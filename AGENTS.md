@@ -37,10 +37,16 @@ and the WSDL snapshot are committed.
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
 `src/generated.rs` — the `@generated` banner reflects reality.
 
-### 2. Responses are `serde_json::Value`, not typed structs
+### 2. Responses are raw-by-default, with typed helpers
 
-**Decision**: Every generated `Client` method returns `Result<Value>`. There
-are no `*Response` types.
+**Decision**: Every generated `Client` method exposes both:
+
+* a raw method that returns `Result<Value>`, and
+* a typed `*_typed` method that returns `Result<T>`.
+
+The crate also includes starter partial typed response structs in
+`src/responses.rs` (for example `GetBalanceResponse`,
+`GetDidsInfoResponse`, and `StatusResponse`).
 
 **Rationale**: The WSDL declares a single generic `arrayResponse` type for
 all 222 operations — there is no machine-readable description of any
@@ -51,10 +57,10 @@ response shape. Inventing 222 hand-curated response types would:
 * Force two crate revisions (this one and the user's) for every shape
   change.
 
-Returning `Value` keeps the crate bare-bones and shifts the typed
-deserialization to where the schema actually lives — in the caller's code,
-against the specific shape they need. Callers who want typing use
-`serde_json::from_value` (see README).
+Keeping the raw `Value` surface preserves compatibility with voip.ms response
+drift and unknown fields. Typed helpers (`*_typed`, `Client::call_typed`, and
+`Client::call_typed_at`) reduce boilerplate when callers want strong typing,
+without requiring this crate to hard-code full per-method schemas.
 
 ### 3. All request fields are `Option<T>`
 
@@ -185,7 +191,8 @@ voip-ms/
 │   ├── lib.rs           # Module surface; re-exports generated.rs
 │   ├── client.rs        # Client, ClientBuilder, call()
 │   ├── error.rs         # Error, ApiStatus, Result
-│   └── generated.rs     # 222 *Params structs + Client methods (generated)
+│   ├── generated.rs     # 222 *Params structs + Client methods (generated)
+│   └── responses.rs     # Starter partial typed response structs
 ├── tests/
 │   └── client.rs        # wiremock-based integration tests
 ├── tools/
@@ -222,40 +229,10 @@ Dev-dependencies:
 Pick one; they are not mutually exclusive at the type level, but enabling
 both rustls feature sets is wasteful.
 
-## Testing Strategy
+## Contributor Workflows
 
-1. **Integration tests** (`tests/client.rs`) using `wiremock` to assert:
-   * a `success` response surfaces the full envelope verbatim
-   * a non-`success` status maps to `Error::Api`
-   * a 5xx surfaces as `Error::Http`
-   * a missing `status` field surfaces as `Error::InvalidResponse`
-   * `None` fields don't appear in the query string
-   * `Client::call` is usable directly for typed deserialization
-
-2. **Coverage target**: ~80% (Client + Error). `generated.rs` is
-   mechanical and tested transitively by exercising one or two methods
-   via the wiremock fixtures.
-
-3. **Not tested**: live calls to voip.ms. Doing so would require real
-   credentials and a live account; CI cannot reasonably exercise it.
-
-## CI/CD
-
-* **`rust-ci.yaml`**: Runs on PR + push to `main`.
-  * `cargo fmt --all -- --check`
-  * `cargo clippy --all -- -D warnings`
-  * `cargo test` with `RUSTFLAGS=-Cinstrument-coverage`; coverage report
-    posted as a PR comment via `ecliptical/covdir-report-action`.
-
-* **`dependabot-automerge.yaml`**: Auto-approves and merges patch/minor
-  Cargo updates from Dependabot.
-
-* **`release.yaml`**: Runs on `v*` tag push.
-  * Validates tag version matches `Cargo.toml`
-  * Runs `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace --all-targets`
-  * Verifies publishability with `cargo publish --locked --dry-run`
-  * Publishes to crates.io with `CRATES_IO_TOKEN`
-  * Creates a GitHub release from the tag
+Contributor and maintainer workflows (testing strategy, CI/CD behavior,
+regeneration, and releases) are documented in `DEVELOPMENT.md`.
 
 ## Evolution Notes
 
@@ -266,9 +243,12 @@ turned out load-bearing:
    typed coverage because it's discoverable from `Client::` autocomplete.
    The WSDL having 222 methods (not the ~80 estimated) made codegen
    the only viable route.
-2. **Response shape**: Typed responses were considered and rejected
-   because the WSDL doesn't carry that information and hand-curating
-   ~222 envelopes is busywork that goes stale quickly.
+2. **Response shape**: Full hand-curated per-method response typing was
+  rejected because the WSDL doesn't carry that information and maintaining
+  ~222 precise envelopes would go stale quickly. The current compromise is
+  raw `Value` methods plus typed helpers (`*_typed`, `call_typed`,
+  `call_typed_at`) and a small set of starter partial typed response
+  structs for common methods.
 3. **Optionality**: All-`Option` was chosen over WSDL's nominal
    required-ness because the API itself is more permissive than the WSDL
    and `Default + ..Default::default()` is the idiomatic Rust experience

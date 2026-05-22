@@ -18,11 +18,13 @@
 //!
 //! Every voip.ms API method gets a typed `*Params` request struct (with all
 //! fields wrapped in [`Option`] and skipped when `None`) and a method on
-//! [`Client`]. All responses are returned as [`serde_json::Value`] — the
-//! API's response shape varies by method and is not described by the WSDL,
-//! so this crate doesn't pretend otherwise. Callers who want a typed
-//! response can [`serde_json::from_value`] into their own struct, or use
-//! [`Client::call`] directly with a custom deserializer.
+//! [`Client`]. The raw method returns [`serde_json::Value`] and each generated
+//! method also has a `*_typed` variant that deserializes into caller-provided
+//! types. The API's response shape varies by method and is not described by
+//! the WSDL, so raw-by-default remains the most reliable baseline while typed
+//! helpers reduce boilerplate. This crate also exposes starter partial typed
+//! response structs (for example [`GetBalanceResponse`] and
+//! [`GetDidsInfoResponse`]) that preserve unknown fields.
 //!
 //! # Authentication
 //!

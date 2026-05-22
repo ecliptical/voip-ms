@@ -9,9 +9,10 @@ Async client for the [voip.ms](https://voip.ms) REST API.
 
 A thin, idiomatic Rust wrapper around every method exposed by the voip.ms
 REST endpoint (`https://voip.ms/api/v1/rest.php`). Each WSDL operation gets a
-typed `*Params` request struct and a method on [`Client`]; responses come
-back as `serde_json::Value` so callers can pick the fields they need or
-[`serde_json::from_value`] into a struct of their own.
+typed `*Params` request struct and methods on [`Client`]. Each method returns
+raw `serde_json::Value`, and each also has a `*_typed` variant for direct
+deserialization into your own type (or into the crate's starter response
+types).
 
 ## Installation
 
@@ -183,42 +184,12 @@ All errors surface through [`voip_ms::Error`]. The three variants are:
 * `Error::InvalidResponse` — the response was not the expected JSON envelope
   (e.g. missing `status` field).
 
-## Regenerating the API surface
+## Development and release
 
-The 222 typed request structs and `Client` methods are generated from
-[`tools/server.wsdl`](tools/server.wsdl) by the `xtask` workspace member
-([`xtask/src/main.rs`](xtask/src/main.rs)). To pick up new methods after
-voip.ms updates the WSDL:
+Contributor and maintainer workflows (regeneration, verification, and release)
+are documented in [DEVELOPMENT.md](DEVELOPMENT.md).
 
-```bash
-# Download the latest WSDL from voip.ms:
-curl -o tools/server.wsdl https://voip.ms/api/v1/server.wsdl
-
-# Then regenerate and verify:
-cargo xtask gen
-cargo fmt --all
-cargo clippy --all -- -D warnings
-cargo test
-```
-
-See [AGENTS.md](AGENTS.md) for the design notes behind the generator.
-
-## Releasing
-
-Publishing is automated via [`.github/workflows/release.yaml`](.github/workflows/release.yaml).
-
-1. Ensure `Cargo.toml` has the target version (for the first release: `0.1.0`).
-2. Move release notes from `Unreleased` into a versioned section in `CHANGELOG.md`.
-3. Push a tag in the form `vX.Y.Z`.
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-On tag push, the workflow verifies the tag version matches `Cargo.toml`, runs
-fmt/clippy/tests, performs `cargo publish --dry-run`, publishes to crates.io
-using `CRATES_IO_TOKEN`, and creates a GitHub release.
+See [AGENTS.md](AGENTS.md) for design decisions and project-specific guidance.
 
 ## License
 
