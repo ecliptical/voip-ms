@@ -36,6 +36,31 @@ on:
         required: true
         default: false
         type: boolean
+      voip_ms_username:
+        description: Optional override for voip.ms API username (account email)
+        required: false
+        default: ""
+        type: string
+      voip_ms_password:
+        description: Optional override for voip.ms API password from the portal API page
+        required: false
+        default: ""
+        type: string
+      voip_ms_test_did:
+        description: Optional override DID used for SMS and SMS-setting checks
+        required: false
+        default: ""
+        type: string
+      voip_ms_sms_dst:
+        description: Optional override SMS destination number for costly sendSMS check
+        required: false
+        default: ""
+        type: string
+      voip_ms_sms_message:
+        description: Optional override SMS body for costly sendSMS check
+        required: false
+        default: ""
+        type: string
   push:
     tags:
       - "v*"
@@ -48,11 +73,11 @@ jobs:
     name: Live API verification
     runs-on: ubuntu-latest
     env:
-      VOIP_MS_USERNAME: ${{ secrets.VOIP_MS_USERNAME }}
-      VOIP_MS_PASSWORD: ${{ secrets.VOIP_MS_PASSWORD }}
-      VOIP_MS_TEST_DID: ${{ secrets.VOIP_MS_TEST_DID }}
-      VOIP_MS_SMS_DST: ${{ secrets.VOIP_MS_SMS_DST }}
-      VOIP_MS_SMS_MESSAGE: ${{ secrets.VOIP_MS_SMS_MESSAGE }}
+      VOIP_MS_USERNAME: ${{ github.event_name == 'workflow_dispatch' && inputs.voip_ms_username != '' && inputs.voip_ms_username || secrets.VOIP_MS_USERNAME }}
+      VOIP_MS_PASSWORD: ${{ github.event_name == 'workflow_dispatch' && inputs.voip_ms_password != '' && inputs.voip_ms_password || secrets.VOIP_MS_PASSWORD }}
+      VOIP_MS_TEST_DID: ${{ github.event_name == 'workflow_dispatch' && inputs.voip_ms_test_did || '' }}
+      VOIP_MS_SMS_DST: ${{ github.event_name == 'workflow_dispatch' && inputs.voip_ms_sms_dst || '' }}
+      VOIP_MS_SMS_MESSAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.voip_ms_sms_message || '' }}
       LIVE_VERIFY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'smoke' }}
       LIVE_VERIFY_ALLOW_STATE_CHANGES: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_state_changes || false }}
       LIVE_VERIFY_ALLOW_COSTLY: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_costly || false }}
@@ -71,7 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${VOIP_MS_USERNAME:-}" || -z "${VOIP_MS_PASSWORD:-}" ]]; then
-            echo "Missing VOIP_MS_USERNAME and/or VOIP_MS_PASSWORD GitHub Action secrets"
+            echo "Missing VOIP_MS_USERNAME and/or VOIP_MS_PASSWORD (set secrets or manual overrides)"
             exit 1
           fi
 
