@@ -1,5 +1,5 @@
 use serde_json::{Value, json};
-use voip_ms::{Client, Error, GetBalanceParams};
+use voip_ms::{Client, Error, GetBalanceParams, GetSubAccountsParams, GetSubAccountsResponse};
 use wiremock::matchers::{method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -253,4 +253,41 @@ async fn typed_response_via_generated_typed_method() {
         .unwrap();
 
     assert_eq!(envelope.balance.current_balance, "12.00");
+}
+
+#[tokio::test]
+async fn typed_get_sub_accounts_tolerates_minus_one_sentinel_values() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSubAccounts"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "accounts": [
+                {
+                    "id": "123",
+                    "account": "100000_fixture",
+                    "username": "fixture-sub",
+                    "callerid_number": "-1",
+                    "canada_routing": -1
+                }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope: GetSubAccountsResponse = client
+        .get_sub_accounts_typed(&GetSubAccountsParams::default())
+        .await
+        .unwrap();
+
+    let account = envelope
+        .accounts
+        .as_ref()
+        .and_then(|accounts| accounts.first())
+        .expect("expected at least one sub-account");
+    assert_eq!(account.id, Some(123));
+    assert_eq!(account.callerid_number, None);
+    assert_eq!(account.canada_routing, None);
 }

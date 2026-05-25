@@ -6,6 +6,10 @@
 //! forms — and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
 //! placeholders as `None` — into Rust types.
 //!
+//! Some endpoints also emit `-1` as a sentinel for "not configured" in
+//! fields that are otherwise unsigned identifiers. For optional unsigned
+//! fields, `-1` and `"-1"` are normalized to `None`.
+//!
 //! These are wired up by `xtask` into `src/generated.rs`. Hand-written
 //! call sites can also reference them via the `crate::responses::*`
 //! module path.
@@ -52,15 +56,21 @@ where
     let value = Option::<Value>::deserialize(deserializer)?;
     match value {
         None | Some(Value::Null) => Ok(None),
-        Some(Value::Number(n)) => n
-            .as_u64()
-            .map(Some)
-            .ok_or_else(|| D::Error::custom(format!("number cannot be represented as u64: {n}"))),
-        Some(Value::String(s)) => {
-            if s.trim().is_empty() {
+        Some(Value::Number(n)) => {
+            if n.as_i64() == Some(-1) {
                 return Ok(None);
             }
-            s.parse::<u64>()
+            n.as_u64().map(Some).ok_or_else(|| {
+                D::Error::custom(format!("number cannot be represented as u64: {n}"))
+            })
+        }
+        Some(Value::String(s)) => {
+            let trimmed = s.trim();
+            if trimmed.is_empty() || trimmed == "-1" {
+                return Ok(None);
+            }
+            trimmed
+                .parse::<u64>()
                 .map(Some)
                 .map_err(|e| D::Error::custom(format!("invalid integer string {s}: {e}")))
         }
