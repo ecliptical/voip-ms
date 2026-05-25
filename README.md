@@ -161,7 +161,23 @@ VOIP_MS_PASSWORD=your-api-password \
     cargo run --example get_balance
 ```
 
-Available examples: `get_balance`, `list_dids`, `send_sms`.
+```bash
+VOIP_MS_USERNAME=you@example.com \
+VOIP_MS_PASSWORD=your-api-password \
+    cargo run --example list_dids
+```
+
+```bash
+VOIP_MS_USERNAME=you@example.com \
+VOIP_MS_PASSWORD=your-api-password \
+VOIP_MS_FROM_DID=5551234567 \
+VOIP_MS_TO=5557654321 \
+VOIP_MS_MESSAGE="Hello from Rust" \
+    cargo run --example send_sms
+```
+
+`send_sms` requires a DID with SMS enabled. You can pass the message body either
+through `VOIP_MS_MESSAGE` or as the first argument after `--`.
 
 ### Calling methods this crate hasn't been regenerated for
 

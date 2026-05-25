@@ -8,32 +8,44 @@
 //!     cargo run --example get_balance
 //! ```
 
-use voip_ms::{Client, GetBalanceParams, GetBalanceResponse};
+use serde_json::Value;
+use voip_ms::{Client, GetBalanceParams};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (username, password) = credentials()?;
     let client = Client::new(username, password);
 
-    let response: GetBalanceResponse = client
-        .get_balance_typed(&GetBalanceParams {
+    let response = client
+        .get_balance(&GetBalanceParams {
             advanced: Some(true),
         })
         .await?;
 
-    println!(
-        "status: {}",
-        response.status.as_deref().unwrap_or("(missing)")
-    );
+    let status = response
+        .get("status")
+        .and_then(Value::as_str)
+        .unwrap_or("(missing)");
+    println!("status: {status}");
 
-    if let Some(balance) = response.balance.as_ref() {
-        println!(
-            "current balance: {}",
-            balance.current_balance.unwrap_or_default()
-        );
+    if let Some(balance) = response.get("balance").and_then(Value::as_object) {
+        let current_balance = balance
+            .get("current_balance")
+            .and_then(value_to_string)
+            .unwrap_or_else(|| "(missing)".to_string());
+        println!("current balance: {current_balance}");
     }
 
     Ok(())
+}
+
+fn value_to_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(text) => Some(text.clone()),
+        Value::Number(number) => Some(number.to_string()),
+        Value::Bool(boolean) => Some(boolean.to_string()),
+        _ => None,
+    }
 }
 
 fn credentials() -> Result<(String, String), &'static str> {

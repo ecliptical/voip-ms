@@ -25,10 +25,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         for did in &dids {
             println!(
-                "{}  {}  -> {}",
+                "{}  {}  -> {}  sms_available={}  sms_enabled={}",
                 did.did.as_deref().unwrap_or("(unknown DID)"),
                 did.description.as_deref().unwrap_or("(no description)"),
                 did.routing.as_deref().unwrap_or("(no routing)"),
+                did.sms_available
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "(unknown)".to_string()),
+                did.sms_enabled
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "(unknown)".to_string()),
             );
         }
     }
