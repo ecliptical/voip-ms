@@ -21,11 +21,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .await?;
 
-    println!("status: {}", response.status);
     println!(
-        "current balance: {}",
-        response.balance.current_balance.unwrap_or_default()
+        "status: {}",
+        response.status.as_deref().unwrap_or("(missing)")
     );
+
+    if let Some(balance) = response.balance.as_ref() {
+        println!(
+            "current balance: {}",
+            balance.current_balance.unwrap_or_default()
+        );
+    }
+
     Ok(())
 }
 

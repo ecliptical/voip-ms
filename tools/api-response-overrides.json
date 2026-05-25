@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle.",
+  "methods": {
+    "getDIDsInfo": {
+      "patches": [
+        { "path": "dids[].did",            "type": "string"  },
+        { "path": "dids[].cnam",           "type": "bool_01" },
+        { "path": "dids[].sms_available",  "type": "bool_01" },
+        { "path": "dids[].sms_enabled",    "type": "bool_01" }
+      ]
+    },
+    "setSIPURI": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } }
+        ]
+      }
+    },
+    "getLNPDetails": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status",                  "shape": { "kind": "scalar", "type": "string",  "sample": "success" } },
+          { "name": "id",                      "shape": { "kind": "scalar", "type": "integer", "sample": "0" } },
+          { "name": "numbers",                 "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "did",        "shape": { "kind": "scalar", "type": "string", "sample": "5551234567" } },
+            { "name": "rateCenter", "shape": { "kind": "scalar", "type": "string", "sample": "COVINA" } },
+            { "name": "state",      "shape": { "kind": "scalar", "type": "string", "sample": "CA" } }
+          ] } } },
+          { "name": "isPartial",               "shape": { "kind": "scalar", "type": "bool_01", "sample": "0" } },
+          { "name": "locationType",            "shape": { "kind": "scalar", "type": "integer", "sample": "0" } },
+          { "name": "isMobile",                "shape": { "kind": "scalar", "type": "bool_01", "sample": "0" } },
+          { "name": "mobileInfo",              "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "tfType",                  "shape": { "kind": "scalar", "type": "integer", "sample": "0" } },
+          { "name": "portType",                "shape": { "kind": "scalar", "type": "integer", "sample": "1" } },
+          { "name": "btn",                     "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "services",                "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "statementName",           "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "firstName",               "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "lastName",                "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "address1",                "shape": { "kind": "scalar", "type": "string",  "sample": "Covina 12 St." } },
+          { "name": "address2",                "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "city",                    "shape": { "kind": "scalar", "type": "string",  "sample": "CA" } },
+          { "name": "zip",                     "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "state",                   "shape": { "kind": "scalar", "type": "string",  "sample": "CA" } },
+          { "name": "country",                 "shape": { "kind": "scalar", "type": "string",  "sample": "US" } },
+          { "name": "providerName",            "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "providerAccount",         "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "customer_notes",          "shape": { "kind": "scalar", "type": "string",  "sample": "" } },
+          { "name": "notes",                   "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "note", "shape": { "kind": "scalar", "type": "string",   "sample": "" } },
+            { "name": "date", "shape": { "kind": "scalar", "type": "date",     "sample": "2019-02-25" } },
+            { "name": "time", "shape": { "kind": "scalar", "type": "string",   "sample": "15:05:11" } }
+          ] } } },
+          { "name": "post_status",             "shape": { "kind": "scalar", "type": "string",   "sample": "pending_approval" } },
+          { "name": "post_status_description", "shape": { "kind": "scalar", "type": "string",   "sample": "Pending Approval" } },
+          { "name": "date",                    "shape": { "kind": "scalar", "type": "datetime", "sample": "2019-02-25 15:05:11" } },
+          { "name": "focDate",                 "shape": { "kind": "scalar", "type": "string",   "sample": "" } },
+          { "name": "attachments",             "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "id",          "shape": { "kind": "scalar", "type": "string",  "sample": "0000" } },
+            { "name": "description", "shape": { "kind": "scalar", "type": "string",  "sample": "Signed Invoice" } },
+            { "name": "type",        "shape": { "kind": "scalar", "type": "string",  "sample": "pdf" } },
+            { "name": "bytes",       "shape": { "kind": "scalar", "type": "integer", "sample": "151600" } }
+          ] } } }
+        ]
+      }
+    }
+  }
+}

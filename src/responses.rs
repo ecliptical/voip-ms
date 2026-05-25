@@ -1,237 +1,23 @@
+//! Custom serde deserializers used by generated `*Response` structs.
+//!
+//! The voip.ms API frequently returns numbers, booleans, dates, and
+//! decimals as JSON strings (and occasionally as JSON numbers for the
+//! same field across different methods). These helpers normalize both
+//! forms — and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
+//! placeholders as `None` — into Rust types.
+//!
+//! These are wired up by `xtask` into `src/generated.rs`. Hand-written
+//! call sites can also reference them via the `crate::responses::*`
+//! module path.
+
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::de::Error as DeError;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use std::collections::BTreeMap;
 use std::str::FromStr;
 
-/// Generic status envelope with unknown payload fields preserved.
-#[derive(Debug, Clone, Deserialize)]
-pub struct StatusResponse {
-    pub status: String,
-    #[serde(flatten)]
-    pub extra: BTreeMap<String, Value>,
-}
-
-/// Partial typed shape for getBalance responses.
-///
-/// Unknown top-level and nested fields are preserved in extra maps.
-#[derive(Debug, Clone, Deserialize)]
-pub struct GetBalanceResponse {
-    pub status: String,
-    pub balance: Balance,
-    #[serde(flatten)]
-    pub extra: BTreeMap<String, Value>,
-}
-
-/// Partial typed shape for the balance object in getBalance responses.
-#[derive(Debug, Clone, Deserialize)]
-pub struct Balance {
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_decimal_from_string_or_number"
-    )]
-    pub current_balance: Option<Decimal>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_decimal_from_string_or_number"
-    )]
-    pub spent_total: Option<Decimal>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub calls_total: Option<u64>,
-    pub time_total: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_decimal_from_string_or_number"
-    )]
-    pub spent_today: Option<Decimal>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub calls_today: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub time_today: Option<u64>,
-    #[serde(flatten)]
-    pub extra: BTreeMap<String, Value>,
-}
-
-/// Partial typed shape for getDIDsInfo responses.
-///
-/// Unknown top-level and nested fields are preserved in extra maps.
-#[derive(Debug, Clone, Deserialize)]
-pub struct GetDidsInfoResponse {
-    #[serde(default)]
-    pub dids: Vec<DidInfo>,
-    pub status: String,
-    #[serde(flatten)]
-    pub extra: BTreeMap<String, Value>,
-}
-
-/// Partial typed shape for DID entries from getDIDsInfo.
-#[derive(Debug, Clone, Deserialize)]
-pub struct DidInfo {
-    pub did: Option<String>,
-    pub description: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub pop: Option<u64>,
-    pub routing: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub voicemail_threshold: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub dialtime: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub cnam: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub e911: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub record_calls: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub inbound_dialing_mode: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub billing_type: Option<u64>,
-    #[serde(default, deserialize_with = "deserialize_opt_date")]
-    pub next_billing: Option<NaiveDate>,
-    #[serde(default, deserialize_with = "deserialize_opt_datetime")]
-    pub order_date: Option<NaiveDateTime>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub reseller_account: Option<u64>,
-    #[serde(default, deserialize_with = "deserialize_opt_date")]
-    pub reseller_next_billing: Option<NaiveDate>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_decimal_from_string_or_number"
-    )]
-    pub reseller_monthly: Option<Decimal>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_decimal_from_string_or_number"
-    )]
-    pub reseller_minute: Option<Decimal>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_decimal_from_string_or_number"
-    )]
-    pub reseller_setup: Option<Decimal>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub sms_available: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub sms_enabled: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub transcribe: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub transcription_start_delay: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub transcription_sentiment: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub transcription_summary: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub transcription_redaction: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub mms_available: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub sms_email_enabled: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub sms_forward_enabled: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub sms_url_callback_enabled: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub sms_url_callback_retry: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub webhook_enabled: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_u64_from_string_or_number"
-    )]
-    pub dialmode: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub smpp_enabled: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub sms_sipaccount_enabled: Option<bool>,
-    #[serde(flatten)]
-    pub extra: BTreeMap<String, Value>,
-}
-
-fn deserialize_opt_decimal_from_string_or_number<'de, D>(
+pub(crate) fn deserialize_opt_decimal_from_string_or_number<'de, D>(
     deserializer: D,
 ) -> Result<Option<Decimal>, D::Error>
 where
@@ -243,16 +29,21 @@ where
         Some(Value::Number(n)) => Decimal::from_str(&n.to_string())
             .map(Some)
             .map_err(|e| D::Error::custom(format!("invalid decimal {n}: {e}"))),
-        Some(Value::String(s)) => Decimal::from_str(&s)
-            .map(Some)
-            .map_err(|e| D::Error::custom(format!("invalid decimal string {s}: {e}"))),
+        Some(Value::String(s)) => {
+            if s.trim().is_empty() {
+                return Ok(None);
+            }
+            Decimal::from_str(&s)
+                .map(Some)
+                .map_err(|e| D::Error::custom(format!("invalid decimal string {s}: {e}")))
+        }
         Some(other) => Err(D::Error::custom(format!(
             "expected string or number, got {other}"
         ))),
     }
 }
 
-fn deserialize_opt_u64_from_string_or_number<'de, D>(
+pub(crate) fn deserialize_opt_u64_from_string_or_number<'de, D>(
     deserializer: D,
 ) -> Result<Option<u64>, D::Error>
 where
@@ -279,7 +70,7 @@ where
     }
 }
 
-fn deserialize_opt_bool_from_string_number_or_yn<'de, D>(
+pub(crate) fn deserialize_opt_bool_from_string_number_or_yn<'de, D>(
     deserializer: D,
 ) -> Result<Option<bool>, D::Error>
 where
@@ -311,7 +102,7 @@ where
     }
 }
 
-fn deserialize_opt_date<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
+pub(crate) fn deserialize_opt_date<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -333,7 +124,9 @@ where
     }
 }
 
-fn deserialize_opt_datetime<'de, D>(deserializer: D) -> Result<Option<NaiveDateTime>, D::Error>
+pub(crate) fn deserialize_opt_datetime<'de, D>(
+    deserializer: D,
+) -> Result<Option<NaiveDateTime>, D::Error>
 where
     D: Deserializer<'de>,
 {

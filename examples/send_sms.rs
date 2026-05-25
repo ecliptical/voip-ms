@@ -12,7 +12,7 @@
 //!     cargo run --example send_sms -- "Hello from Rust"
 //! ```
 
-use voip_ms::{Client, SendSmsParams, StatusResponse};
+use voip_ms::{Client, SendSmsParams, SendSmsResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = Client::new(username, password);
 
-    let response: StatusResponse = client
+    let response: SendSmsResponse = client
         .send_sms_typed(&SendSmsParams {
             did: Some(from),
             dst: Some(to),
@@ -33,8 +33,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .await?;
 
-    println!("status: {}", response.status);
-    println!("extra fields: {}", response.extra.len());
+    println!(
+        "status: {}",
+        response.status.as_deref().unwrap_or("(missing)")
+    );
+
     Ok(())
 }
 

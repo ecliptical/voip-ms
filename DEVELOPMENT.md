@@ -4,22 +4,59 @@ This document covers contributor and maintainer workflows for voip-ms.
 
 ## Regenerating the API surface
 
-The 222 typed request structs and Client methods are generated from
-[tools/server.wsdl](tools/server.wsdl) by the xtask workspace member
-([xtask/src/main.rs](xtask/src/main.rs)).
+`src/generated.rs` is produced by the `xtask` workspace member from
+three committed inputs:
 
-To pick up new methods after voip.ms updates the WSDL:
+* `tools/server.wsdl` — method list, parameter names, parameter types.
+* `tools/api-responses.json` — inferred response shape per method,
+  extracted from the official HTML docs by `cargo xtask
+  extract-responses`.
+* `tools/api-response-overrides.json` — hand-edited corrections to the
+  above (per-path scalar retypes or full shape replacement).
+
+### Picking up new methods (WSDL change)
 
 ```bash
-# Download the latest WSDL from voip.ms:
 curl -o tools/server.wsdl https://voip.ms/api/v1/server.wsdl
-
-# Regenerate and verify:
 cargo xtask gen
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --all-targets
 ```
+
+### Refreshing response shapes (HTML docs change)
+
+voip.ms's `apidocs.php` page is Cloudflare-gated, so the HTML has to be
+saved manually:
+
+1. Log into the voip.ms customer portal in a browser.
+2. Open `https://voip.ms/m/apidocs.php` and save the rendered HTML to
+   `target/apidocs.html` (or any path under `target/`, which is
+   gitignored).
+3. Re-run the extractor and inspect the diff:
+
+   ```bash
+   cargo xtask extract-responses target/apidocs.html
+   git diff tools/api-responses.json
+   ```
+
+4. If a scalar landed with the wrong type (a phone-number `did` parsed
+   as `integer`, a `0/1` flag parsed as `integer`, …) or a method's
+   Output block failed to parse, edit
+   `tools/api-response-overrides.json` — never edit
+   `tools/api-responses.json` by hand.
+5. Regenerate and run the quality gate:
+
+   ```bash
+   cargo xtask gen
+   cargo fmt --all -- --check
+   cargo clippy --workspace --all-targets -- -D warnings
+   cargo test --workspace --all-targets
+   ```
+
+The overrides schema lives in
+[xtask/src/overrides.rs](xtask/src/overrides.rs) — see the module docs
+for the path grammar.
 
 ## Releasing
 

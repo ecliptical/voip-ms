@@ -1,4 +1,4 @@
-//! List the DIDs on the account with partial typed response structs.
+//! List the DIDs on the account with a generated typed response struct.
 //!
 //! Run with:
 //!
@@ -19,10 +19,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .get_dids_info_typed(&GetDidsInfoParams::default())
         .await?;
 
-    if response.dids.is_empty() {
+    let dids = response.dids.unwrap_or_default();
+    if dids.is_empty() {
         println!("No DIDs found.");
     } else {
-        for did in &response.dids {
+        for did in &dids {
             println!(
                 "{}  {}  -> {}",
                 did.did.as_deref().unwrap_or("(unknown DID)"),
@@ -31,6 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
     }
+
     Ok(())
 }
 

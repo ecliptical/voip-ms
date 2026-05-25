@@ -3,14 +3,14 @@
 //! # Quick start
 //!
 //! ```no_run
-//! use voip_ms::{Client, GetBalanceParams};
+//! use voip_ms::{Client, GetBalanceParams, GetBalanceResponse};
 //!
 //! # async fn run() -> voip_ms::Result<()> {
 //! let client = Client::new("you@example.com", "your-api-password");
-//! let balance = client
-//!     .get_balance(&GetBalanceParams { advanced: Some(true) })
+//! let balance: GetBalanceResponse = client
+//!     .get_balance_typed(&GetBalanceParams { advanced: Some(true) })
 //!     .await?;
-//! println!("{balance:#}");
+//! println!("{balance:#?}");
 //! # Ok(()) }
 //! ```
 //!
@@ -18,13 +18,12 @@
 //!
 //! Every voip.ms API method gets a typed `*Params` request struct (with all
 //! fields wrapped in [`Option`] and skipped when `None`) and a method on
-//! [`Client`]. The raw method returns [`serde_json::Value`] and each generated
-//! method also has a `*_typed` variant that deserializes into caller-provided
-//! types. The API's response shape varies by method and is not described by
-//! the WSDL, so raw-by-default remains the most reliable baseline while typed
-//! helpers reduce boilerplate. This crate also exposes starter partial typed
-//! response structs (for example [`GetBalanceResponse`] and
-//! [`GetDidsInfoResponse`]) that preserve unknown fields.
+//! [`Client`]. The raw method returns [`serde_json::Value`]; each generated
+//! method also has a `*_typed` variant generic over the response type. The
+//! crate ships a generated `*Response` struct per method (e.g.
+//! `GetBalanceResponse`, `GetDIDsInfoResponse`) inferred from the official
+//! API documentation's example output, so `*_typed` calls can deserialize
+//! into a known shape without callers writing their own structs.
 //!
 //! # Authentication
 //!
@@ -41,4 +40,3 @@ mod responses;
 pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL};
 pub use error::{ApiStatus, Error, Result};
 pub use generated::*;
-pub use responses::*;

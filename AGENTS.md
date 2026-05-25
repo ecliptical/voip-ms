@@ -37,30 +37,49 @@ and the WSDL snapshot are committed.
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
 `src/generated.rs` — the `@generated` banner reflects reality.
 
-### 2. Responses are raw-by-default, with typed helpers
+### 2. Responses are raw-by-default, with generated typed structs
 
 **Decision**: Every generated `Client` method exposes both:
 
 * a raw method that returns `Result<Value>`, and
-* a typed `*_typed` method that returns `Result<T>`.
+* a typed `*_typed` method that returns `Result<T>` where `T` is a
+  generated `*Response` struct (`GetBalanceResponse`,
+  `GetDIDsInfoResponse`, …) shipped in `src/generated.rs`.
 
-The crate also includes starter partial typed response structs in
-`src/responses.rs` (for example `GetBalanceResponse`,
-`GetDidsInfoResponse`, and `StatusResponse`).
+The `*Response` structs are produced by the same `xtask` run that
+generates `*Params`, from three inputs:
 
-**Rationale**: The WSDL declares a single generic `arrayResponse` type for
-all 222 operations — there is no machine-readable description of any
-response shape. Inventing 222 hand-curated response types would:
+1. `tools/server.wsdl` — method list and naming.
+2. `tools/api-responses.json` — shape inferred by parsing
+   `apidocs.php`'s `print_r`-style Output blocks (extractor is
+   `xtask/src/extract.rs`, invoked via `cargo xtask extract-responses`
+   over a saved HTML page).
+3. `tools/api-response-overrides.json` — hand-edited corrections,
+   either per-path scalar retypes or a full shape replacement for the
+   handful of methods the extractor can't parse (`setSIPURI` has no
+   Output block; `getLNPDetails` uses a non-standard PHP dialect).
 
-* Be a large, error-prone surface to maintain.
-* Become silently wrong whenever voip.ms tweaks a response.
-* Force two crate revisions (this one and the user's) for every shape
-  change.
+All response fields are `Option<T>` with `#[serde(default)]` so that
+voip.ms adding, removing, or omitting a field never breaks
+deserialization. Numbers, booleans (`0/1`, `Y/N`), dates, and decimals
+arrive as JSON strings from the API; the deserializers in
+`src/responses.rs` (`deserialize_opt_*`) normalize both string and
+native-typed forms and treat `"0000-00-00"` placeholders as `None`.
 
-Keeping the raw `Value` surface preserves compatibility with voip.ms response
-drift and unknown fields. Typed helpers (`*_typed`, `Client::call_typed`, and
-`Client::call_typed_at`) reduce boilerplate when callers want strong typing,
-without requiring this crate to hard-code full per-method schemas.
+**Rationale**: The WSDL declares a single generic `arrayResponse` type
+for all 222 operations — there is no machine-readable response schema.
+The HTML docs do have sample outputs in a parseable `print_r` form,
+which is enough to infer shapes for ~99 % of methods automatically; the
+overrides file covers the rest without polluting the generator. Raw
+`Value` methods remain available for callers who want full forward
+compatibility with voip.ms drift on unknown fields.
+
+**How to apply**: When voip.ms updates the docs, save a fresh copy of
+`apidocs.php` HTML under `target/` (gitignored), run `cargo xtask
+extract-responses <path>` to refresh `tools/api-responses.json`, review
+the diff, and only edit `tools/api-response-overrides.json` if a scalar
+is mis-typed or a method's Output block can't be parsed. Then
+`cargo xtask gen` to refresh `src/generated.rs`.
 
 ### 3. All request fields are `Option<T>`
 
@@ -186,26 +205,35 @@ voip-ms/
 │   ├── dependabot.yml   # Weekly cargo + actions updates
 │   └── workflows/
 │       ├── rust-ci.yaml              # fmt, clippy, test, coverage
-│       └── dependabot-automerge.yaml # auto-merge patch/minor
+│       ├── dependabot-automerge.yaml # auto-merge safe Cargo updates
+│       └── release.yaml              # tag-validated publish + GitHub release
 ├── src/
 │   ├── lib.rs           # Module surface; re-exports generated.rs
 │   ├── client.rs        # Client, ClientBuilder, call()
 │   ├── error.rs         # Error, ApiStatus, Result
-│   ├── generated.rs     # 222 *Params structs + Client methods (generated)
-│   └── responses.rs     # Starter partial typed response structs
+│   ├── generated.rs     # 222 *Params + Client methods + *Response (generated)
+│   └── responses.rs     # Custom serde deserializers for generated.rs
 ├── tests/
 │   └── client.rs        # wiremock-based integration tests
 ├── tools/
-│   └── server.wsdl      # Committed WSDL snapshot
+│   ├── server.wsdl                   # Committed WSDL snapshot
+│   ├── api-responses.json            # Extracted response shapes (generated)
+│   └── api-response-overrides.json   # Hand-edited shape corrections
 └── xtask/
     ├── Cargo.toml
-    └── src/main.rs      # WSDL → src/generated.rs (run via `cargo xtask gen`)
+    └── src/
+        ├── main.rs              # WSDL+responses+overrides → src/generated.rs
+        ├── extract.rs           # apidocs HTML → tools/api-responses.json
+        ├── overrides.rs         # Overrides schema + apply logic
+        └── response_codegen.rs  # Shape → *Response struct emitter
 ```
 
 ## Dependencies
 
-* **reqwest 0.13** (`json`, no default features): HTTP client + JSON
+* **chrono 0.4**: Date/time helpers for starter typed response structs.
+* **reqwest 0.13** (`json`, `query`, no default features): HTTP client + JSON
   deserialization. TLS backend is feature-gated.
+* **rust_decimal 1**: Decimal parsing for money-like response fields.
 * **serde 1** + **serde_json 1**: Request serialization, response
   deserialization.
 * **thiserror 2**: Error derive.
@@ -243,12 +271,12 @@ turned out load-bearing:
    typed coverage because it's discoverable from `Client::` autocomplete.
    The WSDL having 222 methods (not the ~80 estimated) made codegen
    the only viable route.
-2. **Response shape**: Full hand-curated per-method response typing was
-  rejected because the WSDL doesn't carry that information and maintaining
-  ~222 precise envelopes would go stale quickly. The current compromise is
-  raw `Value` methods plus typed helpers (`*_typed`, `call_typed`,
-  `call_typed_at`) and a small set of starter partial typed response
-  structs for common methods.
+2. **Response shape**: Per-method typed responses are generated from
+   the docs' sample-output blocks plus a small hand-edited overrides
+   file. The raw `Value` methods stay available for callers that want
+   forward compatibility with voip.ms drift on unknown fields, while
+   `*_typed` calls deserialize into a known struct without callers
+   writing their own.
 3. **Optionality**: All-`Option` was chosen over WSDL's nominal
    required-ness because the API itself is more permissive than the WSDL
    and `Default + ..Default::default()` is the idiomatic Rust experience

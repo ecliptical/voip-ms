@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-05-25
+
+### Changed
+
+- Replaced the small set of hand-written starter response types
+  (`StatusResponse`, `GetBalanceResponse`, `GetDidsInfoResponse`) with a
+  full generated `*Response` struct per method (222 in total). Shapes are
+  inferred from the official voip.ms HTML docs by a new
+  `cargo xtask extract-responses` extractor, with hand-edited corrections
+  in `tools/api-response-overrides.json`. All response fields are
+  `Option<T>` and tolerate string-or-number, `0/1`, `Y/N`, and
+  date/datetime placeholder forms via custom deserializers in
+  `src/responses.rs`.
+- `src/responses.rs` no longer re-exports any types; it now contains only
+  the shared `deserialize_opt_*` helpers used by `src/generated.rs`.
+- Examples updated to consume the generated `*Response` structs.
+
+### Added
+
+- `cargo xtask extract-responses <html>` for refreshing
+  `tools/api-responses.json` from a saved copy of `apidocs.php`.
+- `tools/api-response-overrides.json` schema (see `xtask/src/overrides.rs`)
+  supporting per-path scalar retypes and full shape replacement.
+- `DEVELOPMENT.md` documents the HTML-refresh workflow.
+
 ## [0.1.1] - 2026-05-22
 
 ### Changed
@@ -49,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.0
