@@ -15,6 +15,9 @@
 //! - LIVE_VERIFY_ENABLE_SMS_SETTINGS_CHECK=true|false (default: false)
 //! - LIVE_VERIFY_ENABLE_SUBACCOUNT_CHECK=true|false (default: false)
 //! - LIVE_VERIFY_ENABLE_SMS_SEND_CHECK=true|false (default: false)
+//! - LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true|false (default: false)
+//! - LIVE_VERIFY_DIDS_CAN_PROVINCE=ON
+//! - LIVE_VERIFY_DIDS_USA_STATE=NY
 //! - VOIP_MS_TEST_DID=5551234567
 //! - VOIP_MS_SMS_DST=5557654321
 //! - VOIP_MS_SMS_MESSAGE=Live verification ping
@@ -24,8 +27,15 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 use voip_ms::{
     Client, CreateSubAccountParams, CreateSubAccountResponse, DelSubAccountParams,
-    GetBalanceParams, GetDidsInfoParams, GetDidsInfoResponse, GetServersInfoParams, GetSmsParams,
-    GetSubAccountsParams, SendSmsParams, SetSmsParams, SetSmsResponse,
+    GetAllowedCodecsParams, GetAllowedCodecsResponse, GetAuthTypesParams, GetAuthTypesResponse,
+    GetBalanceParams, GetCountriesParams, GetCountriesResponse, GetDeviceTypesParams,
+    GetDeviceTypesResponse, GetDidCountriesParams, GetDidCountriesResponse, GetDidsCanParams,
+    GetDidsCanResponse, GetDidsInfoParams, GetDidsInfoResponse, GetDidsUsaParams,
+    GetDidsUsaResponse, GetDtmfModesParams, GetDtmfModesResponse, GetLanguagesParams,
+    GetLanguagesResponse, GetLocalesParams, GetLocalesResponse, GetProtocolsParams,
+    GetProtocolsResponse, GetServersInfoParams, GetServersInfoResponse, GetSmsParams,
+    GetSmsResponse, GetStatesParams, GetStatesResponse, GetSubAccountsParams,
+    GetSubAccountsResponse, SendSmsParams, SetSmsParams, SetSmsResponse,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -61,6 +71,9 @@ struct Config {
     enable_sms_settings_check: bool,
     enable_subaccount_check: bool,
     enable_sms_send_check: bool,
+    enable_location_typed_checks: bool,
+    dids_can_province: Option<String>,
+    dids_usa_state: Option<String>,
     test_did: Option<String>,
     sms_dst: Option<String>,
     sms_message: Option<String>,
@@ -83,6 +96,12 @@ impl Config {
             )?,
             enable_subaccount_check: parse_bool_env("LIVE_VERIFY_ENABLE_SUBACCOUNT_CHECK", false)?,
             enable_sms_send_check: parse_bool_env("LIVE_VERIFY_ENABLE_SMS_SEND_CHECK", false)?,
+            enable_location_typed_checks: parse_bool_env(
+                "LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS",
+                false,
+            )?,
+            dids_can_province: env::var("LIVE_VERIFY_DIDS_CAN_PROVINCE").ok(),
+            dids_usa_state: env::var("LIVE_VERIFY_DIDS_USA_STATE").ok(),
             test_did: env::var("VOIP_MS_TEST_DID").ok(),
             sms_dst: env::var("VOIP_MS_SMS_DST").ok(),
             sms_message: env::var("VOIP_MS_SMS_MESSAGE").ok(),
@@ -97,7 +116,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let client = Client::new(config.username.clone(), config.password.clone());
 
-    run_smoke_checks(&client).await?;
+    run_smoke_checks(&client, &config).await?;
 
     if config.mode == Mode::Extended {
         run_extended_checks(&client, &config).await?;
@@ -107,7 +126,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn run_smoke_checks(client: &Client) -> Result<(), Box<dyn Error>> {
+async fn run_smoke_checks(client: &Client, config: &Config) -> Result<(), Box<dyn Error>> {
     println!("[check] get_balance");
     client
         .get_balance(&GetBalanceParams {
@@ -116,9 +135,13 @@ async fn run_smoke_checks(client: &Client) -> Result<(), Box<dyn Error>> {
         .await?;
 
     println!("[check] get_servers_info");
-    client
-        .get_servers_info(&GetServersInfoParams::default())
+    let servers: GetServersInfoResponse = client
+        .get_servers_info_typed(&GetServersInfoParams::default())
         .await?;
+    println!(
+        "[info] server count: {}",
+        servers.servers.as_ref().map_or(0, std::vec::Vec::len)
+    );
 
     println!("[check] get_dids_info_typed");
     let dids: GetDidsInfoResponse = client
@@ -129,19 +152,110 @@ async fn run_smoke_checks(client: &Client) -> Result<(), Box<dyn Error>> {
         dids.dids.as_ref().map_or(0, std::vec::Vec::len)
     );
 
-    println!("[check] get_sub_accounts");
-    let sub_accounts = client
-        .get_sub_accounts(&GetSubAccountsParams::default())
+    println!("[check] get_sub_accounts_typed");
+    let sub_accounts: GetSubAccountsResponse = client
+        .get_sub_accounts_typed(&GetSubAccountsParams::default())
         .await?;
-    let sub_account_count = sub_accounts
-        .get("accounts")
-        .and_then(serde_json::Value::as_array)
-        .map_or(0, std::vec::Vec::len);
-    println!("[info] sub-account count: {}", sub_account_count);
+    println!(
+        "[info] sub-account count: {}",
+        sub_accounts.accounts.as_ref().map_or(0, std::vec::Vec::len)
+    );
 
-    println!("[check] get_sms");
-    client.get_sms(&GetSmsParams::default()).await?;
+    println!("[check] get_sms_typed");
+    let sms: GetSmsResponse = client.get_sms_typed(&GetSmsParams::default()).await?;
+    println!(
+        "[info] sms count: {}",
+        sms.sms.as_ref().map_or(0, std::vec::Vec::len)
+    );
 
+    run_typed_reference_checks(client).await?;
+
+    if config.enable_location_typed_checks {
+        run_typed_location_checks(client, config).await?;
+    } else {
+        println!("[skip] location-dependent typed checks disabled");
+    }
+
+    Ok(())
+}
+
+async fn run_typed_reference_checks(client: &Client) -> Result<(), Box<dyn Error>> {
+    println!("[check] typed reference endpoints");
+
+    println!("[check] get_allowed_codecs_typed");
+    let _: GetAllowedCodecsResponse = client
+        .get_allowed_codecs_typed(&GetAllowedCodecsParams::default())
+        .await?;
+    println!("[check] get_auth_types_typed");
+    let _: GetAuthTypesResponse = client
+        .get_auth_types_typed(&GetAuthTypesParams::default())
+        .await?;
+    println!("[check] get_countries_typed");
+    let _: GetCountriesResponse = client
+        .get_countries_typed(&GetCountriesParams::default())
+        .await?;
+    println!("[check] get_did_countries_typed");
+    let _: GetDidCountriesResponse = client
+        .get_did_countries_typed(&GetDidCountriesParams {
+            r#type: Some("geographic".to_string()),
+            ..Default::default()
+        })
+        .await?;
+    println!("[check] get_device_types_typed");
+    let _: GetDeviceTypesResponse = client
+        .get_device_types_typed(&GetDeviceTypesParams::default())
+        .await?;
+    println!("[check] get_dtmf_modes_typed");
+    let _: GetDtmfModesResponse = client
+        .get_dtmf_modes_typed(&GetDtmfModesParams::default())
+        .await?;
+    println!("[check] get_languages_typed");
+    let _: GetLanguagesResponse = client
+        .get_languages_typed(&GetLanguagesParams::default())
+        .await?;
+    println!("[check] get_locales_typed");
+    let _: GetLocalesResponse = client
+        .get_locales_typed(&GetLocalesParams::default())
+        .await?;
+    println!("[check] get_protocols_typed");
+    let _: GetProtocolsResponse = client
+        .get_protocols_typed(&GetProtocolsParams::default())
+        .await?;
+    println!("[check] get_states_typed");
+    let _: GetStatesResponse = client.get_states_typed(&GetStatesParams::default()).await?;
+
+    println!("[info] typed reference endpoint sweep succeeded");
+    Ok(())
+}
+
+async fn run_typed_location_checks(client: &Client, config: &Config) -> Result<(), Box<dyn Error>> {
+    println!("[check] typed location-dependent endpoints");
+
+    let dids_can_province = config
+        .dids_can_province
+        .as_deref()
+        .ok_or("LIVE_VERIFY_DIDS_CAN_PROVINCE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true")?;
+    let dids_usa_state = config.dids_usa_state.as_deref().ok_or(
+        "LIVE_VERIFY_DIDS_USA_STATE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true",
+    )?;
+
+    println!("[check] get_dids_can_typed");
+    let _: GetDidsCanResponse = client
+        .get_dids_can_typed(&GetDidsCanParams {
+            province: Some(dids_can_province.to_string()),
+            ..Default::default()
+        })
+        .await?;
+
+    println!("[check] get_dids_usa_typed");
+    let _: GetDidsUsaResponse = client
+        .get_dids_usa_typed(&GetDidsUsaParams {
+            state: Some(dids_usa_state.to_string()),
+            ..Default::default()
+        })
+        .await?;
+
+    println!("[info] location-dependent typed checks succeeded");
     Ok(())
 }
 
@@ -153,6 +267,7 @@ async fn run_extended_checks(client: &Client, config: &Config) -> Result<(), Box
                     .into(),
             );
         }
+
         let did = config
             .test_did
             .as_deref()
@@ -181,6 +296,7 @@ async fn run_extended_checks(client: &Client, config: &Config) -> Result<(), Box
                     .into(),
             );
         }
+
         let did = config
             .test_did
             .as_deref()

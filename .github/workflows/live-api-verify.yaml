@@ -36,6 +36,11 @@ on:
         required: true
         default: false
         type: boolean
+      enable_location_typed_checks:
+        description: Run location-dependent typed checks (getDIDsCAN/getDIDsUSA)
+        required: true
+        default: false
+        type: boolean
       voip_ms_username:
         description: Optional override for voip.ms API username (account email)
         required: false
@@ -58,6 +63,16 @@ on:
         type: string
       voip_ms_sms_message:
         description: Optional override SMS body for costly sendSMS check
+        required: false
+        default: ""
+        type: string
+      dids_can_province:
+        description: Province for getDIDsCAN when location checks are enabled
+        required: false
+        default: ""
+        type: string
+      dids_usa_state:
+        description: State for getDIDsUSA when location checks are enabled
         required: false
         default: ""
         type: string
@@ -84,6 +99,9 @@ jobs:
       LIVE_VERIFY_ENABLE_SMS_SETTINGS_CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_sms_settings_check || false }}
       LIVE_VERIFY_ENABLE_SUBACCOUNT_CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_subaccount_check || false }}
       LIVE_VERIFY_ENABLE_SMS_SEND_CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_sms_send_check || false }}
+      LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_location_typed_checks || false }}
+      LIVE_VERIFY_DIDS_CAN_PROVINCE: ${{ github.event_name == 'workflow_dispatch' && inputs.dids_can_province || '' }}
+      LIVE_VERIFY_DIDS_USA_STATE: ${{ github.event_name == 'workflow_dispatch' && inputs.dids_usa_state || '' }}
     steps:
       - name: Check out source code
         uses: actions/checkout@v6
