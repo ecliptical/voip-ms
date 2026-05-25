@@ -90,6 +90,52 @@ using CRATES_IO_TOKEN, and creates a GitHub release.
 3. Live calls to voip.ms are intentionally excluded from CI because they
 	 require real credentials and account state.
 
+## Live API verification workflow
+
+The repository includes a dedicated workflow for optional live verification:
+`.github/workflows/live-api-verify.yaml`.
+
+Use this workflow for release-time checks or on-demand execution via
+`workflow_dispatch`. It is intentionally separate from `rust-ci.yaml` so pull
+requests remain deterministic and credential-free.
+
+### Required account configuration
+
+1. Create a dedicated voip.ms sandbox account (or isolated reseller test scope).
+2. Enable API access and generate API credentials.
+3. Allow-list the GitHub runner egress IP(s) on the voip.ms API page.
+4. For SMS checks, provide at least one DID with SMS available and enabled.
+5. For sub-account lifecycle checks, ensure the sandbox has permission to
+   create and delete sub-accounts.
+
+### Required GitHub Actions secrets
+
+* `VOIP_MS_USERNAME`
+* `VOIP_MS_PASSWORD`
+
+Optional fixture secrets used by opt-in checks:
+
+* `VOIP_MS_TEST_DID`
+* `VOIP_MS_SMS_DST`
+* `VOIP_MS_SMS_MESSAGE`
+
+### Safety model
+
+The live harness defaults to read-only smoke checks.
+
+State-changing checks require both:
+
+* `LIVE_VERIFY_MODE=extended`
+* `LIVE_VERIFY_ALLOW_STATE_CHANGES=true`
+
+Potentially costly checks (for example sending SMS) require both:
+
+* `LIVE_VERIFY_ENABLE_SMS_SEND_CHECK=true`
+* `LIVE_VERIFY_ALLOW_COSTLY=true`
+
+This dual-gate model prevents accidental financial transactions and keeps
+release verification safe by default.
+
 ## CI/CD workflows
 
 * `rust-ci.yaml` runs on pull requests and pushes to `main`:
@@ -105,3 +151,7 @@ using CRATES_IO_TOKEN, and creates a GitHub release.
 	* runs fmt, clippy, tests, and publish dry-run checks
 	* publishes to crates.io with `CRATES_IO_TOKEN`
 	* creates a GitHub release from the tag
+* `live-api-verify.yaml` supports optional live verification:
+	* `workflow_dispatch` for operator-invokable smoke or extended checks
+	* `v*` tag trigger for release-time smoke checks
+	* explicit safety gates for state-changing or costly operations

@@ -1,0 +1,79 @@
+name: Live API Verify
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Verification depth
+        required: true
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - extended
+      allow_state_changes:
+        description: Allow state-changing API checks
+        required: true
+        default: false
+        type: boolean
+      allow_costly:
+        description: Allow potentially costly API checks (for example sendSMS)
+        required: true
+        default: false
+        type: boolean
+      enable_sms_settings_check:
+        description: Run idempotent setSMS check on VOIP_MS_TEST_DID
+        required: true
+        default: false
+        type: boolean
+      enable_subaccount_check:
+        description: Run createSubAccount + delSubAccount lifecycle check
+        required: true
+        default: false
+        type: boolean
+      enable_sms_send_check:
+        description: Run sendSMS using VOIP_MS_TEST_DID -> VOIP_MS_SMS_DST
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  live-verify:
+    name: Live API verification
+    runs-on: ubuntu-latest
+    env:
+      VOIP_MS_USERNAME: ${{ secrets.VOIP_MS_USERNAME }}
+      VOIP_MS_PASSWORD: ${{ secrets.VOIP_MS_PASSWORD }}
+      VOIP_MS_TEST_DID: ${{ secrets.VOIP_MS_TEST_DID }}
+      VOIP_MS_SMS_DST: ${{ secrets.VOIP_MS_SMS_DST }}
+      VOIP_MS_SMS_MESSAGE: ${{ secrets.VOIP_MS_SMS_MESSAGE }}
+      LIVE_VERIFY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'smoke' }}
+      LIVE_VERIFY_ALLOW_STATE_CHANGES: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_state_changes || false }}
+      LIVE_VERIFY_ALLOW_COSTLY: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_costly || false }}
+      LIVE_VERIFY_ENABLE_SMS_SETTINGS_CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_sms_settings_check || false }}
+      LIVE_VERIFY_ENABLE_SUBACCOUNT_CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_subaccount_check || false }}
+      LIVE_VERIFY_ENABLE_SMS_SEND_CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_sms_send_check || false }}
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Validate required credentials are configured
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${VOIP_MS_USERNAME:-}" || -z "${VOIP_MS_PASSWORD:-}" ]]; then
+            echo "Missing VOIP_MS_USERNAME and/or VOIP_MS_PASSWORD GitHub Action secrets"
+            exit 1
+          fi
+
+      - name: Run live verification harness
+        run: cargo run --example live_api_verify
