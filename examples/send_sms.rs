@@ -13,11 +13,16 @@
 //!     cargo run --example send_sms -- "Hello from Rust"
 //! ```
 
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use voip_ms::{Client, GetDidsInfoParams, GetDidsInfoResponse, SendSmsParams, SendSmsResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if dry_run_enabled("VOIP_MS_DRY_RUN") {
+        println!("dry run enabled via VOIP_MS_DRY_RUN=true; skipping API calls and SMS send");
+        return Ok(());
+    }
+
     let (username, password) = credentials()?;
     let from = std::env::var("VOIP_MS_FROM_DID").map_err(|_| "VOIP_MS_FROM_DID is not set")?;
     let to = std::env::var("VOIP_MS_TO").map_err(|_| "VOIP_MS_TO is not set")?;
@@ -26,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new(username, password);
 
     let dids_response: GetDidsInfoResponse = client
-        .get_dids_info_typed(&GetDidsInfoParams {
+        .get_dids_info(&GetDidsInfoParams {
             did: Some(from.clone()),
             ..Default::default()
         })
@@ -36,31 +41,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_default()
         .into_iter()
         .find(|did| did.did.as_deref() == Some(from.as_str()))
-        .ok_or_else(|| {
-            Error::new(
-                ErrorKind::Other,
-                format!("DID {from} was not found on this account"),
-            )
-        })?;
+        .ok_or_else(|| Error::other(format!("DID {from} was not found on this account")))?;
 
     if !did.sms_available.unwrap_or(false) {
-        return Err(Error::new(
-            ErrorKind::Other,
-            format!("DID {from} does not have SMS available"),
-        )
-        .into());
+        return Err(Error::other(format!("DID {from} does not have SMS available")).into());
     }
 
     if !did.sms_enabled.unwrap_or(false) {
-        return Err(Error::new(
-            ErrorKind::Other,
-            format!("SMS is not enabled for DID {from}; enable SMS in voip.ms before running this example"),
-        )
+        return Err(Error::other(format!(
+            "SMS is not enabled for DID {from}; enable SMS in voip.ms before running this example"
+        ))
         .into());
     }
 
     let response: SendSmsResponse = client
-        .send_sms_typed(&SendSmsParams {
+        .send_sms(&SendSmsParams {
             did: Some(from),
             dst: Some(to),
             message: Some(message),
@@ -82,13 +77,25 @@ fn credentials() -> Result<(String, String), &'static str> {
 }
 
 fn message() -> Result<String, &'static str> {
-    if let Ok(message) = std::env::var("VOIP_MS_MESSAGE") {
-        if !message.trim().is_empty() {
-            return Ok(message);
-        }
+    if let Ok(message) = std::env::var("VOIP_MS_MESSAGE")
+        && !message.trim().is_empty()
+    {
+        return Ok(message);
     }
 
     std::env::args()
         .nth(1)
         .ok_or("set VOIP_MS_MESSAGE or pass the message body as the first argument")
+}
+
+fn dry_run_enabled(name: &str) -> bool {
+    std::env::var(name)
+        .ok()
+        .map(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "y" | "on"
+            )
+        })
+        .unwrap_or(false)
 }

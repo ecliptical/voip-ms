@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-25
+
+### Changed
+
+- Switched generated method naming so typed responses are now the default:
+  unsuffixed methods return generated `*Response` structs, and raw JSON
+  access moved to explicit `*_raw` methods.
+- Updated examples and docs to match the typed-by-default API.
+- Improved typed response deserialization robustness for string-like fields
+  that voip.ms sometimes emits as numbers or booleans.
+
+### Added
+
+- Dry-run support for runnable examples:
+  `VOIP_MS_DRY_RUN=true` for `get_balance`, `list_dids`, and `send_sms`;
+  `LIVE_VERIFY_DRY_RUN=true` for `live_api_verify` smoke/extended flows.
+
 ## [0.1.2] - 2026-05-25
 
 ### Changed
@@ -74,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.3
 [0.1.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.0

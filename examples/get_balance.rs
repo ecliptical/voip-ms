@@ -8,11 +8,15 @@
 //!     cargo run --example get_balance
 //! ```
 
-use serde_json::Value;
 use voip_ms::{Client, GetBalanceParams};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if dry_run_enabled("VOIP_MS_DRY_RUN") {
+        println!("dry run enabled via VOIP_MS_DRY_RUN=true; skipping API call");
+        return Ok(());
+    }
+
     let (username, password) = credentials()?;
     let client = Client::new(username, password);
 
@@ -22,16 +26,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .await?;
 
-    let status = response
-        .get("status")
-        .and_then(Value::as_str)
-        .unwrap_or("(missing)");
+    let status = response.status.as_deref().unwrap_or("(missing)");
     println!("status: {status}");
 
-    if let Some(balance) = response.get("balance").and_then(Value::as_object) {
+    if let Some(balance) = response.balance.as_ref() {
         let current_balance = balance
-            .get("current_balance")
-            .and_then(value_to_string)
+            .current_balance
+            .as_ref()
+            .map(std::string::ToString::to_string)
             .unwrap_or_else(|| "(missing)".to_string());
         println!("current balance: {current_balance}");
     }
@@ -39,17 +41,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn value_to_string(value: &Value) -> Option<String> {
-    match value {
-        Value::String(text) => Some(text.clone()),
-        Value::Number(number) => Some(number.to_string()),
-        Value::Bool(boolean) => Some(boolean.to_string()),
-        _ => None,
-    }
-}
-
 fn credentials() -> Result<(String, String), &'static str> {
     let username = std::env::var("VOIP_MS_USERNAME").map_err(|_| "VOIP_MS_USERNAME is not set")?;
     let password = std::env::var("VOIP_MS_PASSWORD").map_err(|_| "VOIP_MS_PASSWORD is not set")?;
     Ok((username, password))
+}
+
+fn dry_run_enabled(name: &str) -> bool {
+    std::env::var(name)
+        .ok()
+        .map(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "y" | "on"
+            )
+        })
+        .unwrap_or(false)
 }

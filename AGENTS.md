@@ -37,14 +37,13 @@ and the WSDL snapshot are committed.
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
 `src/generated.rs` — the `@generated` banner reflects reality.
 
-### 2. Responses are raw-by-default, with generated typed structs
+### 2. Responses are typed-by-default, with raw escape hatches
 
 **Decision**: Every generated `Client` method exposes both:
 
-* a raw method that returns `Result<Value>`, and
-* a typed `*_typed` method that returns `Result<T>` where `T` is a
-  generated `*Response` struct (`GetBalanceResponse`,
-  `GetDIDsInfoResponse`, …) shipped in `src/generated.rs`.
+* an unsuffixed typed method that returns a generated `*Response`
+  struct (`GetBalanceResponse`, `GetDIDsInfoResponse`, …), and
+* a `*_raw` method that returns `Result<Value>`.
 
 The `*Response` structs are produced by the same `xtask` run that
 generates `*Params`, from three inputs:
@@ -70,8 +69,8 @@ native-typed forms and treat `"0000-00-00"` placeholders as `None`.
 for all 222 operations — there is no machine-readable response schema.
 The HTML docs do have sample outputs in a parseable `print_r` form,
 which is enough to infer shapes for ~99 % of methods automatically; the
-overrides file covers the rest without polluting the generator. Raw
-`Value` methods remain available for callers who want full forward
+overrides file covers the rest without polluting the generator.
+`*_raw` methods remain available for callers who want full forward
 compatibility with voip.ms drift on unknown fields.
 
 **How to apply**: When voip.ms updates the docs, save a fresh copy of
@@ -164,8 +163,8 @@ The `Client::call` method is the single point that hits the network. All
 generated methods are thin wrappers:
 
 ```rust
-pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<Value> {
-    self.call("getBalance", params).await
+pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {
+  self.call_typed("getBalance", params).await
 }
 ```
 
@@ -273,10 +272,10 @@ turned out load-bearing:
    the only viable route.
 2. **Response shape**: Per-method typed responses are generated from
    the docs' sample-output blocks plus a small hand-edited overrides
-   file. The raw `Value` methods stay available for callers that want
-   forward compatibility with voip.ms drift on unknown fields, while
-   `*_typed` calls deserialize into a known struct without callers
-   writing their own.
+  file. The `*_raw` methods stay available for callers that want
+  forward compatibility with voip.ms drift on unknown fields, while
+  unsuffixed calls deserialize into a known struct without callers
+  writing their own.
 3. **Optionality**: All-`Option` was chosen over WSDL's nominal
    required-ness because the API itself is more permissive than the WSDL
    and `Default + ..Default::default()` is the idiomatic Rust experience

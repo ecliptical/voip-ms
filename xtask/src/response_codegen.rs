@@ -47,9 +47,10 @@ pub fn emit_response_structs(
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
-            "\n/// Response body for [`Client::{}_typed`] (wire method `{op}`).\n",
+            "\n/// Response body for [`Client::{}`] (wire method `{op}`).\n",
             crate::camel_to_snake(op, &acronyms),
         ));
+
         out.push_str(&emitter.into_text());
     }
 
@@ -89,8 +90,10 @@ impl Emitter {
                          pub items: Vec<{inner_ty}>,\n\
                      }}\n",
                 );
+
                 self.structs.push(body);
             }
+
             Shape::Scalar { .. } => {
                 let inner_ty = self.scalar_rust_type(shape);
                 let deser = scalar_deserializer(shape);
@@ -101,6 +104,7 @@ impl Emitter {
                          {attrs}    pub value: Option<{inner_ty}>,\n\
                      }}\n",
                 );
+
                 self.structs.push(body);
             }
         }
@@ -136,10 +140,12 @@ impl Emitter {
                 if let Some(d) = deser {
                     body.push_str(&format!(", deserialize_with = \"{d}\""));
                 }
+
                 body.push_str(&format!(", rename = \"{fname}\")]\n"));
                 body.push_str(&format!("    pub {rust_ident}: Option<{rust_ty}>,\n"));
             }
         }
+
         body.push_str("}\n");
         self.structs.push(body);
     }
@@ -155,6 +161,7 @@ impl Emitter {
                 self.emit_struct(&child, shape);
                 child
             }
+
             Shape::List(inner) => {
                 let elem_ty = match &**inner {
                     Shape::Scalar { .. } => self.scalar_rust_type(inner),
@@ -169,6 +176,7 @@ impl Emitter {
                         child
                     }
                 };
+
                 format!("Vec<{elem_ty}>")
             }
         }
@@ -211,7 +219,9 @@ fn scalar_deserializer(shape: &Shape) -> Option<&'static str> {
         }
         ScalarTy::Date => Some("crate::responses::deserialize_opt_date"),
         ScalarTy::DateTime => Some("crate::responses::deserialize_opt_datetime"),
-        ScalarTy::String | ScalarTy::Empty => None,
+        ScalarTy::String | ScalarTy::Empty => {
+            Some("crate::responses::deserialize_opt_string_from_string_number_or_bool")
+        }
     }
 }
 
@@ -232,9 +242,11 @@ fn singularize(s: &str) -> String {
     if let Some(stem) = s.strip_suffix("ies") {
         return format!("{stem}y");
     }
+
     if let Some(stem) = s.strip_suffix("ses") {
         return format!("{stem}s");
     }
+
     if let Some(stem) = s.strip_suffix('s')
         && !stem.is_empty()
     {
@@ -293,6 +305,7 @@ fn rust_field_ident(name: &str) -> String {
             | "const"
             | "crate"
     );
+
     if safe {
         return format!("r#{name}");
     }
@@ -321,9 +334,11 @@ fn is_rust_identifier(s: &str) -> bool {
     let Some(first) = chars.next() else {
         return false;
     };
+
     if !(first == '_' || first.is_ascii_alphabetic()) {
         return false;
     }
+
     chars.all(is_ident_char)
 }
 

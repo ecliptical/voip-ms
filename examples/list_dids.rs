@@ -12,12 +12,15 @@ use voip_ms::{Client, GetDidsInfoParams, GetDidsInfoResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if dry_run_enabled("VOIP_MS_DRY_RUN") {
+        println!("dry run enabled via VOIP_MS_DRY_RUN=true; skipping API call");
+        return Ok(());
+    }
+
     let (username, password) = credentials()?;
     let client = Client::new(username, password);
 
-    let response: GetDidsInfoResponse = client
-        .get_dids_info_typed(&GetDidsInfoParams::default())
-        .await?;
+    let response: GetDidsInfoResponse = client.get_dids_info(&GetDidsInfoParams::default()).await?;
 
     let dids = response.dids.unwrap_or_default();
     if dids.is_empty() {
@@ -46,4 +49,16 @@ fn credentials() -> Result<(String, String), &'static str> {
     let username = std::env::var("VOIP_MS_USERNAME").map_err(|_| "VOIP_MS_USERNAME is not set")?;
     let password = std::env::var("VOIP_MS_PASSWORD").map_err(|_| "VOIP_MS_PASSWORD is not set")?;
     Ok((username, password))
+}
+
+fn dry_run_enabled(name: &str) -> bool {
+    std::env::var(name)
+        .ok()
+        .map(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "y" | "on"
+            )
+        })
+        .unwrap_or(false)
 }

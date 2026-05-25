@@ -1,3 +1,4 @@
+use rust_decimal::Decimal;
 use serde_json::{Value, json};
 use voip_ms::{Client, Error, GetBalanceParams, GetSubAccountsParams, GetSubAccountsResponse};
 use wiremock::matchers::{method, path, query_param};
@@ -36,7 +37,7 @@ async fn call_success_returns_full_envelope() {
         .await;
 
     let resp = client
-        .get_balance(&GetBalanceParams {
+        .get_balance_raw(&GetBalanceParams {
             advanced: Some(true),
         })
         .await
@@ -59,7 +60,7 @@ async fn api_status_other_than_success_is_an_error() {
         .await;
 
     let err = client
-        .get_balance(&GetBalanceParams::default())
+        .get_balance_raw(&GetBalanceParams::default())
         .await
         .unwrap_err();
 
@@ -80,7 +81,7 @@ async fn http_error_status_is_surfaced() {
         .await;
 
     let err = client
-        .get_balance(&GetBalanceParams::default())
+        .get_balance_raw(&GetBalanceParams::default())
         .await
         .unwrap_err();
 
@@ -98,7 +99,7 @@ async fn response_without_status_field_is_invalid() {
         .await;
 
     let err = client
-        .get_balance(&GetBalanceParams::default())
+        .get_balance_raw(&GetBalanceParams::default())
         .await
         .unwrap_err();
 
@@ -119,7 +120,7 @@ async fn omitted_optional_params_are_not_sent() {
         .await;
 
     client
-        .get_balance(&GetBalanceParams { advanced: None })
+        .get_balance_raw(&GetBalanceParams { advanced: None })
         .await
         .unwrap();
 
@@ -224,7 +225,7 @@ async fn typed_response_via_call_typed_at_helper() {
 }
 
 #[tokio::test]
-async fn typed_response_via_generated_typed_method() {
+async fn typed_response_via_generated_default_method() {
     let (server, client) = fixture().await;
 
     Mock::given(method("GET"))
@@ -237,22 +238,16 @@ async fn typed_response_via_generated_typed_method() {
         .mount(&server)
         .await;
 
-    #[derive(serde::Deserialize)]
-    struct Envelope {
-        balance: Balance,
-    }
-
-    #[derive(serde::Deserialize)]
-    struct Balance {
-        current_balance: String,
-    }
-
-    let envelope: Envelope = client
-        .get_balance_typed(&GetBalanceParams::default())
+    let envelope = client
+        .get_balance(&GetBalanceParams::default())
         .await
         .unwrap();
 
-    assert_eq!(envelope.balance.current_balance, "12.00");
+    let current_balance = envelope
+        .balance
+        .as_ref()
+        .and_then(|balance| balance.current_balance);
+    assert_eq!(current_balance, Some(Decimal::new(1200, 2)));
 }
 
 #[tokio::test]
@@ -278,7 +273,7 @@ async fn typed_get_sub_accounts_tolerates_minus_one_sentinel_values() {
         .await;
 
     let envelope: GetSubAccountsResponse = client
-        .get_sub_accounts_typed(&GetSubAccountsParams::default())
+        .get_sub_accounts(&GetSubAccountsParams::default())
         .await
         .unwrap();
 

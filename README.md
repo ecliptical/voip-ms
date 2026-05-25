@@ -9,10 +9,9 @@ Async client for the [voip.ms](https://voip.ms) REST API.
 
 A thin, idiomatic Rust wrapper around every method exposed by the voip.ms
 REST endpoint (`https://voip.ms/api/v1/rest.php`). Each WSDL operation gets a
-typed `*Params` request struct and methods on [`Client`]. Each method returns
-raw `serde_json::Value`, and each also has a `*_typed` variant that
-deserializes into a generated `*Response` struct (or any caller-supplied
-type).
+typed `*Params` request struct and methods on [`Client`]. The default method
+deserializes into a generated `*Response` struct, and each operation also has
+a `*_raw` variant that returns `serde_json::Value`.
 
 ## Installation
 
@@ -57,7 +56,7 @@ async fn main() -> voip_ms::Result<()> {
     let balance = client
         .get_balance(&GetBalanceParams { advanced: Some(true) })
         .await?;
-    println!("{balance:#}");
+    println!("{balance:#?}");
     Ok(())
 }
 ```
@@ -66,15 +65,16 @@ Every API method follows the same pattern: construct a `*Params` struct
 (every field is `Option<T>` and omitted from the request when `None`), then
 call either:
 
-* `client.some_method(...)` for a raw `serde_json::Value`, or
-* `client.some_method_typed::<T>(...)` for typed deserialization.
+* `client.some_method(...)` for typed deserialization into the generated
+    `SomeMethodResponse` struct, or
+* `client.some_method_raw(...)` for a raw `serde_json::Value` envelope.
 
 ```rust
 use voip_ms::{Client, SendSmsParams};
 
 # async fn run(client: voip_ms::Client) -> voip_ms::Result<()> {
 let resp = client
-    .send_sms(&SendSmsParams {
+    .send_sms_raw(&SendSmsParams {
         did: Some("5551234567".into()),
         dst: Some("5557654321".into()),
         message: Some("Hello from Rust".into()),
@@ -108,17 +108,17 @@ let client = Client::builder("you@example.com", "api-password")
 ### Typed responses
 
 The WSDL doesn't describe response shapes (all 222 operations declare the
-same generic `arrayResponse`), so this crate hands back `serde_json::Value`
-by default. To reduce boilerplate, every generated method also has a typed
-variant named `*_typed`, and the crate ships a generated `*Response`
-struct per method (inferred from the official HTML docs):
+same generic `arrayResponse`), so this crate generates per-method `*Response`
+structs inferred from the official HTML docs. Each unsuffixed method returns
+its generated `*Response` type, and `*_raw` is available as an escape hatch
+when you want the full JSON envelope:
 
 ```rust
 use voip_ms::{Client, GetBalanceParams, GetBalanceResponse};
 
 # async fn run(client: Client) -> voip_ms::Result<()> {
 let resp: GetBalanceResponse = client
-    .get_balance_typed(&GetBalanceParams { advanced: Some(true) })
+    .get_balance(&GetBalanceParams { advanced: Some(true) })
     .await?;
 if let Some(balance) = resp.balance.as_ref() {
     println!("{}", balance.current_balance.unwrap_or_default());
@@ -128,8 +128,8 @@ if let Some(balance) = resp.balance.as_ref() {
 
 All fields in the generated `*Response` structs are `Option<T>` so unknown
 omissions or future shape drift don't fail deserialization. If you need a
-shape the generated struct doesn't capture, drop down to `call_typed` /
-`call_typed_at` with your own type.
+shape the generated struct doesn't capture, use `*_raw` and deserialize
+manually, or drop down to `call_typed` / `call_typed_at` with your own type.
 
 For methods where you only want a nested field, use
 [`Client::call_typed_at`] with a JSON pointer:

@@ -10,6 +10,7 @@
 //!
 //! Optional environment variables:
 //! - LIVE_VERIFY_MODE=smoke|extended (default: smoke)
+//! - LIVE_VERIFY_DRY_RUN=true|false (default: false)
 //! - LIVE_VERIFY_ALLOW_STATE_CHANGES=true|false (default: false)
 //! - LIVE_VERIFY_ALLOW_COSTLY=true|false (default: false)
 //! - LIVE_VERIFY_ENABLE_SMS_SETTINGS_CHECK=true|false (default: false)
@@ -66,6 +67,7 @@ struct Config {
     username: String,
     password: String,
     mode: Mode,
+    dry_run: bool,
     allow_state_changes: bool,
     allow_costly: bool,
     enable_sms_settings_check: bool,
@@ -82,12 +84,23 @@ struct Config {
 impl Config {
     fn from_env() -> Result<Self, String> {
         let mode = Mode::parse(&env::var("LIVE_VERIFY_MODE").unwrap_or_else(|_| "smoke".into()))?;
+        let dry_run = parse_bool_env("LIVE_VERIFY_DRY_RUN", false)?;
+
         Ok(Self {
-            username: env::var("VOIP_MS_USERNAME")
-                .map_err(|_| "VOIP_MS_USERNAME is not set".to_string())?,
-            password: env::var("VOIP_MS_PASSWORD")
-                .map_err(|_| "VOIP_MS_PASSWORD is not set".to_string())?,
+            username: if dry_run {
+                env::var("VOIP_MS_USERNAME").unwrap_or_else(|_| "dry-run-user".to_string())
+            } else {
+                env::var("VOIP_MS_USERNAME")
+                    .map_err(|_| "VOIP_MS_USERNAME is not set".to_string())?
+            },
+            password: if dry_run {
+                env::var("VOIP_MS_PASSWORD").unwrap_or_else(|_| "dry-run-password".to_string())
+            } else {
+                env::var("VOIP_MS_PASSWORD")
+                    .map_err(|_| "VOIP_MS_PASSWORD is not set".to_string())?
+            },
             mode,
+            dry_run,
             allow_state_changes: parse_bool_env("LIVE_VERIFY_ALLOW_STATE_CHANGES", false)?,
             allow_costly: parse_bool_env("LIVE_VERIFY_ALLOW_COSTLY", false)?,
             enable_sms_settings_check: parse_bool_env(
@@ -114,6 +127,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::from_env()?;
     println!("live verification mode: {}", config.mode.as_str());
 
+    if config.dry_run {
+        println!("live verification dry run enabled; skipping API calls");
+        run_dry_run_checks(&config)?;
+        println!("live verification dry run completed successfully");
+        return Ok(());
+    }
+
     let client = Client::new(config.username.clone(), config.password.clone());
 
     run_smoke_checks(&client, &config).await?;
@@ -123,6 +143,81 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!("live verification completed successfully");
+    Ok(())
+}
+
+fn run_dry_run_checks(config: &Config) -> Result<(), Box<dyn Error>> {
+    println!("[dry-run] smoke checks would run");
+
+    if config.enable_location_typed_checks {
+        let _ = config
+            .dids_can_province
+            .as_deref()
+            .ok_or("LIVE_VERIFY_DIDS_CAN_PROVINCE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true")?;
+        let _ = config.dids_usa_state.as_deref().ok_or(
+            "LIVE_VERIFY_DIDS_USA_STATE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true",
+        )?;
+        println!("[dry-run] location-dependent checks configured");
+    } else {
+        println!("[dry-run] location-dependent checks disabled");
+    }
+
+    if config.mode == Mode::Extended {
+        println!("[dry-run] extended checks would run");
+
+        if config.enable_sms_settings_check {
+            if !config.allow_state_changes {
+                return Err(
+                    "LIVE_VERIFY_ENABLE_SMS_SETTINGS_CHECK=true requires LIVE_VERIFY_ALLOW_STATE_CHANGES=true"
+                        .into(),
+                );
+            }
+            let _ = config
+                .test_did
+                .as_deref()
+                .ok_or("VOIP_MS_TEST_DID is required for SMS settings check")?;
+            println!("[dry-run] SMS settings check configured");
+        } else {
+            println!("[dry-run] SMS settings check disabled");
+        }
+
+        if config.enable_subaccount_check {
+            if !config.allow_state_changes {
+                return Err(
+                    "LIVE_VERIFY_ENABLE_SUBACCOUNT_CHECK=true requires LIVE_VERIFY_ALLOW_STATE_CHANGES=true"
+                        .into(),
+                );
+            }
+            println!("[dry-run] sub-account lifecycle check configured");
+        } else {
+            println!("[dry-run] sub-account lifecycle check disabled");
+        }
+
+        if config.enable_sms_send_check {
+            if !config.allow_costly {
+                return Err(
+                    "LIVE_VERIFY_ENABLE_SMS_SEND_CHECK=true requires LIVE_VERIFY_ALLOW_COSTLY=true"
+                        .into(),
+                );
+            }
+            let _ = config
+                .test_did
+                .as_deref()
+                .ok_or("VOIP_MS_TEST_DID is required for SMS send check")?;
+            let _ = config
+                .sms_dst
+                .as_deref()
+                .ok_or("VOIP_MS_SMS_DST is required for SMS send check")?;
+            let _ = config
+                .sms_message
+                .as_deref()
+                .ok_or("VOIP_MS_SMS_MESSAGE is required for SMS send check")?;
+            println!("[dry-run] SMS send check configured");
+        } else {
+            println!("[dry-run] SMS send check disabled");
+        }
+    }
+
     Ok(())
 }
 
@@ -136,33 +231,31 @@ async fn run_smoke_checks(client: &Client, config: &Config) -> Result<(), Box<dy
 
     println!("[check] get_servers_info");
     let servers: GetServersInfoResponse = client
-        .get_servers_info_typed(&GetServersInfoParams::default())
+        .get_servers_info(&GetServersInfoParams::default())
         .await?;
     println!(
         "[info] server count: {}",
         servers.servers.as_ref().map_or(0, std::vec::Vec::len)
     );
 
-    println!("[check] get_dids_info_typed");
-    let dids: GetDidsInfoResponse = client
-        .get_dids_info_typed(&GetDidsInfoParams::default())
-        .await?;
+    println!("[check] get_dids_info");
+    let dids: GetDidsInfoResponse = client.get_dids_info(&GetDidsInfoParams::default()).await?;
     println!(
         "[info] DID count: {}",
         dids.dids.as_ref().map_or(0, std::vec::Vec::len)
     );
 
-    println!("[check] get_sub_accounts_typed");
+    println!("[check] get_sub_accounts");
     let sub_accounts: GetSubAccountsResponse = client
-        .get_sub_accounts_typed(&GetSubAccountsParams::default())
+        .get_sub_accounts(&GetSubAccountsParams::default())
         .await?;
     println!(
         "[info] sub-account count: {}",
         sub_accounts.accounts.as_ref().map_or(0, std::vec::Vec::len)
     );
 
-    println!("[check] get_sms_typed");
-    let sms: GetSmsResponse = client.get_sms_typed(&GetSmsParams::default()).await?;
+    println!("[check] get_sms");
+    let sms: GetSmsResponse = client.get_sms(&GetSmsParams::default()).await?;
     println!(
         "[info] sms count: {}",
         sms.sms.as_ref().map_or(0, std::vec::Vec::len)
@@ -182,47 +275,39 @@ async fn run_smoke_checks(client: &Client, config: &Config) -> Result<(), Box<dy
 async fn run_typed_reference_checks(client: &Client) -> Result<(), Box<dyn Error>> {
     println!("[check] typed reference endpoints");
 
-    println!("[check] get_allowed_codecs_typed");
+    println!("[check] get_allowed_codecs");
     let _: GetAllowedCodecsResponse = client
-        .get_allowed_codecs_typed(&GetAllowedCodecsParams::default())
+        .get_allowed_codecs(&GetAllowedCodecsParams::default())
         .await?;
-    println!("[check] get_auth_types_typed");
+    println!("[check] get_auth_types");
     let _: GetAuthTypesResponse = client
-        .get_auth_types_typed(&GetAuthTypesParams::default())
+        .get_auth_types(&GetAuthTypesParams::default())
         .await?;
-    println!("[check] get_countries_typed");
-    let _: GetCountriesResponse = client
-        .get_countries_typed(&GetCountriesParams::default())
-        .await?;
-    println!("[check] get_did_countries_typed");
+    println!("[check] get_countries");
+    let _: GetCountriesResponse = client.get_countries(&GetCountriesParams::default()).await?;
+    println!("[check] get_did_countries");
     let _: GetDidCountriesResponse = client
-        .get_did_countries_typed(&GetDidCountriesParams {
+        .get_did_countries(&GetDidCountriesParams {
             r#type: Some("geographic".to_string()),
             ..Default::default()
         })
         .await?;
-    println!("[check] get_device_types_typed");
+    println!("[check] get_device_types");
     let _: GetDeviceTypesResponse = client
-        .get_device_types_typed(&GetDeviceTypesParams::default())
+        .get_device_types(&GetDeviceTypesParams::default())
         .await?;
-    println!("[check] get_dtmf_modes_typed");
+    println!("[check] get_dtmf_modes");
     let _: GetDtmfModesResponse = client
-        .get_dtmf_modes_typed(&GetDtmfModesParams::default())
+        .get_dtmf_modes(&GetDtmfModesParams::default())
         .await?;
-    println!("[check] get_languages_typed");
-    let _: GetLanguagesResponse = client
-        .get_languages_typed(&GetLanguagesParams::default())
-        .await?;
-    println!("[check] get_locales_typed");
-    let _: GetLocalesResponse = client
-        .get_locales_typed(&GetLocalesParams::default())
-        .await?;
-    println!("[check] get_protocols_typed");
-    let _: GetProtocolsResponse = client
-        .get_protocols_typed(&GetProtocolsParams::default())
-        .await?;
-    println!("[check] get_states_typed");
-    let _: GetStatesResponse = client.get_states_typed(&GetStatesParams::default()).await?;
+    println!("[check] get_languages");
+    let _: GetLanguagesResponse = client.get_languages(&GetLanguagesParams::default()).await?;
+    println!("[check] get_locales");
+    let _: GetLocalesResponse = client.get_locales(&GetLocalesParams::default()).await?;
+    println!("[check] get_protocols");
+    let _: GetProtocolsResponse = client.get_protocols(&GetProtocolsParams::default()).await?;
+    println!("[check] get_states");
+    let _: GetStatesResponse = client.get_states(&GetStatesParams::default()).await?;
 
     println!("[info] typed reference endpoint sweep succeeded");
     Ok(())
@@ -239,17 +324,17 @@ async fn run_typed_location_checks(client: &Client, config: &Config) -> Result<(
         "LIVE_VERIFY_DIDS_USA_STATE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true",
     )?;
 
-    println!("[check] get_dids_can_typed");
+    println!("[check] get_dids_can");
     let _: GetDidsCanResponse = client
-        .get_dids_can_typed(&GetDidsCanParams {
+        .get_dids_can(&GetDidsCanParams {
             province: Some(dids_can_province.to_string()),
             ..Default::default()
         })
         .await?;
 
-    println!("[check] get_dids_usa_typed");
+    println!("[check] get_dids_usa");
     let _: GetDidsUsaResponse = client
-        .get_dids_usa_typed(&GetDidsUsaParams {
+        .get_dids_usa(&GetDidsUsaParams {
             state: Some(dids_usa_state.to_string()),
             ..Default::default()
         })
@@ -321,7 +406,7 @@ async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), 
     println!("[check] set_sms idempotent update for DID {did}");
 
     let dids: GetDidsInfoResponse = client
-        .get_dids_info_typed(&GetDidsInfoParams {
+        .get_dids_info(&GetDidsInfoParams {
             did: Some(did.to_string()),
             ..Default::default()
         })
@@ -345,7 +430,7 @@ async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), 
     };
 
     let response: SetSmsResponse = client
-        .set_sms_typed(&SetSmsParams {
+        .set_sms(&SetSmsParams {
             did: Some(did.to_string()),
             enable: Some(enable.to_string()),
             ..Default::default()
@@ -367,7 +452,7 @@ async fn verify_subaccount_lifecycle(client: &Client) -> Result<(), Box<dyn Erro
     let password = format!("Lv{suffix}Pass1");
 
     let create: CreateSubAccountResponse = client
-        .create_sub_account_typed(&CreateSubAccountParams {
+        .create_sub_account(&CreateSubAccountParams {
             username: Some(username.clone()),
             protocol: Some(1),
             description: Some("live verify temporary sub-account".to_string()),
@@ -386,7 +471,7 @@ async fn verify_subaccount_lifecycle(client: &Client) -> Result<(), Box<dyn Erro
     );
 
     let delete_result = client
-        .del_sub_account_typed::<voip_ms::DelSubAccountResponse>(&DelSubAccountParams {
+        .del_sub_account(&DelSubAccountParams {
             id: Some(i64::try_from(id)?),
         })
         .await;
@@ -408,7 +493,7 @@ async fn verify_send_sms(
     println!("[check] send_sms from {did} to {dst}");
 
     let response = client
-        .send_sms_typed::<voip_ms::SendSmsResponse>(&SendSmsParams {
+        .send_sms(&SendSmsParams {
             did: Some(did.to_string()),
             dst: Some(dst.to_string()),
             message: Some(message.to_string()),

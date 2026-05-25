@@ -5,7 +5,6 @@
 #![allow(non_snake_case)]
 
 use serde::Serialize;
-use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::client::Client;
@@ -3017,35 +3016,53 @@ pub struct UnconnectFaxParams {
     pub did: Option<String>,
 }
 
-/// Response body for [`Client::add_charge_typed`] (wire method `addCharge`).
+/// Response body for [`Client::add_charge`] (wire method `addCharge`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct AddChargeResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::add_lnp_file_typed`] (wire method `addLNPFile`).
+/// Response body for [`Client::add_lnp_file`] (wire method `addLNPFile`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct AddLnpFileResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub attachment: Option<String>,
 }
 
-/// Response body for [`Client::add_lnp_port_typed`] (wire method `addLNPPort`).
+/// Response body for [`Client::add_lnp_port`] (wire method `addLNPPort`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct AddLnpPortResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub port: Option<String>,
 }
 
-/// Response body for [`Client::add_member_to_conference_typed`] (wire method `addMemberToConference`).
+/// Response body for [`Client::add_member_to_conference`] (wire method `addMemberToConference`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct AddMemberToConferenceResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -3054,17 +3071,23 @@ pub struct AddMemberToConferenceResponse {
     pub member: Option<u64>,
 }
 
-/// Response body for [`Client::add_payment_typed`] (wire method `addPayment`).
+/// Response body for [`Client::add_payment`] (wire method `addPayment`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct AddPaymentResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::assign_did_vpri_typed`] (wire method `assignDIDvPRI`).
+/// Response body for [`Client::assign_did_vpri`] (wire method `assignDIDvPRI`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct AssignDidVpriResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -3083,31 +3106,43 @@ pub struct AssignDidVpriResponse {
     pub monthly: Option<rust_decimal::Decimal>,
 }
 
-/// Response body for [`Client::back_order_did_can_typed`] (wire method `backOrderDIDCAN`).
+/// Response body for [`Client::back_order_did_can`] (wire method `backOrderDIDCAN`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct BackOrderDidCanResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::back_order_did_usa_typed`] (wire method `backOrderDIDUSA`).
+/// Response body for [`Client::back_order_did_usa`] (wire method `backOrderDIDUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct BackOrderDidUsaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::cancel_did_typed`] (wire method `cancelDID`).
+/// Response body for [`Client::cancel_did`] (wire method `cancelDID`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct CancelDidResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::cancel_fax_number_typed`] (wire method `cancelFaxNumber`).
+/// Response body for [`Client::cancel_fax_number`] (wire method `cancelFaxNumber`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct CancelFaxNumberResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -3116,352 +3151,538 @@ pub struct CancelFaxNumberResponse {
     pub deleted_did: Option<u64>,
 }
 
-/// Response body for [`Client::connect_did_typed`] (wire method `connectDID`).
+/// Response body for [`Client::connect_did`] (wire method `connectDID`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct ConnectDidResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::connect_fax_typed`] (wire method `connectFAX`).
+/// Response body for [`Client::connect_fax`] (wire method `connectFAX`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct ConnectFaxResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::create_sub_account_typed`] (wire method `createSubAccount`).
+/// Response body for [`Client::create_sub_account`] (wire method `createSubAccount`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct CreateSubAccountResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub id: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub account: Option<String>,
 }
 
-/// Response body for [`Client::create_voicemail_typed`] (wire method `createVoicemail`).
+/// Response body for [`Client::create_voicemail`] (wire method `createVoicemail`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct CreateVoicemailResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_call_hunting_typed`] (wire method `delCallHunting`).
+/// Response body for [`Client::del_call_hunting`] (wire method `delCallHunting`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelCallHuntingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_call_parking_typed`] (wire method `delCallParking`).
+/// Response body for [`Client::del_call_parking`] (wire method `delCallParking`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelCallParkingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_call_recording_typed`] (wire method `delCallRecording`).
+/// Response body for [`Client::del_call_recording`] (wire method `delCallRecording`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelCallRecordingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_callback_typed`] (wire method `delCallback`).
+/// Response body for [`Client::del_callback`] (wire method `delCallback`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelCallbackResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_caller_id_filtering_typed`] (wire method `delCallerIDFiltering`).
+/// Response body for [`Client::del_caller_id_filtering`] (wire method `delCallerIDFiltering`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelCallerIdFilteringResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_client_typed`] (wire method `delClient`).
+/// Response body for [`Client::del_client`] (wire method `delClient`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelClientResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_conference_typed`] (wire method `delConference`).
+/// Response body for [`Client::del_conference`] (wire method `delConference`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelConferenceResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_conference_member_typed`] (wire method `delConferenceMember`).
+/// Response body for [`Client::del_conference_member`] (wire method `delConferenceMember`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelConferenceMemberResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_disa_typed`] (wire method `delDISA`).
+/// Response body for [`Client::del_disa`] (wire method `delDISA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelDisaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_email_to_fax_typed`] (wire method `delEmailToFax`).
+/// Response body for [`Client::del_email_to_fax`] (wire method `delEmailToFax`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelEmailToFaxResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_fax_folder_typed`] (wire method `delFaxFolder`).
+/// Response body for [`Client::del_fax_folder`] (wire method `delFaxFolder`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelFaxFolderResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_forwarding_typed`] (wire method `delForwarding`).
+/// Response body for [`Client::del_forwarding`] (wire method `delForwarding`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelForwardingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_ivr_typed`] (wire method `delIVR`).
+/// Response body for [`Client::del_ivr`] (wire method `delIVR`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelIvrResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_location_typed`] (wire method `delLocation`).
+/// Response body for [`Client::del_location`] (wire method `delLocation`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelLocationResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_member_from_conference_typed`] (wire method `delMemberFromConference`).
+/// Response body for [`Client::del_member_from_conference`] (wire method `delMemberFromConference`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelMemberFromConferenceResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_messages_typed`] (wire method `delMessages`).
+/// Response body for [`Client::del_messages`] (wire method `delMessages`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelMessagesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_music_on_hold_typed`] (wire method `delMusicOnHold`).
+/// Response body for [`Client::del_music_on_hold`] (wire method `delMusicOnHold`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelMusicOnHoldResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_phonebook_typed`] (wire method `delPhonebook`).
+/// Response body for [`Client::del_phonebook`] (wire method `delPhonebook`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelPhonebookResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_phonebook_group_typed`] (wire method `delPhonebookGroup`).
+/// Response body for [`Client::del_phonebook_group`] (wire method `delPhonebookGroup`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelPhonebookGroupResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_queue_typed`] (wire method `delQueue`).
+/// Response body for [`Client::del_queue`] (wire method `delQueue`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelQueueResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_recording_typed`] (wire method `delRecording`).
+/// Response body for [`Client::del_recording`] (wire method `delRecording`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelRecordingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_ring_group_typed`] (wire method `delRingGroup`).
+/// Response body for [`Client::del_ring_group`] (wire method `delRingGroup`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelRingGroupResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_sip_uri_typed`] (wire method `delSIPURI`).
+/// Response body for [`Client::del_sip_uri`] (wire method `delSIPURI`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelSipUriResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_static_member_typed`] (wire method `delStaticMember`).
+/// Response body for [`Client::del_static_member`] (wire method `delStaticMember`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelStaticMemberResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_sub_account_typed`] (wire method `delSubAccount`).
+/// Response body for [`Client::del_sub_account`] (wire method `delSubAccount`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelSubAccountResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_time_condition_typed`] (wire method `delTimeCondition`).
+/// Response body for [`Client::del_time_condition`] (wire method `delTimeCondition`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelTimeConditionResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::del_voicemail_typed`] (wire method `delVoicemail`).
+/// Response body for [`Client::del_voicemail`] (wire method `delVoicemail`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DelVoicemailResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::delete_fax_message_typed`] (wire method `deleteFaxMessage`).
+/// Response body for [`Client::delete_fax_message`] (wire method `deleteFaxMessage`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DeleteFaxMessageResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::delete_mms_typed`] (wire method `deleteMMS`).
+/// Response body for [`Client::delete_mms`] (wire method `deleteMMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DeleteMmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::delete_sms_typed`] (wire method `deleteSMS`).
+/// Response body for [`Client::delete_sms`] (wire method `deleteSMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct DeleteSmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::e911_address_types_typed`] (wire method `e911AddressTypes`).
+/// Response body for [`Client::e911_address_types`] (wire method `e911AddressTypes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct E911AddressTypesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub types: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
-/// Response body for [`Client::e911_cancel_typed`] (wire method `e911Cancel`).
+/// Response body for [`Client::e911_cancel`] (wire method `e911Cancel`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct E911CancelResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::e911_info_typed`] (wire method `e911Info`).
+/// Response body for [`Client::e911_info`] (wire method `e911Info`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct E911InfoResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub info: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub did: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub full_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub street_number: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub street_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub address_type: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub address_number: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub city: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub zip_code: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub email: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub other_info: Option<String>,
 }
 
-/// Response body for [`Client::e911_provision_typed`] (wire method `e911Provision`).
+/// Response body for [`Client::e911_provision`] (wire method `e911Provision`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct E911ProvisionResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::e911_provision_manually_typed`] (wire method `e911ProvisionManually`).
+/// Response body for [`Client::e911_provision_manually`] (wire method `e911ProvisionManually`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct E911ProvisionManuallyResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::e911_update_typed`] (wire method `e911Update`).
+/// Response body for [`Client::e911_update`] (wire method `e911Update`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct E911UpdateResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::e911_validate_typed`] (wire method `e911Validate`).
+/// Response body for [`Client::e911_validate`] (wire method `e911Validate`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct E911ValidateResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::get_allowed_codecs_typed`] (wire method `getAllowedCodecs`).
+/// Response body for [`Client::get_allowed_codecs`] (wire method `getAllowedCodecs`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetAllowedCodecsResponseAllowedCodec {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetAllowedCodecsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub allowed_codecs: Option<Vec<GetAllowedCodecsResponseAllowedCodec>>,
 }
 
-/// Response body for [`Client::get_auth_types_typed`] (wire method `getAuthTypes`).
+/// Response body for [`Client::get_auth_types`] (wire method `getAuthTypes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetAuthTypesResponseAuthType {
     #[serde(
@@ -3469,19 +3690,25 @@ pub struct GetAuthTypesResponseAuthType {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetAuthTypesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub auth_types: Option<Vec<GetAuthTypesResponseAuthType>>,
 }
 
-/// Response body for [`Client::get_back_orders_typed`] (wire method `getBackOrders`).
+/// Response body for [`Client::get_back_orders`] (wire method `getBackOrders`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetBackOrdersResponseBackOrder {
     #[serde(
@@ -3489,15 +3716,30 @@ pub struct GetBackOrdersResponseBackOrder {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub id: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub routing: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_busy: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_unreachable: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_noanswer: Option<String>,
     #[serde(
         default,
@@ -3533,7 +3775,10 @@ pub struct GetBackOrdersResponseBackOrder {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetBackOrdersResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -3544,7 +3789,7 @@ pub struct GetBackOrdersResponse {
     pub back_orders: Option<Vec<GetBackOrdersResponseBackOrder>>,
 }
 
-/// Response body for [`Client::get_balance_typed`] (wire method `getBalance`).
+/// Response body for [`Client::get_balance`] (wire method `getBalance`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetBalanceResponseBalance {
     #[serde(
@@ -3562,7 +3807,10 @@ pub struct GetBalanceResponseBalance {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub calls_total: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub time_total: Option<String>,
     #[serde(
         default,
@@ -3574,19 +3822,25 @@ pub struct GetBalanceResponseBalance {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub calls_today: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub time_today: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetBalanceResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub balance: Option<GetBalanceResponseBalance>,
 }
 
-/// Response body for [`Client::get_balance_management_typed`] (wire method `getBalanceManagement`).
+/// Response body for [`Client::get_balance_management`] (wire method `getBalanceManagement`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetBalanceManagementResponseBalanceManagement {
     #[serde(
@@ -3594,19 +3848,25 @@ pub struct GetBalanceManagementResponseBalanceManagement {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetBalanceManagementResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub balance_management: Option<Vec<GetBalanceManagementResponseBalanceManagement>>,
 }
 
-/// Response body for [`Client::get_cdr_typed`] (wire method `getCDR`).
+/// Response body for [`Client::get_cdr`] (wire method `getCDR`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCdrResponseCdr {
     #[serde(
@@ -3614,20 +3874,35 @@ pub struct GetCdrResponseCdr {
         deserialize_with = "crate::responses::deserialize_opt_datetime"
     )]
     pub date: Option<chrono::NaiveDateTime>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub callerid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub destination: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub account: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub disposition: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
     #[serde(
         default,
@@ -3649,55 +3924,82 @@ pub struct GetCdrResponseCdr {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub uniqueid: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub destination_type: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub call_logs: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCdrResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub cdr: Option<Vec<GetCdrResponseCdr>>,
 }
 
-/// Response body for [`Client::get_call_accounts_typed`] (wire method `getCallAccounts`).
+/// Response body for [`Client::get_call_accounts`] (wire method `getCallAccounts`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallAccountsResponseAccount {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallAccountsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub accounts: Option<Vec<GetCallAccountsResponseAccount>>,
 }
 
-/// Response body for [`Client::get_call_billing_typed`] (wire method `getCallBilling`).
+/// Response body for [`Client::get_call_billing`] (wire method `getCallBilling`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallBillingResponseCallBilling {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallBillingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub call_billing: Option<Vec<GetCallBillingResponseCallBilling>>,
 }
 
-/// Response body for [`Client::get_call_huntings_typed`] (wire method `getCallHuntings`).
+/// Response body for [`Client::get_call_huntings`] (wire method `getCallHuntings`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallHuntingsResponseCallHunting {
     #[serde(
@@ -3705,33 +4007,60 @@ pub struct GetCallHuntingsResponseCallHunting {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub callhunting: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub members: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ring_time: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub order: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub press: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub music: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub recording: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallHuntingsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub call_hunting: Option<Vec<GetCallHuntingsResponseCallHunting>>,
 }
 
-/// Response body for [`Client::get_call_parking_typed`] (wire method `getCallParking`).
+/// Response body for [`Client::get_call_parking`] (wire method `getCallParking`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallParkingResponseCallHunting {
     #[serde(
@@ -3739,20 +4068,35 @@ pub struct GetCallParkingResponseCallHunting {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub callparking: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub timeout: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub musiconhold: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub destination: Option<String>,
     #[serde(
         default,
@@ -3768,18 +4112,27 @@ pub struct GetCallParkingResponseCallHunting {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallParkingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub call_hunting: Option<Vec<GetCallParkingResponseCallHunting>>,
 }
 
-/// Response body for [`Client::get_call_recording_typed`] (wire method `getCallRecording`).
+/// Response body for [`Client::get_call_recording`] (wire method `getCallRecording`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallRecordingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub callrecording: Option<String>,
     #[serde(
         default,
@@ -3791,23 +4144,36 @@ pub struct GetCallRecordingResponse {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub destination: Option<u64>,
-    #[serde(default, rename = "type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "type"
+    )]
     pub r#type: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub subaccount: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub base64file: Option<String>,
 }
 
-/// Response body for [`Client::get_call_recordings_typed`] (wire method `getCallRecordings`).
+/// Response body for [`Client::get_call_recordings`] (wire method `getCallRecordings`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallRecordingsResponseRecording {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub callrecording: Option<String>,
     #[serde(
         default,
@@ -3819,29 +4185,42 @@ pub struct GetCallRecordingsResponseRecording {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub destination: Option<u64>,
-    #[serde(default, rename = "type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "type"
+    )]
     pub r#type: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub subaccount: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallRecordingsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub recordings: Option<Vec<GetCallRecordingsResponseRecording>>,
 }
 
-/// Response body for [`Client::get_call_transcriptions_typed`] (wire method `getCallTranscriptions`).
+/// Response body for [`Client::get_call_transcriptions`] (wire method `getCallTranscriptions`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallTranscriptionsResponseTranscriptionRecognizedPhras {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub time: Option<String>,
     #[serde(
         default,
@@ -3853,21 +4232,36 @@ pub struct GetCallTranscriptionsResponseTranscriptionRecognizedPhras {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub speaker: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub phrase: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallTranscriptionsResponseTranscription {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub date: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
     #[serde(default)]
     pub speakers: Option<Vec<String>>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub locale: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub confidence: Option<String>,
     #[serde(default)]
     pub recognized_phrases: Option<Vec<GetCallTranscriptionsResponseTranscriptionRecognizedPhras>>,
@@ -3875,30 +4269,42 @@ pub struct GetCallTranscriptionsResponseTranscription {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallTranscriptionsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub transcriptions: Option<Vec<GetCallTranscriptionsResponseTranscription>>,
 }
 
-/// Response body for [`Client::get_call_types_typed`] (wire method `getCallTypes`).
+/// Response body for [`Client::get_call_types`] (wire method `getCallTypes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallTypesResponseCallType {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallTypesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub call_types: Option<Vec<GetCallTypesResponseCallType>>,
 }
 
-/// Response body for [`Client::get_callbacks_typed`] (wire method `getCallbacks`).
+/// Response body for [`Client::get_callbacks`] (wire method `getCallbacks`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallbacksResponseCallback {
     #[serde(
@@ -3906,7 +4312,10 @@ pub struct GetCallbacksResponseCallback {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub callback: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
@@ -3937,13 +4346,16 @@ pub struct GetCallbacksResponseCallback {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallbacksResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub callbacks: Option<Vec<GetCallbacksResponseCallback>>,
 }
 
-/// Response body for [`Client::get_caller_id_filtering_typed`] (wire method `getCallerIDFiltering`).
+/// Response body for [`Client::get_caller_id_filtering`] (wire method `getCallerIDFiltering`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallerIdFilteringResponseFiltering {
     #[serde(
@@ -3961,27 +4373,45 @@ pub struct GetCallerIdFilteringResponseFiltering {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub did: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub routing: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_unreachable: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_busy: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_noanswer: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub note: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCallerIdFilteringResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub filtering: Option<Vec<GetCallerIdFilteringResponseFiltering>>,
 }
 
-/// Response body for [`Client::get_carriers_typed`] (wire method `getCarriers`).
+/// Response body for [`Client::get_carriers`] (wire method `getCarriers`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCarriersResponseCarrier {
     #[serde(
@@ -3989,19 +4419,25 @@ pub struct GetCarriersResponseCarrier {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCarriersResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub carriers: Option<Vec<GetCarriersResponseCarrier>>,
 }
 
-/// Response body for [`Client::get_charges_typed`] (wire method `getCharges`).
+/// Response body for [`Client::get_charges`] (wire method `getCharges`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetChargesResponseCharge {
     #[serde(
@@ -4016,19 +4452,25 @@ pub struct GetChargesResponseCharge {
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
     pub amount: Option<rust_decimal::Decimal>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetChargesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub charges: Option<Vec<GetChargesResponseCharge>>,
 }
 
-/// Response body for [`Client::get_client_packages_typed`] (wire method `getClientPackages`).
+/// Response body for [`Client::get_client_packages`] (wire method `getClientPackages`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetClientPackagesResponsePackage {
     #[serde(
@@ -4036,19 +4478,25 @@ pub struct GetClientPackagesResponsePackage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetClientPackagesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub packages: Option<Vec<GetClientPackagesResponsePackage>>,
 }
 
-/// Response body for [`Client::get_client_threshold_typed`] (wire method `getClientThreshold`).
+/// Response body for [`Client::get_client_threshold`] (wire method `getClientThreshold`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetClientThresholdResponseThresholdInformation {
     #[serde(
@@ -4056,19 +4504,25 @@ pub struct GetClientThresholdResponseThresholdInformation {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub threshold: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub email: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetClientThresholdResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub threshold_information: Option<GetClientThresholdResponseThresholdInformation>,
 }
 
-/// Response body for [`Client::get_clients_typed`] (wire method `getClients`).
+/// Response body for [`Client::get_clients`] (wire method `getClients`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetClientsResponseClient {
     #[serde(
@@ -4076,23 +4530,50 @@ pub struct GetClientsResponseClient {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub client: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub email: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub password: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub company: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub firstname: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub lastname: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub address: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub city: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country: Option<String>,
     #[serde(
         default,
@@ -4113,13 +4594,16 @@ pub struct GetClientsResponseClient {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetClientsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub clients: Option<Vec<GetClientsResponseClient>>,
 }
 
-/// Response body for [`Client::get_conference_typed`] (wire method `getConference`).
+/// Response body for [`Client::get_conference`] (wire method `getConference`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceResponseConference {
     #[serde(
@@ -4127,9 +4611,15 @@ pub struct GetConferenceResponseConference {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub conference: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
@@ -4236,21 +4726,30 @@ pub struct GetConferenceResponseConference {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub sound_participants_unmuted: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub members: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub conference: Option<Vec<GetConferenceResponseConference>>,
 }
 
-/// Response body for [`Client::get_conference_members_typed`] (wire method `getConferenceMembers`).
+/// Response body for [`Client::get_conference_members`] (wire method `getConferenceMembers`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceMembersResponseMember {
     #[serde(
@@ -4258,9 +4757,15 @@ pub struct GetConferenceMembersResponseMember {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub member: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
@@ -4292,7 +4797,10 @@ pub struct GetConferenceMembersResponseMember {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub announce_only_user: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub moh_when_empty: Option<String>,
     #[serde(
         default,
@@ -4333,13 +4841,16 @@ pub struct GetConferenceMembersResponseMember {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceMembersResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub members: Option<Vec<GetConferenceMembersResponseMember>>,
 }
 
-/// Response body for [`Client::get_conference_recording_file_typed`] (wire method `getConferenceRecordingFile`).
+/// Response body for [`Client::get_conference_recording_file`] (wire method `getConferenceRecordingFile`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceRecordingFileResponseRecording {
     #[serde(
@@ -4347,19 +4858,25 @@ pub struct GetConferenceRecordingFileResponseRecording {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub recording: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub data: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceRecordingFileResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub recording: Option<Vec<GetConferenceRecordingFileResponseRecording>>,
 }
 
-/// Response body for [`Client::get_conference_recordings_typed`] (wire method `getConferenceRecordings`).
+/// Response body for [`Client::get_conference_recordings`] (wire method `getConferenceRecordings`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceRecordingsResponseRecording {
     #[serde(
@@ -4391,30 +4908,42 @@ pub struct GetConferenceRecordingsResponseRecording {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetConferenceRecordingsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub recordings: Option<Vec<GetConferenceRecordingsResponseRecording>>,
 }
 
-/// Response body for [`Client::get_countries_typed`] (wire method `getCountries`).
+/// Response body for [`Client::get_countries`] (wire method `getCountries`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCountriesResponseCountry {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetCountriesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub countries: Option<Vec<GetCountriesResponseCountry>>,
 }
 
-/// Response body for [`Client::get_did_countries_typed`] (wire method `getDIDCountries`).
+/// Response body for [`Client::get_did_countries`] (wire method `getDIDCountries`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidCountriesResponseCountry {
     #[serde(
@@ -4422,19 +4951,25 @@ pub struct GetDidCountriesResponseCountry {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidCountriesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub countries: Option<Vec<GetDidCountriesResponseCountry>>,
 }
 
-/// Response body for [`Client::get_dids_can_typed`] (wire method `getDIDsCAN`).
+/// Response body for [`Client::get_dids_can`] (wire method `getDIDsCAN`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsCanResponseDid {
     #[serde(
@@ -4442,11 +4977,20 @@ pub struct GetDidsCanResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub did: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub province: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub province_description: Option<String>,
     #[serde(
         default,
@@ -4487,26 +5031,47 @@ pub struct GetDidsCanResponseDid {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsCanResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<GetDidsCanResponseDid>>,
 }
 
-/// Response body for [`Client::get_dids_info_typed`] (wire method `getDIDsInfo`).
+/// Response body for [`Client::get_dids_info`] (wire method `getDIDsInfo`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInfoResponseDid {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub did: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub routing: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_busy: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_unreachable: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub failover_noanswer: Option<String>,
     #[serde(
         default,
@@ -4533,9 +5098,15 @@ pub struct GetDidsInfoResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub e911: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub callerid_prefix: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub note: Option<String>,
     #[serde(
         default,
@@ -4554,7 +5125,10 @@ pub struct GetDidsInfoResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_datetime"
     )]
     pub order_date: Option<chrono::NaiveDateTime>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub reseller_account: Option<String>,
     #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
     pub reseller_next_billing: Option<chrono::NaiveDate>,
@@ -4583,7 +5157,10 @@ pub struct GetDidsInfoResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub sms_enabled: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub sms_email: Option<String>,
     #[serde(
         default,
@@ -4600,7 +5177,10 @@ pub struct GetDidsInfoResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub sms_forward_enabled: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub sms_url_callback: Option<String>,
     #[serde(
         default,
@@ -4617,18 +5197,30 @@ pub struct GetDidsInfoResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub smpp_enabled: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub smpp_url: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub smpp_user: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub smpp_pass: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub transcribe: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub transcription_locale: Option<String>,
     #[serde(
         default,
@@ -4645,26 +5237,41 @@ pub struct GetDidsInfoResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub transcription_sentiment: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub transcription_email: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInfoResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<GetDidsInfoResponseDid>>,
 }
 
-/// Response body for [`Client::get_dids_international_geographic_typed`] (wire method `getDIDsInternationalGeographic`).
+/// Response body for [`Client::get_dids_international_geographic`] (wire method `getDIDsInternationalGeographic`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInternationalGeographicResponseLocation {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub location_id: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub location_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country: Option<String>,
     #[serde(
         default,
@@ -4691,9 +5298,15 @@ pub struct GetDidsInternationalGeographicResponseLocation {
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
     pub minute: Option<rust_decimal::Decimal>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub monthly_per_minute: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub setup_per_minute: Option<String>,
     #[serde(
         default,
@@ -4704,20 +5317,32 @@ pub struct GetDidsInternationalGeographicResponseLocation {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInternationalGeographicResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub locations: Option<Vec<GetDidsInternationalGeographicResponseLocation>>,
 }
 
-/// Response body for [`Client::get_dids_international_national_typed`] (wire method `getDIDsInternationalNational`).
+/// Response body for [`Client::get_dids_international_national`] (wire method `getDIDsInternationalNational`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInternationalNationalResponseLocation {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub location_id: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub location_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country: Option<String>,
     #[serde(
         default,
@@ -4744,28 +5369,46 @@ pub struct GetDidsInternationalNationalResponseLocation {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub minute: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub monthly_per_minute: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub setup_per_minute: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInternationalNationalResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub locations: Option<Vec<GetDidsInternationalNationalResponseLocation>>,
 }
 
-/// Response body for [`Client::get_dids_international_toll_free_typed`] (wire method `getDIDsInternationalTollFree`).
+/// Response body for [`Client::get_dids_international_toll_free`] (wire method `getDIDsInternationalTollFree`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInternationalTollFreeResponseLocation {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub location_id: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub location_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country: Option<String>,
     #[serde(
         default,
@@ -4796,13 +5439,16 @@ pub struct GetDidsInternationalTollFreeResponseLocation {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsInternationalTollFreeResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub locations: Option<Vec<GetDidsInternationalTollFreeResponseLocation>>,
 }
 
-/// Response body for [`Client::get_dids_usa_typed`] (wire method `getDIDsUSA`).
+/// Response body for [`Client::get_dids_usa`] (wire method `getDIDsUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsUsaResponseDid {
     #[serde(
@@ -4810,11 +5456,20 @@ pub struct GetDidsUsaResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub did: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state_description: Option<String>,
     #[serde(
         default,
@@ -4860,22 +5515,28 @@ pub struct GetDidsUsaResponseDid {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidsUsaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<GetDidsUsaResponseDid>>,
 }
 
-/// Response body for [`Client::get_did_vpri_typed`] (wire method `getDIDvPRI`).
+/// Response body for [`Client::get_did_vpri`] (wire method `getDIDvPRI`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDidVpriResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<u64>>,
 }
 
-/// Response body for [`Client::get_disas_typed`] (wire method `getDISAs`).
+/// Response body for [`Client::get_disas`] (wire method `getDISAs`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDisasResponseDisa {
     #[serde(
@@ -4883,7 +5544,10 @@ pub struct GetDisasResponseDisa {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub disa: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
     #[serde(
         default,
@@ -4900,36 +5564,51 @@ pub struct GetDisasResponseDisa {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub callerid_override: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDisasResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub disa: Option<Vec<GetDisasResponseDisa>>,
 }
 
-/// Response body for [`Client::get_dtmf_modes_typed`] (wire method `getDTMFModes`).
+/// Response body for [`Client::get_dtmf_modes`] (wire method `getDTMFModes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDtmfModesResponseDtmfMode {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDtmfModesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dtmf_modes: Option<Vec<GetDtmfModesResponseDtmfMode>>,
 }
 
-/// Response body for [`Client::get_deposits_typed`] (wire method `getDeposits`).
+/// Response body for [`Client::get_deposits`] (wire method `getDeposits`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDepositsResponseDeposit {
     #[serde(
@@ -4944,19 +5623,25 @@ pub struct GetDepositsResponseDeposit {
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
     pub amount: Option<rust_decimal::Decimal>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDepositsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub deposits: Option<Vec<GetDepositsResponseDeposit>>,
 }
 
-/// Response body for [`Client::get_device_types_typed`] (wire method `getDeviceTypes`).
+/// Response body for [`Client::get_device_types`] (wire method `getDeviceTypes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDeviceTypesResponseDeviceType {
     #[serde(
@@ -4964,29 +5649,41 @@ pub struct GetDeviceTypesResponseDeviceType {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetDeviceTypesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub device_types: Option<Vec<GetDeviceTypesResponseDeviceType>>,
 }
 
-/// Response body for [`Client::get_email_to_fax_typed`] (wire method `getEmailToFax`).
+/// Response body for [`Client::get_email_to_fax`] (wire method `getEmailToFax`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetEmailToFaxResponseEmailToFax {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub id: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub enabled: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub email: Option<String>,
     #[serde(
         default,
@@ -5007,44 +5704,68 @@ pub struct GetEmailToFaxResponseEmailToFax {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetEmailToFaxResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub emailToFax: Option<Vec<GetEmailToFaxResponseEmailToFax>>,
 }
 
-/// Response body for [`Client::get_fax_folders_typed`] (wire method `getFaxFolders`).
+/// Response body for [`Client::get_fax_folders`] (wire method `getFaxFolders`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxFoldersResponseFolder {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub id: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxFoldersResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub folders: Option<Vec<GetFaxFoldersResponseFolder>>,
 }
 
-/// Response body for [`Client::get_fax_message_pdf_typed`] (wire method `getFaxMessagePDF`).
+/// Response body for [`Client::get_fax_message_pdf`] (wire method `getFaxMessagePDF`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxMessagePdfResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub message_base64: Option<String>,
 }
 
-/// Response body for [`Client::get_fax_messages_typed`] (wire method `getFaxMessages`).
+/// Response body for [`Client::get_fax_messages`] (wire method `getFaxMessages`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxMessagesResponseFaxe {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub id: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub folder: Option<String>,
     #[serde(
         default,
@@ -5066,16 +5787,25 @@ pub struct GetFaxMessagesResponseFaxe {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub destination: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub pages: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -5087,49 +5817,76 @@ pub struct GetFaxMessagesResponseFaxe {
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
     pub total: Option<rust_decimal::Decimal>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub msg: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxMessagesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub faxes: Option<Vec<GetFaxMessagesResponseFaxe>>,
 }
 
-/// Response body for [`Client::get_fax_numbers_info_typed`] (wire method `getFaxNumbersInfo`).
+/// Response body for [`Client::get_fax_numbers_info`] (wire method `getFaxNumbersInfo`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxNumbersInfoResponseNumber {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub id: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub did: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub city: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub email_enabled: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub email: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub url_enabled: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub url: Option<String>,
     #[serde(
         default,
@@ -5141,9 +5898,15 @@ pub struct GetFaxNumbersInfoResponseNumber {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub attach_file: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub note: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub reseller_account: Option<String>,
     #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
     pub reseller_next_billing: Option<chrono::NaiveDate>,
@@ -5167,22 +5930,31 @@ pub struct GetFaxNumbersInfoResponseNumber {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub fax_to_sip_enabled: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub fax_to_sip_enabled_account: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxNumbersInfoResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub numbers: Option<Vec<GetFaxNumbersInfoResponseNumber>>,
 }
 
-/// Response body for [`Client::get_fax_numbers_portability_typed`] (wire method `getFaxNumbersPortability`).
+/// Response body for [`Client::get_fax_numbers_portability`] (wire method `getFaxNumbersPortability`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxNumbersPortabilityResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -5191,31 +5963,43 @@ pub struct GetFaxNumbersPortabilityResponse {
     pub getFaxNumbersPortability: Option<bool>,
 }
 
-/// Response body for [`Client::get_fax_provinces_typed`] (wire method `getFaxProvinces`).
+/// Response body for [`Client::get_fax_provinces`] (wire method `getFaxProvinces`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxProvincesResponseProvince {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub province: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub province_id: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub province_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country_code: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxProvincesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub provinces: Option<Vec<GetFaxProvincesResponseProvince>>,
 }
 
-/// Response body for [`Client::get_fax_rate_centers_can_typed`] (wire method `getFaxRateCentersCAN`).
+/// Response body for [`Client::get_fax_rate_centers_can`] (wire method `getFaxRateCentersCAN`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxRateCentersCanResponseRatecenter {
     #[serde(
@@ -5228,7 +6012,10 @@ pub struct GetFaxRateCentersCanResponseRatecenter {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub area_code: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
     #[serde(
         default,
@@ -5239,13 +6026,16 @@ pub struct GetFaxRateCentersCanResponseRatecenter {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxRateCentersCanResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub ratecenters: Option<Vec<GetFaxRateCentersCanResponseRatecenter>>,
 }
 
-/// Response body for [`Client::get_fax_rate_centers_usa_typed`] (wire method `getFaxRateCentersUSA`).
+/// Response body for [`Client::get_fax_rate_centers_usa`] (wire method `getFaxRateCentersUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxRateCentersUsaResponseRatecenter {
     #[serde(
@@ -5258,7 +6048,10 @@ pub struct GetFaxRateCentersUsaResponseRatecenter {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub area_code: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
     #[serde(
         default,
@@ -5269,37 +6062,52 @@ pub struct GetFaxRateCentersUsaResponseRatecenter {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxRateCentersUsaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub ratecenters: Option<Vec<GetFaxRateCentersUsaResponseRatecenter>>,
 }
 
-/// Response body for [`Client::get_fax_states_typed`] (wire method `getFaxStates`).
+/// Response body for [`Client::get_fax_states`] (wire method `getFaxStates`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxStatesResponseState {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub state_id: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country_code: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetFaxStatesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub states: Option<Vec<GetFaxStatesResponseState>>,
 }
 
-/// Response body for [`Client::get_forwardings_typed`] (wire method `getForwardings`).
+/// Response body for [`Client::get_forwardings`] (wire method `getForwardings`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetForwardingsResponseForwarding {
     #[serde(
@@ -5317,7 +6125,10 @@ pub struct GetForwardingsResponseForwarding {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub callerid_override: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
@@ -5338,22 +6149,31 @@ pub struct GetForwardingsResponseForwarding {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetForwardingsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub forwardings: Option<Vec<GetForwardingsResponseForwarding>>,
 }
 
-/// Response body for [`Client::get_ip_typed`] (wire method `getIP`).
+/// Response body for [`Client::get_ip`] (wire method `getIP`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetIpResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ip: Option<String>,
 }
 
-/// Response body for [`Client::get_ivrs_typed`] (wire method `getIVRs`).
+/// Response body for [`Client::get_ivrs`] (wire method `getIVRs`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetIvrsResponseIvr {
     #[serde(
@@ -5361,7 +6181,10 @@ pub struct GetIvrsResponseIvr {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub ivr: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
     #[serde(
         default,
@@ -5373,43 +6196,61 @@ pub struct GetIvrsResponseIvr {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub timeout: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub voicemailsetup: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub choices: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetIvrsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub ivrs: Option<Vec<GetIvrsResponseIvr>>,
 }
 
-/// Response body for [`Client::get_international_types_typed`] (wire method `getInternationalTypes`).
+/// Response body for [`Client::get_international_types`] (wire method `getInternationalTypes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetInternationalTypesResponseType {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetInternationalTypesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub types: Option<Vec<GetInternationalTypesResponseType>>,
 }
 
-/// Response body for [`Client::get_join_when_empty_types_typed`] (wire method `getJoinWhenEmptyTypes`).
+/// Response body for [`Client::get_join_when_empty_types`] (wire method `getJoinWhenEmptyTypes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetJoinWhenEmptyTypesResponseType {
     #[serde(
@@ -5426,68 +6267,125 @@ pub struct GetJoinWhenEmptyTypesResponseType {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetJoinWhenEmptyTypesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub types: Option<Vec<GetJoinWhenEmptyTypesResponseType>>,
 }
 
-/// Response body for [`Client::get_lnp_attach_typed`] (wire method `getLNPAttach`).
+/// Response body for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpAttachResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default, rename = "type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "type"
+    )]
     pub r#type: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub size: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub base64: Option<String>,
 }
 
-/// Response body for [`Client::get_lnp_attach_list_typed`] (wire method `getLNPAttachList`).
+/// Response body for [`Client::get_lnp_attach_list`] (wire method `getLNPAttachList`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpAttachListResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub list: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub attachid: Option<String>,
-    #[serde(default, rename = "type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "type"
+    )]
     pub r#type: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub size: Option<String>,
 }
 
-/// Response body for [`Client::get_lnp_details_typed`] (wire method `getLNPDetails`).
+/// Response body for [`Client::get_lnp_details`] (wire method `getLNPDetails`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpDetailsResponseNumber {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub did: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub rateCenter: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpDetailsResponseNote {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub note: Option<String>,
     #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
     pub date: Option<chrono::NaiveDate>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub time: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpDetailsResponseAttachment {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub id: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default, rename = "type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "type"
+    )]
     pub r#type: Option<String>,
     #[serde(
         default,
@@ -5498,7 +6396,10 @@ pub struct GetLnpDetailsResponseAttachment {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpDetailsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -5522,7 +6423,10 @@ pub struct GetLnpDetailsResponse {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub isMobile: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub mobileInfo: Option<String>,
     #[serde(
         default,
@@ -5534,145 +6438,262 @@ pub struct GetLnpDetailsResponse {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub portType: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub btn: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub services: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub statementName: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub firstName: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub lastName: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub address1: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub address2: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub city: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub zip: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub country: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub providerName: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub providerAccount: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub customer_notes: Option<String>,
     #[serde(default)]
     pub notes: Option<Vec<GetLnpDetailsResponseNote>>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub post_status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub post_status_description: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime"
     )]
     pub date: Option<chrono::NaiveDateTime>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub focDate: Option<String>,
     #[serde(default)]
     pub attachments: Option<Vec<GetLnpDetailsResponseAttachment>>,
 }
 
-/// Response body for [`Client::get_lnp_list_typed`] (wire method `getLNPList`).
+/// Response body for [`Client::get_lnp_list`] (wire method `getLNPList`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpListResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub list: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub portid: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub numbers: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub foc_date: Option<String>,
 }
 
-/// Response body for [`Client::get_lnp_list_status_typed`] (wire method `getLNPListStatus`).
+/// Response body for [`Client::get_lnp_list_status`] (wire method `getLNPListStatus`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpListStatusResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub list_status: Option<String>,
 }
 
-/// Response body for [`Client::get_lnp_notes_typed`] (wire method `getLNPNotes`).
+/// Response body for [`Client::get_lnp_notes`] (wire method `getLNPNotes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpNotesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub list: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub note: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub date: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub time: Option<String>,
 }
 
-/// Response body for [`Client::get_lnp_status_typed`] (wire method `getLNPStatus`).
+/// Response body for [`Client::get_lnp_status`] (wire method `getLNPStatus`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLnpStatusResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub post_status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub post_status_description: Option<String>,
 }
 
-/// Response body for [`Client::get_languages_typed`] (wire method `getLanguages`).
+/// Response body for [`Client::get_languages`] (wire method `getLanguages`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLanguagesResponseLanguage {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLanguagesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub languages: Option<Vec<GetLanguagesResponseLanguage>>,
 }
 
-/// Response body for [`Client::get_locales_typed`] (wire method `getLocales`).
+/// Response body for [`Client::get_locales`] (wire method `getLocales`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLocalesResponseLocale {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLocalesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub locales: Option<Vec<GetLocalesResponseLocale>>,
 }
 
-/// Response body for [`Client::get_locations_typed`] (wire method `getLocations`).
+/// Response body for [`Client::get_locations`] (wire method `getLocations`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLocationsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub locations: Option<Vec<String>>,
 }
 
-/// Response body for [`Client::get_lock_international_typed`] (wire method `getLockInternational`).
+/// Response body for [`Client::get_lock_international`] (wire method `getLockInternational`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLockInternationalResponseLockInternational {
     #[serde(
@@ -5680,19 +6701,25 @@ pub struct GetLockInternationalResponseLockInternational {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLockInternationalResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub lock_international: Option<Vec<GetLockInternationalResponseLockInternational>>,
 }
 
-/// Response body for [`Client::get_mms_typed`] (wire method `getMMS`).
+/// Response body for [`Client::get_mms`] (wire method `getMMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetMmsResponseSm {
     #[serde(
@@ -5721,15 +6748,30 @@ pub struct GetMmsResponseSm {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub contact: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub message: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub carrier_status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub col_media1: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub col_media2: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub col_media3: Option<String>,
     #[serde(default)]
     pub media: Option<Vec<String>>,
@@ -5737,16 +6779,22 @@ pub struct GetMmsResponseSm {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetMmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub sms: Option<Vec<GetMmsResponseSm>>,
 }
 
-/// Response body for [`Client::get_media_mms_typed`] (wire method `getMediaMMS`).
+/// Response body for [`Client::get_media_mms`] (wire method `getMediaMMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetMediaMmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -5758,33 +6806,63 @@ pub struct GetMediaMmsResponse {
         deserialize_with = "crate::responses::deserialize_opt_datetime"
     )]
     pub date: Option<chrono::NaiveDateTime>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub media: Option<String>,
-    #[serde(default, rename = "0")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "0"
+    )]
     pub field_0: Option<String>,
-    #[serde(default, rename = "1")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "1"
+    )]
     pub field_1: Option<String>,
-    #[serde(default, rename = "2")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "2"
+    )]
     pub field_2: Option<String>,
 }
 
-/// Response body for [`Client::get_music_on_hold_typed`] (wire method `getMusicOnHold`).
+/// Response body for [`Client::get_music_on_hold`] (wire method `getMusicOnHold`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetMusicOnHoldResponseMusicOnHold {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub recordings: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub total: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub volume: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub sort: Option<String>,
     #[serde(
         default,
@@ -5795,30 +6873,42 @@ pub struct GetMusicOnHoldResponseMusicOnHold {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetMusicOnHoldResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub music_on_hold: Option<Vec<GetMusicOnHoldResponseMusicOnHold>>,
 }
 
-/// Response body for [`Client::get_nat_typed`] (wire method `getNAT`).
+/// Response body for [`Client::get_nat`] (wire method `getNAT`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetNatResponseNat {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetNatResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub nat: Option<Vec<GetNatResponseNat>>,
 }
 
-/// Response body for [`Client::get_packages_typed`] (wire method `getPackages`).
+/// Response body for [`Client::get_packages`] (wire method `getPackages`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPackagesResponsePackage {
     #[serde(
@@ -5826,7 +6916,10 @@ pub struct GetPackagesResponsePackage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub package: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
     #[serde(
         default,
@@ -5872,13 +6965,16 @@ pub struct GetPackagesResponsePackage {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPackagesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub packages: Option<Vec<GetPackagesResponsePackage>>,
 }
 
-/// Response body for [`Client::get_phonebook_typed`] (wire method `getPhonebook`).
+/// Response body for [`Client::get_phonebook`] (wire method `getPhonebook`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPhonebookResponsePhonebook {
     #[serde(
@@ -5886,9 +6982,15 @@ pub struct GetPhonebookResponsePhonebook {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub phonebook: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub speed_dial: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
     #[serde(
         default,
@@ -5900,26 +7002,35 @@ pub struct GetPhonebookResponsePhonebook {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub callerid: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub note: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub group: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub group_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPhonebookResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub phonebooks: Option<Vec<GetPhonebookResponsePhonebook>>,
 }
 
-/// Response body for [`Client::get_phonebook_groups_typed`] (wire method `getPhonebookGroups`).
+/// Response body for [`Client::get_phonebook_groups`] (wire method `getPhonebookGroups`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPhonebookGroupsResponsePhonebook {
     #[serde(
@@ -5927,24 +7038,36 @@ pub struct GetPhonebookGroupsResponsePhonebook {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub phonebook_group: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub members: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPhonebookGroupsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub phonebooks: Option<Vec<GetPhonebookGroupsResponsePhonebook>>,
 }
 
-/// Response body for [`Client::get_play_instructions_typed`] (wire method `getPlayInstructions`).
+/// Response body for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPlayInstructionsResponsePlayInstruction {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
     #[serde(
         default,
@@ -5955,16 +7078,22 @@ pub struct GetPlayInstructionsResponsePlayInstruction {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPlayInstructionsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub play_instructions: Option<Vec<GetPlayInstructionsResponsePlayInstruction>>,
 }
 
-/// Response body for [`Client::get_portability_typed`] (wire method `getPortability`).
+/// Response body for [`Client::get_portability`] (wire method `getPortability`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPortabilityResponsePlan {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub title: Option<String>,
     #[serde(
         default,
@@ -5980,7 +7109,10 @@ pub struct GetPortabilityResponsePlan {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPortabilityResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -5996,7 +7128,7 @@ pub struct GetPortabilityResponse {
     pub plans: Option<Vec<GetPortabilityResponsePlan>>,
 }
 
-/// Response body for [`Client::get_protocols_typed`] (wire method `getProtocols`).
+/// Response body for [`Client::get_protocols`] (wire method `getProtocols`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetProtocolsResponseProtocol {
     #[serde(
@@ -6004,36 +7136,51 @@ pub struct GetProtocolsResponseProtocol {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetProtocolsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub protocols: Option<Vec<GetProtocolsResponseProtocol>>,
 }
 
-/// Response body for [`Client::get_provinces_typed`] (wire method `getProvinces`).
+/// Response body for [`Client::get_provinces`] (wire method `getProvinces`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetProvincesResponseProvince {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub province: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetProvincesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub provinces: Option<Vec<GetProvincesResponseProvince>>,
 }
 
-/// Response body for [`Client::get_queues_typed`] (wire method `getQueues`).
+/// Response body for [`Client::get_queues`] (wire method `getQueues`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetQueuesResponseQueue {
     #[serde(
@@ -6041,20 +7188,35 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub queue: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub queue_name: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub queue_number: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub queue_language: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub queue_password: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub callerid_prefix: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub join_announcement: Option<String>,
     #[serde(
         default,
@@ -6076,7 +7238,10 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub member_delay: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub music_on_hold: Option<String>,
     #[serde(
         default,
@@ -6098,7 +7263,10 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub leave_when_empty: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ring_strategy: Option<String>,
     #[serde(
         default,
@@ -6125,11 +7293,20 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub voice_announcement: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub frequency_announcement: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub announce_position_frecuency: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub announce_round_seconds: Option<String>,
     #[serde(
         default,
@@ -6141,32 +7318,56 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub thankyou_for_your_patience: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub fail_over_routing_timeout: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub fail_over_routing_full: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub fail_over_routing_join_empty: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub fail_over_routing_leave_empty: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub fail_over_routing_join_unavail: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub fail_over_routing_leave_unavail: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetQueuesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub queues: Option<Vec<GetQueuesResponseQueue>>,
 }
 
-/// Response body for [`Client::get_rate_centers_can_typed`] (wire method `getRateCentersCAN`).
+/// Response body for [`Client::get_rate_centers_can`] (wire method `getRateCentersCAN`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRateCentersCanResponseRatecenter {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
     #[serde(
         default,
@@ -6177,16 +7378,22 @@ pub struct GetRateCentersCanResponseRatecenter {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRateCentersCanResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub ratecenters: Option<Vec<GetRateCentersCanResponseRatecenter>>,
 }
 
-/// Response body for [`Client::get_rate_centers_usa_typed`] (wire method `getRateCentersUSA`).
+/// Response body for [`Client::get_rate_centers_usa`] (wire method `getRateCentersUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRateCentersUsaResponseRatecenter {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
     #[serde(
         default,
@@ -6197,16 +7404,22 @@ pub struct GetRateCentersUsaResponseRatecenter {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRateCentersUsaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub ratecenters: Option<Vec<GetRateCentersUsaResponseRatecenter>>,
 }
 
-/// Response body for [`Client::get_rates_typed`] (wire method `getRates`).
+/// Response body for [`Client::get_rates`] (wire method `getRates`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRatesResponseRate {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub destination: Option<String>,
     #[serde(
         default,
@@ -6237,13 +7450,16 @@ pub struct GetRatesResponseRate {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRatesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub rates: Option<Vec<GetRatesResponseRate>>,
 }
 
-/// Response body for [`Client::get_recording_file_typed`] (wire method `getRecordingFile`).
+/// Response body for [`Client::get_recording_file`] (wire method `getRecordingFile`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRecordingFileResponseRecording {
     #[serde(
@@ -6251,19 +7467,25 @@ pub struct GetRecordingFileResponseRecording {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub data: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRecordingFileResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub recordings: Option<Vec<GetRecordingFileResponseRecording>>,
 }
 
-/// Response body for [`Client::get_recordings_typed`] (wire method `getRecordings`).
+/// Response body for [`Client::get_recordings`] (wire method `getRecordings`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRecordingsResponseRecording {
     #[serde(
@@ -6271,37 +7493,61 @@ pub struct GetRecordingsResponseRecording {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRecordingsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub recordings: Option<Vec<GetRecordingsResponseRecording>>,
 }
 
-/// Response body for [`Client::get_registration_status_typed`] (wire method `getRegistrationStatus`).
+/// Response body for [`Client::get_registration_status`] (wire method `getRegistrationStatus`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRegistrationStatusResponseRegistration {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_shortname: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_hostname: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_ip: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_country: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub server_pop: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub register_ip: Option<String>,
     #[serde(
         default,
@@ -6313,15 +7559,24 @@ pub struct GetRegistrationStatusResponseRegistration {
         deserialize_with = "crate::responses::deserialize_opt_datetime"
     )]
     pub register_next: Option<chrono::NaiveDateTime>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub register_protocol: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub register_transport: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRegistrationStatusResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -6342,7 +7597,7 @@ pub struct GetRegistrationStatusResponse {
     pub registrations: Option<Vec<GetRegistrationStatusResponseRegistration>>,
 }
 
-/// Response body for [`Client::get_report_estimated_hold_time_typed`] (wire method `getReportEstimatedHoldTime`).
+/// Response body for [`Client::get_report_estimated_hold_time`] (wire method `getReportEstimatedHoldTime`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetReportEstimatedHoldTimeResponseType {
     #[serde(
@@ -6359,13 +7614,16 @@ pub struct GetReportEstimatedHoldTimeResponseType {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetReportEstimatedHoldTimeResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub types: Option<Vec<GetReportEstimatedHoldTimeResponseType>>,
 }
 
-/// Response body for [`Client::get_reseller_balance_typed`] (wire method `getResellerBalance`).
+/// Response body for [`Client::get_reseller_balance`] (wire method `getResellerBalance`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerBalanceResponseBalance {
     #[serde(
@@ -6383,7 +7641,10 @@ pub struct GetResellerBalanceResponseBalance {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub calls_total: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub time_total: Option<String>,
     #[serde(
         default,
@@ -6395,19 +7656,25 @@ pub struct GetResellerBalanceResponseBalance {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub calls_today: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub time_today: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerBalanceResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub balance: Option<GetResellerBalanceResponseBalance>,
 }
 
-/// Response body for [`Client::get_reseller_cdr_typed`] (wire method `getResellerCDR`).
+/// Response body for [`Client::get_reseller_cdr`] (wire method `getResellerCDR`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerCdrResponseCdr {
     #[serde(
@@ -6415,20 +7682,35 @@ pub struct GetResellerCdrResponseCdr {
         deserialize_with = "crate::responses::deserialize_opt_datetime"
     )]
     pub date: Option<chrono::NaiveDateTime>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub callerid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub destination: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub account: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub disposition: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
     #[serde(
         default,
@@ -6445,21 +7727,30 @@ pub struct GetResellerCdrResponseCdr {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub uniqueid: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub destination_type: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub call_logs: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerCdrResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub cdr: Option<Vec<GetResellerCdrResponseCdr>>,
 }
 
-/// Response body for [`Client::get_reseller_mms_typed`] (wire method `getResellerMMS`).
+/// Response body for [`Client::get_reseller_mms`] (wire method `getResellerMMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerMmsResponseSm {
     #[serde(
@@ -6488,19 +7779,25 @@ pub struct GetResellerMmsResponseSm {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub contact: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerMmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub sms: Option<Vec<GetResellerMmsResponseSm>>,
 }
 
-/// Response body for [`Client::get_reseller_sms_typed`] (wire method `getResellerSMS`).
+/// Response body for [`Client::get_reseller_sms`] (wire method `getResellerSMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerSmsResponseSm {
     #[serde(
@@ -6529,19 +7826,25 @@ pub struct GetResellerSmsResponseSm {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub contact: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetResellerSmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub sms: Option<Vec<GetResellerSmsResponseSm>>,
 }
 
-/// Response body for [`Client::get_ring_groups_typed`] (wire method `getRingGroups`).
+/// Response body for [`Client::get_ring_groups`] (wire method `getRingGroups`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRingGroupsResponseRingGroup {
     #[serde(
@@ -6549,18 +7852,30 @@ pub struct GetRingGroupsResponseRingGroup {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub ring_group: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub caller_announcement: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub music_on_hold: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub members: Option<String>,
     #[serde(
         default,
@@ -6571,30 +7886,42 @@ pub struct GetRingGroupsResponseRingGroup {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRingGroupsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub ring_groups: Option<Vec<GetRingGroupsResponseRingGroup>>,
 }
 
-/// Response body for [`Client::get_ring_strategies_typed`] (wire method `getRingStrategies`).
+/// Response body for [`Client::get_ring_strategies`] (wire method `getRingStrategies`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRingStrategiesResponseStrategy {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRingStrategiesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub strategies: Option<Vec<GetRingStrategiesResponseStrategy>>,
 }
 
-/// Response body for [`Client::get_routes_typed`] (wire method `getRoutes`).
+/// Response body for [`Client::get_routes`] (wire method `getRoutes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRoutesResponseRoute {
     #[serde(
@@ -6602,19 +7929,25 @@ pub struct GetRoutesResponseRoute {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetRoutesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub routes: Option<Vec<GetRoutesResponseRoute>>,
 }
 
-/// Response body for [`Client::get_sip_uris_typed`] (wire method `getSIPURIs`).
+/// Response body for [`Client::get_sip_uris`] (wire method `getSIPURIs`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetSipUrisResponseSipuri {
     #[serde(
@@ -6622,9 +7955,15 @@ pub struct GetSipUrisResponseSipuri {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub sipuri: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub uri: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
@@ -6640,13 +7979,16 @@ pub struct GetSipUrisResponseSipuri {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetSipUrisResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub sipuris: Option<Vec<GetSipUrisResponseSipuri>>,
 }
 
-/// Response body for [`Client::get_sms_typed`] (wire method `getSMS`).
+/// Response body for [`Client::get_sms`] (wire method `getSMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetSmsResponseSm {
     #[serde(
@@ -6675,32 +8017,56 @@ pub struct GetSmsResponseSm {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub contact: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub message: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub carrier_status: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetSmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub sms: Option<Vec<GetSmsResponseSm>>,
 }
 
-/// Response body for [`Client::get_servers_info_typed`] (wire method `getServersInfo`).
+/// Response body for [`Client::get_servers_info`] (wire method `getServersInfo`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetServersInfoResponseServer {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_shortname: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_hostname: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_ip: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub server_country: Option<String>,
     #[serde(
         default,
@@ -6716,30 +8082,42 @@ pub struct GetServersInfoResponseServer {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetServersInfoResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub servers: Option<Vec<GetServersInfoResponseServer>>,
 }
 
-/// Response body for [`Client::get_states_typed`] (wire method `getStates`).
+/// Response body for [`Client::get_states`] (wire method `getStates`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetStatesResponseState {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetStatesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub states: Option<Vec<GetStatesResponseState>>,
 }
 
-/// Response body for [`Client::get_static_members_typed`] (wire method `getStaticMembers`).
+/// Response body for [`Client::get_static_members`] (wire method `getStaticMembers`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetStaticMembersResponseMember {
     #[serde(
@@ -6752,9 +8130,15 @@ pub struct GetStaticMembersResponseMember {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub queue_number: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub account: Option<String>,
     #[serde(
         default,
@@ -6765,13 +8149,16 @@ pub struct GetStaticMembersResponseMember {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetStaticMembersResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub members: Option<Vec<GetStaticMembersResponseMember>>,
 }
 
-/// Response body for [`Client::get_sub_accounts_typed`] (wire method `getSubAccounts`).
+/// Response body for [`Client::get_sub_accounts`] (wire method `getSubAccounts`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetSubAccountsResponseAccount {
     #[serde(
@@ -6779,11 +8166,20 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub id: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub account: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub username: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
@@ -6795,9 +8191,15 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub auth_type: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub password: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ip: Option<String>,
     #[serde(
         default,
@@ -6824,13 +8226,25 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub international_route: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub music_on_hold: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub allowed_codecs: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub dtmf_mode: Option<String>,
     #[serde(
         default,
@@ -6857,14 +8271,20 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub rtp_hold_timeout: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ip_restriction: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub enable_ip_restriction: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub pop_restriction: Option<String>,
     #[serde(
         default,
@@ -6913,7 +8333,10 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub transcribe: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub transcription_locale: Option<String>,
     #[serde(
         default,
@@ -6930,7 +8353,10 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub transcription_sentiment: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub transcription_email: Option<String>,
     #[serde(
         default,
@@ -6942,26 +8368,35 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub enable_internal_cnam: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub internal_cnam: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub tfcarrier: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub default_e911: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetSubAccountsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub accounts: Option<Vec<GetSubAccountsResponseAccount>>,
 }
 
-/// Response body for [`Client::get_termination_rates_typed`] (wire method `getTerminationRates`).
+/// Response body for [`Client::get_termination_rates`] (wire method `getTerminationRates`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTerminationRatesResponseRoute {
     #[serde(
@@ -6969,13 +8404,19 @@ pub struct GetTerminationRatesResponseRoute {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTerminationRatesResponseRate {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub destination: Option<String>,
     #[serde(
         default,
@@ -6996,7 +8437,10 @@ pub struct GetTerminationRatesResponseRate {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTerminationRatesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub route: Option<GetTerminationRatesResponseRoute>,
@@ -7004,7 +8448,7 @@ pub struct GetTerminationRatesResponse {
     pub rates: Option<Vec<GetTerminationRatesResponseRate>>,
 }
 
-/// Response body for [`Client::get_time_conditions_typed`] (wire method `getTimeConditions`).
+/// Response body for [`Client::get_time_conditions`] (wire method `getTimeConditions`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTimeConditionsResponseTimecondition {
     #[serde(
@@ -7012,52 +8456,91 @@ pub struct GetTimeConditionsResponseTimecondition {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub timecondition: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub routing_match: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub routing_nomatch: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub starthour: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub startminute: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub endhour: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub endminute: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub weekdaystart: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub weekdayend: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTimeConditionsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub timecondition: Option<Vec<GetTimeConditionsResponseTimecondition>>,
 }
 
-/// Response body for [`Client::get_timezones_typed`] (wire method `getTimezones`).
+/// Response body for [`Client::get_timezones`] (wire method `getTimezones`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTimezonesResponseTimezone {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTimezonesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub timezones: Option<Vec<GetTimezonesResponseTimezone>>,
 }
 
-/// Response body for [`Client::get_transaction_history_typed`] (wire method `getTransactionHistory`).
+/// Response body for [`Client::get_transaction_history`] (wire method `getTransactionHistory`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTransactionHistoryResponseTransaction {
     #[serde(
@@ -7065,11 +8548,21 @@ pub struct GetTransactionHistoryResponseTransaction {
         deserialize_with = "crate::responses::deserialize_opt_datetime"
     )]
     pub date: Option<chrono::NaiveDateTime>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub uniqueid: Option<String>,
-    #[serde(default, rename = "type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "type"
+    )]
     pub r#type: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
     #[serde(
         default,
@@ -7080,13 +8573,16 @@ pub struct GetTransactionHistoryResponseTransaction {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetTransactionHistoryResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub transactions: Option<Vec<GetTransactionHistoryResponseTransaction>>,
 }
 
-/// Response body for [`Client::get_vpris_typed`] (wire method `getVPRIs`).
+/// Response body for [`Client::get_vpris`] (wire method `getVPRIs`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVprisResponseVpri {
     #[serde(
@@ -7094,9 +8590,15 @@ pub struct GetVprisResponseVpri {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub vpri: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub note: Option<String>,
     #[serde(
         default,
@@ -7129,48 +8631,69 @@ pub struct GetVprisResponseVpri {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVprisResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub vpri: Option<Vec<GetVprisResponseVpri>>,
 }
 
-/// Response body for [`Client::get_voicemail_attachment_formats_typed`] (wire method `getVoicemailAttachmentFormats`).
+/// Response body for [`Client::get_voicemail_attachment_formats`] (wire method `getVoicemailAttachmentFormats`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailAttachmentFormatsResponseEmailAttachmentFormat {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailAttachmentFormatsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub email_attachment_formats:
         Option<Vec<GetVoicemailAttachmentFormatsResponseEmailAttachmentFormat>>,
 }
 
-/// Response body for [`Client::get_voicemail_folders_typed`] (wire method `getVoicemailFolders`).
+/// Response body for [`Client::get_voicemail_folders`] (wire method `getVoicemailFolders`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailFoldersResponseFolder {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub value: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailFoldersResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub folders: Option<Vec<GetVoicemailFoldersResponseFolder>>,
 }
 
-/// Response body for [`Client::get_voicemail_message_file_typed`] (wire method `getVoicemailMessageFile`).
+/// Response body for [`Client::get_voicemail_message_file`] (wire method `getVoicemailMessageFile`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailMessageFileResponseMessage {
     #[serde(
@@ -7178,26 +8701,35 @@ pub struct GetVoicemailMessageFileResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub mailbox: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub folder: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub message_num: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub data: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailMessageFileResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub message: Option<Vec<GetVoicemailMessageFileResponseMessage>>,
 }
 
-/// Response body for [`Client::get_voicemail_messages_typed`] (wire method `getVoicemailMessages`).
+/// Response body for [`Client::get_voicemail_messages`] (wire method `getVoicemailMessages`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailMessagesResponseMessage {
     #[serde(
@@ -7205,7 +8737,10 @@ pub struct GetVoicemailMessagesResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub mailbox: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub folder: Option<String>,
     #[serde(
         default,
@@ -7219,7 +8754,10 @@ pub struct GetVoicemailMessagesResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub callerid: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
     #[serde(
         default,
@@ -7235,13 +8773,16 @@ pub struct GetVoicemailMessagesResponseMessage {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailMessagesResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub messages: Option<Vec<GetVoicemailMessagesResponseMessage>>,
 }
 
-/// Response body for [`Client::get_voicemail_setups_typed`] (wire method `getVoicemailSetups`).
+/// Response body for [`Client::get_voicemail_setups`] (wire method `getVoicemailSetups`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailSetupsResponseVoicemailsetup {
     #[serde(
@@ -7249,42 +8790,66 @@ pub struct GetVoicemailSetupsResponseVoicemailsetup {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub value: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailSetupsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub voicemailsetups: Option<Vec<GetVoicemailSetupsResponseVoicemailsetup>>,
 }
 
-/// Response body for [`Client::get_voicemail_transcriptions_typed`] (wire method `getVoicemailTranscriptions`).
+/// Response body for [`Client::get_voicemail_transcriptions`] (wire method `getVoicemailTranscriptions`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailTranscriptionsResponseMessage {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub date: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub callerid: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub duration: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub folder: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub result: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailTranscriptionsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub messages: Option<Vec<GetVoicemailTranscriptionsResponseMessage>>,
 }
 
-/// Response body for [`Client::get_voicemails_typed`] (wire method `getVoicemails`).
+/// Response body for [`Client::get_voicemails`] (wire method `getVoicemails`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailsResponseVoicemail {
     #[serde(
@@ -7292,7 +8857,10 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub mailbox: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub name: Option<String>,
     #[serde(
         default,
@@ -7304,7 +8872,10 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub skip_password: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub email: Option<String>,
     #[serde(
         default,
@@ -7321,18 +8892,30 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub say_time: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub timezone: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub say_callerid: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub play_instructions: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub language: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub email_attachment_format: Option<String>,
     #[serde(
         default,
@@ -7354,7 +8937,10 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub transcribe: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub transcription_locale: Option<String>,
     #[serde(
         default,
@@ -7371,96 +8957,141 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub transcription_summary: Option<bool>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub transcription_format: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetVoicemailsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub voicemails: Option<Vec<GetVoicemailsResponseVoicemail>>,
 }
 
-/// Response body for [`Client::mail_fax_message_pdf_typed`] (wire method `mailFaxMessagePDF`).
+/// Response body for [`Client::mail_fax_message_pdf`] (wire method `mailFaxMessagePDF`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct MailFaxMessagePdfResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub message_status: Option<String>,
 }
 
-/// Response body for [`Client::mark_listened_voicemail_message_typed`] (wire method `markListenedVoicemailMessage`).
+/// Response body for [`Client::mark_listened_voicemail_message`] (wire method `markListenedVoicemailMessage`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct MarkListenedVoicemailMessageResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::mark_urgent_voicemail_message_typed`] (wire method `markUrgentVoicemailMessage`).
+/// Response body for [`Client::mark_urgent_voicemail_message`] (wire method `markUrgentVoicemailMessage`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct MarkUrgentVoicemailMessageResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::move_fax_message_typed`] (wire method `moveFaxMessage`).
+/// Response body for [`Client::move_fax_message`] (wire method `moveFaxMessage`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct MoveFaxMessageResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::move_folder_voicemail_message_typed`] (wire method `moveFolderVoicemailMessage`).
+/// Response body for [`Client::move_folder_voicemail_message`] (wire method `moveFolderVoicemailMessage`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct MoveFolderVoicemailMessageResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::order_did_typed`] (wire method `orderDID`).
+/// Response body for [`Client::order_did`] (wire method `orderDID`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderDidResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::order_did_international_geographic_typed`] (wire method `orderDIDInternationalGeographic`).
+/// Response body for [`Client::order_did_international_geographic`] (wire method `orderDIDInternationalGeographic`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderDidInternationalGeographicResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::order_did_international_national_typed`] (wire method `orderDIDInternationalNational`).
+/// Response body for [`Client::order_did_international_national`] (wire method `orderDIDInternationalNational`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderDidInternationalNationalResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::order_did_international_toll_free_typed`] (wire method `orderDIDInternationalTollFree`).
+/// Response body for [`Client::order_did_international_toll_free`] (wire method `orderDIDInternationalTollFree`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderDidInternationalTollFreeResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::order_did_virtual_typed`] (wire method `orderDIDVirtual`).
+/// Response body for [`Client::order_did_virtual`] (wire method `orderDIDVirtual`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderDidVirtualResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::order_fax_number_typed`] (wire method `orderFaxNumber`).
+/// Response body for [`Client::order_fax_number`] (wire method `orderFaxNumber`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderFaxNumberResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub dids: Option<String>,
     #[serde(
         default,
@@ -7474,28 +9105,41 @@ pub struct OrderFaxNumberResponse {
         rename = "1"
     )]
     pub field_1: Option<u64>,
-    #[serde(default, rename = "2")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "2"
+    )]
     pub field_2: Option<String>,
 }
 
-/// Response body for [`Client::order_toll_free_typed`] (wire method `orderTollFree`).
+/// Response body for [`Client::order_toll_free`] (wire method `orderTollFree`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderTollFreeResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::order_vanity_typed`] (wire method `orderVanity`).
+/// Response body for [`Client::order_vanity`] (wire method `orderVanity`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrderVanityResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::remove_did_vpri_typed`] (wire method `removeDIDvPRI`).
+/// Response body for [`Client::remove_did_vpri`] (wire method `removeDIDvPRI`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct RemoveDidVpriResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7509,7 +9153,7 @@ pub struct RemoveDidVpriResponse {
     pub DIDRemoved: Option<u64>,
 }
 
-/// Response body for [`Client::search_dids_can_typed`] (wire method `searchDIDsCAN`).
+/// Response body for [`Client::search_dids_can`] (wire method `searchDIDsCAN`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchDidsCanResponseDid {
     #[serde(
@@ -7517,11 +9161,20 @@ pub struct SearchDidsCanResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub did: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub province: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub province_description: Option<String>,
     #[serde(
         default,
@@ -7557,13 +9210,16 @@ pub struct SearchDidsCanResponseDid {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchDidsCanResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<SearchDidsCanResponseDid>>,
 }
 
-/// Response body for [`Client::search_dids_usa_typed`] (wire method `searchDIDsUSA`).
+/// Response body for [`Client::search_dids_usa`] (wire method `searchDIDsUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchDidsUsaResponseDid {
     #[serde(
@@ -7571,11 +9227,20 @@ pub struct SearchDidsUsaResponseDid {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub did: Option<u64>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub state_description: Option<String>,
     #[serde(
         default,
@@ -7611,16 +9276,22 @@ pub struct SearchDidsUsaResponseDid {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchDidsUsaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<SearchDidsUsaResponseDid>>,
 }
 
-/// Response body for [`Client::search_fax_area_code_can_typed`] (wire method `searchFaxAreaCodeCAN`).
+/// Response body for [`Client::search_fax_area_code_can`] (wire method `searchFaxAreaCodeCAN`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchFaxAreaCodeCanResponse0 {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
     #[serde(
         default,
@@ -7636,24 +9307,43 @@ pub struct SearchFaxAreaCodeCanResponse0 {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchFaxAreaCodeCanResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenters: Option<String>,
     #[serde(default, rename = "0")]
     pub field_0: Option<SearchFaxAreaCodeCanResponse0>,
 }
 
-/// Response body for [`Client::search_fax_area_code_usa_typed`] (wire method `searchFaxAreaCodeUSA`).
+/// Response body for [`Client::search_fax_area_code_usa`] (wire method `searchFaxAreaCodeUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchFaxAreaCodeUsaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenters: Option<String>,
-    #[serde(default, rename = "0")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "0"
+    )]
     pub field_0: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub ratecenter: Option<String>,
     #[serde(
         default,
@@ -7667,7 +9357,7 @@ pub struct SearchFaxAreaCodeUsaResponse {
     pub available: Option<bool>,
 }
 
-/// Response body for [`Client::search_toll_free_can_us_typed`] (wire method `searchTollFreeCanUS`).
+/// Response body for [`Client::search_toll_free_can_us`] (wire method `searchTollFreeCanUS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchTollFreeCanUsResponseDid {
     #[serde(
@@ -7694,13 +9384,16 @@ pub struct SearchTollFreeCanUsResponseDid {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchTollFreeCanUsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<SearchTollFreeCanUsResponseDid>>,
 }
 
-/// Response body for [`Client::search_toll_free_usa_typed`] (wire method `searchTollFreeUSA`).
+/// Response body for [`Client::search_toll_free_usa`] (wire method `searchTollFreeUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchTollFreeUsaResponseDid {
     #[serde(
@@ -7742,13 +9435,16 @@ pub struct SearchTollFreeUsaResponseDid {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchTollFreeUsaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<SearchTollFreeUsaResponseDid>>,
 }
 
-/// Response body for [`Client::search_vanity_typed`] (wire method `searchVanity`).
+/// Response body for [`Client::search_vanity`] (wire method `searchVanity`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchVanityResponseDid {
     #[serde(
@@ -7795,32 +9491,47 @@ pub struct SearchVanityResponseDid {
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SearchVanityResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(default)]
     pub dids: Option<Vec<SearchVanityResponseDid>>,
 }
 
-/// Response body for [`Client::send_call_recording_email_typed`] (wire method `sendCallRecordingEmail`).
+/// Response body for [`Client::send_call_recording_email`] (wire method `sendCallRecordingEmail`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SendCallRecordingEmailResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub msg: Option<String>,
 }
 
-/// Response body for [`Client::send_fax_message_typed`] (wire method `sendFaxMessage`).
+/// Response body for [`Client::send_fax_message`] (wire method `sendFaxMessage`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SendFaxMessageResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::send_mms_typed`] (wire method `sendMMS`).
+/// Response body for [`Client::send_mms`] (wire method `sendMMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SendMmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7829,10 +9540,13 @@ pub struct SendMmsResponse {
     pub mms: Option<u64>,
 }
 
-/// Response body for [`Client::send_sms_typed`] (wire method `sendSMS`).
+/// Response body for [`Client::send_sms`] (wire method `sendSMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SendSmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7841,17 +9555,23 @@ pub struct SendSmsResponse {
     pub sms: Option<u64>,
 }
 
-/// Response body for [`Client::send_voicemail_email_typed`] (wire method `sendVoicemailEmail`).
+/// Response body for [`Client::send_voicemail_email`] (wire method `sendVoicemailEmail`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SendVoicemailEmailResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_call_hunting_typed`] (wire method `setCallHunting`).
+/// Response body for [`Client::set_call_hunting`] (wire method `setCallHunting`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetCallHuntingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7860,10 +9580,13 @@ pub struct SetCallHuntingResponse {
     pub call_hunting: Option<u64>,
 }
 
-/// Response body for [`Client::set_call_parking_typed`] (wire method `setCallParking`).
+/// Response body for [`Client::set_call_parking`] (wire method `setCallParking`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetCallParkingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7872,10 +9595,13 @@ pub struct SetCallParkingResponse {
     pub callparking: Option<u64>,
 }
 
-/// Response body for [`Client::set_callback_typed`] (wire method `setCallback`).
+/// Response body for [`Client::set_callback`] (wire method `setCallback`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetCallbackResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7884,10 +9610,13 @@ pub struct SetCallbackResponse {
     pub callback: Option<u64>,
 }
 
-/// Response body for [`Client::set_caller_id_filtering_typed`] (wire method `setCallerIDFiltering`).
+/// Response body for [`Client::set_caller_id_filtering`] (wire method `setCallerIDFiltering`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetCallerIdFilteringResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7896,24 +9625,33 @@ pub struct SetCallerIdFilteringResponse {
     pub filtering: Option<u64>,
 }
 
-/// Response body for [`Client::set_client_typed`] (wire method `setClient`).
+/// Response body for [`Client::set_client`] (wire method `setClient`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetClientResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_client_threshold_typed`] (wire method `setClientThreshold`).
+/// Response body for [`Client::set_client_threshold`] (wire method `setClientThreshold`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetClientThresholdResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_conference_typed`] (wire method `setConference`).
+/// Response body for [`Client::set_conference`] (wire method `setConference`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetConferenceResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7922,10 +9660,13 @@ pub struct SetConferenceResponse {
     pub conference: Option<u64>,
 }
 
-/// Response body for [`Client::set_conference_member_typed`] (wire method `setConferenceMember`).
+/// Response body for [`Client::set_conference_member`] (wire method `setConferenceMember`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetConferenceMemberResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7934,45 +9675,63 @@ pub struct SetConferenceMemberResponse {
     pub member: Option<u64>,
 }
 
-/// Response body for [`Client::set_did_billing_type_typed`] (wire method `setDIDBillingType`).
+/// Response body for [`Client::set_did_billing_type`] (wire method `setDIDBillingType`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetDidBillingTypeResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_did_info_typed`] (wire method `setDIDInfo`).
+/// Response body for [`Client::set_did_info`] (wire method `setDIDInfo`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetDidInfoResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_did_pop_typed`] (wire method `setDIDPOP`).
+/// Response body for [`Client::set_did_pop`] (wire method `setDIDPOP`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetDidPopResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_did_routing_typed`] (wire method `setDIDRouting`).
+/// Response body for [`Client::set_did_routing`] (wire method `setDIDRouting`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetDidRoutingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_did_voicemail_typed`] (wire method `setDIDVoicemail`).
+/// Response body for [`Client::set_did_voicemail`] (wire method `setDIDVoicemail`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetDidVoicemailResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_disa_typed`] (wire method `setDISA`).
+/// Response body for [`Client::set_disa`] (wire method `setDISA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetDisaResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -7981,45 +9740,63 @@ pub struct SetDisaResponse {
     pub disa: Option<u64>,
 }
 
-/// Response body for [`Client::set_email_to_fax_typed`] (wire method `setEmailToFax`).
+/// Response body for [`Client::set_email_to_fax`] (wire method `setEmailToFax`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetEmailToFaxResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_fax_folder_typed`] (wire method `setFaxFolder`).
+/// Response body for [`Client::set_fax_folder`] (wire method `setFaxFolder`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetFaxFolderResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_fax_number_email_typed`] (wire method `setFaxNumberEmail`).
+/// Response body for [`Client::set_fax_number_email`] (wire method `setFaxNumberEmail`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetFaxNumberEmailResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_fax_number_info_typed`] (wire method `setFaxNumberInfo`).
+/// Response body for [`Client::set_fax_number_info`] (wire method `setFaxNumberInfo`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetFaxNumberInfoResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_fax_number_url_callback_typed`] (wire method `setFaxNumberURLCallback`).
+/// Response body for [`Client::set_fax_number_url_callback`] (wire method `setFaxNumberURLCallback`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetFaxNumberUrlCallbackResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_forwarding_typed`] (wire method `setForwarding`).
+/// Response body for [`Client::set_forwarding`] (wire method `setForwarding`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetForwardingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8028,10 +9805,13 @@ pub struct SetForwardingResponse {
     pub forwarding: Option<u64>,
 }
 
-/// Response body for [`Client::set_ivr_typed`] (wire method `setIVR`).
+/// Response body for [`Client::set_ivr`] (wire method `setIVR`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetIvrResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8040,24 +9820,33 @@ pub struct SetIvrResponse {
     pub ivr: Option<u64>,
 }
 
-/// Response body for [`Client::set_location_typed`] (wire method `setLocation`).
+/// Response body for [`Client::set_location`] (wire method `setLocation`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetLocationResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_music_on_hold_typed`] (wire method `setMusicOnHold`).
+/// Response body for [`Client::set_music_on_hold`] (wire method `setMusicOnHold`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetMusicOnHoldResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_phonebook_typed`] (wire method `setPhonebook`).
+/// Response body for [`Client::set_phonebook`] (wire method `setPhonebook`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetPhonebookResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8066,10 +9855,13 @@ pub struct SetPhonebookResponse {
     pub phonebook: Option<u64>,
 }
 
-/// Response body for [`Client::set_phonebook_group_typed`] (wire method `setPhonebookGroup`).
+/// Response body for [`Client::set_phonebook_group`] (wire method `setPhonebookGroup`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetPhonebookGroupResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8078,10 +9870,13 @@ pub struct SetPhonebookGroupResponse {
     pub group: Option<u64>,
 }
 
-/// Response body for [`Client::set_queue_typed`] (wire method `setQueue`).
+/// Response body for [`Client::set_queue`] (wire method `setQueue`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetQueueResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8090,10 +9885,13 @@ pub struct SetQueueResponse {
     pub queue: Option<u64>,
 }
 
-/// Response body for [`Client::set_recording_typed`] (wire method `setRecording`).
+/// Response body for [`Client::set_recording`] (wire method `setRecording`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetRecordingResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8102,10 +9900,13 @@ pub struct SetRecordingResponse {
     pub recording: Option<u64>,
 }
 
-/// Response body for [`Client::set_ring_group_typed`] (wire method `setRingGroup`).
+/// Response body for [`Client::set_ring_group`] (wire method `setRingGroup`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetRingGroupResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8114,17 +9915,23 @@ pub struct SetRingGroupResponse {
     pub ring_group: Option<u64>,
 }
 
-/// Response body for [`Client::set_sip_uri_typed`] (wire method `setSIPURI`).
+/// Response body for [`Client::set_sip_uri`] (wire method `setSIPURI`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetSipUriResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_sms_typed`] (wire method `setSMS`).
+/// Response body for [`Client::set_sms`] (wire method `setSMS`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetSmsResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8133,10 +9940,13 @@ pub struct SetSmsResponse {
     pub sipuri: Option<u64>,
 }
 
-/// Response body for [`Client::set_static_member_typed`] (wire method `setStaticMember`).
+/// Response body for [`Client::set_static_member`] (wire method `setStaticMember`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetStaticMemberResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8145,17 +9955,23 @@ pub struct SetStaticMemberResponse {
     pub member: Option<u64>,
 }
 
-/// Response body for [`Client::set_sub_account_typed`] (wire method `setSubAccount`).
+/// Response body for [`Client::set_sub_account`] (wire method `setSubAccount`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetSubAccountResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::set_time_condition_typed`] (wire method `setTimeCondition`).
+/// Response body for [`Client::set_time_condition`] (wire method `setTimeCondition`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetTimeConditionResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8164,17 +9980,23 @@ pub struct SetTimeConditionResponse {
     pub timecondition: Option<u64>,
 }
 
-/// Response body for [`Client::set_voicemail_typed`] (wire method `setVoicemail`).
+/// Response body for [`Client::set_voicemail`] (wire method `setVoicemail`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SetVoicemailResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::signup_client_typed`] (wire method `signupClient`).
+/// Response body for [`Client::signup_client`] (wire method `signupClient`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct SignupClientResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
     #[serde(
         default,
@@ -8183,3173 +10005,2846 @@ pub struct SignupClientResponse {
     pub client: Option<u64>,
 }
 
-/// Response body for [`Client::unconnect_did_typed`] (wire method `unconnectDID`).
+/// Response body for [`Client::unconnect_did`] (wire method `unconnectDID`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct UnconnectDidResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
-/// Response body for [`Client::unconnect_fax_typed`] (wire method `unconnectFAX`).
+/// Response body for [`Client::unconnect_fax`] (wire method `unconnectFAX`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct UnconnectFaxResponse {
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
     pub status: Option<String>,
 }
 
 impl Client {
-    /// Call the `addCharge` API method.
-    pub async fn add_charge(&self, params: &AddChargeParams) -> Result<Value> {
-        self.call("addCharge", params).await
-    }
-
-    /// Call the `addCharge` API method and deserialize the response body into `T`.
-    pub async fn add_charge_typed<T>(&self, params: &AddChargeParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `addCharge` API method and deserialize into [`AddChargeResponse`].
+    pub async fn add_charge(&self, params: &AddChargeParams) -> Result<AddChargeResponse> {
         self.call_typed("addCharge", params).await
     }
 
-    /// Call the `addLNPFile` API method.
-    pub async fn add_lnp_file(&self, params: &AddLnpFileParams) -> Result<Value> {
-        self.call("addLNPFile", params).await
+    /// Call the `addCharge` API method and return the raw JSON envelope.
+    pub async fn add_charge_raw(&self, params: &AddChargeParams) -> Result<Value> {
+        self.call("addCharge", params).await
     }
 
-    /// Call the `addLNPFile` API method and deserialize the response body into `T`.
-    pub async fn add_lnp_file_typed<T>(&self, params: &AddLnpFileParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `addLNPFile` API method and deserialize into [`AddLnpFileResponse`].
+    pub async fn add_lnp_file(&self, params: &AddLnpFileParams) -> Result<AddLnpFileResponse> {
         self.call_typed("addLNPFile", params).await
     }
 
-    /// Call the `addLNPPort` API method.
-    pub async fn add_lnp_port(&self, params: &AddLnpPortParams) -> Result<Value> {
-        self.call("addLNPPort", params).await
+    /// Call the `addLNPFile` API method and return the raw JSON envelope.
+    pub async fn add_lnp_file_raw(&self, params: &AddLnpFileParams) -> Result<Value> {
+        self.call("addLNPFile", params).await
     }
 
-    /// Call the `addLNPPort` API method and deserialize the response body into `T`.
-    pub async fn add_lnp_port_typed<T>(&self, params: &AddLnpPortParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `addLNPPort` API method and deserialize into [`AddLnpPortResponse`].
+    pub async fn add_lnp_port(&self, params: &AddLnpPortParams) -> Result<AddLnpPortResponse> {
         self.call_typed("addLNPPort", params).await
     }
 
-    /// Call the `addMemberToConference` API method.
+    /// Call the `addLNPPort` API method and return the raw JSON envelope.
+    pub async fn add_lnp_port_raw(&self, params: &AddLnpPortParams) -> Result<Value> {
+        self.call("addLNPPort", params).await
+    }
+
+    /// Call the `addMemberToConference` API method and deserialize into [`AddMemberToConferenceResponse`].
     pub async fn add_member_to_conference(
+        &self,
+        params: &AddMemberToConferenceParams,
+    ) -> Result<AddMemberToConferenceResponse> {
+        self.call_typed("addMemberToConference", params).await
+    }
+
+    /// Call the `addMemberToConference` API method and return the raw JSON envelope.
+    pub async fn add_member_to_conference_raw(
         &self,
         params: &AddMemberToConferenceParams,
     ) -> Result<Value> {
         self.call("addMemberToConference", params).await
     }
 
-    /// Call the `addMemberToConference` API method and deserialize the response body into `T`.
-    pub async fn add_member_to_conference_typed<T>(
-        &self,
-        params: &AddMemberToConferenceParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("addMemberToConference", params).await
-    }
-
-    /// Call the `addPayment` API method.
-    pub async fn add_payment(&self, params: &AddPaymentParams) -> Result<Value> {
-        self.call("addPayment", params).await
-    }
-
-    /// Call the `addPayment` API method and deserialize the response body into `T`.
-    pub async fn add_payment_typed<T>(&self, params: &AddPaymentParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `addPayment` API method and deserialize into [`AddPaymentResponse`].
+    pub async fn add_payment(&self, params: &AddPaymentParams) -> Result<AddPaymentResponse> {
         self.call_typed("addPayment", params).await
     }
 
-    /// Call the `assignDIDvPRI` API method.
-    pub async fn assign_did_vpri(&self, params: &AssignDidVpriParams) -> Result<Value> {
-        self.call("assignDIDvPRI", params).await
+    /// Call the `addPayment` API method and return the raw JSON envelope.
+    pub async fn add_payment_raw(&self, params: &AddPaymentParams) -> Result<Value> {
+        self.call("addPayment", params).await
     }
 
-    /// Call the `assignDIDvPRI` API method and deserialize the response body into `T`.
-    pub async fn assign_did_vpri_typed<T>(&self, params: &AssignDidVpriParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `assignDIDvPRI` API method and deserialize into [`AssignDidVpriResponse`].
+    pub async fn assign_did_vpri(
+        &self,
+        params: &AssignDidVpriParams,
+    ) -> Result<AssignDidVpriResponse> {
         self.call_typed("assignDIDvPRI", params).await
     }
 
-    /// Call the `backOrderDIDCAN` API method.
-    pub async fn back_order_did_can(&self, params: &BackOrderDidCanParams) -> Result<Value> {
-        self.call("backOrderDIDCAN", params).await
+    /// Call the `assignDIDvPRI` API method and return the raw JSON envelope.
+    pub async fn assign_did_vpri_raw(&self, params: &AssignDidVpriParams) -> Result<Value> {
+        self.call("assignDIDvPRI", params).await
     }
 
-    /// Call the `backOrderDIDCAN` API method and deserialize the response body into `T`.
-    pub async fn back_order_did_can_typed<T>(&self, params: &BackOrderDidCanParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `backOrderDIDCAN` API method and deserialize into [`BackOrderDidCanResponse`].
+    pub async fn back_order_did_can(
+        &self,
+        params: &BackOrderDidCanParams,
+    ) -> Result<BackOrderDidCanResponse> {
         self.call_typed("backOrderDIDCAN", params).await
     }
 
-    /// Call the `backOrderDIDUSA` API method.
-    pub async fn back_order_did_usa(&self, params: &BackOrderDidUsaParams) -> Result<Value> {
-        self.call("backOrderDIDUSA", params).await
+    /// Call the `backOrderDIDCAN` API method and return the raw JSON envelope.
+    pub async fn back_order_did_can_raw(&self, params: &BackOrderDidCanParams) -> Result<Value> {
+        self.call("backOrderDIDCAN", params).await
     }
 
-    /// Call the `backOrderDIDUSA` API method and deserialize the response body into `T`.
-    pub async fn back_order_did_usa_typed<T>(&self, params: &BackOrderDidUsaParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `backOrderDIDUSA` API method and deserialize into [`BackOrderDidUsaResponse`].
+    pub async fn back_order_did_usa(
+        &self,
+        params: &BackOrderDidUsaParams,
+    ) -> Result<BackOrderDidUsaResponse> {
         self.call_typed("backOrderDIDUSA", params).await
     }
 
-    /// Call the `cancelDID` API method.
-    pub async fn cancel_did(&self, params: &CancelDidParams) -> Result<Value> {
-        self.call("cancelDID", params).await
+    /// Call the `backOrderDIDUSA` API method and return the raw JSON envelope.
+    pub async fn back_order_did_usa_raw(&self, params: &BackOrderDidUsaParams) -> Result<Value> {
+        self.call("backOrderDIDUSA", params).await
     }
 
-    /// Call the `cancelDID` API method and deserialize the response body into `T`.
-    pub async fn cancel_did_typed<T>(&self, params: &CancelDidParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `cancelDID` API method and deserialize into [`CancelDidResponse`].
+    pub async fn cancel_did(&self, params: &CancelDidParams) -> Result<CancelDidResponse> {
         self.call_typed("cancelDID", params).await
     }
 
-    /// Call the `cancelFaxNumber` API method.
-    pub async fn cancel_fax_number(&self, params: &CancelFaxNumberParams) -> Result<Value> {
-        self.call("cancelFaxNumber", params).await
+    /// Call the `cancelDID` API method and return the raw JSON envelope.
+    pub async fn cancel_did_raw(&self, params: &CancelDidParams) -> Result<Value> {
+        self.call("cancelDID", params).await
     }
 
-    /// Call the `cancelFaxNumber` API method and deserialize the response body into `T`.
-    pub async fn cancel_fax_number_typed<T>(&self, params: &CancelFaxNumberParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `cancelFaxNumber` API method and deserialize into [`CancelFaxNumberResponse`].
+    pub async fn cancel_fax_number(
+        &self,
+        params: &CancelFaxNumberParams,
+    ) -> Result<CancelFaxNumberResponse> {
         self.call_typed("cancelFaxNumber", params).await
     }
 
-    /// Call the `connectDID` API method.
-    pub async fn connect_did(&self, params: &ConnectDidParams) -> Result<Value> {
-        self.call("connectDID", params).await
+    /// Call the `cancelFaxNumber` API method and return the raw JSON envelope.
+    pub async fn cancel_fax_number_raw(&self, params: &CancelFaxNumberParams) -> Result<Value> {
+        self.call("cancelFaxNumber", params).await
     }
 
-    /// Call the `connectDID` API method and deserialize the response body into `T`.
-    pub async fn connect_did_typed<T>(&self, params: &ConnectDidParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `connectDID` API method and deserialize into [`ConnectDidResponse`].
+    pub async fn connect_did(&self, params: &ConnectDidParams) -> Result<ConnectDidResponse> {
         self.call_typed("connectDID", params).await
     }
 
-    /// Call the `connectFAX` API method.
-    pub async fn connect_fax(&self, params: &ConnectFaxParams) -> Result<Value> {
-        self.call("connectFAX", params).await
+    /// Call the `connectDID` API method and return the raw JSON envelope.
+    pub async fn connect_did_raw(&self, params: &ConnectDidParams) -> Result<Value> {
+        self.call("connectDID", params).await
     }
 
-    /// Call the `connectFAX` API method and deserialize the response body into `T`.
-    pub async fn connect_fax_typed<T>(&self, params: &ConnectFaxParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `connectFAX` API method and deserialize into [`ConnectFaxResponse`].
+    pub async fn connect_fax(&self, params: &ConnectFaxParams) -> Result<ConnectFaxResponse> {
         self.call_typed("connectFAX", params).await
     }
 
-    /// Call the `createSubAccount` API method.
-    pub async fn create_sub_account(&self, params: &CreateSubAccountParams) -> Result<Value> {
-        self.call("createSubAccount", params).await
+    /// Call the `connectFAX` API method and return the raw JSON envelope.
+    pub async fn connect_fax_raw(&self, params: &ConnectFaxParams) -> Result<Value> {
+        self.call("connectFAX", params).await
     }
 
-    /// Call the `createSubAccount` API method and deserialize the response body into `T`.
-    pub async fn create_sub_account_typed<T>(&self, params: &CreateSubAccountParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `createSubAccount` API method and deserialize into [`CreateSubAccountResponse`].
+    pub async fn create_sub_account(
+        &self,
+        params: &CreateSubAccountParams,
+    ) -> Result<CreateSubAccountResponse> {
         self.call_typed("createSubAccount", params).await
     }
 
-    /// Call the `createVoicemail` API method.
-    pub async fn create_voicemail(&self, params: &CreateVoicemailParams) -> Result<Value> {
-        self.call("createVoicemail", params).await
+    /// Call the `createSubAccount` API method and return the raw JSON envelope.
+    pub async fn create_sub_account_raw(&self, params: &CreateSubAccountParams) -> Result<Value> {
+        self.call("createSubAccount", params).await
     }
 
-    /// Call the `createVoicemail` API method and deserialize the response body into `T`.
-    pub async fn create_voicemail_typed<T>(&self, params: &CreateVoicemailParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `createVoicemail` API method and deserialize into [`CreateVoicemailResponse`].
+    pub async fn create_voicemail(
+        &self,
+        params: &CreateVoicemailParams,
+    ) -> Result<CreateVoicemailResponse> {
         self.call_typed("createVoicemail", params).await
     }
 
-    /// Call the `delCallHunting` API method.
-    pub async fn del_call_hunting(&self, params: &DelCallHuntingParams) -> Result<Value> {
-        self.call("delCallHunting", params).await
+    /// Call the `createVoicemail` API method and return the raw JSON envelope.
+    pub async fn create_voicemail_raw(&self, params: &CreateVoicemailParams) -> Result<Value> {
+        self.call("createVoicemail", params).await
     }
 
-    /// Call the `delCallHunting` API method and deserialize the response body into `T`.
-    pub async fn del_call_hunting_typed<T>(&self, params: &DelCallHuntingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delCallHunting` API method and deserialize into [`DelCallHuntingResponse`].
+    pub async fn del_call_hunting(
+        &self,
+        params: &DelCallHuntingParams,
+    ) -> Result<DelCallHuntingResponse> {
         self.call_typed("delCallHunting", params).await
     }
 
-    /// Call the `delCallParking` API method.
-    pub async fn del_call_parking(&self, params: &DelCallParkingParams) -> Result<Value> {
-        self.call("delCallParking", params).await
+    /// Call the `delCallHunting` API method and return the raw JSON envelope.
+    pub async fn del_call_hunting_raw(&self, params: &DelCallHuntingParams) -> Result<Value> {
+        self.call("delCallHunting", params).await
     }
 
-    /// Call the `delCallParking` API method and deserialize the response body into `T`.
-    pub async fn del_call_parking_typed<T>(&self, params: &DelCallParkingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delCallParking` API method and deserialize into [`DelCallParkingResponse`].
+    pub async fn del_call_parking(
+        &self,
+        params: &DelCallParkingParams,
+    ) -> Result<DelCallParkingResponse> {
         self.call_typed("delCallParking", params).await
     }
 
-    /// Call the `delCallRecording` API method.
-    pub async fn del_call_recording(&self, params: &DelCallRecordingParams) -> Result<Value> {
-        self.call("delCallRecording", params).await
+    /// Call the `delCallParking` API method and return the raw JSON envelope.
+    pub async fn del_call_parking_raw(&self, params: &DelCallParkingParams) -> Result<Value> {
+        self.call("delCallParking", params).await
     }
 
-    /// Call the `delCallRecording` API method and deserialize the response body into `T`.
-    pub async fn del_call_recording_typed<T>(&self, params: &DelCallRecordingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delCallRecording` API method and deserialize into [`DelCallRecordingResponse`].
+    pub async fn del_call_recording(
+        &self,
+        params: &DelCallRecordingParams,
+    ) -> Result<DelCallRecordingResponse> {
         self.call_typed("delCallRecording", params).await
     }
 
-    /// Call the `delCallback` API method.
-    pub async fn del_callback(&self, params: &DelCallbackParams) -> Result<Value> {
-        self.call("delCallback", params).await
+    /// Call the `delCallRecording` API method and return the raw JSON envelope.
+    pub async fn del_call_recording_raw(&self, params: &DelCallRecordingParams) -> Result<Value> {
+        self.call("delCallRecording", params).await
     }
 
-    /// Call the `delCallback` API method and deserialize the response body into `T`.
-    pub async fn del_callback_typed<T>(&self, params: &DelCallbackParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delCallback` API method and deserialize into [`DelCallbackResponse`].
+    pub async fn del_callback(&self, params: &DelCallbackParams) -> Result<DelCallbackResponse> {
         self.call_typed("delCallback", params).await
     }
 
-    /// Call the `delCallerIDFiltering` API method.
+    /// Call the `delCallback` API method and return the raw JSON envelope.
+    pub async fn del_callback_raw(&self, params: &DelCallbackParams) -> Result<Value> {
+        self.call("delCallback", params).await
+    }
+
+    /// Call the `delCallerIDFiltering` API method and deserialize into [`DelCallerIdFilteringResponse`].
     pub async fn del_caller_id_filtering(
+        &self,
+        params: &DelCallerIdFilteringParams,
+    ) -> Result<DelCallerIdFilteringResponse> {
+        self.call_typed("delCallerIDFiltering", params).await
+    }
+
+    /// Call the `delCallerIDFiltering` API method and return the raw JSON envelope.
+    pub async fn del_caller_id_filtering_raw(
         &self,
         params: &DelCallerIdFilteringParams,
     ) -> Result<Value> {
         self.call("delCallerIDFiltering", params).await
     }
 
-    /// Call the `delCallerIDFiltering` API method and deserialize the response body into `T`.
-    pub async fn del_caller_id_filtering_typed<T>(
-        &self,
-        params: &DelCallerIdFilteringParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("delCallerIDFiltering", params).await
-    }
-
-    /// Call the `delClient` API method.
-    pub async fn del_client(&self, params: &DelClientParams) -> Result<Value> {
-        self.call("delClient", params).await
-    }
-
-    /// Call the `delClient` API method and deserialize the response body into `T`.
-    pub async fn del_client_typed<T>(&self, params: &DelClientParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delClient` API method and deserialize into [`DelClientResponse`].
+    pub async fn del_client(&self, params: &DelClientParams) -> Result<DelClientResponse> {
         self.call_typed("delClient", params).await
     }
 
-    /// Call the `delConference` API method.
-    pub async fn del_conference(&self, params: &DelConferenceParams) -> Result<Value> {
-        self.call("delConference", params).await
+    /// Call the `delClient` API method and return the raw JSON envelope.
+    pub async fn del_client_raw(&self, params: &DelClientParams) -> Result<Value> {
+        self.call("delClient", params).await
     }
 
-    /// Call the `delConference` API method and deserialize the response body into `T`.
-    pub async fn del_conference_typed<T>(&self, params: &DelConferenceParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delConference` API method and deserialize into [`DelConferenceResponse`].
+    pub async fn del_conference(
+        &self,
+        params: &DelConferenceParams,
+    ) -> Result<DelConferenceResponse> {
         self.call_typed("delConference", params).await
     }
 
-    /// Call the `delConferenceMember` API method.
-    pub async fn del_conference_member(&self, params: &DelConferenceMemberParams) -> Result<Value> {
-        self.call("delConferenceMember", params).await
+    /// Call the `delConference` API method and return the raw JSON envelope.
+    pub async fn del_conference_raw(&self, params: &DelConferenceParams) -> Result<Value> {
+        self.call("delConference", params).await
     }
 
-    /// Call the `delConferenceMember` API method and deserialize the response body into `T`.
-    pub async fn del_conference_member_typed<T>(
+    /// Call the `delConferenceMember` API method and deserialize into [`DelConferenceMemberResponse`].
+    pub async fn del_conference_member(
         &self,
         params: &DelConferenceMemberParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<DelConferenceMemberResponse> {
         self.call_typed("delConferenceMember", params).await
     }
 
-    /// Call the `delDISA` API method.
-    pub async fn del_disa(&self, params: &DelDisaParams) -> Result<Value> {
-        self.call("delDISA", params).await
+    /// Call the `delConferenceMember` API method and return the raw JSON envelope.
+    pub async fn del_conference_member_raw(
+        &self,
+        params: &DelConferenceMemberParams,
+    ) -> Result<Value> {
+        self.call("delConferenceMember", params).await
     }
 
-    /// Call the `delDISA` API method and deserialize the response body into `T`.
-    pub async fn del_disa_typed<T>(&self, params: &DelDisaParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delDISA` API method and deserialize into [`DelDisaResponse`].
+    pub async fn del_disa(&self, params: &DelDisaParams) -> Result<DelDisaResponse> {
         self.call_typed("delDISA", params).await
     }
 
-    /// Call the `delEmailToFax` API method.
-    pub async fn del_email_to_fax(&self, params: &DelEmailToFaxParams) -> Result<Value> {
-        self.call("delEmailToFax", params).await
+    /// Call the `delDISA` API method and return the raw JSON envelope.
+    pub async fn del_disa_raw(&self, params: &DelDisaParams) -> Result<Value> {
+        self.call("delDISA", params).await
     }
 
-    /// Call the `delEmailToFax` API method and deserialize the response body into `T`.
-    pub async fn del_email_to_fax_typed<T>(&self, params: &DelEmailToFaxParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delEmailToFax` API method and deserialize into [`DelEmailToFaxResponse`].
+    pub async fn del_email_to_fax(
+        &self,
+        params: &DelEmailToFaxParams,
+    ) -> Result<DelEmailToFaxResponse> {
         self.call_typed("delEmailToFax", params).await
     }
 
-    /// Call the `delFaxFolder` API method.
-    pub async fn del_fax_folder(&self, params: &DelFaxFolderParams) -> Result<Value> {
-        self.call("delFaxFolder", params).await
+    /// Call the `delEmailToFax` API method and return the raw JSON envelope.
+    pub async fn del_email_to_fax_raw(&self, params: &DelEmailToFaxParams) -> Result<Value> {
+        self.call("delEmailToFax", params).await
     }
 
-    /// Call the `delFaxFolder` API method and deserialize the response body into `T`.
-    pub async fn del_fax_folder_typed<T>(&self, params: &DelFaxFolderParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delFaxFolder` API method and deserialize into [`DelFaxFolderResponse`].
+    pub async fn del_fax_folder(
+        &self,
+        params: &DelFaxFolderParams,
+    ) -> Result<DelFaxFolderResponse> {
         self.call_typed("delFaxFolder", params).await
     }
 
-    /// Call the `delForwarding` API method.
-    pub async fn del_forwarding(&self, params: &DelForwardingParams) -> Result<Value> {
-        self.call("delForwarding", params).await
+    /// Call the `delFaxFolder` API method and return the raw JSON envelope.
+    pub async fn del_fax_folder_raw(&self, params: &DelFaxFolderParams) -> Result<Value> {
+        self.call("delFaxFolder", params).await
     }
 
-    /// Call the `delForwarding` API method and deserialize the response body into `T`.
-    pub async fn del_forwarding_typed<T>(&self, params: &DelForwardingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delForwarding` API method and deserialize into [`DelForwardingResponse`].
+    pub async fn del_forwarding(
+        &self,
+        params: &DelForwardingParams,
+    ) -> Result<DelForwardingResponse> {
         self.call_typed("delForwarding", params).await
     }
 
-    /// Call the `delIVR` API method.
-    pub async fn del_ivr(&self, params: &DelIvrParams) -> Result<Value> {
-        self.call("delIVR", params).await
+    /// Call the `delForwarding` API method and return the raw JSON envelope.
+    pub async fn del_forwarding_raw(&self, params: &DelForwardingParams) -> Result<Value> {
+        self.call("delForwarding", params).await
     }
 
-    /// Call the `delIVR` API method and deserialize the response body into `T`.
-    pub async fn del_ivr_typed<T>(&self, params: &DelIvrParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delIVR` API method and deserialize into [`DelIvrResponse`].
+    pub async fn del_ivr(&self, params: &DelIvrParams) -> Result<DelIvrResponse> {
         self.call_typed("delIVR", params).await
     }
 
-    /// Call the `delLocation` API method.
-    pub async fn del_location(&self, params: &DelLocationParams) -> Result<Value> {
-        self.call("delLocation", params).await
+    /// Call the `delIVR` API method and return the raw JSON envelope.
+    pub async fn del_ivr_raw(&self, params: &DelIvrParams) -> Result<Value> {
+        self.call("delIVR", params).await
     }
 
-    /// Call the `delLocation` API method and deserialize the response body into `T`.
-    pub async fn del_location_typed<T>(&self, params: &DelLocationParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delLocation` API method and deserialize into [`DelLocationResponse`].
+    pub async fn del_location(&self, params: &DelLocationParams) -> Result<DelLocationResponse> {
         self.call_typed("delLocation", params).await
     }
 
-    /// Call the `delMemberFromConference` API method.
+    /// Call the `delLocation` API method and return the raw JSON envelope.
+    pub async fn del_location_raw(&self, params: &DelLocationParams) -> Result<Value> {
+        self.call("delLocation", params).await
+    }
+
+    /// Call the `delMemberFromConference` API method and deserialize into [`DelMemberFromConferenceResponse`].
     pub async fn del_member_from_conference(
+        &self,
+        params: &DelMemberFromConferenceParams,
+    ) -> Result<DelMemberFromConferenceResponse> {
+        self.call_typed("delMemberFromConference", params).await
+    }
+
+    /// Call the `delMemberFromConference` API method and return the raw JSON envelope.
+    pub async fn del_member_from_conference_raw(
         &self,
         params: &DelMemberFromConferenceParams,
     ) -> Result<Value> {
         self.call("delMemberFromConference", params).await
     }
 
-    /// Call the `delMemberFromConference` API method and deserialize the response body into `T`.
-    pub async fn del_member_from_conference_typed<T>(
-        &self,
-        params: &DelMemberFromConferenceParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("delMemberFromConference", params).await
-    }
-
-    /// Call the `delMessages` API method.
-    pub async fn del_messages(&self, params: &DelMessagesParams) -> Result<Value> {
-        self.call("delMessages", params).await
-    }
-
-    /// Call the `delMessages` API method and deserialize the response body into `T`.
-    pub async fn del_messages_typed<T>(&self, params: &DelMessagesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delMessages` API method and deserialize into [`DelMessagesResponse`].
+    pub async fn del_messages(&self, params: &DelMessagesParams) -> Result<DelMessagesResponse> {
         self.call_typed("delMessages", params).await
     }
 
-    /// Call the `delMusicOnHold` API method.
-    pub async fn del_music_on_hold(&self, params: &DelMusicOnHoldParams) -> Result<Value> {
-        self.call("delMusicOnHold", params).await
+    /// Call the `delMessages` API method and return the raw JSON envelope.
+    pub async fn del_messages_raw(&self, params: &DelMessagesParams) -> Result<Value> {
+        self.call("delMessages", params).await
     }
 
-    /// Call the `delMusicOnHold` API method and deserialize the response body into `T`.
-    pub async fn del_music_on_hold_typed<T>(&self, params: &DelMusicOnHoldParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delMusicOnHold` API method and deserialize into [`DelMusicOnHoldResponse`].
+    pub async fn del_music_on_hold(
+        &self,
+        params: &DelMusicOnHoldParams,
+    ) -> Result<DelMusicOnHoldResponse> {
         self.call_typed("delMusicOnHold", params).await
     }
 
-    /// Call the `delPhonebook` API method.
-    pub async fn del_phonebook(&self, params: &DelPhonebookParams) -> Result<Value> {
-        self.call("delPhonebook", params).await
+    /// Call the `delMusicOnHold` API method and return the raw JSON envelope.
+    pub async fn del_music_on_hold_raw(&self, params: &DelMusicOnHoldParams) -> Result<Value> {
+        self.call("delMusicOnHold", params).await
     }
 
-    /// Call the `delPhonebook` API method and deserialize the response body into `T`.
-    pub async fn del_phonebook_typed<T>(&self, params: &DelPhonebookParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delPhonebook` API method and deserialize into [`DelPhonebookResponse`].
+    pub async fn del_phonebook(&self, params: &DelPhonebookParams) -> Result<DelPhonebookResponse> {
         self.call_typed("delPhonebook", params).await
     }
 
-    /// Call the `delPhonebookGroup` API method.
-    pub async fn del_phonebook_group(&self, params: &DelPhonebookGroupParams) -> Result<Value> {
-        self.call("delPhonebookGroup", params).await
+    /// Call the `delPhonebook` API method and return the raw JSON envelope.
+    pub async fn del_phonebook_raw(&self, params: &DelPhonebookParams) -> Result<Value> {
+        self.call("delPhonebook", params).await
     }
 
-    /// Call the `delPhonebookGroup` API method and deserialize the response body into `T`.
-    pub async fn del_phonebook_group_typed<T>(&self, params: &DelPhonebookGroupParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delPhonebookGroup` API method and deserialize into [`DelPhonebookGroupResponse`].
+    pub async fn del_phonebook_group(
+        &self,
+        params: &DelPhonebookGroupParams,
+    ) -> Result<DelPhonebookGroupResponse> {
         self.call_typed("delPhonebookGroup", params).await
     }
 
-    /// Call the `delQueue` API method.
-    pub async fn del_queue(&self, params: &DelQueueParams) -> Result<Value> {
-        self.call("delQueue", params).await
+    /// Call the `delPhonebookGroup` API method and return the raw JSON envelope.
+    pub async fn del_phonebook_group_raw(&self, params: &DelPhonebookGroupParams) -> Result<Value> {
+        self.call("delPhonebookGroup", params).await
     }
 
-    /// Call the `delQueue` API method and deserialize the response body into `T`.
-    pub async fn del_queue_typed<T>(&self, params: &DelQueueParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delQueue` API method and deserialize into [`DelQueueResponse`].
+    pub async fn del_queue(&self, params: &DelQueueParams) -> Result<DelQueueResponse> {
         self.call_typed("delQueue", params).await
     }
 
-    /// Call the `delRecording` API method.
-    pub async fn del_recording(&self, params: &DelRecordingParams) -> Result<Value> {
-        self.call("delRecording", params).await
+    /// Call the `delQueue` API method and return the raw JSON envelope.
+    pub async fn del_queue_raw(&self, params: &DelQueueParams) -> Result<Value> {
+        self.call("delQueue", params).await
     }
 
-    /// Call the `delRecording` API method and deserialize the response body into `T`.
-    pub async fn del_recording_typed<T>(&self, params: &DelRecordingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delRecording` API method and deserialize into [`DelRecordingResponse`].
+    pub async fn del_recording(&self, params: &DelRecordingParams) -> Result<DelRecordingResponse> {
         self.call_typed("delRecording", params).await
     }
 
-    /// Call the `delRingGroup` API method.
-    pub async fn del_ring_group(&self, params: &DelRingGroupParams) -> Result<Value> {
-        self.call("delRingGroup", params).await
+    /// Call the `delRecording` API method and return the raw JSON envelope.
+    pub async fn del_recording_raw(&self, params: &DelRecordingParams) -> Result<Value> {
+        self.call("delRecording", params).await
     }
 
-    /// Call the `delRingGroup` API method and deserialize the response body into `T`.
-    pub async fn del_ring_group_typed<T>(&self, params: &DelRingGroupParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delRingGroup` API method and deserialize into [`DelRingGroupResponse`].
+    pub async fn del_ring_group(
+        &self,
+        params: &DelRingGroupParams,
+    ) -> Result<DelRingGroupResponse> {
         self.call_typed("delRingGroup", params).await
     }
 
-    /// Call the `delSIPURI` API method.
-    pub async fn del_sip_uri(&self, params: &DelSipUriParams) -> Result<Value> {
-        self.call("delSIPURI", params).await
+    /// Call the `delRingGroup` API method and return the raw JSON envelope.
+    pub async fn del_ring_group_raw(&self, params: &DelRingGroupParams) -> Result<Value> {
+        self.call("delRingGroup", params).await
     }
 
-    /// Call the `delSIPURI` API method and deserialize the response body into `T`.
-    pub async fn del_sip_uri_typed<T>(&self, params: &DelSipUriParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delSIPURI` API method and deserialize into [`DelSipUriResponse`].
+    pub async fn del_sip_uri(&self, params: &DelSipUriParams) -> Result<DelSipUriResponse> {
         self.call_typed("delSIPURI", params).await
     }
 
-    /// Call the `delStaticMember` API method.
-    pub async fn del_static_member(&self, params: &DelStaticMemberParams) -> Result<Value> {
-        self.call("delStaticMember", params).await
+    /// Call the `delSIPURI` API method and return the raw JSON envelope.
+    pub async fn del_sip_uri_raw(&self, params: &DelSipUriParams) -> Result<Value> {
+        self.call("delSIPURI", params).await
     }
 
-    /// Call the `delStaticMember` API method and deserialize the response body into `T`.
-    pub async fn del_static_member_typed<T>(&self, params: &DelStaticMemberParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delStaticMember` API method and deserialize into [`DelStaticMemberResponse`].
+    pub async fn del_static_member(
+        &self,
+        params: &DelStaticMemberParams,
+    ) -> Result<DelStaticMemberResponse> {
         self.call_typed("delStaticMember", params).await
     }
 
-    /// Call the `delSubAccount` API method.
-    pub async fn del_sub_account(&self, params: &DelSubAccountParams) -> Result<Value> {
-        self.call("delSubAccount", params).await
+    /// Call the `delStaticMember` API method and return the raw JSON envelope.
+    pub async fn del_static_member_raw(&self, params: &DelStaticMemberParams) -> Result<Value> {
+        self.call("delStaticMember", params).await
     }
 
-    /// Call the `delSubAccount` API method and deserialize the response body into `T`.
-    pub async fn del_sub_account_typed<T>(&self, params: &DelSubAccountParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delSubAccount` API method and deserialize into [`DelSubAccountResponse`].
+    pub async fn del_sub_account(
+        &self,
+        params: &DelSubAccountParams,
+    ) -> Result<DelSubAccountResponse> {
         self.call_typed("delSubAccount", params).await
     }
 
-    /// Call the `delTimeCondition` API method.
-    pub async fn del_time_condition(&self, params: &DelTimeConditionParams) -> Result<Value> {
-        self.call("delTimeCondition", params).await
+    /// Call the `delSubAccount` API method and return the raw JSON envelope.
+    pub async fn del_sub_account_raw(&self, params: &DelSubAccountParams) -> Result<Value> {
+        self.call("delSubAccount", params).await
     }
 
-    /// Call the `delTimeCondition` API method and deserialize the response body into `T`.
-    pub async fn del_time_condition_typed<T>(&self, params: &DelTimeConditionParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delTimeCondition` API method and deserialize into [`DelTimeConditionResponse`].
+    pub async fn del_time_condition(
+        &self,
+        params: &DelTimeConditionParams,
+    ) -> Result<DelTimeConditionResponse> {
         self.call_typed("delTimeCondition", params).await
     }
 
-    /// Call the `delVoicemail` API method.
-    pub async fn del_voicemail(&self, params: &DelVoicemailParams) -> Result<Value> {
-        self.call("delVoicemail", params).await
+    /// Call the `delTimeCondition` API method and return the raw JSON envelope.
+    pub async fn del_time_condition_raw(&self, params: &DelTimeConditionParams) -> Result<Value> {
+        self.call("delTimeCondition", params).await
     }
 
-    /// Call the `delVoicemail` API method and deserialize the response body into `T`.
-    pub async fn del_voicemail_typed<T>(&self, params: &DelVoicemailParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `delVoicemail` API method and deserialize into [`DelVoicemailResponse`].
+    pub async fn del_voicemail(&self, params: &DelVoicemailParams) -> Result<DelVoicemailResponse> {
         self.call_typed("delVoicemail", params).await
     }
 
-    /// Call the `deleteFaxMessage` API method.
-    pub async fn delete_fax_message(&self, params: &DeleteFaxMessageParams) -> Result<Value> {
-        self.call("deleteFaxMessage", params).await
+    /// Call the `delVoicemail` API method and return the raw JSON envelope.
+    pub async fn del_voicemail_raw(&self, params: &DelVoicemailParams) -> Result<Value> {
+        self.call("delVoicemail", params).await
     }
 
-    /// Call the `deleteFaxMessage` API method and deserialize the response body into `T`.
-    pub async fn delete_fax_message_typed<T>(&self, params: &DeleteFaxMessageParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `deleteFaxMessage` API method and deserialize into [`DeleteFaxMessageResponse`].
+    pub async fn delete_fax_message(
+        &self,
+        params: &DeleteFaxMessageParams,
+    ) -> Result<DeleteFaxMessageResponse> {
         self.call_typed("deleteFaxMessage", params).await
     }
 
-    /// Call the `deleteMMS` API method.
-    pub async fn delete_mms(&self, params: &DeleteMmsParams) -> Result<Value> {
-        self.call("deleteMMS", params).await
+    /// Call the `deleteFaxMessage` API method and return the raw JSON envelope.
+    pub async fn delete_fax_message_raw(&self, params: &DeleteFaxMessageParams) -> Result<Value> {
+        self.call("deleteFaxMessage", params).await
     }
 
-    /// Call the `deleteMMS` API method and deserialize the response body into `T`.
-    pub async fn delete_mms_typed<T>(&self, params: &DeleteMmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `deleteMMS` API method and deserialize into [`DeleteMmsResponse`].
+    pub async fn delete_mms(&self, params: &DeleteMmsParams) -> Result<DeleteMmsResponse> {
         self.call_typed("deleteMMS", params).await
     }
 
-    /// Call the `deleteSMS` API method.
-    pub async fn delete_sms(&self, params: &DeleteSmsParams) -> Result<Value> {
-        self.call("deleteSMS", params).await
+    /// Call the `deleteMMS` API method and return the raw JSON envelope.
+    pub async fn delete_mms_raw(&self, params: &DeleteMmsParams) -> Result<Value> {
+        self.call("deleteMMS", params).await
     }
 
-    /// Call the `deleteSMS` API method and deserialize the response body into `T`.
-    pub async fn delete_sms_typed<T>(&self, params: &DeleteSmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `deleteSMS` API method and deserialize into [`DeleteSmsResponse`].
+    pub async fn delete_sms(&self, params: &DeleteSmsParams) -> Result<DeleteSmsResponse> {
         self.call_typed("deleteSMS", params).await
     }
 
-    /// Call the `e911AddressTypes` API method.
-    pub async fn e911_address_types(&self, params: &E911AddressTypesParams) -> Result<Value> {
-        self.call("e911AddressTypes", params).await
+    /// Call the `deleteSMS` API method and return the raw JSON envelope.
+    pub async fn delete_sms_raw(&self, params: &DeleteSmsParams) -> Result<Value> {
+        self.call("deleteSMS", params).await
     }
 
-    /// Call the `e911AddressTypes` API method and deserialize the response body into `T`.
-    pub async fn e911_address_types_typed<T>(&self, params: &E911AddressTypesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `e911AddressTypes` API method and deserialize into [`E911AddressTypesResponse`].
+    pub async fn e911_address_types(
+        &self,
+        params: &E911AddressTypesParams,
+    ) -> Result<E911AddressTypesResponse> {
         self.call_typed("e911AddressTypes", params).await
     }
 
-    /// Call the `e911Cancel` API method.
-    pub async fn e911_cancel(&self, params: &E911CancelParams) -> Result<Value> {
-        self.call("e911Cancel", params).await
+    /// Call the `e911AddressTypes` API method and return the raw JSON envelope.
+    pub async fn e911_address_types_raw(&self, params: &E911AddressTypesParams) -> Result<Value> {
+        self.call("e911AddressTypes", params).await
     }
 
-    /// Call the `e911Cancel` API method and deserialize the response body into `T`.
-    pub async fn e911_cancel_typed<T>(&self, params: &E911CancelParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `e911Cancel` API method and deserialize into [`E911CancelResponse`].
+    pub async fn e911_cancel(&self, params: &E911CancelParams) -> Result<E911CancelResponse> {
         self.call_typed("e911Cancel", params).await
     }
 
-    /// Call the `e911Info` API method.
-    pub async fn e911_info(&self, params: &E911InfoParams) -> Result<Value> {
-        self.call("e911Info", params).await
+    /// Call the `e911Cancel` API method and return the raw JSON envelope.
+    pub async fn e911_cancel_raw(&self, params: &E911CancelParams) -> Result<Value> {
+        self.call("e911Cancel", params).await
     }
 
-    /// Call the `e911Info` API method and deserialize the response body into `T`.
-    pub async fn e911_info_typed<T>(&self, params: &E911InfoParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `e911Info` API method and deserialize into [`E911InfoResponse`].
+    pub async fn e911_info(&self, params: &E911InfoParams) -> Result<E911InfoResponse> {
         self.call_typed("e911Info", params).await
     }
 
-    /// Call the `e911Provision` API method.
-    pub async fn e911_provision(&self, params: &E911ProvisionParams) -> Result<Value> {
-        self.call("e911Provision", params).await
+    /// Call the `e911Info` API method and return the raw JSON envelope.
+    pub async fn e911_info_raw(&self, params: &E911InfoParams) -> Result<Value> {
+        self.call("e911Info", params).await
     }
 
-    /// Call the `e911Provision` API method and deserialize the response body into `T`.
-    pub async fn e911_provision_typed<T>(&self, params: &E911ProvisionParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `e911Provision` API method and deserialize into [`E911ProvisionResponse`].
+    pub async fn e911_provision(
+        &self,
+        params: &E911ProvisionParams,
+    ) -> Result<E911ProvisionResponse> {
         self.call_typed("e911Provision", params).await
     }
 
-    /// Call the `e911ProvisionManually` API method.
+    /// Call the `e911Provision` API method and return the raw JSON envelope.
+    pub async fn e911_provision_raw(&self, params: &E911ProvisionParams) -> Result<Value> {
+        self.call("e911Provision", params).await
+    }
+
+    /// Call the `e911ProvisionManually` API method and deserialize into [`E911ProvisionManuallyResponse`].
     pub async fn e911_provision_manually(
+        &self,
+        params: &E911ProvisionManuallyParams,
+    ) -> Result<E911ProvisionManuallyResponse> {
+        self.call_typed("e911ProvisionManually", params).await
+    }
+
+    /// Call the `e911ProvisionManually` API method and return the raw JSON envelope.
+    pub async fn e911_provision_manually_raw(
         &self,
         params: &E911ProvisionManuallyParams,
     ) -> Result<Value> {
         self.call("e911ProvisionManually", params).await
     }
 
-    /// Call the `e911ProvisionManually` API method and deserialize the response body into `T`.
-    pub async fn e911_provision_manually_typed<T>(
-        &self,
-        params: &E911ProvisionManuallyParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("e911ProvisionManually", params).await
-    }
-
-    /// Call the `e911Update` API method.
-    pub async fn e911_update(&self, params: &E911UpdateParams) -> Result<Value> {
-        self.call("e911Update", params).await
-    }
-
-    /// Call the `e911Update` API method and deserialize the response body into `T`.
-    pub async fn e911_update_typed<T>(&self, params: &E911UpdateParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `e911Update` API method and deserialize into [`E911UpdateResponse`].
+    pub async fn e911_update(&self, params: &E911UpdateParams) -> Result<E911UpdateResponse> {
         self.call_typed("e911Update", params).await
     }
 
-    /// Call the `e911Validate` API method.
-    pub async fn e911_validate(&self, params: &E911ValidateParams) -> Result<Value> {
-        self.call("e911Validate", params).await
+    /// Call the `e911Update` API method and return the raw JSON envelope.
+    pub async fn e911_update_raw(&self, params: &E911UpdateParams) -> Result<Value> {
+        self.call("e911Update", params).await
     }
 
-    /// Call the `e911Validate` API method and deserialize the response body into `T`.
-    pub async fn e911_validate_typed<T>(&self, params: &E911ValidateParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `e911Validate` API method and deserialize into [`E911ValidateResponse`].
+    pub async fn e911_validate(&self, params: &E911ValidateParams) -> Result<E911ValidateResponse> {
         self.call_typed("e911Validate", params).await
     }
 
-    /// Call the `getAllowedCodecs` API method.
-    pub async fn get_allowed_codecs(&self, params: &GetAllowedCodecsParams) -> Result<Value> {
-        self.call("getAllowedCodecs", params).await
+    /// Call the `e911Validate` API method and return the raw JSON envelope.
+    pub async fn e911_validate_raw(&self, params: &E911ValidateParams) -> Result<Value> {
+        self.call("e911Validate", params).await
     }
 
-    /// Call the `getAllowedCodecs` API method and deserialize the response body into `T`.
-    pub async fn get_allowed_codecs_typed<T>(&self, params: &GetAllowedCodecsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getAllowedCodecs` API method and deserialize into [`GetAllowedCodecsResponse`].
+    pub async fn get_allowed_codecs(
+        &self,
+        params: &GetAllowedCodecsParams,
+    ) -> Result<GetAllowedCodecsResponse> {
         self.call_typed("getAllowedCodecs", params).await
     }
 
-    /// Call the `getAuthTypes` API method.
-    pub async fn get_auth_types(&self, params: &GetAuthTypesParams) -> Result<Value> {
-        self.call("getAuthTypes", params).await
+    /// Call the `getAllowedCodecs` API method and return the raw JSON envelope.
+    pub async fn get_allowed_codecs_raw(&self, params: &GetAllowedCodecsParams) -> Result<Value> {
+        self.call("getAllowedCodecs", params).await
     }
 
-    /// Call the `getAuthTypes` API method and deserialize the response body into `T`.
-    pub async fn get_auth_types_typed<T>(&self, params: &GetAuthTypesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getAuthTypes` API method and deserialize into [`GetAuthTypesResponse`].
+    pub async fn get_auth_types(
+        &self,
+        params: &GetAuthTypesParams,
+    ) -> Result<GetAuthTypesResponse> {
         self.call_typed("getAuthTypes", params).await
     }
 
-    /// Call the `getBackOrders` API method.
-    pub async fn get_back_orders(&self, params: &GetBackOrdersParams) -> Result<Value> {
-        self.call("getBackOrders", params).await
+    /// Call the `getAuthTypes` API method and return the raw JSON envelope.
+    pub async fn get_auth_types_raw(&self, params: &GetAuthTypesParams) -> Result<Value> {
+        self.call("getAuthTypes", params).await
     }
 
-    /// Call the `getBackOrders` API method and deserialize the response body into `T`.
-    pub async fn get_back_orders_typed<T>(&self, params: &GetBackOrdersParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getBackOrders` API method and deserialize into [`GetBackOrdersResponse`].
+    pub async fn get_back_orders(
+        &self,
+        params: &GetBackOrdersParams,
+    ) -> Result<GetBackOrdersResponse> {
         self.call_typed("getBackOrders", params).await
     }
 
-    /// Call the `getBalance` API method.
-    pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<Value> {
-        self.call("getBalance", params).await
+    /// Call the `getBackOrders` API method and return the raw JSON envelope.
+    pub async fn get_back_orders_raw(&self, params: &GetBackOrdersParams) -> Result<Value> {
+        self.call("getBackOrders", params).await
     }
 
-    /// Call the `getBalance` API method and deserialize the response body into `T`.
-    pub async fn get_balance_typed<T>(&self, params: &GetBalanceParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getBalance` API method and deserialize into [`GetBalanceResponse`].
+    pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {
         self.call_typed("getBalance", params).await
     }
 
-    /// Call the `getBalanceManagement` API method.
+    /// Call the `getBalance` API method and return the raw JSON envelope.
+    pub async fn get_balance_raw(&self, params: &GetBalanceParams) -> Result<Value> {
+        self.call("getBalance", params).await
+    }
+
+    /// Call the `getBalanceManagement` API method and deserialize into [`GetBalanceManagementResponse`].
     pub async fn get_balance_management(
+        &self,
+        params: &GetBalanceManagementParams,
+    ) -> Result<GetBalanceManagementResponse> {
+        self.call_typed("getBalanceManagement", params).await
+    }
+
+    /// Call the `getBalanceManagement` API method and return the raw JSON envelope.
+    pub async fn get_balance_management_raw(
         &self,
         params: &GetBalanceManagementParams,
     ) -> Result<Value> {
         self.call("getBalanceManagement", params).await
     }
 
-    /// Call the `getBalanceManagement` API method and deserialize the response body into `T`.
-    pub async fn get_balance_management_typed<T>(
-        &self,
-        params: &GetBalanceManagementParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getBalanceManagement", params).await
-    }
-
-    /// Call the `getCDR` API method.
-    pub async fn get_cdr(&self, params: &GetCdrParams) -> Result<Value> {
-        self.call("getCDR", params).await
-    }
-
-    /// Call the `getCDR` API method and deserialize the response body into `T`.
-    pub async fn get_cdr_typed<T>(&self, params: &GetCdrParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCDR` API method and deserialize into [`GetCdrResponse`].
+    pub async fn get_cdr(&self, params: &GetCdrParams) -> Result<GetCdrResponse> {
         self.call_typed("getCDR", params).await
     }
 
-    /// Call the `getCallAccounts` API method.
-    pub async fn get_call_accounts(&self, params: &GetCallAccountsParams) -> Result<Value> {
-        self.call("getCallAccounts", params).await
+    /// Call the `getCDR` API method and return the raw JSON envelope.
+    pub async fn get_cdr_raw(&self, params: &GetCdrParams) -> Result<Value> {
+        self.call("getCDR", params).await
     }
 
-    /// Call the `getCallAccounts` API method and deserialize the response body into `T`.
-    pub async fn get_call_accounts_typed<T>(&self, params: &GetCallAccountsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCallAccounts` API method and deserialize into [`GetCallAccountsResponse`].
+    pub async fn get_call_accounts(
+        &self,
+        params: &GetCallAccountsParams,
+    ) -> Result<GetCallAccountsResponse> {
         self.call_typed("getCallAccounts", params).await
     }
 
-    /// Call the `getCallBilling` API method.
-    pub async fn get_call_billing(&self, params: &GetCallBillingParams) -> Result<Value> {
-        self.call("getCallBilling", params).await
+    /// Call the `getCallAccounts` API method and return the raw JSON envelope.
+    pub async fn get_call_accounts_raw(&self, params: &GetCallAccountsParams) -> Result<Value> {
+        self.call("getCallAccounts", params).await
     }
 
-    /// Call the `getCallBilling` API method and deserialize the response body into `T`.
-    pub async fn get_call_billing_typed<T>(&self, params: &GetCallBillingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCallBilling` API method and deserialize into [`GetCallBillingResponse`].
+    pub async fn get_call_billing(
+        &self,
+        params: &GetCallBillingParams,
+    ) -> Result<GetCallBillingResponse> {
         self.call_typed("getCallBilling", params).await
     }
 
-    /// Call the `getCallHuntings` API method.
-    pub async fn get_call_huntings(&self, params: &GetCallHuntingsParams) -> Result<Value> {
-        self.call("getCallHuntings", params).await
+    /// Call the `getCallBilling` API method and return the raw JSON envelope.
+    pub async fn get_call_billing_raw(&self, params: &GetCallBillingParams) -> Result<Value> {
+        self.call("getCallBilling", params).await
     }
 
-    /// Call the `getCallHuntings` API method and deserialize the response body into `T`.
-    pub async fn get_call_huntings_typed<T>(&self, params: &GetCallHuntingsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCallHuntings` API method and deserialize into [`GetCallHuntingsResponse`].
+    pub async fn get_call_huntings(
+        &self,
+        params: &GetCallHuntingsParams,
+    ) -> Result<GetCallHuntingsResponse> {
         self.call_typed("getCallHuntings", params).await
     }
 
-    /// Call the `getCallParking` API method.
-    pub async fn get_call_parking(&self, params: &GetCallParkingParams) -> Result<Value> {
-        self.call("getCallParking", params).await
+    /// Call the `getCallHuntings` API method and return the raw JSON envelope.
+    pub async fn get_call_huntings_raw(&self, params: &GetCallHuntingsParams) -> Result<Value> {
+        self.call("getCallHuntings", params).await
     }
 
-    /// Call the `getCallParking` API method and deserialize the response body into `T`.
-    pub async fn get_call_parking_typed<T>(&self, params: &GetCallParkingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCallParking` API method and deserialize into [`GetCallParkingResponse`].
+    pub async fn get_call_parking(
+        &self,
+        params: &GetCallParkingParams,
+    ) -> Result<GetCallParkingResponse> {
         self.call_typed("getCallParking", params).await
     }
 
-    /// Call the `getCallRecording` API method.
-    pub async fn get_call_recording(&self, params: &GetCallRecordingParams) -> Result<Value> {
-        self.call("getCallRecording", params).await
+    /// Call the `getCallParking` API method and return the raw JSON envelope.
+    pub async fn get_call_parking_raw(&self, params: &GetCallParkingParams) -> Result<Value> {
+        self.call("getCallParking", params).await
     }
 
-    /// Call the `getCallRecording` API method and deserialize the response body into `T`.
-    pub async fn get_call_recording_typed<T>(&self, params: &GetCallRecordingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCallRecording` API method and deserialize into [`GetCallRecordingResponse`].
+    pub async fn get_call_recording(
+        &self,
+        params: &GetCallRecordingParams,
+    ) -> Result<GetCallRecordingResponse> {
         self.call_typed("getCallRecording", params).await
     }
 
-    /// Call the `getCallRecordings` API method.
-    pub async fn get_call_recordings(&self, params: &GetCallRecordingsParams) -> Result<Value> {
-        self.call("getCallRecordings", params).await
+    /// Call the `getCallRecording` API method and return the raw JSON envelope.
+    pub async fn get_call_recording_raw(&self, params: &GetCallRecordingParams) -> Result<Value> {
+        self.call("getCallRecording", params).await
     }
 
-    /// Call the `getCallRecordings` API method and deserialize the response body into `T`.
-    pub async fn get_call_recordings_typed<T>(&self, params: &GetCallRecordingsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCallRecordings` API method and deserialize into [`GetCallRecordingsResponse`].
+    pub async fn get_call_recordings(
+        &self,
+        params: &GetCallRecordingsParams,
+    ) -> Result<GetCallRecordingsResponse> {
         self.call_typed("getCallRecordings", params).await
     }
 
-    /// Call the `getCallTranscriptions` API method.
+    /// Call the `getCallRecordings` API method and return the raw JSON envelope.
+    pub async fn get_call_recordings_raw(&self, params: &GetCallRecordingsParams) -> Result<Value> {
+        self.call("getCallRecordings", params).await
+    }
+
+    /// Call the `getCallTranscriptions` API method and deserialize into [`GetCallTranscriptionsResponse`].
     pub async fn get_call_transcriptions(
+        &self,
+        params: &GetCallTranscriptionsParams,
+    ) -> Result<GetCallTranscriptionsResponse> {
+        self.call_typed("getCallTranscriptions", params).await
+    }
+
+    /// Call the `getCallTranscriptions` API method and return the raw JSON envelope.
+    pub async fn get_call_transcriptions_raw(
         &self,
         params: &GetCallTranscriptionsParams,
     ) -> Result<Value> {
         self.call("getCallTranscriptions", params).await
     }
 
-    /// Call the `getCallTranscriptions` API method and deserialize the response body into `T`.
-    pub async fn get_call_transcriptions_typed<T>(
+    /// Call the `getCallTypes` API method and deserialize into [`GetCallTypesResponse`].
+    pub async fn get_call_types(
         &self,
-        params: &GetCallTranscriptionsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getCallTranscriptions", params).await
-    }
-
-    /// Call the `getCallTypes` API method.
-    pub async fn get_call_types(&self, params: &GetCallTypesParams) -> Result<Value> {
-        self.call("getCallTypes", params).await
-    }
-
-    /// Call the `getCallTypes` API method and deserialize the response body into `T`.
-    pub async fn get_call_types_typed<T>(&self, params: &GetCallTypesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &GetCallTypesParams,
+    ) -> Result<GetCallTypesResponse> {
         self.call_typed("getCallTypes", params).await
     }
 
-    /// Call the `getCallbacks` API method.
-    pub async fn get_callbacks(&self, params: &GetCallbacksParams) -> Result<Value> {
-        self.call("getCallbacks", params).await
+    /// Call the `getCallTypes` API method and return the raw JSON envelope.
+    pub async fn get_call_types_raw(&self, params: &GetCallTypesParams) -> Result<Value> {
+        self.call("getCallTypes", params).await
     }
 
-    /// Call the `getCallbacks` API method and deserialize the response body into `T`.
-    pub async fn get_callbacks_typed<T>(&self, params: &GetCallbacksParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCallbacks` API method and deserialize into [`GetCallbacksResponse`].
+    pub async fn get_callbacks(&self, params: &GetCallbacksParams) -> Result<GetCallbacksResponse> {
         self.call_typed("getCallbacks", params).await
     }
 
-    /// Call the `getCallerIDFiltering` API method.
+    /// Call the `getCallbacks` API method and return the raw JSON envelope.
+    pub async fn get_callbacks_raw(&self, params: &GetCallbacksParams) -> Result<Value> {
+        self.call("getCallbacks", params).await
+    }
+
+    /// Call the `getCallerIDFiltering` API method and deserialize into [`GetCallerIdFilteringResponse`].
     pub async fn get_caller_id_filtering(
+        &self,
+        params: &GetCallerIdFilteringParams,
+    ) -> Result<GetCallerIdFilteringResponse> {
+        self.call_typed("getCallerIDFiltering", params).await
+    }
+
+    /// Call the `getCallerIDFiltering` API method and return the raw JSON envelope.
+    pub async fn get_caller_id_filtering_raw(
         &self,
         params: &GetCallerIdFilteringParams,
     ) -> Result<Value> {
         self.call("getCallerIDFiltering", params).await
     }
 
-    /// Call the `getCallerIDFiltering` API method and deserialize the response body into `T`.
-    pub async fn get_caller_id_filtering_typed<T>(
-        &self,
-        params: &GetCallerIdFilteringParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getCallerIDFiltering", params).await
-    }
-
-    /// Call the `getCarriers` API method.
-    pub async fn get_carriers(&self, params: &GetCarriersParams) -> Result<Value> {
-        self.call("getCarriers", params).await
-    }
-
-    /// Call the `getCarriers` API method and deserialize the response body into `T`.
-    pub async fn get_carriers_typed<T>(&self, params: &GetCarriersParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCarriers` API method and deserialize into [`GetCarriersResponse`].
+    pub async fn get_carriers(&self, params: &GetCarriersParams) -> Result<GetCarriersResponse> {
         self.call_typed("getCarriers", params).await
     }
 
-    /// Call the `getCharges` API method.
-    pub async fn get_charges(&self, params: &GetChargesParams) -> Result<Value> {
-        self.call("getCharges", params).await
+    /// Call the `getCarriers` API method and return the raw JSON envelope.
+    pub async fn get_carriers_raw(&self, params: &GetCarriersParams) -> Result<Value> {
+        self.call("getCarriers", params).await
     }
 
-    /// Call the `getCharges` API method and deserialize the response body into `T`.
-    pub async fn get_charges_typed<T>(&self, params: &GetChargesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCharges` API method and deserialize into [`GetChargesResponse`].
+    pub async fn get_charges(&self, params: &GetChargesParams) -> Result<GetChargesResponse> {
         self.call_typed("getCharges", params).await
     }
 
-    /// Call the `getClientPackages` API method.
-    pub async fn get_client_packages(&self, params: &GetClientPackagesParams) -> Result<Value> {
-        self.call("getClientPackages", params).await
+    /// Call the `getCharges` API method and return the raw JSON envelope.
+    pub async fn get_charges_raw(&self, params: &GetChargesParams) -> Result<Value> {
+        self.call("getCharges", params).await
     }
 
-    /// Call the `getClientPackages` API method and deserialize the response body into `T`.
-    pub async fn get_client_packages_typed<T>(&self, params: &GetClientPackagesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getClientPackages` API method and deserialize into [`GetClientPackagesResponse`].
+    pub async fn get_client_packages(
+        &self,
+        params: &GetClientPackagesParams,
+    ) -> Result<GetClientPackagesResponse> {
         self.call_typed("getClientPackages", params).await
     }
 
-    /// Call the `getClientThreshold` API method.
-    pub async fn get_client_threshold(&self, params: &GetClientThresholdParams) -> Result<Value> {
-        self.call("getClientThreshold", params).await
+    /// Call the `getClientPackages` API method and return the raw JSON envelope.
+    pub async fn get_client_packages_raw(&self, params: &GetClientPackagesParams) -> Result<Value> {
+        self.call("getClientPackages", params).await
     }
 
-    /// Call the `getClientThreshold` API method and deserialize the response body into `T`.
-    pub async fn get_client_threshold_typed<T>(
+    /// Call the `getClientThreshold` API method and deserialize into [`GetClientThresholdResponse`].
+    pub async fn get_client_threshold(
         &self,
         params: &GetClientThresholdParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<GetClientThresholdResponse> {
         self.call_typed("getClientThreshold", params).await
     }
 
-    /// Call the `getClients` API method.
-    pub async fn get_clients(&self, params: &GetClientsParams) -> Result<Value> {
-        self.call("getClients", params).await
+    /// Call the `getClientThreshold` API method and return the raw JSON envelope.
+    pub async fn get_client_threshold_raw(
+        &self,
+        params: &GetClientThresholdParams,
+    ) -> Result<Value> {
+        self.call("getClientThreshold", params).await
     }
 
-    /// Call the `getClients` API method and deserialize the response body into `T`.
-    pub async fn get_clients_typed<T>(&self, params: &GetClientsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getClients` API method and deserialize into [`GetClientsResponse`].
+    pub async fn get_clients(&self, params: &GetClientsParams) -> Result<GetClientsResponse> {
         self.call_typed("getClients", params).await
     }
 
-    /// Call the `getConference` API method.
-    pub async fn get_conference(&self, params: &GetConferenceParams) -> Result<Value> {
-        self.call("getConference", params).await
+    /// Call the `getClients` API method and return the raw JSON envelope.
+    pub async fn get_clients_raw(&self, params: &GetClientsParams) -> Result<Value> {
+        self.call("getClients", params).await
     }
 
-    /// Call the `getConference` API method and deserialize the response body into `T`.
-    pub async fn get_conference_typed<T>(&self, params: &GetConferenceParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getConference` API method and deserialize into [`GetConferenceResponse`].
+    pub async fn get_conference(
+        &self,
+        params: &GetConferenceParams,
+    ) -> Result<GetConferenceResponse> {
         self.call_typed("getConference", params).await
     }
 
-    /// Call the `getConferenceMembers` API method.
+    /// Call the `getConference` API method and return the raw JSON envelope.
+    pub async fn get_conference_raw(&self, params: &GetConferenceParams) -> Result<Value> {
+        self.call("getConference", params).await
+    }
+
+    /// Call the `getConferenceMembers` API method and deserialize into [`GetConferenceMembersResponse`].
     pub async fn get_conference_members(
+        &self,
+        params: &GetConferenceMembersParams,
+    ) -> Result<GetConferenceMembersResponse> {
+        self.call_typed("getConferenceMembers", params).await
+    }
+
+    /// Call the `getConferenceMembers` API method and return the raw JSON envelope.
+    pub async fn get_conference_members_raw(
         &self,
         params: &GetConferenceMembersParams,
     ) -> Result<Value> {
         self.call("getConferenceMembers", params).await
     }
 
-    /// Call the `getConferenceMembers` API method and deserialize the response body into `T`.
-    pub async fn get_conference_members_typed<T>(
+    /// Call the `getConferenceRecordingFile` API method and deserialize into [`GetConferenceRecordingFileResponse`].
+    pub async fn get_conference_recording_file(
         &self,
-        params: &GetConferenceMembersParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getConferenceMembers", params).await
+        params: &GetConferenceRecordingFileParams,
+    ) -> Result<GetConferenceRecordingFileResponse> {
+        self.call_typed("getConferenceRecordingFile", params).await
     }
 
-    /// Call the `getConferenceRecordingFile` API method.
-    pub async fn get_conference_recording_file(
+    /// Call the `getConferenceRecordingFile` API method and return the raw JSON envelope.
+    pub async fn get_conference_recording_file_raw(
         &self,
         params: &GetConferenceRecordingFileParams,
     ) -> Result<Value> {
         self.call("getConferenceRecordingFile", params).await
     }
 
-    /// Call the `getConferenceRecordingFile` API method and deserialize the response body into `T`.
-    pub async fn get_conference_recording_file_typed<T>(
+    /// Call the `getConferenceRecordings` API method and deserialize into [`GetConferenceRecordingsResponse`].
+    pub async fn get_conference_recordings(
         &self,
-        params: &GetConferenceRecordingFileParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getConferenceRecordingFile", params).await
+        params: &GetConferenceRecordingsParams,
+    ) -> Result<GetConferenceRecordingsResponse> {
+        self.call_typed("getConferenceRecordings", params).await
     }
 
-    /// Call the `getConferenceRecordings` API method.
-    pub async fn get_conference_recordings(
+    /// Call the `getConferenceRecordings` API method and return the raw JSON envelope.
+    pub async fn get_conference_recordings_raw(
         &self,
         params: &GetConferenceRecordingsParams,
     ) -> Result<Value> {
         self.call("getConferenceRecordings", params).await
     }
 
-    /// Call the `getConferenceRecordings` API method and deserialize the response body into `T`.
-    pub async fn get_conference_recordings_typed<T>(
-        &self,
-        params: &GetConferenceRecordingsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getConferenceRecordings", params).await
-    }
-
-    /// Call the `getCountries` API method.
-    pub async fn get_countries(&self, params: &GetCountriesParams) -> Result<Value> {
-        self.call("getCountries", params).await
-    }
-
-    /// Call the `getCountries` API method and deserialize the response body into `T`.
-    pub async fn get_countries_typed<T>(&self, params: &GetCountriesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getCountries` API method and deserialize into [`GetCountriesResponse`].
+    pub async fn get_countries(&self, params: &GetCountriesParams) -> Result<GetCountriesResponse> {
         self.call_typed("getCountries", params).await
     }
 
-    /// Call the `getDIDCountries` API method.
-    pub async fn get_did_countries(&self, params: &GetDidCountriesParams) -> Result<Value> {
-        self.call("getDIDCountries", params).await
+    /// Call the `getCountries` API method and return the raw JSON envelope.
+    pub async fn get_countries_raw(&self, params: &GetCountriesParams) -> Result<Value> {
+        self.call("getCountries", params).await
     }
 
-    /// Call the `getDIDCountries` API method and deserialize the response body into `T`.
-    pub async fn get_did_countries_typed<T>(&self, params: &GetDidCountriesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDIDCountries` API method and deserialize into [`GetDidCountriesResponse`].
+    pub async fn get_did_countries(
+        &self,
+        params: &GetDidCountriesParams,
+    ) -> Result<GetDidCountriesResponse> {
         self.call_typed("getDIDCountries", params).await
     }
 
-    /// Call the `getDIDsCAN` API method.
-    pub async fn get_dids_can(&self, params: &GetDidsCanParams) -> Result<Value> {
-        self.call("getDIDsCAN", params).await
+    /// Call the `getDIDCountries` API method and return the raw JSON envelope.
+    pub async fn get_did_countries_raw(&self, params: &GetDidCountriesParams) -> Result<Value> {
+        self.call("getDIDCountries", params).await
     }
 
-    /// Call the `getDIDsCAN` API method and deserialize the response body into `T`.
-    pub async fn get_dids_can_typed<T>(&self, params: &GetDidsCanParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDIDsCAN` API method and deserialize into [`GetDidsCanResponse`].
+    pub async fn get_dids_can(&self, params: &GetDidsCanParams) -> Result<GetDidsCanResponse> {
         self.call_typed("getDIDsCAN", params).await
     }
 
-    /// Call the `getDIDsInfo` API method.
-    pub async fn get_dids_info(&self, params: &GetDidsInfoParams) -> Result<Value> {
-        self.call("getDIDsInfo", params).await
+    /// Call the `getDIDsCAN` API method and return the raw JSON envelope.
+    pub async fn get_dids_can_raw(&self, params: &GetDidsCanParams) -> Result<Value> {
+        self.call("getDIDsCAN", params).await
     }
 
-    /// Call the `getDIDsInfo` API method and deserialize the response body into `T`.
-    pub async fn get_dids_info_typed<T>(&self, params: &GetDidsInfoParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDIDsInfo` API method and deserialize into [`GetDidsInfoResponse`].
+    pub async fn get_dids_info(&self, params: &GetDidsInfoParams) -> Result<GetDidsInfoResponse> {
         self.call_typed("getDIDsInfo", params).await
     }
 
-    /// Call the `getDIDsInternationalGeographic` API method.
+    /// Call the `getDIDsInfo` API method and return the raw JSON envelope.
+    pub async fn get_dids_info_raw(&self, params: &GetDidsInfoParams) -> Result<Value> {
+        self.call("getDIDsInfo", params).await
+    }
+
+    /// Call the `getDIDsInternationalGeographic` API method and deserialize into [`GetDidsInternationalGeographicResponse`].
     pub async fn get_dids_international_geographic(
+        &self,
+        params: &GetDidsInternationalGeographicParams,
+    ) -> Result<GetDidsInternationalGeographicResponse> {
+        self.call_typed("getDIDsInternationalGeographic", params)
+            .await
+    }
+
+    /// Call the `getDIDsInternationalGeographic` API method and return the raw JSON envelope.
+    pub async fn get_dids_international_geographic_raw(
         &self,
         params: &GetDidsInternationalGeographicParams,
     ) -> Result<Value> {
         self.call("getDIDsInternationalGeographic", params).await
     }
 
-    /// Call the `getDIDsInternationalGeographic` API method and deserialize the response body into `T`.
-    pub async fn get_dids_international_geographic_typed<T>(
+    /// Call the `getDIDsInternationalNational` API method and deserialize into [`GetDidsInternationalNationalResponse`].
+    pub async fn get_dids_international_national(
         &self,
-        params: &GetDidsInternationalGeographicParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getDIDsInternationalGeographic", params)
+        params: &GetDidsInternationalNationalParams,
+    ) -> Result<GetDidsInternationalNationalResponse> {
+        self.call_typed("getDIDsInternationalNational", params)
             .await
     }
 
-    /// Call the `getDIDsInternationalNational` API method.
-    pub async fn get_dids_international_national(
+    /// Call the `getDIDsInternationalNational` API method and return the raw JSON envelope.
+    pub async fn get_dids_international_national_raw(
         &self,
         params: &GetDidsInternationalNationalParams,
     ) -> Result<Value> {
         self.call("getDIDsInternationalNational", params).await
     }
 
-    /// Call the `getDIDsInternationalNational` API method and deserialize the response body into `T`.
-    pub async fn get_dids_international_national_typed<T>(
+    /// Call the `getDIDsInternationalTollFree` API method and deserialize into [`GetDidsInternationalTollFreeResponse`].
+    pub async fn get_dids_international_toll_free(
         &self,
-        params: &GetDidsInternationalNationalParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getDIDsInternationalNational", params)
+        params: &GetDidsInternationalTollFreeParams,
+    ) -> Result<GetDidsInternationalTollFreeResponse> {
+        self.call_typed("getDIDsInternationalTollFree", params)
             .await
     }
 
-    /// Call the `getDIDsInternationalTollFree` API method.
-    pub async fn get_dids_international_toll_free(
+    /// Call the `getDIDsInternationalTollFree` API method and return the raw JSON envelope.
+    pub async fn get_dids_international_toll_free_raw(
         &self,
         params: &GetDidsInternationalTollFreeParams,
     ) -> Result<Value> {
         self.call("getDIDsInternationalTollFree", params).await
     }
 
-    /// Call the `getDIDsInternationalTollFree` API method and deserialize the response body into `T`.
-    pub async fn get_dids_international_toll_free_typed<T>(
-        &self,
-        params: &GetDidsInternationalTollFreeParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getDIDsInternationalTollFree", params)
-            .await
-    }
-
-    /// Call the `getDIDsUSA` API method.
-    pub async fn get_dids_usa(&self, params: &GetDidsUsaParams) -> Result<Value> {
-        self.call("getDIDsUSA", params).await
-    }
-
-    /// Call the `getDIDsUSA` API method and deserialize the response body into `T`.
-    pub async fn get_dids_usa_typed<T>(&self, params: &GetDidsUsaParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDIDsUSA` API method and deserialize into [`GetDidsUsaResponse`].
+    pub async fn get_dids_usa(&self, params: &GetDidsUsaParams) -> Result<GetDidsUsaResponse> {
         self.call_typed("getDIDsUSA", params).await
     }
 
-    /// Call the `getDIDvPRI` API method.
-    pub async fn get_did_vpri(&self, params: &GetDidVpriParams) -> Result<Value> {
-        self.call("getDIDvPRI", params).await
+    /// Call the `getDIDsUSA` API method and return the raw JSON envelope.
+    pub async fn get_dids_usa_raw(&self, params: &GetDidsUsaParams) -> Result<Value> {
+        self.call("getDIDsUSA", params).await
     }
 
-    /// Call the `getDIDvPRI` API method and deserialize the response body into `T`.
-    pub async fn get_did_vpri_typed<T>(&self, params: &GetDidVpriParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDIDvPRI` API method and deserialize into [`GetDidVpriResponse`].
+    pub async fn get_did_vpri(&self, params: &GetDidVpriParams) -> Result<GetDidVpriResponse> {
         self.call_typed("getDIDvPRI", params).await
     }
 
-    /// Call the `getDISAs` API method.
-    pub async fn get_disas(&self, params: &GetDisasParams) -> Result<Value> {
-        self.call("getDISAs", params).await
+    /// Call the `getDIDvPRI` API method and return the raw JSON envelope.
+    pub async fn get_did_vpri_raw(&self, params: &GetDidVpriParams) -> Result<Value> {
+        self.call("getDIDvPRI", params).await
     }
 
-    /// Call the `getDISAs` API method and deserialize the response body into `T`.
-    pub async fn get_disas_typed<T>(&self, params: &GetDisasParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDISAs` API method and deserialize into [`GetDisasResponse`].
+    pub async fn get_disas(&self, params: &GetDisasParams) -> Result<GetDisasResponse> {
         self.call_typed("getDISAs", params).await
     }
 
-    /// Call the `getDTMFModes` API method.
-    pub async fn get_dtmf_modes(&self, params: &GetDtmfModesParams) -> Result<Value> {
-        self.call("getDTMFModes", params).await
+    /// Call the `getDISAs` API method and return the raw JSON envelope.
+    pub async fn get_disas_raw(&self, params: &GetDisasParams) -> Result<Value> {
+        self.call("getDISAs", params).await
     }
 
-    /// Call the `getDTMFModes` API method and deserialize the response body into `T`.
-    pub async fn get_dtmf_modes_typed<T>(&self, params: &GetDtmfModesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDTMFModes` API method and deserialize into [`GetDtmfModesResponse`].
+    pub async fn get_dtmf_modes(
+        &self,
+        params: &GetDtmfModesParams,
+    ) -> Result<GetDtmfModesResponse> {
         self.call_typed("getDTMFModes", params).await
     }
 
-    /// Call the `getDeposits` API method.
-    pub async fn get_deposits(&self, params: &GetDepositsParams) -> Result<Value> {
-        self.call("getDeposits", params).await
+    /// Call the `getDTMFModes` API method and return the raw JSON envelope.
+    pub async fn get_dtmf_modes_raw(&self, params: &GetDtmfModesParams) -> Result<Value> {
+        self.call("getDTMFModes", params).await
     }
 
-    /// Call the `getDeposits` API method and deserialize the response body into `T`.
-    pub async fn get_deposits_typed<T>(&self, params: &GetDepositsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDeposits` API method and deserialize into [`GetDepositsResponse`].
+    pub async fn get_deposits(&self, params: &GetDepositsParams) -> Result<GetDepositsResponse> {
         self.call_typed("getDeposits", params).await
     }
 
-    /// Call the `getDeviceTypes` API method.
-    pub async fn get_device_types(&self, params: &GetDeviceTypesParams) -> Result<Value> {
-        self.call("getDeviceTypes", params).await
+    /// Call the `getDeposits` API method and return the raw JSON envelope.
+    pub async fn get_deposits_raw(&self, params: &GetDepositsParams) -> Result<Value> {
+        self.call("getDeposits", params).await
     }
 
-    /// Call the `getDeviceTypes` API method and deserialize the response body into `T`.
-    pub async fn get_device_types_typed<T>(&self, params: &GetDeviceTypesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getDeviceTypes` API method and deserialize into [`GetDeviceTypesResponse`].
+    pub async fn get_device_types(
+        &self,
+        params: &GetDeviceTypesParams,
+    ) -> Result<GetDeviceTypesResponse> {
         self.call_typed("getDeviceTypes", params).await
     }
 
-    /// Call the `getEmailToFax` API method.
-    pub async fn get_email_to_fax(&self, params: &GetEmailToFaxParams) -> Result<Value> {
-        self.call("getEmailToFax", params).await
+    /// Call the `getDeviceTypes` API method and return the raw JSON envelope.
+    pub async fn get_device_types_raw(&self, params: &GetDeviceTypesParams) -> Result<Value> {
+        self.call("getDeviceTypes", params).await
     }
 
-    /// Call the `getEmailToFax` API method and deserialize the response body into `T`.
-    pub async fn get_email_to_fax_typed<T>(&self, params: &GetEmailToFaxParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getEmailToFax` API method and deserialize into [`GetEmailToFaxResponse`].
+    pub async fn get_email_to_fax(
+        &self,
+        params: &GetEmailToFaxParams,
+    ) -> Result<GetEmailToFaxResponse> {
         self.call_typed("getEmailToFax", params).await
     }
 
-    /// Call the `getFaxFolders` API method.
-    pub async fn get_fax_folders(&self, params: &GetFaxFoldersParams) -> Result<Value> {
-        self.call("getFaxFolders", params).await
+    /// Call the `getEmailToFax` API method and return the raw JSON envelope.
+    pub async fn get_email_to_fax_raw(&self, params: &GetEmailToFaxParams) -> Result<Value> {
+        self.call("getEmailToFax", params).await
     }
 
-    /// Call the `getFaxFolders` API method and deserialize the response body into `T`.
-    pub async fn get_fax_folders_typed<T>(&self, params: &GetFaxFoldersParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getFaxFolders` API method and deserialize into [`GetFaxFoldersResponse`].
+    pub async fn get_fax_folders(
+        &self,
+        params: &GetFaxFoldersParams,
+    ) -> Result<GetFaxFoldersResponse> {
         self.call_typed("getFaxFolders", params).await
     }
 
-    /// Call the `getFaxMessagePDF` API method.
-    pub async fn get_fax_message_pdf(&self, params: &GetFaxMessagePdfParams) -> Result<Value> {
-        self.call("getFaxMessagePDF", params).await
+    /// Call the `getFaxFolders` API method and return the raw JSON envelope.
+    pub async fn get_fax_folders_raw(&self, params: &GetFaxFoldersParams) -> Result<Value> {
+        self.call("getFaxFolders", params).await
     }
 
-    /// Call the `getFaxMessagePDF` API method and deserialize the response body into `T`.
-    pub async fn get_fax_message_pdf_typed<T>(&self, params: &GetFaxMessagePdfParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getFaxMessagePDF` API method and deserialize into [`GetFaxMessagePdfResponse`].
+    pub async fn get_fax_message_pdf(
+        &self,
+        params: &GetFaxMessagePdfParams,
+    ) -> Result<GetFaxMessagePdfResponse> {
         self.call_typed("getFaxMessagePDF", params).await
     }
 
-    /// Call the `getFaxMessages` API method.
-    pub async fn get_fax_messages(&self, params: &GetFaxMessagesParams) -> Result<Value> {
-        self.call("getFaxMessages", params).await
+    /// Call the `getFaxMessagePDF` API method and return the raw JSON envelope.
+    pub async fn get_fax_message_pdf_raw(&self, params: &GetFaxMessagePdfParams) -> Result<Value> {
+        self.call("getFaxMessagePDF", params).await
     }
 
-    /// Call the `getFaxMessages` API method and deserialize the response body into `T`.
-    pub async fn get_fax_messages_typed<T>(&self, params: &GetFaxMessagesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getFaxMessages` API method and deserialize into [`GetFaxMessagesResponse`].
+    pub async fn get_fax_messages(
+        &self,
+        params: &GetFaxMessagesParams,
+    ) -> Result<GetFaxMessagesResponse> {
         self.call_typed("getFaxMessages", params).await
     }
 
-    /// Call the `getFaxNumbersInfo` API method.
-    pub async fn get_fax_numbers_info(&self, params: &GetFaxNumbersInfoParams) -> Result<Value> {
-        self.call("getFaxNumbersInfo", params).await
+    /// Call the `getFaxMessages` API method and return the raw JSON envelope.
+    pub async fn get_fax_messages_raw(&self, params: &GetFaxMessagesParams) -> Result<Value> {
+        self.call("getFaxMessages", params).await
     }
 
-    /// Call the `getFaxNumbersInfo` API method and deserialize the response body into `T`.
-    pub async fn get_fax_numbers_info_typed<T>(&self, params: &GetFaxNumbersInfoParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getFaxNumbersInfo` API method and deserialize into [`GetFaxNumbersInfoResponse`].
+    pub async fn get_fax_numbers_info(
+        &self,
+        params: &GetFaxNumbersInfoParams,
+    ) -> Result<GetFaxNumbersInfoResponse> {
         self.call_typed("getFaxNumbersInfo", params).await
     }
 
-    /// Call the `getFaxNumbersPortability` API method.
+    /// Call the `getFaxNumbersInfo` API method and return the raw JSON envelope.
+    pub async fn get_fax_numbers_info_raw(
+        &self,
+        params: &GetFaxNumbersInfoParams,
+    ) -> Result<Value> {
+        self.call("getFaxNumbersInfo", params).await
+    }
+
+    /// Call the `getFaxNumbersPortability` API method and deserialize into [`GetFaxNumbersPortabilityResponse`].
     pub async fn get_fax_numbers_portability(
+        &self,
+        params: &GetFaxNumbersPortabilityParams,
+    ) -> Result<GetFaxNumbersPortabilityResponse> {
+        self.call_typed("getFaxNumbersPortability", params).await
+    }
+
+    /// Call the `getFaxNumbersPortability` API method and return the raw JSON envelope.
+    pub async fn get_fax_numbers_portability_raw(
         &self,
         params: &GetFaxNumbersPortabilityParams,
     ) -> Result<Value> {
         self.call("getFaxNumbersPortability", params).await
     }
 
-    /// Call the `getFaxNumbersPortability` API method and deserialize the response body into `T`.
-    pub async fn get_fax_numbers_portability_typed<T>(
+    /// Call the `getFaxProvinces` API method and deserialize into [`GetFaxProvincesResponse`].
+    pub async fn get_fax_provinces(
         &self,
-        params: &GetFaxNumbersPortabilityParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getFaxNumbersPortability", params).await
-    }
-
-    /// Call the `getFaxProvinces` API method.
-    pub async fn get_fax_provinces(&self, params: &GetFaxProvincesParams) -> Result<Value> {
-        self.call("getFaxProvinces", params).await
-    }
-
-    /// Call the `getFaxProvinces` API method and deserialize the response body into `T`.
-    pub async fn get_fax_provinces_typed<T>(&self, params: &GetFaxProvincesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &GetFaxProvincesParams,
+    ) -> Result<GetFaxProvincesResponse> {
         self.call_typed("getFaxProvinces", params).await
     }
 
-    /// Call the `getFaxRateCentersCAN` API method.
+    /// Call the `getFaxProvinces` API method and return the raw JSON envelope.
+    pub async fn get_fax_provinces_raw(&self, params: &GetFaxProvincesParams) -> Result<Value> {
+        self.call("getFaxProvinces", params).await
+    }
+
+    /// Call the `getFaxRateCentersCAN` API method and deserialize into [`GetFaxRateCentersCanResponse`].
     pub async fn get_fax_rate_centers_can(
+        &self,
+        params: &GetFaxRateCentersCanParams,
+    ) -> Result<GetFaxRateCentersCanResponse> {
+        self.call_typed("getFaxRateCentersCAN", params).await
+    }
+
+    /// Call the `getFaxRateCentersCAN` API method and return the raw JSON envelope.
+    pub async fn get_fax_rate_centers_can_raw(
         &self,
         params: &GetFaxRateCentersCanParams,
     ) -> Result<Value> {
         self.call("getFaxRateCentersCAN", params).await
     }
 
-    /// Call the `getFaxRateCentersCAN` API method and deserialize the response body into `T`.
-    pub async fn get_fax_rate_centers_can_typed<T>(
+    /// Call the `getFaxRateCentersUSA` API method and deserialize into [`GetFaxRateCentersUsaResponse`].
+    pub async fn get_fax_rate_centers_usa(
         &self,
-        params: &GetFaxRateCentersCanParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getFaxRateCentersCAN", params).await
+        params: &GetFaxRateCentersUsaParams,
+    ) -> Result<GetFaxRateCentersUsaResponse> {
+        self.call_typed("getFaxRateCentersUSA", params).await
     }
 
-    /// Call the `getFaxRateCentersUSA` API method.
-    pub async fn get_fax_rate_centers_usa(
+    /// Call the `getFaxRateCentersUSA` API method and return the raw JSON envelope.
+    pub async fn get_fax_rate_centers_usa_raw(
         &self,
         params: &GetFaxRateCentersUsaParams,
     ) -> Result<Value> {
         self.call("getFaxRateCentersUSA", params).await
     }
 
-    /// Call the `getFaxRateCentersUSA` API method and deserialize the response body into `T`.
-    pub async fn get_fax_rate_centers_usa_typed<T>(
+    /// Call the `getFaxStates` API method and deserialize into [`GetFaxStatesResponse`].
+    pub async fn get_fax_states(
         &self,
-        params: &GetFaxRateCentersUsaParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getFaxRateCentersUSA", params).await
-    }
-
-    /// Call the `getFaxStates` API method.
-    pub async fn get_fax_states(&self, params: &GetFaxStatesParams) -> Result<Value> {
-        self.call("getFaxStates", params).await
-    }
-
-    /// Call the `getFaxStates` API method and deserialize the response body into `T`.
-    pub async fn get_fax_states_typed<T>(&self, params: &GetFaxStatesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &GetFaxStatesParams,
+    ) -> Result<GetFaxStatesResponse> {
         self.call_typed("getFaxStates", params).await
     }
 
-    /// Call the `getForwardings` API method.
-    pub async fn get_forwardings(&self, params: &GetForwardingsParams) -> Result<Value> {
-        self.call("getForwardings", params).await
+    /// Call the `getFaxStates` API method and return the raw JSON envelope.
+    pub async fn get_fax_states_raw(&self, params: &GetFaxStatesParams) -> Result<Value> {
+        self.call("getFaxStates", params).await
     }
 
-    /// Call the `getForwardings` API method and deserialize the response body into `T`.
-    pub async fn get_forwardings_typed<T>(&self, params: &GetForwardingsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getForwardings` API method and deserialize into [`GetForwardingsResponse`].
+    pub async fn get_forwardings(
+        &self,
+        params: &GetForwardingsParams,
+    ) -> Result<GetForwardingsResponse> {
         self.call_typed("getForwardings", params).await
     }
 
-    /// Call the `getIP` API method.
-    pub async fn get_ip(&self, params: &GetIpParams) -> Result<Value> {
-        self.call("getIP", params).await
+    /// Call the `getForwardings` API method and return the raw JSON envelope.
+    pub async fn get_forwardings_raw(&self, params: &GetForwardingsParams) -> Result<Value> {
+        self.call("getForwardings", params).await
     }
 
-    /// Call the `getIP` API method and deserialize the response body into `T`.
-    pub async fn get_ip_typed<T>(&self, params: &GetIpParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getIP` API method and deserialize into [`GetIpResponse`].
+    pub async fn get_ip(&self, params: &GetIpParams) -> Result<GetIpResponse> {
         self.call_typed("getIP", params).await
     }
 
-    /// Call the `getIVRs` API method.
-    pub async fn get_ivrs(&self, params: &GetIvrsParams) -> Result<Value> {
-        self.call("getIVRs", params).await
+    /// Call the `getIP` API method and return the raw JSON envelope.
+    pub async fn get_ip_raw(&self, params: &GetIpParams) -> Result<Value> {
+        self.call("getIP", params).await
     }
 
-    /// Call the `getIVRs` API method and deserialize the response body into `T`.
-    pub async fn get_ivrs_typed<T>(&self, params: &GetIvrsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getIVRs` API method and deserialize into [`GetIvrsResponse`].
+    pub async fn get_ivrs(&self, params: &GetIvrsParams) -> Result<GetIvrsResponse> {
         self.call_typed("getIVRs", params).await
     }
 
-    /// Call the `getInternationalTypes` API method.
+    /// Call the `getIVRs` API method and return the raw JSON envelope.
+    pub async fn get_ivrs_raw(&self, params: &GetIvrsParams) -> Result<Value> {
+        self.call("getIVRs", params).await
+    }
+
+    /// Call the `getInternationalTypes` API method and deserialize into [`GetInternationalTypesResponse`].
     pub async fn get_international_types(
+        &self,
+        params: &GetInternationalTypesParams,
+    ) -> Result<GetInternationalTypesResponse> {
+        self.call_typed("getInternationalTypes", params).await
+    }
+
+    /// Call the `getInternationalTypes` API method and return the raw JSON envelope.
+    pub async fn get_international_types_raw(
         &self,
         params: &GetInternationalTypesParams,
     ) -> Result<Value> {
         self.call("getInternationalTypes", params).await
     }
 
-    /// Call the `getInternationalTypes` API method and deserialize the response body into `T`.
-    pub async fn get_international_types_typed<T>(
+    /// Call the `getJoinWhenEmptyTypes` API method and deserialize into [`GetJoinWhenEmptyTypesResponse`].
+    pub async fn get_join_when_empty_types(
         &self,
-        params: &GetInternationalTypesParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getInternationalTypes", params).await
+        params: &GetJoinWhenEmptyTypesParams,
+    ) -> Result<GetJoinWhenEmptyTypesResponse> {
+        self.call_typed("getJoinWhenEmptyTypes", params).await
     }
 
-    /// Call the `getJoinWhenEmptyTypes` API method.
-    pub async fn get_join_when_empty_types(
+    /// Call the `getJoinWhenEmptyTypes` API method and return the raw JSON envelope.
+    pub async fn get_join_when_empty_types_raw(
         &self,
         params: &GetJoinWhenEmptyTypesParams,
     ) -> Result<Value> {
         self.call("getJoinWhenEmptyTypes", params).await
     }
 
-    /// Call the `getJoinWhenEmptyTypes` API method and deserialize the response body into `T`.
-    pub async fn get_join_when_empty_types_typed<T>(
+    /// Call the `getLNPAttach` API method and deserialize into [`GetLnpAttachResponse`].
+    pub async fn get_lnp_attach(
         &self,
-        params: &GetJoinWhenEmptyTypesParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getJoinWhenEmptyTypes", params).await
-    }
-
-    /// Call the `getLNPAttach` API method.
-    pub async fn get_lnp_attach(&self, params: &GetLnpAttachParams) -> Result<Value> {
-        self.call("getLNPAttach", params).await
-    }
-
-    /// Call the `getLNPAttach` API method and deserialize the response body into `T`.
-    pub async fn get_lnp_attach_typed<T>(&self, params: &GetLnpAttachParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &GetLnpAttachParams,
+    ) -> Result<GetLnpAttachResponse> {
         self.call_typed("getLNPAttach", params).await
     }
 
-    /// Call the `getLNPAttachList` API method.
-    pub async fn get_lnp_attach_list(&self, params: &GetLnpAttachListParams) -> Result<Value> {
-        self.call("getLNPAttachList", params).await
+    /// Call the `getLNPAttach` API method and return the raw JSON envelope.
+    pub async fn get_lnp_attach_raw(&self, params: &GetLnpAttachParams) -> Result<Value> {
+        self.call("getLNPAttach", params).await
     }
 
-    /// Call the `getLNPAttachList` API method and deserialize the response body into `T`.
-    pub async fn get_lnp_attach_list_typed<T>(&self, params: &GetLnpAttachListParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLNPAttachList` API method and deserialize into [`GetLnpAttachListResponse`].
+    pub async fn get_lnp_attach_list(
+        &self,
+        params: &GetLnpAttachListParams,
+    ) -> Result<GetLnpAttachListResponse> {
         self.call_typed("getLNPAttachList", params).await
     }
 
-    /// Call the `getLNPDetails` API method.
-    pub async fn get_lnp_details(&self, params: &GetLnpDetailsParams) -> Result<Value> {
-        self.call("getLNPDetails", params).await
+    /// Call the `getLNPAttachList` API method and return the raw JSON envelope.
+    pub async fn get_lnp_attach_list_raw(&self, params: &GetLnpAttachListParams) -> Result<Value> {
+        self.call("getLNPAttachList", params).await
     }
 
-    /// Call the `getLNPDetails` API method and deserialize the response body into `T`.
-    pub async fn get_lnp_details_typed<T>(&self, params: &GetLnpDetailsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLNPDetails` API method and deserialize into [`GetLnpDetailsResponse`].
+    pub async fn get_lnp_details(
+        &self,
+        params: &GetLnpDetailsParams,
+    ) -> Result<GetLnpDetailsResponse> {
         self.call_typed("getLNPDetails", params).await
     }
 
-    /// Call the `getLNPList` API method.
-    pub async fn get_lnp_list(&self, params: &GetLnpListParams) -> Result<Value> {
-        self.call("getLNPList", params).await
+    /// Call the `getLNPDetails` API method and return the raw JSON envelope.
+    pub async fn get_lnp_details_raw(&self, params: &GetLnpDetailsParams) -> Result<Value> {
+        self.call("getLNPDetails", params).await
     }
 
-    /// Call the `getLNPList` API method and deserialize the response body into `T`.
-    pub async fn get_lnp_list_typed<T>(&self, params: &GetLnpListParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLNPList` API method and deserialize into [`GetLnpListResponse`].
+    pub async fn get_lnp_list(&self, params: &GetLnpListParams) -> Result<GetLnpListResponse> {
         self.call_typed("getLNPList", params).await
     }
 
-    /// Call the `getLNPListStatus` API method.
-    pub async fn get_lnp_list_status(&self, params: &GetLnpListStatusParams) -> Result<Value> {
-        self.call("getLNPListStatus", params).await
+    /// Call the `getLNPList` API method and return the raw JSON envelope.
+    pub async fn get_lnp_list_raw(&self, params: &GetLnpListParams) -> Result<Value> {
+        self.call("getLNPList", params).await
     }
 
-    /// Call the `getLNPListStatus` API method and deserialize the response body into `T`.
-    pub async fn get_lnp_list_status_typed<T>(&self, params: &GetLnpListStatusParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLNPListStatus` API method and deserialize into [`GetLnpListStatusResponse`].
+    pub async fn get_lnp_list_status(
+        &self,
+        params: &GetLnpListStatusParams,
+    ) -> Result<GetLnpListStatusResponse> {
         self.call_typed("getLNPListStatus", params).await
     }
 
-    /// Call the `getLNPNotes` API method.
-    pub async fn get_lnp_notes(&self, params: &GetLnpNotesParams) -> Result<Value> {
-        self.call("getLNPNotes", params).await
+    /// Call the `getLNPListStatus` API method and return the raw JSON envelope.
+    pub async fn get_lnp_list_status_raw(&self, params: &GetLnpListStatusParams) -> Result<Value> {
+        self.call("getLNPListStatus", params).await
     }
 
-    /// Call the `getLNPNotes` API method and deserialize the response body into `T`.
-    pub async fn get_lnp_notes_typed<T>(&self, params: &GetLnpNotesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLNPNotes` API method and deserialize into [`GetLnpNotesResponse`].
+    pub async fn get_lnp_notes(&self, params: &GetLnpNotesParams) -> Result<GetLnpNotesResponse> {
         self.call_typed("getLNPNotes", params).await
     }
 
-    /// Call the `getLNPStatus` API method.
-    pub async fn get_lnp_status(&self, params: &GetLnpStatusParams) -> Result<Value> {
-        self.call("getLNPStatus", params).await
+    /// Call the `getLNPNotes` API method and return the raw JSON envelope.
+    pub async fn get_lnp_notes_raw(&self, params: &GetLnpNotesParams) -> Result<Value> {
+        self.call("getLNPNotes", params).await
     }
 
-    /// Call the `getLNPStatus` API method and deserialize the response body into `T`.
-    pub async fn get_lnp_status_typed<T>(&self, params: &GetLnpStatusParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLNPStatus` API method and deserialize into [`GetLnpStatusResponse`].
+    pub async fn get_lnp_status(
+        &self,
+        params: &GetLnpStatusParams,
+    ) -> Result<GetLnpStatusResponse> {
         self.call_typed("getLNPStatus", params).await
     }
 
-    /// Call the `getLanguages` API method.
-    pub async fn get_languages(&self, params: &GetLanguagesParams) -> Result<Value> {
-        self.call("getLanguages", params).await
+    /// Call the `getLNPStatus` API method and return the raw JSON envelope.
+    pub async fn get_lnp_status_raw(&self, params: &GetLnpStatusParams) -> Result<Value> {
+        self.call("getLNPStatus", params).await
     }
 
-    /// Call the `getLanguages` API method and deserialize the response body into `T`.
-    pub async fn get_languages_typed<T>(&self, params: &GetLanguagesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLanguages` API method and deserialize into [`GetLanguagesResponse`].
+    pub async fn get_languages(&self, params: &GetLanguagesParams) -> Result<GetLanguagesResponse> {
         self.call_typed("getLanguages", params).await
     }
 
-    /// Call the `getLocales` API method.
-    pub async fn get_locales(&self, params: &GetLocalesParams) -> Result<Value> {
-        self.call("getLocales", params).await
+    /// Call the `getLanguages` API method and return the raw JSON envelope.
+    pub async fn get_languages_raw(&self, params: &GetLanguagesParams) -> Result<Value> {
+        self.call("getLanguages", params).await
     }
 
-    /// Call the `getLocales` API method and deserialize the response body into `T`.
-    pub async fn get_locales_typed<T>(&self, params: &GetLocalesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLocales` API method and deserialize into [`GetLocalesResponse`].
+    pub async fn get_locales(&self, params: &GetLocalesParams) -> Result<GetLocalesResponse> {
         self.call_typed("getLocales", params).await
     }
 
-    /// Call the `getLocations` API method.
-    pub async fn get_locations(&self, params: &GetLocationsParams) -> Result<Value> {
-        self.call("getLocations", params).await
+    /// Call the `getLocales` API method and return the raw JSON envelope.
+    pub async fn get_locales_raw(&self, params: &GetLocalesParams) -> Result<Value> {
+        self.call("getLocales", params).await
     }
 
-    /// Call the `getLocations` API method and deserialize the response body into `T`.
-    pub async fn get_locations_typed<T>(&self, params: &GetLocationsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getLocations` API method and deserialize into [`GetLocationsResponse`].
+    pub async fn get_locations(&self, params: &GetLocationsParams) -> Result<GetLocationsResponse> {
         self.call_typed("getLocations", params).await
     }
 
-    /// Call the `getLockInternational` API method.
+    /// Call the `getLocations` API method and return the raw JSON envelope.
+    pub async fn get_locations_raw(&self, params: &GetLocationsParams) -> Result<Value> {
+        self.call("getLocations", params).await
+    }
+
+    /// Call the `getLockInternational` API method and deserialize into [`GetLockInternationalResponse`].
     pub async fn get_lock_international(
+        &self,
+        params: &GetLockInternationalParams,
+    ) -> Result<GetLockInternationalResponse> {
+        self.call_typed("getLockInternational", params).await
+    }
+
+    /// Call the `getLockInternational` API method and return the raw JSON envelope.
+    pub async fn get_lock_international_raw(
         &self,
         params: &GetLockInternationalParams,
     ) -> Result<Value> {
         self.call("getLockInternational", params).await
     }
 
-    /// Call the `getLockInternational` API method and deserialize the response body into `T`.
-    pub async fn get_lock_international_typed<T>(
-        &self,
-        params: &GetLockInternationalParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getLockInternational", params).await
-    }
-
-    /// Call the `getMMS` API method.
-    pub async fn get_mms(&self, params: &GetMmsParams) -> Result<Value> {
-        self.call("getMMS", params).await
-    }
-
-    /// Call the `getMMS` API method and deserialize the response body into `T`.
-    pub async fn get_mms_typed<T>(&self, params: &GetMmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getMMS` API method and deserialize into [`GetMmsResponse`].
+    pub async fn get_mms(&self, params: &GetMmsParams) -> Result<GetMmsResponse> {
         self.call_typed("getMMS", params).await
     }
 
-    /// Call the `getMediaMMS` API method.
-    pub async fn get_media_mms(&self, params: &GetMediaMmsParams) -> Result<Value> {
-        self.call("getMediaMMS", params).await
+    /// Call the `getMMS` API method and return the raw JSON envelope.
+    pub async fn get_mms_raw(&self, params: &GetMmsParams) -> Result<Value> {
+        self.call("getMMS", params).await
     }
 
-    /// Call the `getMediaMMS` API method and deserialize the response body into `T`.
-    pub async fn get_media_mms_typed<T>(&self, params: &GetMediaMmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getMediaMMS` API method and deserialize into [`GetMediaMmsResponse`].
+    pub async fn get_media_mms(&self, params: &GetMediaMmsParams) -> Result<GetMediaMmsResponse> {
         self.call_typed("getMediaMMS", params).await
     }
 
-    /// Call the `getMusicOnHold` API method.
-    pub async fn get_music_on_hold(&self, params: &GetMusicOnHoldParams) -> Result<Value> {
-        self.call("getMusicOnHold", params).await
+    /// Call the `getMediaMMS` API method and return the raw JSON envelope.
+    pub async fn get_media_mms_raw(&self, params: &GetMediaMmsParams) -> Result<Value> {
+        self.call("getMediaMMS", params).await
     }
 
-    /// Call the `getMusicOnHold` API method and deserialize the response body into `T`.
-    pub async fn get_music_on_hold_typed<T>(&self, params: &GetMusicOnHoldParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getMusicOnHold` API method and deserialize into [`GetMusicOnHoldResponse`].
+    pub async fn get_music_on_hold(
+        &self,
+        params: &GetMusicOnHoldParams,
+    ) -> Result<GetMusicOnHoldResponse> {
         self.call_typed("getMusicOnHold", params).await
     }
 
-    /// Call the `getNAT` API method.
-    pub async fn get_nat(&self, params: &GetNatParams) -> Result<Value> {
-        self.call("getNAT", params).await
+    /// Call the `getMusicOnHold` API method and return the raw JSON envelope.
+    pub async fn get_music_on_hold_raw(&self, params: &GetMusicOnHoldParams) -> Result<Value> {
+        self.call("getMusicOnHold", params).await
     }
 
-    /// Call the `getNAT` API method and deserialize the response body into `T`.
-    pub async fn get_nat_typed<T>(&self, params: &GetNatParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getNAT` API method and deserialize into [`GetNatResponse`].
+    pub async fn get_nat(&self, params: &GetNatParams) -> Result<GetNatResponse> {
         self.call_typed("getNAT", params).await
     }
 
-    /// Call the `getPackages` API method.
-    pub async fn get_packages(&self, params: &GetPackagesParams) -> Result<Value> {
-        self.call("getPackages", params).await
+    /// Call the `getNAT` API method and return the raw JSON envelope.
+    pub async fn get_nat_raw(&self, params: &GetNatParams) -> Result<Value> {
+        self.call("getNAT", params).await
     }
 
-    /// Call the `getPackages` API method and deserialize the response body into `T`.
-    pub async fn get_packages_typed<T>(&self, params: &GetPackagesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getPackages` API method and deserialize into [`GetPackagesResponse`].
+    pub async fn get_packages(&self, params: &GetPackagesParams) -> Result<GetPackagesResponse> {
         self.call_typed("getPackages", params).await
     }
 
-    /// Call the `getPhonebook` API method.
-    pub async fn get_phonebook(&self, params: &GetPhonebookParams) -> Result<Value> {
-        self.call("getPhonebook", params).await
+    /// Call the `getPackages` API method and return the raw JSON envelope.
+    pub async fn get_packages_raw(&self, params: &GetPackagesParams) -> Result<Value> {
+        self.call("getPackages", params).await
     }
 
-    /// Call the `getPhonebook` API method and deserialize the response body into `T`.
-    pub async fn get_phonebook_typed<T>(&self, params: &GetPhonebookParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getPhonebook` API method and deserialize into [`GetPhonebookResponse`].
+    pub async fn get_phonebook(&self, params: &GetPhonebookParams) -> Result<GetPhonebookResponse> {
         self.call_typed("getPhonebook", params).await
     }
 
-    /// Call the `getPhonebookGroups` API method.
-    pub async fn get_phonebook_groups(&self, params: &GetPhonebookGroupsParams) -> Result<Value> {
-        self.call("getPhonebookGroups", params).await
+    /// Call the `getPhonebook` API method and return the raw JSON envelope.
+    pub async fn get_phonebook_raw(&self, params: &GetPhonebookParams) -> Result<Value> {
+        self.call("getPhonebook", params).await
     }
 
-    /// Call the `getPhonebookGroups` API method and deserialize the response body into `T`.
-    pub async fn get_phonebook_groups_typed<T>(
+    /// Call the `getPhonebookGroups` API method and deserialize into [`GetPhonebookGroupsResponse`].
+    pub async fn get_phonebook_groups(
         &self,
         params: &GetPhonebookGroupsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<GetPhonebookGroupsResponse> {
         self.call_typed("getPhonebookGroups", params).await
     }
 
-    /// Call the `getPlayInstructions` API method.
-    pub async fn get_play_instructions(&self, params: &GetPlayInstructionsParams) -> Result<Value> {
-        self.call("getPlayInstructions", params).await
+    /// Call the `getPhonebookGroups` API method and return the raw JSON envelope.
+    pub async fn get_phonebook_groups_raw(
+        &self,
+        params: &GetPhonebookGroupsParams,
+    ) -> Result<Value> {
+        self.call("getPhonebookGroups", params).await
     }
 
-    /// Call the `getPlayInstructions` API method and deserialize the response body into `T`.
-    pub async fn get_play_instructions_typed<T>(
+    /// Call the `getPlayInstructions` API method and deserialize into [`GetPlayInstructionsResponse`].
+    pub async fn get_play_instructions(
         &self,
         params: &GetPlayInstructionsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<GetPlayInstructionsResponse> {
         self.call_typed("getPlayInstructions", params).await
     }
 
-    /// Call the `getPortability` API method.
-    pub async fn get_portability(&self, params: &GetPortabilityParams) -> Result<Value> {
-        self.call("getPortability", params).await
+    /// Call the `getPlayInstructions` API method and return the raw JSON envelope.
+    pub async fn get_play_instructions_raw(
+        &self,
+        params: &GetPlayInstructionsParams,
+    ) -> Result<Value> {
+        self.call("getPlayInstructions", params).await
     }
 
-    /// Call the `getPortability` API method and deserialize the response body into `T`.
-    pub async fn get_portability_typed<T>(&self, params: &GetPortabilityParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getPortability` API method and deserialize into [`GetPortabilityResponse`].
+    pub async fn get_portability(
+        &self,
+        params: &GetPortabilityParams,
+    ) -> Result<GetPortabilityResponse> {
         self.call_typed("getPortability", params).await
     }
 
-    /// Call the `getProtocols` API method.
-    pub async fn get_protocols(&self, params: &GetProtocolsParams) -> Result<Value> {
-        self.call("getProtocols", params).await
+    /// Call the `getPortability` API method and return the raw JSON envelope.
+    pub async fn get_portability_raw(&self, params: &GetPortabilityParams) -> Result<Value> {
+        self.call("getPortability", params).await
     }
 
-    /// Call the `getProtocols` API method and deserialize the response body into `T`.
-    pub async fn get_protocols_typed<T>(&self, params: &GetProtocolsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getProtocols` API method and deserialize into [`GetProtocolsResponse`].
+    pub async fn get_protocols(&self, params: &GetProtocolsParams) -> Result<GetProtocolsResponse> {
         self.call_typed("getProtocols", params).await
     }
 
-    /// Call the `getProvinces` API method.
-    pub async fn get_provinces(&self, params: &GetProvincesParams) -> Result<Value> {
-        self.call("getProvinces", params).await
+    /// Call the `getProtocols` API method and return the raw JSON envelope.
+    pub async fn get_protocols_raw(&self, params: &GetProtocolsParams) -> Result<Value> {
+        self.call("getProtocols", params).await
     }
 
-    /// Call the `getProvinces` API method and deserialize the response body into `T`.
-    pub async fn get_provinces_typed<T>(&self, params: &GetProvincesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getProvinces` API method and deserialize into [`GetProvincesResponse`].
+    pub async fn get_provinces(&self, params: &GetProvincesParams) -> Result<GetProvincesResponse> {
         self.call_typed("getProvinces", params).await
     }
 
-    /// Call the `getQueues` API method.
-    pub async fn get_queues(&self, params: &GetQueuesParams) -> Result<Value> {
-        self.call("getQueues", params).await
+    /// Call the `getProvinces` API method and return the raw JSON envelope.
+    pub async fn get_provinces_raw(&self, params: &GetProvincesParams) -> Result<Value> {
+        self.call("getProvinces", params).await
     }
 
-    /// Call the `getQueues` API method and deserialize the response body into `T`.
-    pub async fn get_queues_typed<T>(&self, params: &GetQueuesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getQueues` API method and deserialize into [`GetQueuesResponse`].
+    pub async fn get_queues(&self, params: &GetQueuesParams) -> Result<GetQueuesResponse> {
         self.call_typed("getQueues", params).await
     }
 
-    /// Call the `getRateCentersCAN` API method.
-    pub async fn get_rate_centers_can(&self, params: &GetRateCentersCanParams) -> Result<Value> {
-        self.call("getRateCentersCAN", params).await
+    /// Call the `getQueues` API method and return the raw JSON envelope.
+    pub async fn get_queues_raw(&self, params: &GetQueuesParams) -> Result<Value> {
+        self.call("getQueues", params).await
     }
 
-    /// Call the `getRateCentersCAN` API method and deserialize the response body into `T`.
-    pub async fn get_rate_centers_can_typed<T>(&self, params: &GetRateCentersCanParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRateCentersCAN` API method and deserialize into [`GetRateCentersCanResponse`].
+    pub async fn get_rate_centers_can(
+        &self,
+        params: &GetRateCentersCanParams,
+    ) -> Result<GetRateCentersCanResponse> {
         self.call_typed("getRateCentersCAN", params).await
     }
 
-    /// Call the `getRateCentersUSA` API method.
-    pub async fn get_rate_centers_usa(&self, params: &GetRateCentersUsaParams) -> Result<Value> {
-        self.call("getRateCentersUSA", params).await
+    /// Call the `getRateCentersCAN` API method and return the raw JSON envelope.
+    pub async fn get_rate_centers_can_raw(
+        &self,
+        params: &GetRateCentersCanParams,
+    ) -> Result<Value> {
+        self.call("getRateCentersCAN", params).await
     }
 
-    /// Call the `getRateCentersUSA` API method and deserialize the response body into `T`.
-    pub async fn get_rate_centers_usa_typed<T>(&self, params: &GetRateCentersUsaParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRateCentersUSA` API method and deserialize into [`GetRateCentersUsaResponse`].
+    pub async fn get_rate_centers_usa(
+        &self,
+        params: &GetRateCentersUsaParams,
+    ) -> Result<GetRateCentersUsaResponse> {
         self.call_typed("getRateCentersUSA", params).await
     }
 
-    /// Call the `getRates` API method.
-    pub async fn get_rates(&self, params: &GetRatesParams) -> Result<Value> {
-        self.call("getRates", params).await
+    /// Call the `getRateCentersUSA` API method and return the raw JSON envelope.
+    pub async fn get_rate_centers_usa_raw(
+        &self,
+        params: &GetRateCentersUsaParams,
+    ) -> Result<Value> {
+        self.call("getRateCentersUSA", params).await
     }
 
-    /// Call the `getRates` API method and deserialize the response body into `T`.
-    pub async fn get_rates_typed<T>(&self, params: &GetRatesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRates` API method and deserialize into [`GetRatesResponse`].
+    pub async fn get_rates(&self, params: &GetRatesParams) -> Result<GetRatesResponse> {
         self.call_typed("getRates", params).await
     }
 
-    /// Call the `getRecordingFile` API method.
-    pub async fn get_recording_file(&self, params: &GetRecordingFileParams) -> Result<Value> {
-        self.call("getRecordingFile", params).await
+    /// Call the `getRates` API method and return the raw JSON envelope.
+    pub async fn get_rates_raw(&self, params: &GetRatesParams) -> Result<Value> {
+        self.call("getRates", params).await
     }
 
-    /// Call the `getRecordingFile` API method and deserialize the response body into `T`.
-    pub async fn get_recording_file_typed<T>(&self, params: &GetRecordingFileParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRecordingFile` API method and deserialize into [`GetRecordingFileResponse`].
+    pub async fn get_recording_file(
+        &self,
+        params: &GetRecordingFileParams,
+    ) -> Result<GetRecordingFileResponse> {
         self.call_typed("getRecordingFile", params).await
     }
 
-    /// Call the `getRecordings` API method.
-    pub async fn get_recordings(&self, params: &GetRecordingsParams) -> Result<Value> {
-        self.call("getRecordings", params).await
+    /// Call the `getRecordingFile` API method and return the raw JSON envelope.
+    pub async fn get_recording_file_raw(&self, params: &GetRecordingFileParams) -> Result<Value> {
+        self.call("getRecordingFile", params).await
     }
 
-    /// Call the `getRecordings` API method and deserialize the response body into `T`.
-    pub async fn get_recordings_typed<T>(&self, params: &GetRecordingsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRecordings` API method and deserialize into [`GetRecordingsResponse`].
+    pub async fn get_recordings(
+        &self,
+        params: &GetRecordingsParams,
+    ) -> Result<GetRecordingsResponse> {
         self.call_typed("getRecordings", params).await
     }
 
-    /// Call the `getRegistrationStatus` API method.
+    /// Call the `getRecordings` API method and return the raw JSON envelope.
+    pub async fn get_recordings_raw(&self, params: &GetRecordingsParams) -> Result<Value> {
+        self.call("getRecordings", params).await
+    }
+
+    /// Call the `getRegistrationStatus` API method and deserialize into [`GetRegistrationStatusResponse`].
     pub async fn get_registration_status(
+        &self,
+        params: &GetRegistrationStatusParams,
+    ) -> Result<GetRegistrationStatusResponse> {
+        self.call_typed("getRegistrationStatus", params).await
+    }
+
+    /// Call the `getRegistrationStatus` API method and return the raw JSON envelope.
+    pub async fn get_registration_status_raw(
         &self,
         params: &GetRegistrationStatusParams,
     ) -> Result<Value> {
         self.call("getRegistrationStatus", params).await
     }
 
-    /// Call the `getRegistrationStatus` API method and deserialize the response body into `T`.
-    pub async fn get_registration_status_typed<T>(
+    /// Call the `getReportEstimatedHoldTime` API method and deserialize into [`GetReportEstimatedHoldTimeResponse`].
+    pub async fn get_report_estimated_hold_time(
         &self,
-        params: &GetRegistrationStatusParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getRegistrationStatus", params).await
+        params: &GetReportEstimatedHoldTimeParams,
+    ) -> Result<GetReportEstimatedHoldTimeResponse> {
+        self.call_typed("getReportEstimatedHoldTime", params).await
     }
 
-    /// Call the `getReportEstimatedHoldTime` API method.
-    pub async fn get_report_estimated_hold_time(
+    /// Call the `getReportEstimatedHoldTime` API method and return the raw JSON envelope.
+    pub async fn get_report_estimated_hold_time_raw(
         &self,
         params: &GetReportEstimatedHoldTimeParams,
     ) -> Result<Value> {
         self.call("getReportEstimatedHoldTime", params).await
     }
 
-    /// Call the `getReportEstimatedHoldTime` API method and deserialize the response body into `T`.
-    pub async fn get_report_estimated_hold_time_typed<T>(
-        &self,
-        params: &GetReportEstimatedHoldTimeParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getReportEstimatedHoldTime", params).await
-    }
-
-    /// Call the `getResellerBalance` API method.
-    pub async fn get_reseller_balance(&self, params: &GetResellerBalanceParams) -> Result<Value> {
-        self.call("getResellerBalance", params).await
-    }
-
-    /// Call the `getResellerBalance` API method and deserialize the response body into `T`.
-    pub async fn get_reseller_balance_typed<T>(
+    /// Call the `getResellerBalance` API method and deserialize into [`GetResellerBalanceResponse`].
+    pub async fn get_reseller_balance(
         &self,
         params: &GetResellerBalanceParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<GetResellerBalanceResponse> {
         self.call_typed("getResellerBalance", params).await
     }
 
-    /// Call the `getResellerCDR` API method.
-    pub async fn get_reseller_cdr(&self, params: &GetResellerCdrParams) -> Result<Value> {
-        self.call("getResellerCDR", params).await
+    /// Call the `getResellerBalance` API method and return the raw JSON envelope.
+    pub async fn get_reseller_balance_raw(
+        &self,
+        params: &GetResellerBalanceParams,
+    ) -> Result<Value> {
+        self.call("getResellerBalance", params).await
     }
 
-    /// Call the `getResellerCDR` API method and deserialize the response body into `T`.
-    pub async fn get_reseller_cdr_typed<T>(&self, params: &GetResellerCdrParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getResellerCDR` API method and deserialize into [`GetResellerCdrResponse`].
+    pub async fn get_reseller_cdr(
+        &self,
+        params: &GetResellerCdrParams,
+    ) -> Result<GetResellerCdrResponse> {
         self.call_typed("getResellerCDR", params).await
     }
 
-    /// Call the `getResellerMMS` API method.
-    pub async fn get_reseller_mms(&self, params: &GetResellerMmsParams) -> Result<Value> {
-        self.call("getResellerMMS", params).await
+    /// Call the `getResellerCDR` API method and return the raw JSON envelope.
+    pub async fn get_reseller_cdr_raw(&self, params: &GetResellerCdrParams) -> Result<Value> {
+        self.call("getResellerCDR", params).await
     }
 
-    /// Call the `getResellerMMS` API method and deserialize the response body into `T`.
-    pub async fn get_reseller_mms_typed<T>(&self, params: &GetResellerMmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getResellerMMS` API method and deserialize into [`GetResellerMmsResponse`].
+    pub async fn get_reseller_mms(
+        &self,
+        params: &GetResellerMmsParams,
+    ) -> Result<GetResellerMmsResponse> {
         self.call_typed("getResellerMMS", params).await
     }
 
-    /// Call the `getResellerSMS` API method.
-    pub async fn get_reseller_sms(&self, params: &GetResellerSmsParams) -> Result<Value> {
-        self.call("getResellerSMS", params).await
+    /// Call the `getResellerMMS` API method and return the raw JSON envelope.
+    pub async fn get_reseller_mms_raw(&self, params: &GetResellerMmsParams) -> Result<Value> {
+        self.call("getResellerMMS", params).await
     }
 
-    /// Call the `getResellerSMS` API method and deserialize the response body into `T`.
-    pub async fn get_reseller_sms_typed<T>(&self, params: &GetResellerSmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getResellerSMS` API method and deserialize into [`GetResellerSmsResponse`].
+    pub async fn get_reseller_sms(
+        &self,
+        params: &GetResellerSmsParams,
+    ) -> Result<GetResellerSmsResponse> {
         self.call_typed("getResellerSMS", params).await
     }
 
-    /// Call the `getRingGroups` API method.
-    pub async fn get_ring_groups(&self, params: &GetRingGroupsParams) -> Result<Value> {
-        self.call("getRingGroups", params).await
+    /// Call the `getResellerSMS` API method and return the raw JSON envelope.
+    pub async fn get_reseller_sms_raw(&self, params: &GetResellerSmsParams) -> Result<Value> {
+        self.call("getResellerSMS", params).await
     }
 
-    /// Call the `getRingGroups` API method and deserialize the response body into `T`.
-    pub async fn get_ring_groups_typed<T>(&self, params: &GetRingGroupsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRingGroups` API method and deserialize into [`GetRingGroupsResponse`].
+    pub async fn get_ring_groups(
+        &self,
+        params: &GetRingGroupsParams,
+    ) -> Result<GetRingGroupsResponse> {
         self.call_typed("getRingGroups", params).await
     }
 
-    /// Call the `getRingStrategies` API method.
-    pub async fn get_ring_strategies(&self, params: &GetRingStrategiesParams) -> Result<Value> {
-        self.call("getRingStrategies", params).await
+    /// Call the `getRingGroups` API method and return the raw JSON envelope.
+    pub async fn get_ring_groups_raw(&self, params: &GetRingGroupsParams) -> Result<Value> {
+        self.call("getRingGroups", params).await
     }
 
-    /// Call the `getRingStrategies` API method and deserialize the response body into `T`.
-    pub async fn get_ring_strategies_typed<T>(&self, params: &GetRingStrategiesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRingStrategies` API method and deserialize into [`GetRingStrategiesResponse`].
+    pub async fn get_ring_strategies(
+        &self,
+        params: &GetRingStrategiesParams,
+    ) -> Result<GetRingStrategiesResponse> {
         self.call_typed("getRingStrategies", params).await
     }
 
-    /// Call the `getRoutes` API method.
-    pub async fn get_routes(&self, params: &GetRoutesParams) -> Result<Value> {
-        self.call("getRoutes", params).await
+    /// Call the `getRingStrategies` API method and return the raw JSON envelope.
+    pub async fn get_ring_strategies_raw(&self, params: &GetRingStrategiesParams) -> Result<Value> {
+        self.call("getRingStrategies", params).await
     }
 
-    /// Call the `getRoutes` API method and deserialize the response body into `T`.
-    pub async fn get_routes_typed<T>(&self, params: &GetRoutesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getRoutes` API method and deserialize into [`GetRoutesResponse`].
+    pub async fn get_routes(&self, params: &GetRoutesParams) -> Result<GetRoutesResponse> {
         self.call_typed("getRoutes", params).await
     }
 
-    /// Call the `getSIPURIs` API method.
-    pub async fn get_sip_uris(&self, params: &GetSipUrisParams) -> Result<Value> {
-        self.call("getSIPURIs", params).await
+    /// Call the `getRoutes` API method and return the raw JSON envelope.
+    pub async fn get_routes_raw(&self, params: &GetRoutesParams) -> Result<Value> {
+        self.call("getRoutes", params).await
     }
 
-    /// Call the `getSIPURIs` API method and deserialize the response body into `T`.
-    pub async fn get_sip_uris_typed<T>(&self, params: &GetSipUrisParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getSIPURIs` API method and deserialize into [`GetSipUrisResponse`].
+    pub async fn get_sip_uris(&self, params: &GetSipUrisParams) -> Result<GetSipUrisResponse> {
         self.call_typed("getSIPURIs", params).await
     }
 
-    /// Call the `getSMS` API method.
-    pub async fn get_sms(&self, params: &GetSmsParams) -> Result<Value> {
-        self.call("getSMS", params).await
+    /// Call the `getSIPURIs` API method and return the raw JSON envelope.
+    pub async fn get_sip_uris_raw(&self, params: &GetSipUrisParams) -> Result<Value> {
+        self.call("getSIPURIs", params).await
     }
 
-    /// Call the `getSMS` API method and deserialize the response body into `T`.
-    pub async fn get_sms_typed<T>(&self, params: &GetSmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getSMS` API method and deserialize into [`GetSmsResponse`].
+    pub async fn get_sms(&self, params: &GetSmsParams) -> Result<GetSmsResponse> {
         self.call_typed("getSMS", params).await
     }
 
-    /// Call the `getServersInfo` API method.
-    pub async fn get_servers_info(&self, params: &GetServersInfoParams) -> Result<Value> {
-        self.call("getServersInfo", params).await
+    /// Call the `getSMS` API method and return the raw JSON envelope.
+    pub async fn get_sms_raw(&self, params: &GetSmsParams) -> Result<Value> {
+        self.call("getSMS", params).await
     }
 
-    /// Call the `getServersInfo` API method and deserialize the response body into `T`.
-    pub async fn get_servers_info_typed<T>(&self, params: &GetServersInfoParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getServersInfo` API method and deserialize into [`GetServersInfoResponse`].
+    pub async fn get_servers_info(
+        &self,
+        params: &GetServersInfoParams,
+    ) -> Result<GetServersInfoResponse> {
         self.call_typed("getServersInfo", params).await
     }
 
-    /// Call the `getStates` API method.
-    pub async fn get_states(&self, params: &GetStatesParams) -> Result<Value> {
-        self.call("getStates", params).await
+    /// Call the `getServersInfo` API method and return the raw JSON envelope.
+    pub async fn get_servers_info_raw(&self, params: &GetServersInfoParams) -> Result<Value> {
+        self.call("getServersInfo", params).await
     }
 
-    /// Call the `getStates` API method and deserialize the response body into `T`.
-    pub async fn get_states_typed<T>(&self, params: &GetStatesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getStates` API method and deserialize into [`GetStatesResponse`].
+    pub async fn get_states(&self, params: &GetStatesParams) -> Result<GetStatesResponse> {
         self.call_typed("getStates", params).await
     }
 
-    /// Call the `getStaticMembers` API method.
-    pub async fn get_static_members(&self, params: &GetStaticMembersParams) -> Result<Value> {
-        self.call("getStaticMembers", params).await
+    /// Call the `getStates` API method and return the raw JSON envelope.
+    pub async fn get_states_raw(&self, params: &GetStatesParams) -> Result<Value> {
+        self.call("getStates", params).await
     }
 
-    /// Call the `getStaticMembers` API method and deserialize the response body into `T`.
-    pub async fn get_static_members_typed<T>(&self, params: &GetStaticMembersParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getStaticMembers` API method and deserialize into [`GetStaticMembersResponse`].
+    pub async fn get_static_members(
+        &self,
+        params: &GetStaticMembersParams,
+    ) -> Result<GetStaticMembersResponse> {
         self.call_typed("getStaticMembers", params).await
     }
 
-    /// Call the `getSubAccounts` API method.
-    pub async fn get_sub_accounts(&self, params: &GetSubAccountsParams) -> Result<Value> {
-        self.call("getSubAccounts", params).await
+    /// Call the `getStaticMembers` API method and return the raw JSON envelope.
+    pub async fn get_static_members_raw(&self, params: &GetStaticMembersParams) -> Result<Value> {
+        self.call("getStaticMembers", params).await
     }
 
-    /// Call the `getSubAccounts` API method and deserialize the response body into `T`.
-    pub async fn get_sub_accounts_typed<T>(&self, params: &GetSubAccountsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getSubAccounts` API method and deserialize into [`GetSubAccountsResponse`].
+    pub async fn get_sub_accounts(
+        &self,
+        params: &GetSubAccountsParams,
+    ) -> Result<GetSubAccountsResponse> {
         self.call_typed("getSubAccounts", params).await
     }
 
-    /// Call the `getTerminationRates` API method.
-    pub async fn get_termination_rates(&self, params: &GetTerminationRatesParams) -> Result<Value> {
-        self.call("getTerminationRates", params).await
+    /// Call the `getSubAccounts` API method and return the raw JSON envelope.
+    pub async fn get_sub_accounts_raw(&self, params: &GetSubAccountsParams) -> Result<Value> {
+        self.call("getSubAccounts", params).await
     }
 
-    /// Call the `getTerminationRates` API method and deserialize the response body into `T`.
-    pub async fn get_termination_rates_typed<T>(
+    /// Call the `getTerminationRates` API method and deserialize into [`GetTerminationRatesResponse`].
+    pub async fn get_termination_rates(
         &self,
         params: &GetTerminationRatesParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<GetTerminationRatesResponse> {
         self.call_typed("getTerminationRates", params).await
     }
 
-    /// Call the `getTimeConditions` API method.
-    pub async fn get_time_conditions(&self, params: &GetTimeConditionsParams) -> Result<Value> {
-        self.call("getTimeConditions", params).await
+    /// Call the `getTerminationRates` API method and return the raw JSON envelope.
+    pub async fn get_termination_rates_raw(
+        &self,
+        params: &GetTerminationRatesParams,
+    ) -> Result<Value> {
+        self.call("getTerminationRates", params).await
     }
 
-    /// Call the `getTimeConditions` API method and deserialize the response body into `T`.
-    pub async fn get_time_conditions_typed<T>(&self, params: &GetTimeConditionsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getTimeConditions` API method and deserialize into [`GetTimeConditionsResponse`].
+    pub async fn get_time_conditions(
+        &self,
+        params: &GetTimeConditionsParams,
+    ) -> Result<GetTimeConditionsResponse> {
         self.call_typed("getTimeConditions", params).await
     }
 
-    /// Call the `getTimezones` API method.
-    pub async fn get_timezones(&self, params: &GetTimezonesParams) -> Result<Value> {
-        self.call("getTimezones", params).await
+    /// Call the `getTimeConditions` API method and return the raw JSON envelope.
+    pub async fn get_time_conditions_raw(&self, params: &GetTimeConditionsParams) -> Result<Value> {
+        self.call("getTimeConditions", params).await
     }
 
-    /// Call the `getTimezones` API method and deserialize the response body into `T`.
-    pub async fn get_timezones_typed<T>(&self, params: &GetTimezonesParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getTimezones` API method and deserialize into [`GetTimezonesResponse`].
+    pub async fn get_timezones(&self, params: &GetTimezonesParams) -> Result<GetTimezonesResponse> {
         self.call_typed("getTimezones", params).await
     }
 
-    /// Call the `getTransactionHistory` API method.
+    /// Call the `getTimezones` API method and return the raw JSON envelope.
+    pub async fn get_timezones_raw(&self, params: &GetTimezonesParams) -> Result<Value> {
+        self.call("getTimezones", params).await
+    }
+
+    /// Call the `getTransactionHistory` API method and deserialize into [`GetTransactionHistoryResponse`].
     pub async fn get_transaction_history(
+        &self,
+        params: &GetTransactionHistoryParams,
+    ) -> Result<GetTransactionHistoryResponse> {
+        self.call_typed("getTransactionHistory", params).await
+    }
+
+    /// Call the `getTransactionHistory` API method and return the raw JSON envelope.
+    pub async fn get_transaction_history_raw(
         &self,
         params: &GetTransactionHistoryParams,
     ) -> Result<Value> {
         self.call("getTransactionHistory", params).await
     }
 
-    /// Call the `getTransactionHistory` API method and deserialize the response body into `T`.
-    pub async fn get_transaction_history_typed<T>(
-        &self,
-        params: &GetTransactionHistoryParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getTransactionHistory", params).await
-    }
-
-    /// Call the `getVPRIs` API method.
-    pub async fn get_vpris(&self, params: &GetVprisParams) -> Result<Value> {
-        self.call("getVPRIs", params).await
-    }
-
-    /// Call the `getVPRIs` API method and deserialize the response body into `T`.
-    pub async fn get_vpris_typed<T>(&self, params: &GetVprisParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `getVPRIs` API method and deserialize into [`GetVprisResponse`].
+    pub async fn get_vpris(&self, params: &GetVprisParams) -> Result<GetVprisResponse> {
         self.call_typed("getVPRIs", params).await
     }
 
-    /// Call the `getVoicemailAttachmentFormats` API method.
+    /// Call the `getVPRIs` API method and return the raw JSON envelope.
+    pub async fn get_vpris_raw(&self, params: &GetVprisParams) -> Result<Value> {
+        self.call("getVPRIs", params).await
+    }
+
+    /// Call the `getVoicemailAttachmentFormats` API method and deserialize into [`GetVoicemailAttachmentFormatsResponse`].
     pub async fn get_voicemail_attachment_formats(
+        &self,
+        params: &GetVoicemailAttachmentFormatsParams,
+    ) -> Result<GetVoicemailAttachmentFormatsResponse> {
+        self.call_typed("getVoicemailAttachmentFormats", params)
+            .await
+    }
+
+    /// Call the `getVoicemailAttachmentFormats` API method and return the raw JSON envelope.
+    pub async fn get_voicemail_attachment_formats_raw(
         &self,
         params: &GetVoicemailAttachmentFormatsParams,
     ) -> Result<Value> {
         self.call("getVoicemailAttachmentFormats", params).await
     }
 
-    /// Call the `getVoicemailAttachmentFormats` API method and deserialize the response body into `T`.
-    pub async fn get_voicemail_attachment_formats_typed<T>(
-        &self,
-        params: &GetVoicemailAttachmentFormatsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getVoicemailAttachmentFormats", params)
-            .await
-    }
-
-    /// Call the `getVoicemailFolders` API method.
-    pub async fn get_voicemail_folders(&self, params: &GetVoicemailFoldersParams) -> Result<Value> {
-        self.call("getVoicemailFolders", params).await
-    }
-
-    /// Call the `getVoicemailFolders` API method and deserialize the response body into `T`.
-    pub async fn get_voicemail_folders_typed<T>(
+    /// Call the `getVoicemailFolders` API method and deserialize into [`GetVoicemailFoldersResponse`].
+    pub async fn get_voicemail_folders(
         &self,
         params: &GetVoicemailFoldersParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<GetVoicemailFoldersResponse> {
         self.call_typed("getVoicemailFolders", params).await
     }
 
-    /// Call the `getVoicemailMessageFile` API method.
+    /// Call the `getVoicemailFolders` API method and return the raw JSON envelope.
+    pub async fn get_voicemail_folders_raw(
+        &self,
+        params: &GetVoicemailFoldersParams,
+    ) -> Result<Value> {
+        self.call("getVoicemailFolders", params).await
+    }
+
+    /// Call the `getVoicemailMessageFile` API method and deserialize into [`GetVoicemailMessageFileResponse`].
     pub async fn get_voicemail_message_file(
+        &self,
+        params: &GetVoicemailMessageFileParams,
+    ) -> Result<GetVoicemailMessageFileResponse> {
+        self.call_typed("getVoicemailMessageFile", params).await
+    }
+
+    /// Call the `getVoicemailMessageFile` API method and return the raw JSON envelope.
+    pub async fn get_voicemail_message_file_raw(
         &self,
         params: &GetVoicemailMessageFileParams,
     ) -> Result<Value> {
         self.call("getVoicemailMessageFile", params).await
     }
 
-    /// Call the `getVoicemailMessageFile` API method and deserialize the response body into `T`.
-    pub async fn get_voicemail_message_file_typed<T>(
+    /// Call the `getVoicemailMessages` API method and deserialize into [`GetVoicemailMessagesResponse`].
+    pub async fn get_voicemail_messages(
         &self,
-        params: &GetVoicemailMessageFileParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getVoicemailMessageFile", params).await
+        params: &GetVoicemailMessagesParams,
+    ) -> Result<GetVoicemailMessagesResponse> {
+        self.call_typed("getVoicemailMessages", params).await
     }
 
-    /// Call the `getVoicemailMessages` API method.
-    pub async fn get_voicemail_messages(
+    /// Call the `getVoicemailMessages` API method and return the raw JSON envelope.
+    pub async fn get_voicemail_messages_raw(
         &self,
         params: &GetVoicemailMessagesParams,
     ) -> Result<Value> {
         self.call("getVoicemailMessages", params).await
     }
 
-    /// Call the `getVoicemailMessages` API method and deserialize the response body into `T`.
-    pub async fn get_voicemail_messages_typed<T>(
-        &self,
-        params: &GetVoicemailMessagesParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getVoicemailMessages", params).await
-    }
-
-    /// Call the `getVoicemailSetups` API method.
-    pub async fn get_voicemail_setups(&self, params: &GetVoicemailSetupsParams) -> Result<Value> {
-        self.call("getVoicemailSetups", params).await
-    }
-
-    /// Call the `getVoicemailSetups` API method and deserialize the response body into `T`.
-    pub async fn get_voicemail_setups_typed<T>(
+    /// Call the `getVoicemailSetups` API method and deserialize into [`GetVoicemailSetupsResponse`].
+    pub async fn get_voicemail_setups(
         &self,
         params: &GetVoicemailSetupsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<GetVoicemailSetupsResponse> {
         self.call_typed("getVoicemailSetups", params).await
     }
 
-    /// Call the `getVoicemailTranscriptions` API method.
+    /// Call the `getVoicemailSetups` API method and return the raw JSON envelope.
+    pub async fn get_voicemail_setups_raw(
+        &self,
+        params: &GetVoicemailSetupsParams,
+    ) -> Result<Value> {
+        self.call("getVoicemailSetups", params).await
+    }
+
+    /// Call the `getVoicemailTranscriptions` API method and deserialize into [`GetVoicemailTranscriptionsResponse`].
     pub async fn get_voicemail_transcriptions(
+        &self,
+        params: &GetVoicemailTranscriptionsParams,
+    ) -> Result<GetVoicemailTranscriptionsResponse> {
+        self.call_typed("getVoicemailTranscriptions", params).await
+    }
+
+    /// Call the `getVoicemailTranscriptions` API method and return the raw JSON envelope.
+    pub async fn get_voicemail_transcriptions_raw(
         &self,
         params: &GetVoicemailTranscriptionsParams,
     ) -> Result<Value> {
         self.call("getVoicemailTranscriptions", params).await
     }
 
-    /// Call the `getVoicemailTranscriptions` API method and deserialize the response body into `T`.
-    pub async fn get_voicemail_transcriptions_typed<T>(
+    /// Call the `getVoicemails` API method and deserialize into [`GetVoicemailsResponse`].
+    pub async fn get_voicemails(
         &self,
-        params: &GetVoicemailTranscriptionsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("getVoicemailTranscriptions", params).await
-    }
-
-    /// Call the `getVoicemails` API method.
-    pub async fn get_voicemails(&self, params: &GetVoicemailsParams) -> Result<Value> {
-        self.call("getVoicemails", params).await
-    }
-
-    /// Call the `getVoicemails` API method and deserialize the response body into `T`.
-    pub async fn get_voicemails_typed<T>(&self, params: &GetVoicemailsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &GetVoicemailsParams,
+    ) -> Result<GetVoicemailsResponse> {
         self.call_typed("getVoicemails", params).await
     }
 
-    /// Call the `mailFaxMessagePDF` API method.
-    pub async fn mail_fax_message_pdf(&self, params: &MailFaxMessagePdfParams) -> Result<Value> {
-        self.call("mailFaxMessagePDF", params).await
+    /// Call the `getVoicemails` API method and return the raw JSON envelope.
+    pub async fn get_voicemails_raw(&self, params: &GetVoicemailsParams) -> Result<Value> {
+        self.call("getVoicemails", params).await
     }
 
-    /// Call the `mailFaxMessagePDF` API method and deserialize the response body into `T`.
-    pub async fn mail_fax_message_pdf_typed<T>(&self, params: &MailFaxMessagePdfParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `mailFaxMessagePDF` API method and deserialize into [`MailFaxMessagePdfResponse`].
+    pub async fn mail_fax_message_pdf(
+        &self,
+        params: &MailFaxMessagePdfParams,
+    ) -> Result<MailFaxMessagePdfResponse> {
         self.call_typed("mailFaxMessagePDF", params).await
     }
 
-    /// Call the `markListenedVoicemailMessage` API method.
+    /// Call the `mailFaxMessagePDF` API method and return the raw JSON envelope.
+    pub async fn mail_fax_message_pdf_raw(
+        &self,
+        params: &MailFaxMessagePdfParams,
+    ) -> Result<Value> {
+        self.call("mailFaxMessagePDF", params).await
+    }
+
+    /// Call the `markListenedVoicemailMessage` API method and deserialize into [`MarkListenedVoicemailMessageResponse`].
     pub async fn mark_listened_voicemail_message(
+        &self,
+        params: &MarkListenedVoicemailMessageParams,
+    ) -> Result<MarkListenedVoicemailMessageResponse> {
+        self.call_typed("markListenedVoicemailMessage", params)
+            .await
+    }
+
+    /// Call the `markListenedVoicemailMessage` API method and return the raw JSON envelope.
+    pub async fn mark_listened_voicemail_message_raw(
         &self,
         params: &MarkListenedVoicemailMessageParams,
     ) -> Result<Value> {
         self.call("markListenedVoicemailMessage", params).await
     }
 
-    /// Call the `markListenedVoicemailMessage` API method and deserialize the response body into `T`.
-    pub async fn mark_listened_voicemail_message_typed<T>(
+    /// Call the `markUrgentVoicemailMessage` API method and deserialize into [`MarkUrgentVoicemailMessageResponse`].
+    pub async fn mark_urgent_voicemail_message(
         &self,
-        params: &MarkListenedVoicemailMessageParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("markListenedVoicemailMessage", params)
-            .await
+        params: &MarkUrgentVoicemailMessageParams,
+    ) -> Result<MarkUrgentVoicemailMessageResponse> {
+        self.call_typed("markUrgentVoicemailMessage", params).await
     }
 
-    /// Call the `markUrgentVoicemailMessage` API method.
-    pub async fn mark_urgent_voicemail_message(
+    /// Call the `markUrgentVoicemailMessage` API method and return the raw JSON envelope.
+    pub async fn mark_urgent_voicemail_message_raw(
         &self,
         params: &MarkUrgentVoicemailMessageParams,
     ) -> Result<Value> {
         self.call("markUrgentVoicemailMessage", params).await
     }
 
-    /// Call the `markUrgentVoicemailMessage` API method and deserialize the response body into `T`.
-    pub async fn mark_urgent_voicemail_message_typed<T>(
+    /// Call the `moveFaxMessage` API method and deserialize into [`MoveFaxMessageResponse`].
+    pub async fn move_fax_message(
         &self,
-        params: &MarkUrgentVoicemailMessageParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("markUrgentVoicemailMessage", params).await
-    }
-
-    /// Call the `moveFaxMessage` API method.
-    pub async fn move_fax_message(&self, params: &MoveFaxMessageParams) -> Result<Value> {
-        self.call("moveFaxMessage", params).await
-    }
-
-    /// Call the `moveFaxMessage` API method and deserialize the response body into `T`.
-    pub async fn move_fax_message_typed<T>(&self, params: &MoveFaxMessageParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &MoveFaxMessageParams,
+    ) -> Result<MoveFaxMessageResponse> {
         self.call_typed("moveFaxMessage", params).await
     }
 
-    /// Call the `moveFolderVoicemailMessage` API method.
+    /// Call the `moveFaxMessage` API method and return the raw JSON envelope.
+    pub async fn move_fax_message_raw(&self, params: &MoveFaxMessageParams) -> Result<Value> {
+        self.call("moveFaxMessage", params).await
+    }
+
+    /// Call the `moveFolderVoicemailMessage` API method and deserialize into [`MoveFolderVoicemailMessageResponse`].
     pub async fn move_folder_voicemail_message(
+        &self,
+        params: &MoveFolderVoicemailMessageParams,
+    ) -> Result<MoveFolderVoicemailMessageResponse> {
+        self.call_typed("moveFolderVoicemailMessage", params).await
+    }
+
+    /// Call the `moveFolderVoicemailMessage` API method and return the raw JSON envelope.
+    pub async fn move_folder_voicemail_message_raw(
         &self,
         params: &MoveFolderVoicemailMessageParams,
     ) -> Result<Value> {
         self.call("moveFolderVoicemailMessage", params).await
     }
 
-    /// Call the `moveFolderVoicemailMessage` API method and deserialize the response body into `T`.
-    pub async fn move_folder_voicemail_message_typed<T>(
-        &self,
-        params: &MoveFolderVoicemailMessageParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("moveFolderVoicemailMessage", params).await
-    }
-
-    /// Call the `orderDID` API method.
-    pub async fn order_did(&self, params: &OrderDidParams) -> Result<Value> {
-        self.call("orderDID", params).await
-    }
-
-    /// Call the `orderDID` API method and deserialize the response body into `T`.
-    pub async fn order_did_typed<T>(&self, params: &OrderDidParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `orderDID` API method and deserialize into [`OrderDidResponse`].
+    pub async fn order_did(&self, params: &OrderDidParams) -> Result<OrderDidResponse> {
         self.call_typed("orderDID", params).await
     }
 
-    /// Call the `orderDIDInternationalGeographic` API method.
+    /// Call the `orderDID` API method and return the raw JSON envelope.
+    pub async fn order_did_raw(&self, params: &OrderDidParams) -> Result<Value> {
+        self.call("orderDID", params).await
+    }
+
+    /// Call the `orderDIDInternationalGeographic` API method and deserialize into [`OrderDidInternationalGeographicResponse`].
     pub async fn order_did_international_geographic(
+        &self,
+        params: &OrderDidInternationalGeographicParams,
+    ) -> Result<OrderDidInternationalGeographicResponse> {
+        self.call_typed("orderDIDInternationalGeographic", params)
+            .await
+    }
+
+    /// Call the `orderDIDInternationalGeographic` API method and return the raw JSON envelope.
+    pub async fn order_did_international_geographic_raw(
         &self,
         params: &OrderDidInternationalGeographicParams,
     ) -> Result<Value> {
         self.call("orderDIDInternationalGeographic", params).await
     }
 
-    /// Call the `orderDIDInternationalGeographic` API method and deserialize the response body into `T`.
-    pub async fn order_did_international_geographic_typed<T>(
+    /// Call the `orderDIDInternationalNational` API method and deserialize into [`OrderDidInternationalNationalResponse`].
+    pub async fn order_did_international_national(
         &self,
-        params: &OrderDidInternationalGeographicParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("orderDIDInternationalGeographic", params)
+        params: &OrderDidInternationalNationalParams,
+    ) -> Result<OrderDidInternationalNationalResponse> {
+        self.call_typed("orderDIDInternationalNational", params)
             .await
     }
 
-    /// Call the `orderDIDInternationalNational` API method.
-    pub async fn order_did_international_national(
+    /// Call the `orderDIDInternationalNational` API method and return the raw JSON envelope.
+    pub async fn order_did_international_national_raw(
         &self,
         params: &OrderDidInternationalNationalParams,
     ) -> Result<Value> {
         self.call("orderDIDInternationalNational", params).await
     }
 
-    /// Call the `orderDIDInternationalNational` API method and deserialize the response body into `T`.
-    pub async fn order_did_international_national_typed<T>(
+    /// Call the `orderDIDInternationalTollFree` API method and deserialize into [`OrderDidInternationalTollFreeResponse`].
+    pub async fn order_did_international_toll_free(
         &self,
-        params: &OrderDidInternationalNationalParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("orderDIDInternationalNational", params)
+        params: &OrderDidInternationalTollFreeParams,
+    ) -> Result<OrderDidInternationalTollFreeResponse> {
+        self.call_typed("orderDIDInternationalTollFree", params)
             .await
     }
 
-    /// Call the `orderDIDInternationalTollFree` API method.
-    pub async fn order_did_international_toll_free(
+    /// Call the `orderDIDInternationalTollFree` API method and return the raw JSON envelope.
+    pub async fn order_did_international_toll_free_raw(
         &self,
         params: &OrderDidInternationalTollFreeParams,
     ) -> Result<Value> {
         self.call("orderDIDInternationalTollFree", params).await
     }
 
-    /// Call the `orderDIDInternationalTollFree` API method and deserialize the response body into `T`.
-    pub async fn order_did_international_toll_free_typed<T>(
+    /// Call the `orderDIDVirtual` API method and deserialize into [`OrderDidVirtualResponse`].
+    pub async fn order_did_virtual(
         &self,
-        params: &OrderDidInternationalTollFreeParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("orderDIDInternationalTollFree", params)
-            .await
-    }
-
-    /// Call the `orderDIDVirtual` API method.
-    pub async fn order_did_virtual(&self, params: &OrderDidVirtualParams) -> Result<Value> {
-        self.call("orderDIDVirtual", params).await
-    }
-
-    /// Call the `orderDIDVirtual` API method and deserialize the response body into `T`.
-    pub async fn order_did_virtual_typed<T>(&self, params: &OrderDidVirtualParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &OrderDidVirtualParams,
+    ) -> Result<OrderDidVirtualResponse> {
         self.call_typed("orderDIDVirtual", params).await
     }
 
-    /// Call the `orderFaxNumber` API method.
-    pub async fn order_fax_number(&self, params: &OrderFaxNumberParams) -> Result<Value> {
-        self.call("orderFaxNumber", params).await
+    /// Call the `orderDIDVirtual` API method and return the raw JSON envelope.
+    pub async fn order_did_virtual_raw(&self, params: &OrderDidVirtualParams) -> Result<Value> {
+        self.call("orderDIDVirtual", params).await
     }
 
-    /// Call the `orderFaxNumber` API method and deserialize the response body into `T`.
-    pub async fn order_fax_number_typed<T>(&self, params: &OrderFaxNumberParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `orderFaxNumber` API method and deserialize into [`OrderFaxNumberResponse`].
+    pub async fn order_fax_number(
+        &self,
+        params: &OrderFaxNumberParams,
+    ) -> Result<OrderFaxNumberResponse> {
         self.call_typed("orderFaxNumber", params).await
     }
 
-    /// Call the `orderTollFree` API method.
-    pub async fn order_toll_free(&self, params: &OrderTollFreeParams) -> Result<Value> {
-        self.call("orderTollFree", params).await
+    /// Call the `orderFaxNumber` API method and return the raw JSON envelope.
+    pub async fn order_fax_number_raw(&self, params: &OrderFaxNumberParams) -> Result<Value> {
+        self.call("orderFaxNumber", params).await
     }
 
-    /// Call the `orderTollFree` API method and deserialize the response body into `T`.
-    pub async fn order_toll_free_typed<T>(&self, params: &OrderTollFreeParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `orderTollFree` API method and deserialize into [`OrderTollFreeResponse`].
+    pub async fn order_toll_free(
+        &self,
+        params: &OrderTollFreeParams,
+    ) -> Result<OrderTollFreeResponse> {
         self.call_typed("orderTollFree", params).await
     }
 
-    /// Call the `orderVanity` API method.
-    pub async fn order_vanity(&self, params: &OrderVanityParams) -> Result<Value> {
-        self.call("orderVanity", params).await
+    /// Call the `orderTollFree` API method and return the raw JSON envelope.
+    pub async fn order_toll_free_raw(&self, params: &OrderTollFreeParams) -> Result<Value> {
+        self.call("orderTollFree", params).await
     }
 
-    /// Call the `orderVanity` API method and deserialize the response body into `T`.
-    pub async fn order_vanity_typed<T>(&self, params: &OrderVanityParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `orderVanity` API method and deserialize into [`OrderVanityResponse`].
+    pub async fn order_vanity(&self, params: &OrderVanityParams) -> Result<OrderVanityResponse> {
         self.call_typed("orderVanity", params).await
     }
 
-    /// Call the `removeDIDvPRI` API method.
-    pub async fn remove_did_vpri(&self, params: &RemoveDidVpriParams) -> Result<Value> {
-        self.call("removeDIDvPRI", params).await
+    /// Call the `orderVanity` API method and return the raw JSON envelope.
+    pub async fn order_vanity_raw(&self, params: &OrderVanityParams) -> Result<Value> {
+        self.call("orderVanity", params).await
     }
 
-    /// Call the `removeDIDvPRI` API method and deserialize the response body into `T`.
-    pub async fn remove_did_vpri_typed<T>(&self, params: &RemoveDidVpriParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `removeDIDvPRI` API method and deserialize into [`RemoveDidVpriResponse`].
+    pub async fn remove_did_vpri(
+        &self,
+        params: &RemoveDidVpriParams,
+    ) -> Result<RemoveDidVpriResponse> {
         self.call_typed("removeDIDvPRI", params).await
     }
 
-    /// Call the `searchDIDsCAN` API method.
-    pub async fn search_dids_can(&self, params: &SearchDidsCanParams) -> Result<Value> {
-        self.call("searchDIDsCAN", params).await
+    /// Call the `removeDIDvPRI` API method and return the raw JSON envelope.
+    pub async fn remove_did_vpri_raw(&self, params: &RemoveDidVpriParams) -> Result<Value> {
+        self.call("removeDIDvPRI", params).await
     }
 
-    /// Call the `searchDIDsCAN` API method and deserialize the response body into `T`.
-    pub async fn search_dids_can_typed<T>(&self, params: &SearchDidsCanParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `searchDIDsCAN` API method and deserialize into [`SearchDidsCanResponse`].
+    pub async fn search_dids_can(
+        &self,
+        params: &SearchDidsCanParams,
+    ) -> Result<SearchDidsCanResponse> {
         self.call_typed("searchDIDsCAN", params).await
     }
 
-    /// Call the `searchDIDsUSA` API method.
-    pub async fn search_dids_usa(&self, params: &SearchDidsUsaParams) -> Result<Value> {
-        self.call("searchDIDsUSA", params).await
+    /// Call the `searchDIDsCAN` API method and return the raw JSON envelope.
+    pub async fn search_dids_can_raw(&self, params: &SearchDidsCanParams) -> Result<Value> {
+        self.call("searchDIDsCAN", params).await
     }
 
-    /// Call the `searchDIDsUSA` API method and deserialize the response body into `T`.
-    pub async fn search_dids_usa_typed<T>(&self, params: &SearchDidsUsaParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `searchDIDsUSA` API method and deserialize into [`SearchDidsUsaResponse`].
+    pub async fn search_dids_usa(
+        &self,
+        params: &SearchDidsUsaParams,
+    ) -> Result<SearchDidsUsaResponse> {
         self.call_typed("searchDIDsUSA", params).await
     }
 
-    /// Call the `searchFaxAreaCodeCAN` API method.
+    /// Call the `searchDIDsUSA` API method and return the raw JSON envelope.
+    pub async fn search_dids_usa_raw(&self, params: &SearchDidsUsaParams) -> Result<Value> {
+        self.call("searchDIDsUSA", params).await
+    }
+
+    /// Call the `searchFaxAreaCodeCAN` API method and deserialize into [`SearchFaxAreaCodeCanResponse`].
     pub async fn search_fax_area_code_can(
+        &self,
+        params: &SearchFaxAreaCodeCanParams,
+    ) -> Result<SearchFaxAreaCodeCanResponse> {
+        self.call_typed("searchFaxAreaCodeCAN", params).await
+    }
+
+    /// Call the `searchFaxAreaCodeCAN` API method and return the raw JSON envelope.
+    pub async fn search_fax_area_code_can_raw(
         &self,
         params: &SearchFaxAreaCodeCanParams,
     ) -> Result<Value> {
         self.call("searchFaxAreaCodeCAN", params).await
     }
 
-    /// Call the `searchFaxAreaCodeCAN` API method and deserialize the response body into `T`.
-    pub async fn search_fax_area_code_can_typed<T>(
+    /// Call the `searchFaxAreaCodeUSA` API method and deserialize into [`SearchFaxAreaCodeUsaResponse`].
+    pub async fn search_fax_area_code_usa(
         &self,
-        params: &SearchFaxAreaCodeCanParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("searchFaxAreaCodeCAN", params).await
+        params: &SearchFaxAreaCodeUsaParams,
+    ) -> Result<SearchFaxAreaCodeUsaResponse> {
+        self.call_typed("searchFaxAreaCodeUSA", params).await
     }
 
-    /// Call the `searchFaxAreaCodeUSA` API method.
-    pub async fn search_fax_area_code_usa(
+    /// Call the `searchFaxAreaCodeUSA` API method and return the raw JSON envelope.
+    pub async fn search_fax_area_code_usa_raw(
         &self,
         params: &SearchFaxAreaCodeUsaParams,
     ) -> Result<Value> {
         self.call("searchFaxAreaCodeUSA", params).await
     }
 
-    /// Call the `searchFaxAreaCodeUSA` API method and deserialize the response body into `T`.
-    pub async fn search_fax_area_code_usa_typed<T>(
+    /// Call the `searchTollFreeCanUS` API method and deserialize into [`SearchTollFreeCanUsResponse`].
+    pub async fn search_toll_free_can_us(
         &self,
-        params: &SearchFaxAreaCodeUsaParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("searchFaxAreaCodeUSA", params).await
+        params: &SearchTollFreeCanUsParams,
+    ) -> Result<SearchTollFreeCanUsResponse> {
+        self.call_typed("searchTollFreeCanUS", params).await
     }
 
-    /// Call the `searchTollFreeCanUS` API method.
-    pub async fn search_toll_free_can_us(
+    /// Call the `searchTollFreeCanUS` API method and return the raw JSON envelope.
+    pub async fn search_toll_free_can_us_raw(
         &self,
         params: &SearchTollFreeCanUsParams,
     ) -> Result<Value> {
         self.call("searchTollFreeCanUS", params).await
     }
 
-    /// Call the `searchTollFreeCanUS` API method and deserialize the response body into `T`.
-    pub async fn search_toll_free_can_us_typed<T>(
+    /// Call the `searchTollFreeUSA` API method and deserialize into [`SearchTollFreeUsaResponse`].
+    pub async fn search_toll_free_usa(
         &self,
-        params: &SearchTollFreeCanUsParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("searchTollFreeCanUS", params).await
-    }
-
-    /// Call the `searchTollFreeUSA` API method.
-    pub async fn search_toll_free_usa(&self, params: &SearchTollFreeUsaParams) -> Result<Value> {
-        self.call("searchTollFreeUSA", params).await
-    }
-
-    /// Call the `searchTollFreeUSA` API method and deserialize the response body into `T`.
-    pub async fn search_toll_free_usa_typed<T>(&self, params: &SearchTollFreeUsaParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &SearchTollFreeUsaParams,
+    ) -> Result<SearchTollFreeUsaResponse> {
         self.call_typed("searchTollFreeUSA", params).await
     }
 
-    /// Call the `searchVanity` API method.
-    pub async fn search_vanity(&self, params: &SearchVanityParams) -> Result<Value> {
-        self.call("searchVanity", params).await
+    /// Call the `searchTollFreeUSA` API method and return the raw JSON envelope.
+    pub async fn search_toll_free_usa_raw(
+        &self,
+        params: &SearchTollFreeUsaParams,
+    ) -> Result<Value> {
+        self.call("searchTollFreeUSA", params).await
     }
 
-    /// Call the `searchVanity` API method and deserialize the response body into `T`.
-    pub async fn search_vanity_typed<T>(&self, params: &SearchVanityParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `searchVanity` API method and deserialize into [`SearchVanityResponse`].
+    pub async fn search_vanity(&self, params: &SearchVanityParams) -> Result<SearchVanityResponse> {
         self.call_typed("searchVanity", params).await
     }
 
-    /// Call the `sendCallRecordingEmail` API method.
+    /// Call the `searchVanity` API method and return the raw JSON envelope.
+    pub async fn search_vanity_raw(&self, params: &SearchVanityParams) -> Result<Value> {
+        self.call("searchVanity", params).await
+    }
+
+    /// Call the `sendCallRecordingEmail` API method and deserialize into [`SendCallRecordingEmailResponse`].
     pub async fn send_call_recording_email(
+        &self,
+        params: &SendCallRecordingEmailParams,
+    ) -> Result<SendCallRecordingEmailResponse> {
+        self.call_typed("sendCallRecordingEmail", params).await
+    }
+
+    /// Call the `sendCallRecordingEmail` API method and return the raw JSON envelope.
+    pub async fn send_call_recording_email_raw(
         &self,
         params: &SendCallRecordingEmailParams,
     ) -> Result<Value> {
         self.call("sendCallRecordingEmail", params).await
     }
 
-    /// Call the `sendCallRecordingEmail` API method and deserialize the response body into `T`.
-    pub async fn send_call_recording_email_typed<T>(
+    /// Call the `sendFaxMessage` API method and deserialize into [`SendFaxMessageResponse`].
+    pub async fn send_fax_message(
         &self,
-        params: &SendCallRecordingEmailParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("sendCallRecordingEmail", params).await
-    }
-
-    /// Call the `sendFaxMessage` API method.
-    pub async fn send_fax_message(&self, params: &SendFaxMessageParams) -> Result<Value> {
-        self.call("sendFaxMessage", params).await
-    }
-
-    /// Call the `sendFaxMessage` API method and deserialize the response body into `T`.
-    pub async fn send_fax_message_typed<T>(&self, params: &SendFaxMessageParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &SendFaxMessageParams,
+    ) -> Result<SendFaxMessageResponse> {
         self.call_typed("sendFaxMessage", params).await
     }
 
-    /// Call the `sendMMS` API method.
-    pub async fn send_mms(&self, params: &SendMmsParams) -> Result<Value> {
-        self.call("sendMMS", params).await
+    /// Call the `sendFaxMessage` API method and return the raw JSON envelope.
+    pub async fn send_fax_message_raw(&self, params: &SendFaxMessageParams) -> Result<Value> {
+        self.call("sendFaxMessage", params).await
     }
 
-    /// Call the `sendMMS` API method and deserialize the response body into `T`.
-    pub async fn send_mms_typed<T>(&self, params: &SendMmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `sendMMS` API method and deserialize into [`SendMmsResponse`].
+    pub async fn send_mms(&self, params: &SendMmsParams) -> Result<SendMmsResponse> {
         self.call_typed("sendMMS", params).await
     }
 
-    /// Call the `sendSMS` API method.
-    pub async fn send_sms(&self, params: &SendSmsParams) -> Result<Value> {
-        self.call("sendSMS", params).await
+    /// Call the `sendMMS` API method and return the raw JSON envelope.
+    pub async fn send_mms_raw(&self, params: &SendMmsParams) -> Result<Value> {
+        self.call("sendMMS", params).await
     }
 
-    /// Call the `sendSMS` API method and deserialize the response body into `T`.
-    pub async fn send_sms_typed<T>(&self, params: &SendSmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `sendSMS` API method and deserialize into [`SendSmsResponse`].
+    pub async fn send_sms(&self, params: &SendSmsParams) -> Result<SendSmsResponse> {
         self.call_typed("sendSMS", params).await
     }
 
-    /// Call the `sendVoicemailEmail` API method.
-    pub async fn send_voicemail_email(&self, params: &SendVoicemailEmailParams) -> Result<Value> {
-        self.call("sendVoicemailEmail", params).await
+    /// Call the `sendSMS` API method and return the raw JSON envelope.
+    pub async fn send_sms_raw(&self, params: &SendSmsParams) -> Result<Value> {
+        self.call("sendSMS", params).await
     }
 
-    /// Call the `sendVoicemailEmail` API method and deserialize the response body into `T`.
-    pub async fn send_voicemail_email_typed<T>(
+    /// Call the `sendVoicemailEmail` API method and deserialize into [`SendVoicemailEmailResponse`].
+    pub async fn send_voicemail_email(
         &self,
         params: &SendVoicemailEmailParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<SendVoicemailEmailResponse> {
         self.call_typed("sendVoicemailEmail", params).await
     }
 
-    /// Call the `setCallHunting` API method.
-    pub async fn set_call_hunting(&self, params: &SetCallHuntingParams) -> Result<Value> {
-        self.call("setCallHunting", params).await
+    /// Call the `sendVoicemailEmail` API method and return the raw JSON envelope.
+    pub async fn send_voicemail_email_raw(
+        &self,
+        params: &SendVoicemailEmailParams,
+    ) -> Result<Value> {
+        self.call("sendVoicemailEmail", params).await
     }
 
-    /// Call the `setCallHunting` API method and deserialize the response body into `T`.
-    pub async fn set_call_hunting_typed<T>(&self, params: &SetCallHuntingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setCallHunting` API method and deserialize into [`SetCallHuntingResponse`].
+    pub async fn set_call_hunting(
+        &self,
+        params: &SetCallHuntingParams,
+    ) -> Result<SetCallHuntingResponse> {
         self.call_typed("setCallHunting", params).await
     }
 
-    /// Call the `setCallParking` API method.
-    pub async fn set_call_parking(&self, params: &SetCallParkingParams) -> Result<Value> {
-        self.call("setCallParking", params).await
+    /// Call the `setCallHunting` API method and return the raw JSON envelope.
+    pub async fn set_call_hunting_raw(&self, params: &SetCallHuntingParams) -> Result<Value> {
+        self.call("setCallHunting", params).await
     }
 
-    /// Call the `setCallParking` API method and deserialize the response body into `T`.
-    pub async fn set_call_parking_typed<T>(&self, params: &SetCallParkingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setCallParking` API method and deserialize into [`SetCallParkingResponse`].
+    pub async fn set_call_parking(
+        &self,
+        params: &SetCallParkingParams,
+    ) -> Result<SetCallParkingResponse> {
         self.call_typed("setCallParking", params).await
     }
 
-    /// Call the `setCallback` API method.
-    pub async fn set_callback(&self, params: &SetCallbackParams) -> Result<Value> {
-        self.call("setCallback", params).await
+    /// Call the `setCallParking` API method and return the raw JSON envelope.
+    pub async fn set_call_parking_raw(&self, params: &SetCallParkingParams) -> Result<Value> {
+        self.call("setCallParking", params).await
     }
 
-    /// Call the `setCallback` API method and deserialize the response body into `T`.
-    pub async fn set_callback_typed<T>(&self, params: &SetCallbackParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setCallback` API method and deserialize into [`SetCallbackResponse`].
+    pub async fn set_callback(&self, params: &SetCallbackParams) -> Result<SetCallbackResponse> {
         self.call_typed("setCallback", params).await
     }
 
-    /// Call the `setCallerIDFiltering` API method.
+    /// Call the `setCallback` API method and return the raw JSON envelope.
+    pub async fn set_callback_raw(&self, params: &SetCallbackParams) -> Result<Value> {
+        self.call("setCallback", params).await
+    }
+
+    /// Call the `setCallerIDFiltering` API method and deserialize into [`SetCallerIdFilteringResponse`].
     pub async fn set_caller_id_filtering(
+        &self,
+        params: &SetCallerIdFilteringParams,
+    ) -> Result<SetCallerIdFilteringResponse> {
+        self.call_typed("setCallerIDFiltering", params).await
+    }
+
+    /// Call the `setCallerIDFiltering` API method and return the raw JSON envelope.
+    pub async fn set_caller_id_filtering_raw(
         &self,
         params: &SetCallerIdFilteringParams,
     ) -> Result<Value> {
         self.call("setCallerIDFiltering", params).await
     }
 
-    /// Call the `setCallerIDFiltering` API method and deserialize the response body into `T`.
-    pub async fn set_caller_id_filtering_typed<T>(
-        &self,
-        params: &SetCallerIdFilteringParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("setCallerIDFiltering", params).await
-    }
-
-    /// Call the `setClient` API method.
-    pub async fn set_client(&self, params: &SetClientParams) -> Result<Value> {
-        self.call("setClient", params).await
-    }
-
-    /// Call the `setClient` API method and deserialize the response body into `T`.
-    pub async fn set_client_typed<T>(&self, params: &SetClientParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setClient` API method and deserialize into [`SetClientResponse`].
+    pub async fn set_client(&self, params: &SetClientParams) -> Result<SetClientResponse> {
         self.call_typed("setClient", params).await
     }
 
-    /// Call the `setClientThreshold` API method.
-    pub async fn set_client_threshold(&self, params: &SetClientThresholdParams) -> Result<Value> {
-        self.call("setClientThreshold", params).await
+    /// Call the `setClient` API method and return the raw JSON envelope.
+    pub async fn set_client_raw(&self, params: &SetClientParams) -> Result<Value> {
+        self.call("setClient", params).await
     }
 
-    /// Call the `setClientThreshold` API method and deserialize the response body into `T`.
-    pub async fn set_client_threshold_typed<T>(
+    /// Call the `setClientThreshold` API method and deserialize into [`SetClientThresholdResponse`].
+    pub async fn set_client_threshold(
         &self,
         params: &SetClientThresholdParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<SetClientThresholdResponse> {
         self.call_typed("setClientThreshold", params).await
     }
 
-    /// Call the `setConference` API method.
-    pub async fn set_conference(&self, params: &SetConferenceParams) -> Result<Value> {
-        self.call("setConference", params).await
+    /// Call the `setClientThreshold` API method and return the raw JSON envelope.
+    pub async fn set_client_threshold_raw(
+        &self,
+        params: &SetClientThresholdParams,
+    ) -> Result<Value> {
+        self.call("setClientThreshold", params).await
     }
 
-    /// Call the `setConference` API method and deserialize the response body into `T`.
-    pub async fn set_conference_typed<T>(&self, params: &SetConferenceParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setConference` API method and deserialize into [`SetConferenceResponse`].
+    pub async fn set_conference(
+        &self,
+        params: &SetConferenceParams,
+    ) -> Result<SetConferenceResponse> {
         self.call_typed("setConference", params).await
     }
 
-    /// Call the `setConferenceMember` API method.
-    pub async fn set_conference_member(&self, params: &SetConferenceMemberParams) -> Result<Value> {
-        self.call("setConferenceMember", params).await
+    /// Call the `setConference` API method and return the raw JSON envelope.
+    pub async fn set_conference_raw(&self, params: &SetConferenceParams) -> Result<Value> {
+        self.call("setConference", params).await
     }
 
-    /// Call the `setConferenceMember` API method and deserialize the response body into `T`.
-    pub async fn set_conference_member_typed<T>(
+    /// Call the `setConferenceMember` API method and deserialize into [`SetConferenceMemberResponse`].
+    pub async fn set_conference_member(
         &self,
         params: &SetConferenceMemberParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    ) -> Result<SetConferenceMemberResponse> {
         self.call_typed("setConferenceMember", params).await
     }
 
-    /// Call the `setDIDBillingType` API method.
-    pub async fn set_did_billing_type(&self, params: &SetDidBillingTypeParams) -> Result<Value> {
-        self.call("setDIDBillingType", params).await
+    /// Call the `setConferenceMember` API method and return the raw JSON envelope.
+    pub async fn set_conference_member_raw(
+        &self,
+        params: &SetConferenceMemberParams,
+    ) -> Result<Value> {
+        self.call("setConferenceMember", params).await
     }
 
-    /// Call the `setDIDBillingType` API method and deserialize the response body into `T`.
-    pub async fn set_did_billing_type_typed<T>(&self, params: &SetDidBillingTypeParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setDIDBillingType` API method and deserialize into [`SetDidBillingTypeResponse`].
+    pub async fn set_did_billing_type(
+        &self,
+        params: &SetDidBillingTypeParams,
+    ) -> Result<SetDidBillingTypeResponse> {
         self.call_typed("setDIDBillingType", params).await
     }
 
-    /// Call the `setDIDInfo` API method.
-    pub async fn set_did_info(&self, params: &SetDidInfoParams) -> Result<Value> {
-        self.call("setDIDInfo", params).await
+    /// Call the `setDIDBillingType` API method and return the raw JSON envelope.
+    pub async fn set_did_billing_type_raw(
+        &self,
+        params: &SetDidBillingTypeParams,
+    ) -> Result<Value> {
+        self.call("setDIDBillingType", params).await
     }
 
-    /// Call the `setDIDInfo` API method and deserialize the response body into `T`.
-    pub async fn set_did_info_typed<T>(&self, params: &SetDidInfoParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setDIDInfo` API method and deserialize into [`SetDidInfoResponse`].
+    pub async fn set_did_info(&self, params: &SetDidInfoParams) -> Result<SetDidInfoResponse> {
         self.call_typed("setDIDInfo", params).await
     }
 
-    /// Call the `setDIDPOP` API method.
-    pub async fn set_did_pop(&self, params: &SetDidPopParams) -> Result<Value> {
-        self.call("setDIDPOP", params).await
+    /// Call the `setDIDInfo` API method and return the raw JSON envelope.
+    pub async fn set_did_info_raw(&self, params: &SetDidInfoParams) -> Result<Value> {
+        self.call("setDIDInfo", params).await
     }
 
-    /// Call the `setDIDPOP` API method and deserialize the response body into `T`.
-    pub async fn set_did_pop_typed<T>(&self, params: &SetDidPopParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setDIDPOP` API method and deserialize into [`SetDidPopResponse`].
+    pub async fn set_did_pop(&self, params: &SetDidPopParams) -> Result<SetDidPopResponse> {
         self.call_typed("setDIDPOP", params).await
     }
 
-    /// Call the `setDIDRouting` API method.
-    pub async fn set_did_routing(&self, params: &SetDidRoutingParams) -> Result<Value> {
-        self.call("setDIDRouting", params).await
+    /// Call the `setDIDPOP` API method and return the raw JSON envelope.
+    pub async fn set_did_pop_raw(&self, params: &SetDidPopParams) -> Result<Value> {
+        self.call("setDIDPOP", params).await
     }
 
-    /// Call the `setDIDRouting` API method and deserialize the response body into `T`.
-    pub async fn set_did_routing_typed<T>(&self, params: &SetDidRoutingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setDIDRouting` API method and deserialize into [`SetDidRoutingResponse`].
+    pub async fn set_did_routing(
+        &self,
+        params: &SetDidRoutingParams,
+    ) -> Result<SetDidRoutingResponse> {
         self.call_typed("setDIDRouting", params).await
     }
 
-    /// Call the `setDIDVoicemail` API method.
-    pub async fn set_did_voicemail(&self, params: &SetDidVoicemailParams) -> Result<Value> {
-        self.call("setDIDVoicemail", params).await
+    /// Call the `setDIDRouting` API method and return the raw JSON envelope.
+    pub async fn set_did_routing_raw(&self, params: &SetDidRoutingParams) -> Result<Value> {
+        self.call("setDIDRouting", params).await
     }
 
-    /// Call the `setDIDVoicemail` API method and deserialize the response body into `T`.
-    pub async fn set_did_voicemail_typed<T>(&self, params: &SetDidVoicemailParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setDIDVoicemail` API method and deserialize into [`SetDidVoicemailResponse`].
+    pub async fn set_did_voicemail(
+        &self,
+        params: &SetDidVoicemailParams,
+    ) -> Result<SetDidVoicemailResponse> {
         self.call_typed("setDIDVoicemail", params).await
     }
 
-    /// Call the `setDISA` API method.
-    pub async fn set_disa(&self, params: &SetDisaParams) -> Result<Value> {
-        self.call("setDISA", params).await
+    /// Call the `setDIDVoicemail` API method and return the raw JSON envelope.
+    pub async fn set_did_voicemail_raw(&self, params: &SetDidVoicemailParams) -> Result<Value> {
+        self.call("setDIDVoicemail", params).await
     }
 
-    /// Call the `setDISA` API method and deserialize the response body into `T`.
-    pub async fn set_disa_typed<T>(&self, params: &SetDisaParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setDISA` API method and deserialize into [`SetDisaResponse`].
+    pub async fn set_disa(&self, params: &SetDisaParams) -> Result<SetDisaResponse> {
         self.call_typed("setDISA", params).await
     }
 
-    /// Call the `setEmailToFax` API method.
-    pub async fn set_email_to_fax(&self, params: &SetEmailToFaxParams) -> Result<Value> {
-        self.call("setEmailToFax", params).await
+    /// Call the `setDISA` API method and return the raw JSON envelope.
+    pub async fn set_disa_raw(&self, params: &SetDisaParams) -> Result<Value> {
+        self.call("setDISA", params).await
     }
 
-    /// Call the `setEmailToFax` API method and deserialize the response body into `T`.
-    pub async fn set_email_to_fax_typed<T>(&self, params: &SetEmailToFaxParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setEmailToFax` API method and deserialize into [`SetEmailToFaxResponse`].
+    pub async fn set_email_to_fax(
+        &self,
+        params: &SetEmailToFaxParams,
+    ) -> Result<SetEmailToFaxResponse> {
         self.call_typed("setEmailToFax", params).await
     }
 
-    /// Call the `setFaxFolder` API method.
-    pub async fn set_fax_folder(&self, params: &SetFaxFolderParams) -> Result<Value> {
-        self.call("setFaxFolder", params).await
+    /// Call the `setEmailToFax` API method and return the raw JSON envelope.
+    pub async fn set_email_to_fax_raw(&self, params: &SetEmailToFaxParams) -> Result<Value> {
+        self.call("setEmailToFax", params).await
     }
 
-    /// Call the `setFaxFolder` API method and deserialize the response body into `T`.
-    pub async fn set_fax_folder_typed<T>(&self, params: &SetFaxFolderParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setFaxFolder` API method and deserialize into [`SetFaxFolderResponse`].
+    pub async fn set_fax_folder(
+        &self,
+        params: &SetFaxFolderParams,
+    ) -> Result<SetFaxFolderResponse> {
         self.call_typed("setFaxFolder", params).await
     }
 
-    /// Call the `setFaxNumberEmail` API method.
-    pub async fn set_fax_number_email(&self, params: &SetFaxNumberEmailParams) -> Result<Value> {
-        self.call("setFaxNumberEmail", params).await
+    /// Call the `setFaxFolder` API method and return the raw JSON envelope.
+    pub async fn set_fax_folder_raw(&self, params: &SetFaxFolderParams) -> Result<Value> {
+        self.call("setFaxFolder", params).await
     }
 
-    /// Call the `setFaxNumberEmail` API method and deserialize the response body into `T`.
-    pub async fn set_fax_number_email_typed<T>(&self, params: &SetFaxNumberEmailParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setFaxNumberEmail` API method and deserialize into [`SetFaxNumberEmailResponse`].
+    pub async fn set_fax_number_email(
+        &self,
+        params: &SetFaxNumberEmailParams,
+    ) -> Result<SetFaxNumberEmailResponse> {
         self.call_typed("setFaxNumberEmail", params).await
     }
 
-    /// Call the `setFaxNumberInfo` API method.
-    pub async fn set_fax_number_info(&self, params: &SetFaxNumberInfoParams) -> Result<Value> {
-        self.call("setFaxNumberInfo", params).await
+    /// Call the `setFaxNumberEmail` API method and return the raw JSON envelope.
+    pub async fn set_fax_number_email_raw(
+        &self,
+        params: &SetFaxNumberEmailParams,
+    ) -> Result<Value> {
+        self.call("setFaxNumberEmail", params).await
     }
 
-    /// Call the `setFaxNumberInfo` API method and deserialize the response body into `T`.
-    pub async fn set_fax_number_info_typed<T>(&self, params: &SetFaxNumberInfoParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setFaxNumberInfo` API method and deserialize into [`SetFaxNumberInfoResponse`].
+    pub async fn set_fax_number_info(
+        &self,
+        params: &SetFaxNumberInfoParams,
+    ) -> Result<SetFaxNumberInfoResponse> {
         self.call_typed("setFaxNumberInfo", params).await
     }
 
-    /// Call the `setFaxNumberURLCallback` API method.
+    /// Call the `setFaxNumberInfo` API method and return the raw JSON envelope.
+    pub async fn set_fax_number_info_raw(&self, params: &SetFaxNumberInfoParams) -> Result<Value> {
+        self.call("setFaxNumberInfo", params).await
+    }
+
+    /// Call the `setFaxNumberURLCallback` API method and deserialize into [`SetFaxNumberUrlCallbackResponse`].
     pub async fn set_fax_number_url_callback(
+        &self,
+        params: &SetFaxNumberUrlCallbackParams,
+    ) -> Result<SetFaxNumberUrlCallbackResponse> {
+        self.call_typed("setFaxNumberURLCallback", params).await
+    }
+
+    /// Call the `setFaxNumberURLCallback` API method and return the raw JSON envelope.
+    pub async fn set_fax_number_url_callback_raw(
         &self,
         params: &SetFaxNumberUrlCallbackParams,
     ) -> Result<Value> {
         self.call("setFaxNumberURLCallback", params).await
     }
 
-    /// Call the `setFaxNumberURLCallback` API method and deserialize the response body into `T`.
-    pub async fn set_fax_number_url_callback_typed<T>(
+    /// Call the `setForwarding` API method and deserialize into [`SetForwardingResponse`].
+    pub async fn set_forwarding(
         &self,
-        params: &SetFaxNumberUrlCallbackParams,
-    ) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        self.call_typed("setFaxNumberURLCallback", params).await
-    }
-
-    /// Call the `setForwarding` API method.
-    pub async fn set_forwarding(&self, params: &SetForwardingParams) -> Result<Value> {
-        self.call("setForwarding", params).await
-    }
-
-    /// Call the `setForwarding` API method and deserialize the response body into `T`.
-    pub async fn set_forwarding_typed<T>(&self, params: &SetForwardingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+        params: &SetForwardingParams,
+    ) -> Result<SetForwardingResponse> {
         self.call_typed("setForwarding", params).await
     }
 
-    /// Call the `setIVR` API method.
-    pub async fn set_ivr(&self, params: &SetIvrParams) -> Result<Value> {
-        self.call("setIVR", params).await
+    /// Call the `setForwarding` API method and return the raw JSON envelope.
+    pub async fn set_forwarding_raw(&self, params: &SetForwardingParams) -> Result<Value> {
+        self.call("setForwarding", params).await
     }
 
-    /// Call the `setIVR` API method and deserialize the response body into `T`.
-    pub async fn set_ivr_typed<T>(&self, params: &SetIvrParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setIVR` API method and deserialize into [`SetIvrResponse`].
+    pub async fn set_ivr(&self, params: &SetIvrParams) -> Result<SetIvrResponse> {
         self.call_typed("setIVR", params).await
     }
 
-    /// Call the `setLocation` API method.
-    pub async fn set_location(&self, params: &SetLocationParams) -> Result<Value> {
-        self.call("setLocation", params).await
+    /// Call the `setIVR` API method and return the raw JSON envelope.
+    pub async fn set_ivr_raw(&self, params: &SetIvrParams) -> Result<Value> {
+        self.call("setIVR", params).await
     }
 
-    /// Call the `setLocation` API method and deserialize the response body into `T`.
-    pub async fn set_location_typed<T>(&self, params: &SetLocationParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setLocation` API method and deserialize into [`SetLocationResponse`].
+    pub async fn set_location(&self, params: &SetLocationParams) -> Result<SetLocationResponse> {
         self.call_typed("setLocation", params).await
     }
 
-    /// Call the `setMusicOnHold` API method.
-    pub async fn set_music_on_hold(&self, params: &SetMusicOnHoldParams) -> Result<Value> {
-        self.call("setMusicOnHold", params).await
+    /// Call the `setLocation` API method and return the raw JSON envelope.
+    pub async fn set_location_raw(&self, params: &SetLocationParams) -> Result<Value> {
+        self.call("setLocation", params).await
     }
 
-    /// Call the `setMusicOnHold` API method and deserialize the response body into `T`.
-    pub async fn set_music_on_hold_typed<T>(&self, params: &SetMusicOnHoldParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setMusicOnHold` API method and deserialize into [`SetMusicOnHoldResponse`].
+    pub async fn set_music_on_hold(
+        &self,
+        params: &SetMusicOnHoldParams,
+    ) -> Result<SetMusicOnHoldResponse> {
         self.call_typed("setMusicOnHold", params).await
     }
 
-    /// Call the `setPhonebook` API method.
-    pub async fn set_phonebook(&self, params: &SetPhonebookParams) -> Result<Value> {
-        self.call("setPhonebook", params).await
+    /// Call the `setMusicOnHold` API method and return the raw JSON envelope.
+    pub async fn set_music_on_hold_raw(&self, params: &SetMusicOnHoldParams) -> Result<Value> {
+        self.call("setMusicOnHold", params).await
     }
 
-    /// Call the `setPhonebook` API method and deserialize the response body into `T`.
-    pub async fn set_phonebook_typed<T>(&self, params: &SetPhonebookParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setPhonebook` API method and deserialize into [`SetPhonebookResponse`].
+    pub async fn set_phonebook(&self, params: &SetPhonebookParams) -> Result<SetPhonebookResponse> {
         self.call_typed("setPhonebook", params).await
     }
 
-    /// Call the `setPhonebookGroup` API method.
-    pub async fn set_phonebook_group(&self, params: &SetPhonebookGroupParams) -> Result<Value> {
-        self.call("setPhonebookGroup", params).await
+    /// Call the `setPhonebook` API method and return the raw JSON envelope.
+    pub async fn set_phonebook_raw(&self, params: &SetPhonebookParams) -> Result<Value> {
+        self.call("setPhonebook", params).await
     }
 
-    /// Call the `setPhonebookGroup` API method and deserialize the response body into `T`.
-    pub async fn set_phonebook_group_typed<T>(&self, params: &SetPhonebookGroupParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setPhonebookGroup` API method and deserialize into [`SetPhonebookGroupResponse`].
+    pub async fn set_phonebook_group(
+        &self,
+        params: &SetPhonebookGroupParams,
+    ) -> Result<SetPhonebookGroupResponse> {
         self.call_typed("setPhonebookGroup", params).await
     }
 
-    /// Call the `setQueue` API method.
-    pub async fn set_queue(&self, params: &SetQueueParams) -> Result<Value> {
-        self.call("setQueue", params).await
+    /// Call the `setPhonebookGroup` API method and return the raw JSON envelope.
+    pub async fn set_phonebook_group_raw(&self, params: &SetPhonebookGroupParams) -> Result<Value> {
+        self.call("setPhonebookGroup", params).await
     }
 
-    /// Call the `setQueue` API method and deserialize the response body into `T`.
-    pub async fn set_queue_typed<T>(&self, params: &SetQueueParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setQueue` API method and deserialize into [`SetQueueResponse`].
+    pub async fn set_queue(&self, params: &SetQueueParams) -> Result<SetQueueResponse> {
         self.call_typed("setQueue", params).await
     }
 
-    /// Call the `setRecording` API method.
-    pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<Value> {
-        self.call("setRecording", params).await
+    /// Call the `setQueue` API method and return the raw JSON envelope.
+    pub async fn set_queue_raw(&self, params: &SetQueueParams) -> Result<Value> {
+        self.call("setQueue", params).await
     }
 
-    /// Call the `setRecording` API method and deserialize the response body into `T`.
-    pub async fn set_recording_typed<T>(&self, params: &SetRecordingParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setRecording` API method and deserialize into [`SetRecordingResponse`].
+    pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetRecordingResponse> {
         self.call_typed("setRecording", params).await
     }
 
-    /// Call the `setRingGroup` API method.
-    pub async fn set_ring_group(&self, params: &SetRingGroupParams) -> Result<Value> {
-        self.call("setRingGroup", params).await
+    /// Call the `setRecording` API method and return the raw JSON envelope.
+    pub async fn set_recording_raw(&self, params: &SetRecordingParams) -> Result<Value> {
+        self.call("setRecording", params).await
     }
 
-    /// Call the `setRingGroup` API method and deserialize the response body into `T`.
-    pub async fn set_ring_group_typed<T>(&self, params: &SetRingGroupParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setRingGroup` API method and deserialize into [`SetRingGroupResponse`].
+    pub async fn set_ring_group(
+        &self,
+        params: &SetRingGroupParams,
+    ) -> Result<SetRingGroupResponse> {
         self.call_typed("setRingGroup", params).await
     }
 
-    /// Call the `setSIPURI` API method.
-    pub async fn set_sip_uri(&self, params: &SetSipUriParams) -> Result<Value> {
-        self.call("setSIPURI", params).await
+    /// Call the `setRingGroup` API method and return the raw JSON envelope.
+    pub async fn set_ring_group_raw(&self, params: &SetRingGroupParams) -> Result<Value> {
+        self.call("setRingGroup", params).await
     }
 
-    /// Call the `setSIPURI` API method and deserialize the response body into `T`.
-    pub async fn set_sip_uri_typed<T>(&self, params: &SetSipUriParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setSIPURI` API method and deserialize into [`SetSipUriResponse`].
+    pub async fn set_sip_uri(&self, params: &SetSipUriParams) -> Result<SetSipUriResponse> {
         self.call_typed("setSIPURI", params).await
     }
 
-    /// Call the `setSMS` API method.
-    pub async fn set_sms(&self, params: &SetSmsParams) -> Result<Value> {
-        self.call("setSMS", params).await
+    /// Call the `setSIPURI` API method and return the raw JSON envelope.
+    pub async fn set_sip_uri_raw(&self, params: &SetSipUriParams) -> Result<Value> {
+        self.call("setSIPURI", params).await
     }
 
-    /// Call the `setSMS` API method and deserialize the response body into `T`.
-    pub async fn set_sms_typed<T>(&self, params: &SetSmsParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setSMS` API method and deserialize into [`SetSmsResponse`].
+    pub async fn set_sms(&self, params: &SetSmsParams) -> Result<SetSmsResponse> {
         self.call_typed("setSMS", params).await
     }
 
-    /// Call the `setStaticMember` API method.
-    pub async fn set_static_member(&self, params: &SetStaticMemberParams) -> Result<Value> {
-        self.call("setStaticMember", params).await
+    /// Call the `setSMS` API method and return the raw JSON envelope.
+    pub async fn set_sms_raw(&self, params: &SetSmsParams) -> Result<Value> {
+        self.call("setSMS", params).await
     }
 
-    /// Call the `setStaticMember` API method and deserialize the response body into `T`.
-    pub async fn set_static_member_typed<T>(&self, params: &SetStaticMemberParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setStaticMember` API method and deserialize into [`SetStaticMemberResponse`].
+    pub async fn set_static_member(
+        &self,
+        params: &SetStaticMemberParams,
+    ) -> Result<SetStaticMemberResponse> {
         self.call_typed("setStaticMember", params).await
     }
 
-    /// Call the `setSubAccount` API method.
-    pub async fn set_sub_account(&self, params: &SetSubAccountParams) -> Result<Value> {
-        self.call("setSubAccount", params).await
+    /// Call the `setStaticMember` API method and return the raw JSON envelope.
+    pub async fn set_static_member_raw(&self, params: &SetStaticMemberParams) -> Result<Value> {
+        self.call("setStaticMember", params).await
     }
 
-    /// Call the `setSubAccount` API method and deserialize the response body into `T`.
-    pub async fn set_sub_account_typed<T>(&self, params: &SetSubAccountParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setSubAccount` API method and deserialize into [`SetSubAccountResponse`].
+    pub async fn set_sub_account(
+        &self,
+        params: &SetSubAccountParams,
+    ) -> Result<SetSubAccountResponse> {
         self.call_typed("setSubAccount", params).await
     }
 
-    /// Call the `setTimeCondition` API method.
-    pub async fn set_time_condition(&self, params: &SetTimeConditionParams) -> Result<Value> {
-        self.call("setTimeCondition", params).await
+    /// Call the `setSubAccount` API method and return the raw JSON envelope.
+    pub async fn set_sub_account_raw(&self, params: &SetSubAccountParams) -> Result<Value> {
+        self.call("setSubAccount", params).await
     }
 
-    /// Call the `setTimeCondition` API method and deserialize the response body into `T`.
-    pub async fn set_time_condition_typed<T>(&self, params: &SetTimeConditionParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setTimeCondition` API method and deserialize into [`SetTimeConditionResponse`].
+    pub async fn set_time_condition(
+        &self,
+        params: &SetTimeConditionParams,
+    ) -> Result<SetTimeConditionResponse> {
         self.call_typed("setTimeCondition", params).await
     }
 
-    /// Call the `setVoicemail` API method.
-    pub async fn set_voicemail(&self, params: &SetVoicemailParams) -> Result<Value> {
-        self.call("setVoicemail", params).await
+    /// Call the `setTimeCondition` API method and return the raw JSON envelope.
+    pub async fn set_time_condition_raw(&self, params: &SetTimeConditionParams) -> Result<Value> {
+        self.call("setTimeCondition", params).await
     }
 
-    /// Call the `setVoicemail` API method and deserialize the response body into `T`.
-    pub async fn set_voicemail_typed<T>(&self, params: &SetVoicemailParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `setVoicemail` API method and deserialize into [`SetVoicemailResponse`].
+    pub async fn set_voicemail(&self, params: &SetVoicemailParams) -> Result<SetVoicemailResponse> {
         self.call_typed("setVoicemail", params).await
     }
 
-    /// Call the `signupClient` API method.
-    pub async fn signup_client(&self, params: &SignupClientParams) -> Result<Value> {
-        self.call("signupClient", params).await
+    /// Call the `setVoicemail` API method and return the raw JSON envelope.
+    pub async fn set_voicemail_raw(&self, params: &SetVoicemailParams) -> Result<Value> {
+        self.call("setVoicemail", params).await
     }
 
-    /// Call the `signupClient` API method and deserialize the response body into `T`.
-    pub async fn signup_client_typed<T>(&self, params: &SignupClientParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `signupClient` API method and deserialize into [`SignupClientResponse`].
+    pub async fn signup_client(&self, params: &SignupClientParams) -> Result<SignupClientResponse> {
         self.call_typed("signupClient", params).await
     }
 
-    /// Call the `unconnectDID` API method.
-    pub async fn unconnect_did(&self, params: &UnconnectDidParams) -> Result<Value> {
-        self.call("unconnectDID", params).await
+    /// Call the `signupClient` API method and return the raw JSON envelope.
+    pub async fn signup_client_raw(&self, params: &SignupClientParams) -> Result<Value> {
+        self.call("signupClient", params).await
     }
 
-    /// Call the `unconnectDID` API method and deserialize the response body into `T`.
-    pub async fn unconnect_did_typed<T>(&self, params: &UnconnectDidParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `unconnectDID` API method and deserialize into [`UnconnectDidResponse`].
+    pub async fn unconnect_did(&self, params: &UnconnectDidParams) -> Result<UnconnectDidResponse> {
         self.call_typed("unconnectDID", params).await
     }
 
-    /// Call the `unconnectFAX` API method.
-    pub async fn unconnect_fax(&self, params: &UnconnectFaxParams) -> Result<Value> {
-        self.call("unconnectFAX", params).await
+    /// Call the `unconnectDID` API method and return the raw JSON envelope.
+    pub async fn unconnect_did_raw(&self, params: &UnconnectDidParams) -> Result<Value> {
+        self.call("unconnectDID", params).await
     }
 
-    /// Call the `unconnectFAX` API method and deserialize the response body into `T`.
-    pub async fn unconnect_fax_typed<T>(&self, params: &UnconnectFaxParams) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    /// Call the `unconnectFAX` API method and deserialize into [`UnconnectFaxResponse`].
+    pub async fn unconnect_fax(&self, params: &UnconnectFaxParams) -> Result<UnconnectFaxResponse> {
         self.call_typed("unconnectFAX", params).await
+    }
+
+    /// Call the `unconnectFAX` API method and return the raw JSON envelope.
+    pub async fn unconnect_fax_raw(&self, params: &UnconnectFaxParams) -> Result<Value> {
+        self.call("unconnectFAX", params).await
     }
 }
