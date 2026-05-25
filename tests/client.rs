@@ -136,7 +136,7 @@ async fn omitted_optional_params_are_not_sent() {
 }
 
 #[tokio::test]
-async fn typed_response_via_call_helper() {
+async fn typed_response_via_call_raw_helper() {
     let (server, client) = fixture().await;
 
     Mock::given(method("GET"))
@@ -155,7 +155,7 @@ async fn typed_response_via_call_helper() {
     }
 
     let body: Value = client
-        .call("getBalance", &GetBalanceParams::default())
+        .call_raw("getBalance", &GetBalanceParams::default())
         .await
         .unwrap();
 
@@ -164,7 +164,7 @@ async fn typed_response_via_call_helper() {
 }
 
 #[tokio::test]
-async fn typed_response_via_call_typed_helper() {
+async fn typed_response_via_call_helper() {
     let (server, client) = fixture().await;
 
     Mock::given(method("GET"))
@@ -189,7 +189,7 @@ async fn typed_response_via_call_typed_helper() {
     }
 
     let envelope: Envelope = client
-        .call_typed("getBalance", &GetBalanceParams::default())
+        .call("getBalance", &GetBalanceParams::default())
         .await
         .unwrap();
 
@@ -198,7 +198,7 @@ async fn typed_response_via_call_typed_helper() {
 }
 
 #[tokio::test]
-async fn typed_response_via_call_typed_at_helper() {
+async fn typed_response_via_call_at_helper() {
     let (server, client) = fixture().await;
 
     Mock::given(method("GET"))
@@ -217,7 +217,7 @@ async fn typed_response_via_call_typed_at_helper() {
     }
 
     let balance: Balance = client
-        .call_typed_at("getBalance", &GetBalanceParams::default(), "/balance")
+        .call_at("getBalance", &GetBalanceParams::default(), "/balance")
         .await
         .unwrap();
 

@@ -9,7 +9,7 @@ Async client for the [voip.ms](https://voip.ms) REST API.
 
 A thin, idiomatic Rust wrapper around every method exposed by the voip.ms
 REST endpoint (`https://voip.ms/api/v1/rest.php`). Each WSDL operation gets a
-typed `*Params` request struct and methods on [`Client`]. The default method
+typed `*Params` request struct and methods on [`Client`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html). The default method
 deserializes into a generated `*Response` struct, and each operation also has
 a `*_raw` variant that returns `serde_json::Value`.
 
@@ -42,7 +42,7 @@ voip.ms uses two pieces of credential, both of which you control entirely:
 
 You must also allow-list the source IP address(es) you'll be calling from on
 that same page. This crate does not load credentials from the environment,
-files, or any other source — pass them when you construct the [`Client`].
+files, or any other source — pass them when you construct the [`Client`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html).
 
 ## Usage
 
@@ -92,7 +92,7 @@ async fn main() -> voip_ms::Result<()> {
 
 ### Customizing the HTTP client
 
-Use [`Client::builder`] to plug in your own `reqwest::Client` — for proxies,
+Use [`Client::builder`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.builder) to plug in your own `reqwest::Client` — for proxies,
 custom timeouts, retry middleware, or anything else you'd configure on
 reqwest directly.
 
@@ -140,14 +140,14 @@ async fn main() -> voip_ms::Result<()> {
 All fields in the generated `*Response` structs are `Option<T>` so unknown
 omissions or future shape drift don't fail deserialization. If you need a
 shape the generated struct doesn't capture, use `*_raw` and deserialize
-manually, or drop down to `call_typed` / `call_typed_at` with your own type.
+manually, or drop down to `call` / `call_at` with your own type.
 
 For methods where you only want a nested field, use
-[`Client::call_typed_at`] with a JSON pointer:
+[`Client::call_at`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_at) with a JSON pointer:
 
 ```rust
 use serde::Deserialize;
-use voip_ms::{Client, GetDidsInfoParams};
+use voip_ms::{Client, GetDIDsInfoParams};
 
 #[derive(Debug, Deserialize)]
 struct Did {
@@ -159,7 +159,7 @@ async fn main() -> voip_ms::Result<()> {
     let client = Client::new("you@example.com", "your-api-password");
 
     let dids: Vec<Did> = client
-    .call_typed_at("getDIDsInfo", &GetDidsInfoParams::default(), "/dids")
+    .call_at("getDIDsInfo", &GetDIDsInfoParams::default(), "/dids")
     .await?;
 
     println!("DID count: {}", dids.len());
@@ -199,7 +199,7 @@ through `VOIP_MS_MESSAGE` or as the first argument after `--`.
 ### Calling methods this crate hasn't been regenerated for
 
 If voip.ms adds an API method that isn't yet in this crate, use
-[`Client::call`] directly with a `serde`-serializable parameter set:
+[`Client::call_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw) directly with a `serde`-serializable parameter set:
 
 ```rust
 use voip_ms::Client;
@@ -209,7 +209,7 @@ async fn main() -> voip_ms::Result<()> {
     let client = Client::new("you@example.com", "your-api-password");
 
     let resp = client
-    .call("someBrandNewMethod", &serde_json::json!({ "id": 42 }))
+    .call_raw("someBrandNewMethod", &serde_json::json!({ "id": 42 }))
     .await?;
 
     println!("{resp:#?}");
@@ -219,7 +219,7 @@ async fn main() -> voip_ms::Result<()> {
 
 ## Error model
 
-All errors surface through [`voip_ms::Error`]. The three variants are:
+All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voip_ms/enum.Error.html). The three variants are:
 
 * `Error::Http` — the request failed at the transport or HTTP-status level.
 * `Error::Api(ApiStatus)` — the response was a well-formed JSON envelope but

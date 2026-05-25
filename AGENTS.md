@@ -135,7 +135,7 @@ constant in `xtask/src/main.rs` and regenerate.
 
 ### 6. No HTTP-level retry, no auth caching, no rate limiting
 
-**Decision**: `Client::call` is one GET request, one JSON parse, one
+**Decision**: `Client::call_raw` is one GET request, one JSON parse, one
 status check. There is no built-in retry, backoff, or rate limiter.
 
 **Rationale**: voip.ms's retry semantics depend heavily on which method
@@ -159,12 +159,14 @@ are `None` thanks to design decision #3.
 
 ### Calling the wire API
 
-The `Client::call` method is the single point that hits the network. All
-generated methods are thin wrappers:
+The `Client::call_raw` method is the single point that hits the network.
+`Client::call` and `Client::call_at` deserialize its result. All generated
+methods are thin wrappers over `Client::call` (or `Client::call_raw` for
+the `*_raw` variants):
 
 ```rust
 pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {
-  self.call_typed("getBalance", params).await
+  self.call("getBalance", params).await
 }
 ```
 

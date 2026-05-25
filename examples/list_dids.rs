@@ -8,7 +8,7 @@
 //!     cargo run --example list_dids
 //! ```
 
-use voip_ms::{Client, GetDidsInfoParams, GetDidsInfoResponse};
+use voip_ms::{Client, GetDIDsInfoParams, GetDIDsInfoResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (username, password) = credentials()?;
     let client = Client::new(username, password);
 
-    let response: GetDidsInfoResponse = client.get_dids_info(&GetDidsInfoParams::default()).await?;
+    let response: GetDIDsInfoResponse = client.get_dids_info(&GetDIDsInfoParams::default()).await?;
 
     let dids = response.dids.unwrap_or_default();
     if dids.is_empty() {

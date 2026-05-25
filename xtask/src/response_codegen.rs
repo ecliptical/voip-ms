@@ -7,7 +7,7 @@
 //!   `getBalance` becomes `GetBalanceResponseBalance`.
 //! * List elements drop a trailing plural `s`/`es` where it doesn't
 //!   collide: the elements of `dids: [...]` in `getDIDsInfo` become
-//!   `GetDIDsInfoResponseDid`.
+//!   `GetDIDsInfoResponseDID`.
 //!
 //! All fields are `Option<T>` so unexpected omissions don't fail
 //! deserialization. Scalar types map to:
@@ -232,24 +232,54 @@ fn nested_type_name(parent: &str, fname: &str) -> String {
 
 fn element_type_name(parent: &str, fname: &str) -> String {
     let acronyms = acronyms_sorted();
-    let singular = singularize(fname);
+    let singular = singularize(fname, &acronyms);
     format!("{parent}{}", camel_to_pascal(&singular, &acronyms))
 }
 
 /// Naive English singularizer good enough for the field names voip.ms
 /// uses (`dids` → `did`, `members` → `member`, `entries` → `entry`).
-fn singularize(s: &str) -> String {
+///
+/// Preserves words whose lowercase form is itself an acronym chain
+/// (e.g. `sms`, `mms`) so they aren't stripped to a non-acronym stem
+/// (`sm`, `mm`).
+fn singularize(s: &str, acronyms: &[&'static str]) -> String {
+    let lower = s.to_ascii_lowercase();
+
     if let Some(stem) = s.strip_suffix("ies") {
         return format!("{stem}y");
     }
 
-    if let Some(stem) = s.strip_suffix("ses") {
-        return format!("{stem}s");
+    // Words ending in -sses (addresses, classes, businesses) drop just "es"
+    // to yield -ss. Plain "-ses" without the double s is usually
+    // "<vowel>se" + "s" (phrases, houses, uses) and the trailing "s"
+    // strip below handles it correctly.
+    if lower.ends_with("sses")
+        && let Some(stem) = s.strip_suffix("es")
+    {
+        return stem.to_string();
+    }
+
+    // Words ending in -xes / -zes / -ches / -shes drop the full "es"
+    // (faxes → fax, boxes → box, matches → match, dishes → dish).
+    if (lower.ends_with("xes")
+        || lower.ends_with("zes")
+        || lower.ends_with("ches")
+        || lower.ends_with("shes"))
+        && let Some(stem) = s.strip_suffix("es")
+    {
+        return stem.to_string();
     }
 
     if let Some(stem) = s.strip_suffix('s')
         && !stem.is_empty()
     {
+        let stem_lower = stem.to_ascii_lowercase();
+        let full_is_acronym = crate::decompose_into_acronyms(acronyms, &lower).is_some();
+        let stem_is_acronym = crate::decompose_into_acronyms(acronyms, &stem_lower).is_some();
+        if full_is_acronym && !stem_is_acronym {
+            return s.to_string();
+        }
+
         return stem.to_string();
     }
 

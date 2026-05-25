@@ -14,7 +14,7 @@
 //! ```
 
 use std::io::Error;
-use voip_ms::{Client, GetDidsInfoParams, GetDidsInfoResponse, SendSmsParams, SendSmsResponse};
+use voip_ms::{Client, GetDIDsInfoParams, GetDIDsInfoResponse, SendSMSParams, SendSMSResponse};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,8 +30,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = Client::new(username, password);
 
-    let dids_response: GetDidsInfoResponse = client
-        .get_dids_info(&GetDidsInfoParams {
+    let dids_response: GetDIDsInfoResponse = client
+        .get_dids_info(&GetDIDsInfoParams {
             did: Some(from.clone()),
             ..Default::default()
         })
@@ -54,8 +54,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into());
     }
 
-    let response: SendSmsResponse = client
-        .send_sms(&SendSmsParams {
+    let response: SendSMSResponse = client
+        .send_sms(&SendSMSParams {
             did: Some(from),
             dst: Some(to),
             message: Some(message),

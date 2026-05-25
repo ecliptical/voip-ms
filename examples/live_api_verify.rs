@@ -29,14 +29,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use voip_ms::{
     Client, CreateSubAccountParams, CreateSubAccountResponse, DelSubAccountParams,
     GetAllowedCodecsParams, GetAllowedCodecsResponse, GetAuthTypesParams, GetAuthTypesResponse,
-    GetBalanceParams, GetCountriesParams, GetCountriesResponse, GetDeviceTypesParams,
-    GetDeviceTypesResponse, GetDidCountriesParams, GetDidCountriesResponse, GetDidsCanParams,
-    GetDidsCanResponse, GetDidsInfoParams, GetDidsInfoResponse, GetDidsUsaParams,
-    GetDidsUsaResponse, GetDtmfModesParams, GetDtmfModesResponse, GetLanguagesParams,
+    GetBalanceParams, GetCountriesParams, GetCountriesResponse, GetDIDCountriesParams,
+    GetDIDCountriesResponse, GetDIDsCANParams, GetDIDsCANResponse, GetDIDsInfoParams,
+    GetDIDsInfoResponse, GetDIDsUSAParams, GetDIDsUSAResponse, GetDTMFModesParams,
+    GetDTMFModesResponse, GetDeviceTypesParams, GetDeviceTypesResponse, GetLanguagesParams,
     GetLanguagesResponse, GetLocalesParams, GetLocalesResponse, GetProtocolsParams,
-    GetProtocolsResponse, GetServersInfoParams, GetServersInfoResponse, GetSmsParams,
-    GetSmsResponse, GetStatesParams, GetStatesResponse, GetSubAccountsParams,
-    GetSubAccountsResponse, SendSmsParams, SetSmsParams, SetSmsResponse,
+    GetProtocolsResponse, GetSMSParams, GetSMSResponse, GetServersInfoParams,
+    GetServersInfoResponse, GetStatesParams, GetStatesResponse, GetSubAccountsParams,
+    GetSubAccountsResponse, SendSMSParams, SetSMSParams, SetSMSResponse,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -239,7 +239,7 @@ async fn run_smoke_checks(client: &Client, config: &Config) -> Result<(), Box<dy
     );
 
     println!("[check] get_dids_info");
-    let dids: GetDidsInfoResponse = client.get_dids_info(&GetDidsInfoParams::default()).await?;
+    let dids: GetDIDsInfoResponse = client.get_dids_info(&GetDIDsInfoParams::default()).await?;
     println!(
         "[info] DID count: {}",
         dids.dids.as_ref().map_or(0, std::vec::Vec::len)
@@ -255,7 +255,7 @@ async fn run_smoke_checks(client: &Client, config: &Config) -> Result<(), Box<dy
     );
 
     println!("[check] get_sms");
-    let sms: GetSmsResponse = client.get_sms(&GetSmsParams::default()).await?;
+    let sms: GetSMSResponse = client.get_sms(&GetSMSParams::default()).await?;
     println!(
         "[info] sms count: {}",
         sms.sms.as_ref().map_or(0, std::vec::Vec::len)
@@ -286,8 +286,8 @@ async fn run_typed_reference_checks(client: &Client) -> Result<(), Box<dyn Error
     println!("[check] get_countries");
     let _: GetCountriesResponse = client.get_countries(&GetCountriesParams::default()).await?;
     println!("[check] get_did_countries");
-    let _: GetDidCountriesResponse = client
-        .get_did_countries(&GetDidCountriesParams {
+    let _: GetDIDCountriesResponse = client
+        .get_did_countries(&GetDIDCountriesParams {
             r#type: Some("geographic".to_string()),
             ..Default::default()
         })
@@ -297,8 +297,8 @@ async fn run_typed_reference_checks(client: &Client) -> Result<(), Box<dyn Error
         .get_device_types(&GetDeviceTypesParams::default())
         .await?;
     println!("[check] get_dtmf_modes");
-    let _: GetDtmfModesResponse = client
-        .get_dtmf_modes(&GetDtmfModesParams::default())
+    let _: GetDTMFModesResponse = client
+        .get_dtmf_modes(&GetDTMFModesParams::default())
         .await?;
     println!("[check] get_languages");
     let _: GetLanguagesResponse = client.get_languages(&GetLanguagesParams::default()).await?;
@@ -325,16 +325,16 @@ async fn run_typed_location_checks(client: &Client, config: &Config) -> Result<(
     )?;
 
     println!("[check] get_dids_can");
-    let _: GetDidsCanResponse = client
-        .get_dids_can(&GetDidsCanParams {
+    let _: GetDIDsCANResponse = client
+        .get_dids_can(&GetDIDsCANParams {
             province: Some(dids_can_province.to_string()),
             ..Default::default()
         })
         .await?;
 
     println!("[check] get_dids_usa");
-    let _: GetDidsUsaResponse = client
-        .get_dids_usa(&GetDidsUsaParams {
+    let _: GetDIDsUSAResponse = client
+        .get_dids_usa(&GetDIDsUSAParams {
             state: Some(dids_usa_state.to_string()),
             ..Default::default()
         })
@@ -405,8 +405,8 @@ async fn run_extended_checks(client: &Client, config: &Config) -> Result<(), Box
 async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), Box<dyn Error>> {
     println!("[check] set_sms idempotent update for DID {did}");
 
-    let dids: GetDidsInfoResponse = client
-        .get_dids_info(&GetDidsInfoParams {
+    let dids: GetDIDsInfoResponse = client
+        .get_dids_info(&GetDIDsInfoParams {
             did: Some(did.to_string()),
             ..Default::default()
         })
@@ -429,8 +429,8 @@ async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), 
         "0"
     };
 
-    let response: SetSmsResponse = client
-        .set_sms(&SetSmsParams {
+    let response: SetSMSResponse = client
+        .set_sms(&SetSMSParams {
             did: Some(did.to_string()),
             enable: Some(enable.to_string()),
             ..Default::default()
@@ -493,7 +493,7 @@ async fn verify_send_sms(
     println!("[check] send_sms from {did} to {dst}");
 
     let response = client
-        .send_sms(&SendSmsParams {
+        .send_sms(&SendSMSParams {
             did: Some(did.to_string()),
             dst: Some(dst.to_string()),
             message: Some(message.to_string()),

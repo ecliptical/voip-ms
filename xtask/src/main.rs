@@ -50,58 +50,140 @@ pub(crate) fn acronyms_sorted() -> Vec<&'static str> {
     v
 }
 
-fn tokenize(s: &str, acronyms: &[&str]) -> Vec<String> {
+/// A single token produced by [`tokenize`]. Acronyms preserve their
+/// canonical (mixed/upper) casing from [`ACRONYMS`] so PascalCase
+/// emission can reuse it verbatim; ordinary words are stored as
+/// lowercase fragments.
+#[derive(Debug, Clone)]
+pub(crate) enum Token {
+    Acronym(&'static str),
+    Word(String),
+}
+
+impl Token {
+    fn lowercase(&self) -> String {
+        match self {
+            Token::Acronym(a) => a.to_ascii_lowercase(),
+            Token::Word(w) => w.clone(),
+        }
+    }
+
+    fn pascal(&self) -> String {
+        match self {
+            Token::Acronym(a) => (*a).to_string(),
+            Token::Word(w) => {
+                let mut chars = w.chars();
+                match chars.next() {
+                    Some(c) => c.to_ascii_uppercase().to_string() + chars.as_str(),
+                    None => String::new(),
+                }
+            }
+        }
+    }
+}
+
+/// Locate a canonical acronym whose lowercase form equals `lower`.
+/// Iterates `acronyms` in caller-provided order so longest-first
+/// preference (set up by [`acronyms_sorted`]) wins on ties between
+/// `vPRI`/`VPRI`-style variants.
+fn acronym_for_lower(acronyms: &[&'static str], lower: &str) -> Option<&'static str> {
+    acronyms
+        .iter()
+        .copied()
+        .find(|a| a.eq_ignore_ascii_case(lower) && a.len() == lower.len())
+}
+
+/// Try to decompose a lowercase fragment into a chain of one or more
+/// acronyms (longest-first, case-insensitive). Returns `Some(chain)`
+/// only when the entire string is consumed by acronyms, with no
+/// leftover characters — that conservative rule avoids false positives
+/// like turning `users` into `US`+`ers`.
+pub(crate) fn decompose_into_acronyms(
+    acronyms: &[&'static str],
+    lower: &str,
+) -> Option<Vec<&'static str>> {
+    if lower.is_empty() {
+        return None;
+    }
+
+    let mut chain = Vec::new();
+    let mut i = 0;
+    while i < lower.len() {
+        let rest = &lower[i..];
+        let found = acronyms
+            .iter()
+            .copied()
+            .find(|a| a.len() <= rest.len() && a.eq_ignore_ascii_case(&rest[..a.len()]));
+
+        match found {
+            Some(a) => {
+                chain.push(a);
+                i += a.len();
+            }
+            None => return None,
+        }
+    }
+
+    Some(chain)
+}
+
+fn tokenize(s: &str, acronyms: &[&'static str]) -> Vec<Token> {
     let bytes = s.as_bytes();
     let n = bytes.len();
-    let mut tokens: Vec<String> = Vec::new();
+    let mut tokens: Vec<Token> = Vec::new();
     let mut cur = String::new();
+    let flush = |cur: &mut String, tokens: &mut Vec<Token>| {
+        if cur.is_empty() {
+            return;
+        }
+
+        let taken = std::mem::take(cur);
+        if let Some(a) = acronym_for_lower(acronyms, &taken) {
+            tokens.push(Token::Acronym(a));
+        } else if let Some(chain) = decompose_into_acronyms(acronyms, &taken) {
+            for a in chain {
+                tokens.push(Token::Acronym(a));
+            }
+        } else {
+            tokens.push(Token::Word(taken));
+        }
+    };
+
     let mut i = 0;
     while i < n {
         let rest = &s[i..];
-        if let Some(a) = acronyms.iter().find(|a| rest.starts_with(**a)) {
-            if !cur.is_empty() {
-                tokens.push(std::mem::take(&mut cur));
-            }
-            tokens.push(a.to_ascii_lowercase());
+        if let Some(a) = acronyms.iter().copied().find(|a| rest.starts_with(*a)) {
+            flush(&mut cur, &mut tokens);
+            tokens.push(Token::Acronym(a));
             i += a.len();
             continue;
         }
         let c = bytes[i] as char;
         if c == '_' || c == '-' {
-            if !cur.is_empty() {
-                tokens.push(std::mem::take(&mut cur));
-            }
+            flush(&mut cur, &mut tokens);
         } else if c.is_ascii_uppercase() {
-            if !cur.is_empty() {
-                tokens.push(std::mem::take(&mut cur));
-            }
+            flush(&mut cur, &mut tokens);
             cur.push(c.to_ascii_lowercase());
         } else {
             cur.push(c);
         }
         i += 1;
     }
-    if !cur.is_empty() {
-        tokens.push(cur);
-    }
+
+    flush(&mut cur, &mut tokens);
     tokens
 }
 
-pub(crate) fn camel_to_snake(s: &str, acronyms: &[&str]) -> String {
-    tokenize(s, acronyms).join("_")
+pub(crate) fn camel_to_snake(s: &str, acronyms: &[&'static str]) -> String {
+    tokenize(s, acronyms)
+        .iter()
+        .map(Token::lowercase)
+        .collect::<Vec<_>>()
+        .join("_")
 }
 
-pub(crate) fn camel_to_pascal(s: &str, acronyms: &[&str]) -> String {
-    tokenize(s, acronyms)
-        .into_iter()
-        .map(|part| {
-            let mut chars = part.chars();
-            match chars.next() {
-                Some(c) => c.to_ascii_uppercase().to_string() + chars.as_str(),
-                None => String::new(),
-            }
-        })
-        .collect()
+pub(crate) fn camel_to_pascal(s: &str, acronyms: &[&'static str]) -> String {
+    tokenize(s, acronyms).iter().map(Token::pascal).collect()
 }
 
 /// `type` is a Rust keyword; rename to `r#type`.
@@ -172,11 +254,11 @@ fn emit(wsdl: &Wsdl, responses: &BTreeMap<String, Shape>) -> String {
         out.push_str(&format!(
             "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
              pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
-                 self.call_typed(\"{op}\", params).await\n    \
+                 self.call(\"{op}\", params).await\n    \
              }}\n\n\
              /// Call the `{op}` API method and return the raw JSON envelope.\n    \
              pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
-                 self.call(\"{op}\", params).await\n    \
+                 self.call_raw(\"{op}\", params).await\n    \
              }}\n\n"
         ));
     }

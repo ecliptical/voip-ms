@@ -47,21 +47,17 @@ impl Client {
         }
     }
 
-    /// Issue a request for `method` with the given typed parameters.
+    /// Issue a request for `method` with the given typed parameters and
+    /// return the full JSON response body as a [`serde_json::Value`].
     ///
-    /// Returns the full JSON response body as a [`serde_json::Value`]. The
-    /// `status` field is inspected: any value other than `success` causes an
-    /// [`Error::Api`].
+    /// The `status` field is inspected: any value other than `success`
+    /// causes an [`Error::Api`].
     ///
-    /// This is the low-level call used by every generated method on
-    /// [`Client`]. Reach for it directly when:
-    ///
-    /// * voip.ms adds a method this crate hasn't been regenerated for, or
-    /// * you want to deserialize the response into your own type.
-    ///
-    /// For the typed deserialization case, use [`serde_json::from_value`] on
-    /// the returned [`Value`].
-    pub async fn call<P>(&self, method: &str, params: &P) -> Result<Value>
+    /// This is the low-level raw call used by every generated `*_raw`
+    /// method on [`Client`]. Reach for it directly when voip.ms adds a
+    /// method this crate hasn't been regenerated for; otherwise prefer
+    /// the typed [`Client::call`] or one of the per-method wrappers.
+    pub async fn call_raw<P>(&self, method: &str, params: &P) -> Result<Value>
     where
         P: Serialize + ?Sized,
     {
@@ -85,14 +81,14 @@ impl Client {
 
     /// Issue a request and deserialize the full JSON response body into `T`.
     ///
-    /// This still applies the same status validation as [`Client::call`]: any
-    /// non-`success` status is returned as [`Error::Api`].
-    pub async fn call_typed<P, T>(&self, method: &str, params: &P) -> Result<T>
+    /// This applies the same status validation as [`Client::call_raw`]:
+    /// any non-`success` status is returned as [`Error::Api`].
+    pub async fn call<P, T>(&self, method: &str, params: &P) -> Result<T>
     where
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let body = self.call(method, params).await?;
+        let body = self.call_raw(method, params).await?;
         serde_json::from_value(body)
             .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
     }
@@ -101,12 +97,12 @@ impl Client {
     ///
     /// Use this when the API wraps the interesting data under a known key
     /// (e.g. `/balance` or `/dids`).
-    pub async fn call_typed_at<P, T>(&self, method: &str, params: &P, pointer: &str) -> Result<T>
+    pub async fn call_at<P, T>(&self, method: &str, params: &P, pointer: &str) -> Result<T>
     where
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let body = self.call(method, params).await?;
+        let body = self.call_raw(method, params).await?;
         let subtree = body.pointer(pointer).cloned().ok_or_else(|| {
             Error::InvalidResponse(format!(
                 "response missing JSON pointer `{pointer}` for method `{method}`"

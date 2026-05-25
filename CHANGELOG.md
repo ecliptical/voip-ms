@@ -5,8 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## [0.1.3] - 2026-05-25
 
 ### Changed
@@ -14,7 +12,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched generated method naming so typed responses are now the default:
   unsuffixed methods return generated `*Response` structs, and raw JSON
   access moved to explicit `*_raw` methods.
+- Renamed the low-level `Client` helpers to match: `Client::call_typed`
+  → [`Client::call`], `Client::call_typed_at` → [`Client::call_at`],
+  and the prior raw-JSON `Client::call` → [`Client::call_raw`].
+  Generated method bodies now call `self.call(...)` for the typed
+  wrapper and `self.call_raw(...)` for the `*_raw` wrapper.
+- Generated PascalCase type names now preserve acronym casing
+  (`GetDIDsInfoParams`, `SendSMSResponse`, `GetDTMFModesResponse`,
+  `GetVPRIsResponse`, etc.) instead of title-casing acronyms
+  (`GetDidsInfoParams`, `SendSmsResponse`, …). The acronym table that
+  drives snake_case method names is now also used to render PascalCase
+  type names, including nested element types whose wire field name is
+  lowercase (`GetDIDsInfoResponseDID`, `GetSMSResponseSMS`,
+  `GetSIPURIsResponseSIPURI`).
+- Smarter English singularization for nested element type names:
+  `-xes` / `-zes` / `-ches` / `-shes` words drop the full `es`
+  (`faxes` → `fax`, so the prior `GetFAXMessagesResponseFaxe` is now
+  `GetFAXMessagesResponseFAX`); `-sses` words drop just the trailing
+  `es` (`addresses` → `address`); plain `-ses` words like `phrases`
+  fall through to the simple `-s` strip (the prior `RecognizedPhras`
+  is now `RecognizedPhrase`).
 - Updated examples and docs to match the typed-by-default API.
+- README link references now use absolute docs.rs URLs so they render
+  on crates.io and GitHub instead of relying on rustdoc intra-doc
+  resolution.
 - Improved typed response deserialization robustness for string-like fields
   that voip.ms sometimes emits as numbers or booleans.
 
