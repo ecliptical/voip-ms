@@ -72,8 +72,11 @@ call either:
 ```rust
 use voip_ms::{Client, SendSmsParams};
 
-# async fn run(client: voip_ms::Client) -> voip_ms::Result<()> {
-let resp = client
+#[tokio::main]
+async fn main() -> voip_ms::Result<()> {
+    let client = Client::new("you@example.com", "your-api-password");
+
+    let resp = client
     .send_sms_raw(&SendSmsParams {
         did: Some("5551234567".into()),
         dst: Some("5557654321".into()),
@@ -81,7 +84,10 @@ let resp = client
         ..Default::default()
     })
     .await?;
-# Ok(()) }
+
+    println!("{resp:#?}");
+    Ok(())
+}
 ```
 
 ### Customizing the HTTP client
@@ -116,14 +122,19 @@ when you want the full JSON envelope:
 ```rust
 use voip_ms::{Client, GetBalanceParams, GetBalanceResponse};
 
-# async fn run(client: Client) -> voip_ms::Result<()> {
-let resp: GetBalanceResponse = client
+#[tokio::main]
+async fn main() -> voip_ms::Result<()> {
+    let client = Client::new("you@example.com", "your-api-password");
+
+    let resp: GetBalanceResponse = client
     .get_balance(&GetBalanceParams { advanced: Some(true) })
     .await?;
-if let Some(balance) = resp.balance.as_ref() {
-    println!("{}", balance.current_balance.unwrap_or_default());
+    if let Some(balance) = resp.balance.as_ref() {
+        println!("{}", balance.current_balance.unwrap_or_default());
+    }
+
+    Ok(())
 }
-# Ok(()) }
 ```
 
 All fields in the generated `*Response` structs are `Option<T>` so unknown
@@ -143,11 +154,17 @@ struct Did {
     did: String,
 }
 
-# async fn run(client: Client) -> voip_ms::Result<()> {
-let dids: Vec<Did> = client
+#[tokio::main]
+async fn main() -> voip_ms::Result<()> {
+    let client = Client::new("you@example.com", "your-api-password");
+
+    let dids: Vec<Did> = client
     .call_typed_at("getDIDsInfo", &GetDidsInfoParams::default(), "/dids")
     .await?;
-# Ok(()) }
+
+    println!("DID count: {}", dids.len());
+    Ok(())
+}
 ```
 
 ### Running the examples
@@ -185,11 +202,19 @@ If voip.ms adds an API method that isn't yet in this crate, use
 [`Client::call`] directly with a `serde`-serializable parameter set:
 
 ```rust
-# async fn run(client: voip_ms::Client) -> voip_ms::Result<()> {
-let resp = client
+use voip_ms::Client;
+
+#[tokio::main]
+async fn main() -> voip_ms::Result<()> {
+    let client = Client::new("you@example.com", "your-api-password");
+
+    let resp = client
     .call("someBrandNewMethod", &serde_json::json!({ "id": 42 }))
     .await?;
-# Ok(()) }
+
+    println!("{resp:#?}");
+    Ok(())
+}
 ```
 
 ## Error model
