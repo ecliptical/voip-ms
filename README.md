@@ -5,13 +5,13 @@
 [![CI](https://github.com/ecliptical/voip-ms/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ecliptical/voip-ms/actions/workflows/rust-ci.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Async client for the [voip.ms](https://voip.ms) REST API.
+Async Rust client for the [voip.ms](https://voip.ms) REST API.
 
-A thin, idiomatic Rust wrapper around every method exposed by the voip.ms
-REST endpoint (`https://voip.ms/api/v1/rest.php`). Each WSDL operation gets a
-typed `*Params` request struct and methods on [`Client`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html). The default method
-deserializes into a generated `*Response` struct, and each operation also has
-a `*_raw` variant that returns `serde_json::Value`.
+Every API method has a typed `*Params` request struct and a method on
+[`Client`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html) that
+deserializes the response into a typed `*Response` struct. A `*_raw` variant
+returning `serde_json::Value` is available on every method as an escape
+hatch.
 
 ## Installation
 
@@ -65,9 +65,15 @@ Every API method follows the same pattern: construct a `*Params` struct
 (every field is `Option<T>` and omitted from the request when `None`), then
 call either:
 
-* `client.some_method(...)` for typed deserialization into the generated
-    `SomeMethodResponse` struct, or
-* `client.some_method_raw(...)` for a raw `serde_json::Value` envelope.
+* `client.some_method(...)` for typed deserialization into a
+  `SomeMethodResponse` struct, or
+* `client.some_method_raw(...)` for a `serde_json::Value` envelope.
+
+All fields on both `*Params` and `*Response` structs are `Option<T>`, so
+you only fill in what you need and unknown omissions never fail
+deserialization. Consult the
+[voip.ms API documentation](https://voip.ms/m/apidocs.php) for which
+parameters each method actually requires.
 
 ```rust
 use voip_ms::{Client, SendSmsParams};
@@ -77,15 +83,64 @@ async fn main() -> voip_ms::Result<()> {
     let client = Client::new("you@example.com", "your-api-password");
 
     let resp = client
-    .send_sms_raw(&SendSmsParams {
-        did: Some("5551234567".into()),
-        dst: Some("5557654321".into()),
-        message: Some("Hello from Rust".into()),
-        ..Default::default()
-    })
-    .await?;
+        .send_sms(&SendSmsParams {
+            did: Some("5551234567".into()),
+            dst: Some("5557654321".into()),
+            message: Some("Hello from Rust".into()),
+            ..Default::default()
+        })
+        .await?;
 
     println!("{resp:#?}");
+    Ok(())
+}
+```
+
+### Reading typed responses
+
+```rust
+use voip_ms::{Client, GetBalanceParams};
+
+#[tokio::main]
+async fn main() -> voip_ms::Result<()> {
+    let client = Client::new("you@example.com", "your-api-password");
+
+    let resp = client
+        .get_balance(&GetBalanceParams { advanced: Some(true) })
+        .await?;
+
+    if let Some(balance) = resp.balance.as_ref() {
+        println!("{}", balance.current_balance.unwrap_or_default());
+    }
+
+    Ok(())
+}
+```
+
+### Picking a nested field with a JSON pointer
+
+When you only want one nested field, use
+[`Client::call_at`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_at)
+with a JSON pointer and your own type:
+
+```rust
+use serde::Deserialize;
+use voip_ms::{Client, GetDIDsInfoParams};
+
+#[derive(Debug, Deserialize)]
+struct Did {
+    did: String,
+}
+
+#[tokio::main]
+async fn main() -> voip_ms::Result<()> {
+    let client = Client::new("you@example.com", "your-api-password");
+
+    let dids: Vec<Did> = client
+        .call_at("getDIDsInfo", &GetDIDsInfoParams::default(), "/dids")
+        .await?;
+
+    println!("DID count: {}", dids.len());
     Ok(())
 }
 ```
@@ -109,62 +164,6 @@ let client = Client::builder("you@example.com", "api-password")
     .http_client(http)
     .build()
     .unwrap();
-```
-
-### Typed responses
-
-The WSDL doesn't describe response shapes (all 222 operations declare the
-same generic `arrayResponse`), so this crate generates per-method `*Response`
-structs inferred from the official HTML docs. Each unsuffixed method returns
-its generated `*Response` type, and `*_raw` is available as an escape hatch
-when you want the full JSON envelope:
-
-```rust
-use voip_ms::{Client, GetBalanceParams, GetBalanceResponse};
-
-#[tokio::main]
-async fn main() -> voip_ms::Result<()> {
-    let client = Client::new("you@example.com", "your-api-password");
-
-    let resp: GetBalanceResponse = client
-    .get_balance(&GetBalanceParams { advanced: Some(true) })
-    .await?;
-    if let Some(balance) = resp.balance.as_ref() {
-        println!("{}", balance.current_balance.unwrap_or_default());
-    }
-
-    Ok(())
-}
-```
-
-All fields in the generated `*Response` structs are `Option<T>` so unknown
-omissions or future shape drift don't fail deserialization. If you need a
-shape the generated struct doesn't capture, use `*_raw` and deserialize
-manually, or drop down to `call` / `call_at` with your own type.
-
-For methods where you only want a nested field, use
-[`Client::call_at`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_at) with a JSON pointer:
-
-```rust
-use serde::Deserialize;
-use voip_ms::{Client, GetDIDsInfoParams};
-
-#[derive(Debug, Deserialize)]
-struct Did {
-    did: String,
-}
-
-#[tokio::main]
-async fn main() -> voip_ms::Result<()> {
-    let client = Client::new("you@example.com", "your-api-password");
-
-    let dids: Vec<Did> = client
-    .call_at("getDIDsInfo", &GetDIDsInfoParams::default(), "/dids")
-    .await?;
-
-    println!("DID count: {}", dids.len());
-    Ok(())
-}
 ```
 
 ### Running the examples
@@ -193,13 +192,14 @@ VOIP_MS_MESSAGE="Hello from Rust" \
     cargo run --example send_sms
 ```
 
-`send_sms` requires a DID with SMS enabled. You can pass the message body either
-through `VOIP_MS_MESSAGE` or as the first argument after `--`.
+`send_sms` requires a DID with SMS enabled. You can pass the message body
+either through `VOIP_MS_MESSAGE` or as the first argument after `--`.
 
-### Calling methods this crate hasn't been regenerated for
+### Calling a method that isn't in this crate yet
 
-If voip.ms adds an API method that isn't yet in this crate, use
-[`Client::call_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw) directly with a `serde`-serializable parameter set:
+If voip.ms adds an API method that isn't yet exposed as a typed call, use
+[`Client::call_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw)
+directly with any `serde`-serializable parameter set:
 
 ```rust
 use voip_ms::Client;
@@ -209,8 +209,8 @@ async fn main() -> voip_ms::Result<()> {
     let client = Client::new("you@example.com", "your-api-password");
 
     let resp = client
-    .call_raw("someBrandNewMethod", &serde_json::json!({ "id": 42 }))
-    .await?;
+        .call_raw("someBrandNewMethod", &serde_json::json!({ "id": 42 }))
+        .await?;
 
     println!("{resp:#?}");
     Ok(())

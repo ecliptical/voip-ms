@@ -95,9 +95,13 @@ using CRATES_IO_TOKEN, and creates a GitHub release.
 The repository includes a dedicated workflow for optional live verification:
 `.github/workflows/live-api-verify.yaml`.
 
-Use this workflow for release-time checks or on-demand execution via
-`workflow_dispatch`. It is intentionally separate from `rust-ci.yaml` so pull
-requests remain deterministic and credential-free.
+Use this workflow for on-demand execution via `workflow_dispatch`. It is
+intentionally separate from `rust-ci.yaml` so pull requests remain
+deterministic and credential-free, and it deliberately does **not** run on
+tag pushes: GitHub-hosted runners use ephemeral egress IPs that voip.ms's
+per-account API IP allow-list rejects with `ip_not_enabled`. Trigger it
+manually from an allow-listed host (or wire it to a self-hosted runner with
+a known static egress IP) when you want a live check.
 
 ### Required account configuration
 
@@ -152,6 +156,10 @@ release verification safe by default.
 	* publishes to crates.io with `CRATES_IO_TOKEN`
 	* creates a GitHub release from the tag
 * `live-api-verify.yaml` supports optional live verification:
-	* `workflow_dispatch` for operator-invokable smoke or extended checks
-	* `v*` tag trigger for release-time smoke checks
+	* `workflow_dispatch` only — operator-invokable smoke or extended checks
+	* not wired to any push or tag event, because GitHub-hosted runners
+		use ephemeral egress IPs that voip.ms's per-account API IP
+		allow-list will reject (`ip_not_enabled`). Trigger manually from
+		a host whose IP is on the voip.ms API allow-list, or from a
+		self-hosted runner with a known static egress IP.
 	* explicit safety gates for state-changing or costly operations
