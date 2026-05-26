@@ -21,6 +21,8 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use std::str::FromStr;
 
+use crate::types::Routing;
+
 pub(crate) fn deserialize_opt_string_from_string_number_or_bool<'de, D>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error>
@@ -178,6 +180,28 @@ where
         }
         Some(other) => Err(D::Error::custom(format!(
             "expected datetime string, got {other}"
+        ))),
+    }
+}
+
+pub(crate) fn deserialize_opt_routing<'de, D>(deserializer: D) -> Result<Option<Routing>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) => {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                return Ok(None);
+            }
+            Routing::from_str(trimmed)
+                .map(Some)
+                .map_err(|e| D::Error::custom(format!("invalid routing string {s}: {e}")))
+        }
+        Some(other) => Err(D::Error::custom(format!(
+            "expected routing string, got {other}"
         ))),
     }
 }

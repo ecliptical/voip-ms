@@ -41,6 +41,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New public type [`Routing`] (and `RoutingParseError`) modeling the
+  tagged `kind:value` strings voip.ms uses for call-routing fields
+  (`account:`, `fwd:`, `vm:`, `sip:`, `sys:`, `grp:`, `queue:`, `ivr:`,
+  `cb:`, `tc:`, `disa:`, `did:`, `phone:`, `none:`). Generated
+  `*Params` and `*Response` structs now type 12 routing-related fields
+  (`routing`, `failover_*`, `fail_over_routing_*`) as
+  `Option<Routing>` instead of `Option<String>`. Unknown tags
+  round-trip via a `Routing::Unknown { tag, value }` catch-all so
+  forward compatibility is preserved.
+- New public enums for documented voip.ms scalars: `DtmfMode`, `Nat`,
+  `EmailAttachmentFormat`, `TranscriptionFormat`, `PlayInstructions`,
+  `RingStrategy`, `RingGroupOrder`, `VoicemailFolder`. Each carries an
+  `Unknown(String)` variant for values not in the documented set, so
+  voip.ms adding new options never breaks deserialization.
+- Codegen overrides schema extended with top-level `enums` and
+  `field_types` sections in `tools/api-response-overrides.json`. New
+  enums can be added declaratively (name, variants, wire strings) and
+  mapped to one or more field names without touching the generator
+  source.
 - Dry-run support for runnable examples:
   `VOIP_MS_DRY_RUN=true` for `get_balance`, `list_dids`, and `send_sms`;
   `LIVE_VERIFY_DRY_RUN=true` for `live_api_verify` smoke/extended flows.

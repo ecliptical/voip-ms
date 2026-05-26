@@ -24,6 +24,7 @@
 use std::collections::BTreeMap;
 
 use crate::extract::{ScalarTy, Shape};
+use crate::field_overrides::Table;
 use crate::{acronyms_sorted, camel_to_pascal};
 
 /// Render all `*Response` structs for the methods in `responses`.
@@ -33,6 +34,7 @@ use crate::{acronyms_sorted, camel_to_pascal};
 pub fn emit_response_structs(
     method_names: &[String],
     responses: &BTreeMap<String, Shape>,
+    table: &Table,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -43,7 +45,7 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new();
+        let mut emitter = Emitter::new(table);
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -57,16 +59,18 @@ pub fn emit_response_structs(
     out
 }
 
-struct Emitter {
+struct Emitter<'a> {
     /// Structs emitted in dependency-friendly order (children appended
     /// before any later sibling that references them).
     structs: Vec<String>,
+    table: &'a Table,
 }
 
-impl Emitter {
-    fn new() -> Self {
+impl<'a> Emitter<'a> {
+    fn new(table: &'a Table) -> Self {
         Self {
             structs: Vec::new(),
+            table,
         }
     }
 
@@ -129,8 +133,15 @@ impl Emitter {
         body.push_str(&format!("pub struct {name} {{\n"));
         for (fname, sub) in deduped {
             let rust_ident = rust_field_ident(fname);
-            let rust_ty = self.field_type(name, fname, sub);
-            let deser = scalar_deserializer(sub);
+            let override_ = self.table.get(fname).cloned();
+            let rust_ty = match &override_ {
+                Some(o) => o.rust_type.clone(),
+                None => self.field_type(name, fname, sub),
+            };
+            let deser = match &override_ {
+                Some(o) => o.response_deserializer.as_deref(),
+                None => scalar_deserializer(sub),
+            };
             let attrs = render_field_attrs(deser);
             if rust_ident == *fname {
                 body.push_str(&attrs);
@@ -197,7 +208,7 @@ impl Emitter {
     }
 }
 
-fn render_field_attrs(deser: Option<&'static str>) -> String {
+fn render_field_attrs(deser: Option<&str>) -> String {
     match deser {
         None => "    #[serde(default)]\n".into(),
         Some(d) => format!("    #[serde(default, deserialize_with = \"{d}\")]\n"),

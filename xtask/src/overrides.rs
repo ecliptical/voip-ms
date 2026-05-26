@@ -35,6 +35,36 @@ pub struct OverridesDoc {
     pub version: u32,
     #[serde(default)]
     pub methods: HashMap<String, MethodOverride>,
+    /// Named enums emitted into `src/generated.rs`. The key is the
+    /// emitted Rust type name (PascalCase).
+    #[serde(default)]
+    pub enums: HashMap<String, EnumDef>,
+    /// Field-name → enum-name table. Each named field across every
+    /// generated `*Params` and `*Response` struct gets typed as
+    /// `Option<EnumName>` instead of `Option<String>`.
+    #[serde(default)]
+    pub field_types: HashMap<String, String>,
+}
+
+/// A user-defined enum to emit into the generated module.
+#[derive(Debug, Deserialize)]
+pub struct EnumDef {
+    /// Optional doc comment placed above the emitted enum.
+    #[serde(default)]
+    pub doc: Option<String>,
+    /// Variants in emission order.
+    pub variants: Vec<EnumVariant>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EnumVariant {
+    /// PascalCase Rust variant name.
+    pub name: String,
+    /// Wire string. Required.
+    pub wire: String,
+    /// Optional per-variant doc comment.
+    #[serde(default)]
+    pub doc: Option<String>,
 }
 
 impl OverridesDoc {
@@ -73,6 +103,8 @@ pub fn load(path: &Path) -> Result<OverridesDoc, String> {
         return Ok(OverridesDoc {
             version: 0,
             methods: HashMap::new(),
+            enums: HashMap::new(),
+            field_types: HashMap::new(),
         });
     }
 

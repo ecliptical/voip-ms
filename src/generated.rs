@@ -10,6 +10,578 @@ use serde_json::Value;
 use crate::client::Client;
 use crate::error::Result;
 
+/// DTMF transport mode for SIP sub-accounts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DtmfMode {
+    Auto,
+    Rfc2833,
+    Inband,
+    Info,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl DtmfMode {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            DtmfMode::Auto => "auto",
+            DtmfMode::Rfc2833 => "rfc2833",
+            DtmfMode::Inband => "inband",
+            DtmfMode::Info => "info",
+            DtmfMode::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "auto" => DtmfMode::Auto,
+            "rfc2833" => DtmfMode::Rfc2833,
+            "inband" => DtmfMode::Inband,
+            "info" => DtmfMode::Info,
+            other => DtmfMode::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for DtmfMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for DtmfMode {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DtmfMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(DtmfMode::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_dtmf_mode<'de, D>(
+    d: D,
+) -> std::result::Result<Option<DtmfMode>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(DtmfMode::from_wire(t))
+        }
+    }))
+}
+
+/// Voicemail email attachment format.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EmailAttachmentFormat {
+    /// GSM-compressed WAV.
+    Wav49,
+    Wav,
+    Mp3,
+    /// Do not attach audio.
+    No,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl EmailAttachmentFormat {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            EmailAttachmentFormat::Wav49 => "wav49",
+            EmailAttachmentFormat::Wav => "wav",
+            EmailAttachmentFormat::Mp3 => "mp3",
+            EmailAttachmentFormat::No => "no",
+            EmailAttachmentFormat::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "wav49" => EmailAttachmentFormat::Wav49,
+            "wav" => EmailAttachmentFormat::Wav,
+            "mp3" => EmailAttachmentFormat::Mp3,
+            "no" => EmailAttachmentFormat::No,
+            other => EmailAttachmentFormat::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for EmailAttachmentFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for EmailAttachmentFormat {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for EmailAttachmentFormat {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(EmailAttachmentFormat::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_email_attachment_format<'de, D>(
+    d: D,
+) -> std::result::Result<Option<EmailAttachmentFormat>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(EmailAttachmentFormat::from_wire(t))
+        }
+    }))
+}
+
+/// Asterisk NAT handling mode.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Nat {
+    Yes,
+    No,
+    Route,
+    Never,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl Nat {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            Nat::Yes => "yes",
+            Nat::No => "no",
+            Nat::Route => "route",
+            Nat::Never => "never",
+            Nat::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "yes" => Nat::Yes,
+            "no" => Nat::No,
+            "route" => Nat::Route,
+            "never" => Nat::Never,
+            other => Nat::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for Nat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for Nat {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Nat {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(Nat::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_nat<'de, D>(d: D) -> std::result::Result<Option<Nat>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(Nat::from_wire(t))
+        }
+    }))
+}
+
+/// Voicemail playback instruction mode.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PlayInstructions {
+    /// Skip instructions on unread messages.
+    SkipUnread,
+    /// Read full instructions for unread messages.
+    Unread,
+    /// Don't say instructions.
+    DontSay,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl PlayInstructions {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            PlayInstructions::SkipUnread => "su",
+            PlayInstructions::Unread => "u",
+            PlayInstructions::DontSay => "du",
+            PlayInstructions::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "su" => PlayInstructions::SkipUnread,
+            "u" => PlayInstructions::Unread,
+            "du" => PlayInstructions::DontSay,
+            other => PlayInstructions::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for PlayInstructions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for PlayInstructions {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for PlayInstructions {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(PlayInstructions::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_play_instructions<'de, D>(
+    d: D,
+) -> std::result::Result<Option<PlayInstructions>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(PlayInstructions::from_wire(t))
+        }
+    }))
+}
+
+/// Order in which ring-group members are attempted.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RingGroupOrder {
+    /// Try members in declared order.
+    Follow,
+    Random,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl RingGroupOrder {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            RingGroupOrder::Follow => "follow",
+            RingGroupOrder::Random => "random",
+            RingGroupOrder::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "follow" => RingGroupOrder::Follow,
+            "random" => RingGroupOrder::Random,
+            other => RingGroupOrder::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for RingGroupOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for RingGroupOrder {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for RingGroupOrder {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(RingGroupOrder::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_ring_group_order<'de, D>(
+    d: D,
+) -> std::result::Result<Option<RingGroupOrder>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(RingGroupOrder::from_wire(t))
+        }
+    }))
+}
+
+/// Queue ring strategy. Mirrors Asterisk's queue strategy options.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RingStrategy {
+    RingAll,
+    LeastRecent,
+    FewestCalls,
+    Random,
+    RrMemory,
+    Linear,
+    WRandom,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl RingStrategy {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            RingStrategy::RingAll => "ringall",
+            RingStrategy::LeastRecent => "leastrecent",
+            RingStrategy::FewestCalls => "fewestcalls",
+            RingStrategy::Random => "random",
+            RingStrategy::RrMemory => "rrmemory",
+            RingStrategy::Linear => "linear",
+            RingStrategy::WRandom => "wrandom",
+            RingStrategy::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "ringall" => RingStrategy::RingAll,
+            "leastrecent" => RingStrategy::LeastRecent,
+            "fewestcalls" => RingStrategy::FewestCalls,
+            "random" => RingStrategy::Random,
+            "rrmemory" => RingStrategy::RrMemory,
+            "linear" => RingStrategy::Linear,
+            "wrandom" => RingStrategy::WRandom,
+            other => RingStrategy::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for RingStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for RingStrategy {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for RingStrategy {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(RingStrategy::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_ring_strategy<'de, D>(
+    d: D,
+) -> std::result::Result<Option<RingStrategy>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(RingStrategy::from_wire(t))
+        }
+    }))
+}
+
+/// Voicemail transcription output format.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TranscriptionFormat {
+    Text,
+    Html,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl TranscriptionFormat {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            TranscriptionFormat::Text => "text",
+            TranscriptionFormat::Html => "html",
+            TranscriptionFormat::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "text" => TranscriptionFormat::Text,
+            "html" => TranscriptionFormat::Html,
+            other => TranscriptionFormat::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for TranscriptionFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for TranscriptionFormat {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for TranscriptionFormat {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(TranscriptionFormat::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_transcription_format<'de, D>(
+    d: D,
+) -> std::result::Result<Option<TranscriptionFormat>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(TranscriptionFormat::from_wire(t))
+        }
+    }))
+}
+
+/// Voicemail message folder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VoicemailFolder {
+    Inbox,
+    Old,
+    Urgent,
+    Family,
+    Friends,
+    Work,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl VoicemailFolder {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            VoicemailFolder::Inbox => "INBOX",
+            VoicemailFolder::Old => "Old",
+            VoicemailFolder::Urgent => "Urgent",
+            VoicemailFolder::Family => "Family",
+            VoicemailFolder::Friends => "Friends",
+            VoicemailFolder::Work => "Work",
+            VoicemailFolder::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "INBOX" => VoicemailFolder::Inbox,
+            "Old" => VoicemailFolder::Old,
+            "Urgent" => VoicemailFolder::Urgent,
+            "Family" => VoicemailFolder::Family,
+            "Friends" => VoicemailFolder::Friends,
+            "Work" => VoicemailFolder::Work,
+            other => VoicemailFolder::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for VoicemailFolder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for VoicemailFolder {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for VoicemailFolder {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(VoicemailFolder::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_voicemail_folder<'de, D>(
+    d: D,
+) -> std::result::Result<Option<VoicemailFolder>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(VoicemailFolder::from_wire(t))
+        }
+    }))
+}
+
 /// Parameters for [`Client::add_charge`] (wire method `addCharge`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddChargeParams {
@@ -120,13 +692,13 @@ pub struct BackOrderDIDCANParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ratecenter: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -155,13 +727,13 @@ pub struct BackOrderDIDUSAParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ratecenter: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -276,9 +848,9 @@ pub struct CreateSubAccountParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allowed_codecs: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dtmf_mode: Option<String>,
+    pub dtmf_mode: Option<DtmfMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nat: Option<String>,
+    pub nat: Option<Nat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sip_traffic: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -357,11 +929,11 @@ pub struct CreateVoicemailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub say_callerid: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub play_instructions: Option<String>,
+    pub play_instructions: Option<PlayInstructions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_attachment_format: Option<String>,
+    pub email_attachment_format: Option<EmailAttachmentFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unavailable_message_recording: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -375,7 +947,7 @@ pub struct CreateVoicemailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_summary: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_format: Option<String>,
+    pub transcription_format: Option<TranscriptionFormat>,
 }
 
 /// Parameters for [`Client::del_call_hunting`] (wire method `delCallHunting`).
@@ -499,7 +1071,7 @@ pub struct DelMessagesParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
 }
@@ -1036,7 +1608,7 @@ pub struct GetDISAsParams {
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDTMFModesParams {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dtmf_mode: Option<String>,
+    pub dtmf_mode: Option<DtmfMode>,
 }
 
 /// Parameters for [`Client::get_deposits`] (wire method `getDeposits`).
@@ -1082,7 +1654,7 @@ pub struct GetFAXMessagesParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
 }
@@ -1281,7 +1853,7 @@ pub struct GetMusicOnHoldParams {
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetNATParams {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nat: Option<String>,
+    pub nat: Option<Nat>,
 }
 
 /// Parameters for [`Client::get_packages`] (wire method `getPackages`).
@@ -1317,7 +1889,7 @@ pub struct GetPhonebookGroupsParams {
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPlayInstructionsParams {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub play_instructions: Option<String>,
+    pub play_instructions: Option<PlayInstructions>,
 }
 
 /// Parameters for [`Client::get_portability`] (wire method `getPortability`).
@@ -1598,14 +2170,14 @@ pub struct GetVPRIsParams {}
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailAttachmentFormatsParams {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_attachment_format: Option<String>,
+    pub email_attachment_format: Option<EmailAttachmentFormat>,
 }
 
 /// Parameters for [`Client::get_voicemail_folders`] (wire method `getVoicemailFolders`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailFoldersParams {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
 }
 
 /// Parameters for [`Client::get_voicemail_message_file`] (wire method `getVoicemailMessageFile`).
@@ -1614,7 +2186,7 @@ pub struct GetVoicemailMessageFileParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
 }
@@ -1625,7 +2197,7 @@ pub struct GetVoicemailMessagesParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1651,7 +2223,7 @@ pub struct GetVoicemailTranscriptionsParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
 }
 
 /// Parameters for [`Client::get_voicemails`] (wire method `getVoicemails`).
@@ -1676,7 +2248,7 @@ pub struct MarkListenedVoicemailMessageParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1689,7 +2261,7 @@ pub struct MarkUrgentVoicemailMessageParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1713,7 +2285,7 @@ pub struct MoveFolderVoicemailMessageParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1726,13 +2298,13 @@ pub struct OrderDIDParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1767,13 +2339,13 @@ pub struct OrderDIDInternationalGeographicParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1808,13 +2380,13 @@ pub struct OrderDIDInternationalNationalParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1849,13 +2421,13 @@ pub struct OrderDIDInternationalTollFreeParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1886,13 +2458,13 @@ pub struct OrderDIDVirtualParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digits: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1946,13 +2518,13 @@ pub struct OrderTollFreeParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1983,13 +2555,13 @@ pub struct OrderVanityParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2154,7 +2726,7 @@ pub struct SendVoicemailEmailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<String>,
+    pub folder: Option<VoicemailFolder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2175,7 +2747,7 @@ pub struct SetCallHuntingParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub order: Option<String>,
+    pub order: Option<RingGroupOrder>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2234,13 +2806,13 @@ pub struct SetCallerIDFilteringParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
 }
@@ -2400,13 +2972,13 @@ pub struct SetDIDInfoParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2452,7 +3024,7 @@ pub struct SetDIDRoutingParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
 }
 
 /// Parameters for [`Client::set_did_voicemail`] (wire method `setDIDVoicemail`).
@@ -2688,7 +3260,7 @@ pub struct SetQueueParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub leave_when_empty: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ring_strategy: Option<String>,
+    pub ring_strategy: Option<RingStrategy>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ring_inuse: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2712,17 +3284,17 @@ pub struct SetQueueParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fail_over_routing_timeout: Option<String>,
+    pub fail_over_routing_timeout: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fail_over_routing_full: Option<String>,
+    pub fail_over_routing_full: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fail_over_routing_join_empty: Option<String>,
+    pub fail_over_routing_join_empty: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fail_over_routing_leave_empty: Option<String>,
+    pub fail_over_routing_leave_empty: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fail_over_routing_join_unavail: Option<String>,
+    pub fail_over_routing_join_unavail: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fail_over_routing_leave_unavail: Option<String>,
+    pub fail_over_routing_leave_unavail: Option<crate::Routing>,
 }
 
 /// Parameters for [`Client::set_recording`] (wire method `setRecording`).
@@ -2842,9 +3414,9 @@ pub struct SetSubAccountParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allowed_codecs: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dtmf_mode: Option<String>,
+    pub dtmf_mode: Option<DtmfMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nat: Option<String>,
+    pub nat: Option<Nat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sip_traffic: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2905,9 +3477,9 @@ pub struct SetTimeConditionParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing_match: Option<String>,
+    pub routing_match: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub routing_nomatch: Option<String>,
+    pub routing_nomatch: Option<crate::Routing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub starthour: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2946,11 +3518,11 @@ pub struct SetVoicemailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub say_callerid: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub play_instructions: Option<String>,
+    pub play_instructions: Option<PlayInstructions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_attachment_format: Option<String>,
+    pub email_attachment_format: Option<EmailAttachmentFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unavailable_message_recording: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2964,7 +3536,7 @@ pub struct SetVoicemailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_summary: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_format: Option<String>,
+    pub transcription_format: Option<TranscriptionFormat>,
 }
 
 /// Parameters for [`Client::signup_client`] (wire method `signupClient`).
@@ -3723,24 +4295,24 @@ pub struct GetBackOrdersResponseBackOrder {
     pub description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -4022,11 +4594,8 @@ pub struct GetCallHuntingsResponseCallHunting {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub ring_time: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub order: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_ring_group_order")]
+    pub order: Option<RingGroupOrder>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -4375,24 +4944,24 @@ pub struct GetCallerIDFilteringResponseFiltering {
     pub did: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -5055,24 +5624,24 @@ pub struct GetDIDsInfoResponseDID {
     pub description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub routing: Option<String>,
+    pub routing: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_busy: Option<String>,
+    pub failover_busy: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_unreachable: Option<String>,
+    pub failover_unreachable: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub failover_noanswer: Option<String>,
+    pub failover_noanswer: Option<crate::Routing>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -5762,11 +6331,8 @@ pub struct GetFAXMessagesResponseFAX {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub id: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub folder: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
+    pub folder: Option<VoicemailFolder>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime"
@@ -6884,28 +7450,14 @@ pub struct GetMusicOnHoldResponse {
 
 /// Response body for [`Client::get_nat`] (wire method `getNAT`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct GetNATResponseNAT {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub value: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub description: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetNATResponse {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub status: Option<String>,
-    #[serde(default)]
-    pub nat: Option<Vec<GetNATResponseNAT>>,
+    #[serde(default, deserialize_with = "deserialize_opt_nat")]
+    pub nat: Option<Nat>,
 }
 
 /// Response body for [`Client::get_packages`] (wire method `getPackages`).
@@ -7063,28 +7615,14 @@ pub struct GetPhonebookGroupsResponse {
 
 /// Response body for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct GetPlayInstructionsResponsePlayInstruction {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub value: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub description: Option<bool>,
-}
-
-#[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPlayInstructionsResponse {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub status: Option<String>,
-    #[serde(default)]
-    pub play_instructions: Option<Vec<GetPlayInstructionsResponsePlayInstruction>>,
+    #[serde(default, deserialize_with = "deserialize_opt_play_instructions")]
+    pub play_instructions: Option<PlayInstructions>,
 }
 
 /// Response body for [`Client::get_portability`] (wire method `getPortability`).
@@ -7263,11 +7801,8 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub leave_when_empty: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub ring_strategy: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_ring_strategy")]
+    pub ring_strategy: Option<RingStrategy>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
@@ -7320,34 +7855,34 @@ pub struct GetQueuesResponseQueue {
     pub thankyou_for_your_patience: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub fail_over_routing_timeout: Option<String>,
+    pub fail_over_routing_timeout: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub fail_over_routing_full: Option<String>,
+    pub fail_over_routing_full: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub fail_over_routing_join_empty: Option<String>,
+    pub fail_over_routing_join_empty: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub fail_over_routing_leave_empty: Option<String>,
+    pub fail_over_routing_leave_empty: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub fail_over_routing_join_unavail: Option<String>,
+    pub fail_over_routing_join_unavail: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub fail_over_routing_leave_unavail: Option<String>,
+    pub fail_over_routing_leave_unavail: Option<crate::Routing>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -8241,16 +8776,10 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub allowed_codecs: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub dtmf_mode: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub nat: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_opt_dtmf_mode")]
+    pub dtmf_mode: Option<DtmfMode>,
+    #[serde(default, deserialize_with = "deserialize_opt_nat")]
+    pub nat: Option<Nat>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -8463,14 +8992,14 @@ pub struct GetTimeConditionsResponseTimecondition {
     pub name: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub routing_match: Option<String>,
+    pub routing_match: Option<crate::Routing>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_routing"
     )]
-    pub routing_nomatch: Option<String>,
+    pub routing_nomatch: Option<crate::Routing>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -8701,11 +9230,8 @@ pub struct GetVoicemailMessageFileResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub mailbox: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub folder: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
+    pub folder: Option<VoicemailFolder>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -8737,11 +9263,8 @@ pub struct GetVoicemailMessagesResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub mailbox: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub folder: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
+    pub folder: Option<VoicemailFolder>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -8826,11 +9349,8 @@ pub struct GetVoicemailTranscriptionsResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub duration: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub folder: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
+    pub folder: Option<VoicemailFolder>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -8902,21 +9422,15 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub say_callerid: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub play_instructions: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_play_instructions")]
+    pub play_instructions: Option<PlayInstructions>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub language: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub email_attachment_format: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_email_attachment_format")]
+    pub email_attachment_format: Option<EmailAttachmentFormat>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -8957,11 +9471,8 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub transcription_summary: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub transcription_format: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_transcription_format")]
+    pub transcription_format: Option<TranscriptionFormat>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]

@@ -1,6 +1,90 @@
 {
   "version": 1,
-  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle.",
+  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle. The `enums` + `field_types` sections declare low-cardinality enum types substituted for `Option<String>` in both *Params and *Response structs (see xtask/src/field_overrides.rs).",
+  "enums": {
+    "DtmfMode": {
+      "doc": "DTMF transport mode for SIP sub-accounts.",
+      "variants": [
+        { "name": "Auto",    "wire": "auto" },
+        { "name": "Rfc2833", "wire": "rfc2833" },
+        { "name": "Inband",  "wire": "inband" },
+        { "name": "Info",    "wire": "info" }
+      ]
+    },
+    "Nat": {
+      "doc": "Asterisk NAT handling mode.",
+      "variants": [
+        { "name": "Yes",   "wire": "yes" },
+        { "name": "No",    "wire": "no" },
+        { "name": "Route", "wire": "route" },
+        { "name": "Never", "wire": "never" }
+      ]
+    },
+    "EmailAttachmentFormat": {
+      "doc": "Voicemail email attachment format.",
+      "variants": [
+        { "name": "Wav49", "wire": "wav49", "doc": "GSM-compressed WAV." },
+        { "name": "Wav",   "wire": "wav" },
+        { "name": "Mp3",   "wire": "mp3" },
+        { "name": "No",    "wire": "no",    "doc": "Do not attach audio." }
+      ]
+    },
+    "TranscriptionFormat": {
+      "doc": "Voicemail transcription output format.",
+      "variants": [
+        { "name": "Text", "wire": "text" },
+        { "name": "Html", "wire": "html" }
+      ]
+    },
+    "PlayInstructions": {
+      "doc": "Voicemail playback instruction mode.",
+      "variants": [
+        { "name": "SkipUnread", "wire": "su", "doc": "Skip instructions on unread messages." },
+        { "name": "Unread",     "wire": "u",  "doc": "Read full instructions for unread messages." },
+        { "name": "DontSay",    "wire": "du", "doc": "Don't say instructions." }
+      ]
+    },
+    "RingStrategy": {
+      "doc": "Queue ring strategy. Mirrors Asterisk's queue strategy options.",
+      "variants": [
+        { "name": "RingAll",      "wire": "ringall" },
+        { "name": "LeastRecent",  "wire": "leastrecent" },
+        { "name": "FewestCalls",  "wire": "fewestcalls" },
+        { "name": "Random",       "wire": "random" },
+        { "name": "RrMemory",     "wire": "rrmemory" },
+        { "name": "Linear",       "wire": "linear" },
+        { "name": "WRandom",      "wire": "wrandom" }
+      ]
+    },
+    "RingGroupOrder": {
+      "doc": "Order in which ring-group members are attempted.",
+      "variants": [
+        { "name": "Follow", "wire": "follow", "doc": "Try members in declared order." },
+        { "name": "Random", "wire": "random" }
+      ]
+    },
+    "VoicemailFolder": {
+      "doc": "Voicemail message folder.",
+      "variants": [
+        { "name": "Inbox",   "wire": "INBOX" },
+        { "name": "Old",     "wire": "Old" },
+        { "name": "Urgent",  "wire": "Urgent" },
+        { "name": "Family",  "wire": "Family" },
+        { "name": "Friends", "wire": "Friends" },
+        { "name": "Work",    "wire": "Work" }
+      ]
+    }
+  },
+  "field_types": {
+    "dtmf_mode":               "DtmfMode",
+    "nat":                     "Nat",
+    "email_attachment_format": "EmailAttachmentFormat",
+    "transcription_format":    "TranscriptionFormat",
+    "play_instructions":       "PlayInstructions",
+    "ring_strategy":           "RingStrategy",
+    "order":                   "RingGroupOrder",
+    "folder":                  "VoicemailFolder"
+  },
   "methods": {
     "getDIDsInfo": {
       "patches": [

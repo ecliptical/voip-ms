@@ -133,6 +133,53 @@ developer would have chosen by hand. New acronyms get added to the
 produces a single-letter token in `tokenize()`, add it to the `ACRONYMS`
 constant in `xtask/src/main.rs` and regenerate.
 
+### 5a. Domain types substituted by field name
+
+**Decision**: A small set of stringly-typed fields are upgraded to
+domain types during codegen, driven by the field's snake_case name (not
+its method). Two override mechanisms feed the same substitution table
+in `xtask/src/field_overrides.rs`:
+
+* **Built-in substitutions** (hand-written in `field_overrides.rs`):
+  the 12 routing-related fields (`routing`, `failover_busy`,
+  `failover_noanswer`, `failover_unreachable`, plus the
+  `fail_over_routing_*` variants used by queues) map to
+  [`crate::Routing`], a tagged enum hand-written in `src/types.rs`
+  that parses voip.ms's `kind:value` strings (`account:100001_VoIP`,
+  `fwd:5551234567`, `sip:user@host:port`, `none:`, …). Routing
+  changes shape rarely and benefits from a custom `FromStr` (e.g.
+  SIP URIs may contain `:`, so only the first `:` is the separator).
+* **Declarative enum overrides** in
+  `tools/api-response-overrides.json` under the new `enums` (variant
+  list with wire strings) and `field_types` (field-name → enum-name)
+  sections. The generator emits the enum type, `as_wire` / `from_wire`,
+  `Display`, `Serialize`, `Deserialize`, plus a per-enum
+  `deserialize_opt_*` helper, and substitutes the field's type in
+  every `*Params` and `*Response` struct that has that field. Used
+  for `DtmfMode`, `Nat`, `EmailAttachmentFormat`,
+  `TranscriptionFormat`, `PlayInstructions`, `RingStrategy`,
+  `RingGroupOrder`, `VoicemailFolder`.
+
+Both kinds of substituted enum carry an `Unknown(String)` (or
+`Unknown { tag, value }` for `Routing`) catch-all so voip.ms adding
+a new variant or shipping an unexpected value never breaks
+deserialization.
+
+**Rationale**: Field names like `routing`, `dtmf_mode`, and `nat` mean
+the same thing across every method they appear on. Substituting by
+field name keeps the override table tiny and avoids per-method
+duplication. Hand-written types stay in `src/types.rs` for cases that
+need custom parsing; routine `set of fixed strings` enums are declared
+in JSON to keep the generator the source of truth.
+
+**How to apply**: For a new closed-set scalar (e.g. a `priority` field
+with documented values `low`/`normal`/`high`), add an entry to `enums`
+and a `field_types` mapping in `tools/api-response-overrides.json` and
+regenerate. For a scalar that needs structured parsing (multi-part
+value, custom validation), hand-write it in `src/types.rs`, register
+the field names in `xtask/src/field_overrides.rs::ROUTING_FIELDS`-style
+const, and add the deserializer to `src/responses.rs`.
+
 ### 6. No HTTP-level retry, no auth caching, no rate limiting
 
 **Decision**: `Client::call_raw` is one GET request, one JSON parse, one
@@ -213,18 +260,20 @@ voip-ms/
 │   ├── client.rs        # Client, ClientBuilder, call()
 │   ├── error.rs         # Error, ApiStatus, Result
 │   ├── generated.rs     # 222 *Params + Client methods + *Response (generated)
-│   └── responses.rs     # Custom serde deserializers for generated.rs
+│   ├── responses.rs     # Custom serde deserializers for generated.rs
+│   └── types.rs         # Hand-written domain types (Routing, …)
 ├── tests/
 │   └── client.rs        # wiremock-based integration tests
 ├── tools/
 │   ├── server.wsdl                   # Committed WSDL snapshot
 │   ├── api-responses.json            # Extracted response shapes (generated)
-│   └── api-response-overrides.json   # Hand-edited shape corrections
+│   └── api-response-overrides.json   # Hand-edited shape corrections + enums
 └── xtask/
     ├── Cargo.toml
     └── src/
         ├── main.rs              # WSDL+responses+overrides → src/generated.rs
         ├── extract.rs           # apidocs HTML → tools/api-responses.json
+        ├── field_overrides.rs   # Field-name → domain-type substitution table
         ├── overrides.rs         # Overrides schema + apply logic
         └── response_codegen.rs  # Shape → *Response struct emitter
 ```

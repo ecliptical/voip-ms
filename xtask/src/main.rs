@@ -10,6 +10,7 @@
 //!     cargo xtask gen
 
 mod extract;
+mod field_overrides;
 mod overrides;
 mod response_codegen;
 mod wsdl;
@@ -195,7 +196,12 @@ fn rust_field_name(name: &str) -> String {
     }
 }
 
-fn emit(wsdl: &Wsdl, responses: &BTreeMap<String, Shape>) -> String {
+fn emit(
+    wsdl: &Wsdl,
+    responses: &BTreeMap<String, Shape>,
+    table: &field_overrides::Table,
+    enum_decls: &str,
+) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
     out.push_str(
@@ -211,6 +217,8 @@ fn emit(wsdl: &Wsdl, responses: &BTreeMap<String, Shape>) -> String {
          use crate::client::Client;\n\
          use crate::error::Result;\n",
     );
+
+    out.push_str(enum_decls);
 
     for op in &wsdl.operations {
         let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
@@ -233,7 +241,10 @@ fn emit(wsdl: &Wsdl, responses: &BTreeMap<String, Shape>) -> String {
         }
         out.push_str(&format!("pub struct {struct_name} {{\n"));
         for (fname, ftype) in body_fields {
-            let rust_ty = xsd_to_rust(ftype);
+            let rust_ty = match table.get(fname) {
+                Some(o) => o.rust_type.clone(),
+                None => xsd_to_rust(ftype).to_string(),
+            };
             let ident = rust_field_name(fname);
             out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\")]\n");
             out.push_str(&format!("    pub {ident}: Option<{rust_ty}>,\n"));
@@ -244,6 +255,7 @@ fn emit(wsdl: &Wsdl, responses: &BTreeMap<String, Shape>) -> String {
     out.push_str(&response_codegen::emit_response_structs(
         &wsdl.operations,
         responses,
+        table,
     ));
 
     out.push_str("\nimpl Client {\n");
@@ -271,6 +283,117 @@ pub(crate) fn repo_root() -> PathBuf {
         .parent()
         .expect("xtask has a parent")
         .to_path_buf()
+}
+
+/// Snake-cased name used for the per-enum `deserialize_opt_*` helper
+/// emitted into `generated.rs`.
+fn enum_deserializer_path(enum_name: &str) -> String {
+    let acronyms = acronyms_sorted();
+    format!("deserialize_opt_{}", camel_to_snake(enum_name, &acronyms))
+}
+
+/// Emit Rust enum declarations (plus their (de)serializer helpers) for
+/// every user-defined enum in the overrides JSON.
+fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> String {
+    let mut names: Vec<&String> = enums.keys().collect();
+    names.sort();
+    let mut out = String::new();
+    for name in names {
+        let def = &enums[name];
+        out.push('\n');
+        if let Some(doc) = &def.doc {
+            for line in doc.lines() {
+                out.push_str(&format!("/// {line}\n"));
+            }
+        } else {
+            out.push_str(&format!(
+                "/// Voip.ms `{name}` enum. Variants are documented values; any\n\
+                 /// unrecognized wire string is preserved verbatim in [`{name}::Unknown`].\n",
+            ));
+        }
+        out.push_str("#[derive(Debug, Clone, PartialEq, Eq)]\n");
+        out.push_str(&format!("pub enum {name} {{\n"));
+        for v in &def.variants {
+            if let Some(doc) = &v.doc {
+                for line in doc.lines() {
+                    out.push_str(&format!("    /// {line}\n"));
+                }
+            }
+            out.push_str(&format!("    {},\n", v.name));
+        }
+        out.push_str("    /// Any wire value this crate doesn't recognize.\n");
+        out.push_str("    Unknown(String),\n");
+        out.push_str("}\n\n");
+
+        // as_wire
+        out.push_str(&format!("impl {name} {{\n"));
+        out.push_str("    /// The wire string for this variant.\n");
+        out.push_str("    pub fn as_wire(&self) -> &str {\n");
+        out.push_str("        match self {\n");
+        for v in &def.variants {
+            out.push_str(&format!(
+                "            {name}::{} => {:?},\n",
+                v.name, v.wire
+            ));
+        }
+        out.push_str(&format!("            {name}::Unknown(s) => s.as_str(),\n"));
+        out.push_str("        }\n    }\n\n");
+        out.push_str("    /// Parse a wire string. Unknown values are preserved.\n");
+        out.push_str("    pub fn from_wire(s: &str) -> Self {\n");
+        out.push_str("        match s {\n");
+        for v in &def.variants {
+            out.push_str(&format!(
+                "            {:?} => {name}::{},\n",
+                v.wire, v.name
+            ));
+        }
+        out.push_str(&format!(
+            "            other => {name}::Unknown(other.to_string()),\n"
+        ));
+        out.push_str("        }\n    }\n}\n\n");
+
+        // Display
+        out.push_str(&format!(
+            "impl std::fmt::Display for {name} {{\n    \
+                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n        \
+                     f.write_str(self.as_wire())\n    \
+                 }}\n\
+             }}\n\n"
+        ));
+
+        // Serialize
+        out.push_str(&format!(
+            "impl serde::Serialize for {name} {{\n    \
+                 fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {{\n        \
+                     s.serialize_str(self.as_wire())\n    \
+                 }}\n\
+             }}\n\n"
+        ));
+
+        // Deserialize
+        out.push_str(&format!(
+            "impl<'de> serde::Deserialize<'de> for {name} {{\n    \
+                 fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {{\n        \
+                     let s = <String as serde::Deserialize>::deserialize(d)?;\n        \
+                     Ok({name}::from_wire(&s))\n    \
+                 }}\n\
+             }}\n\n"
+        ));
+
+        // deserialize_opt helper
+        let helper = enum_deserializer_path(name);
+        out.push_str(&format!(
+            "pub(crate) fn {helper}<'de, D>(d: D) -> std::result::Result<Option<{name}>, D::Error>\n\
+             where D: serde::Deserializer<'de> {{\n    \
+                 let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;\n    \
+                 Ok(opt.and_then(|s| {{\n        \
+                     let t = s.trim();\n        \
+                     if t.is_empty() {{ None }} else {{ Some({name}::from_wire(t)) }}\n    \
+                 }}))\n\
+             }}\n"
+        ));
+    }
+    out
 }
 
 fn cmd_gen() -> Result<(), String> {
@@ -315,9 +438,32 @@ fn cmd_gen() -> Result<(), String> {
         eprintln!("warning: unmapped XSD types: {unknown:?}");
     }
 
-    let responses = load_response_shapes(&responses_path, &overrides_path, &wsdl)?;
+    let overrides_doc = overrides::load(&overrides_path)?;
+    overrides_doc.check_version()?;
 
-    let rendered = emit(&wsdl, &responses);
+    let responses = load_response_shapes(&responses_path, &overrides_doc, &wsdl)?;
+
+    // Build the field-name override table by combining the built-in
+    // routing entries with anything declared in `field_types`.
+    let mut table = field_overrides::Table::with_builtins();
+    for (field, enum_name) in &overrides_doc.field_types {
+        if !overrides_doc.enums.contains_key(enum_name) {
+            return Err(format!(
+                "field_types maps `{field}` to unknown enum `{enum_name}`"
+            ));
+        }
+        let deser = enum_deserializer_path(enum_name);
+        table.insert(
+            field.clone(),
+            field_overrides::FieldOverride {
+                rust_type: enum_name.clone(),
+                response_deserializer: Some(deser),
+            },
+        );
+    }
+
+    let enum_decls = emit_enums(&overrides_doc.enums);
+    let rendered = emit(&wsdl, &responses, &table, &enum_decls);
     fs::write(&out_path, &rendered).map_err(|e| format!("write {}: {e}", out_path.display()))?;
     println!(
         "wrote {} ({} methods, {} typed responses)",
@@ -346,7 +492,7 @@ fn cmd_gen() -> Result<(), String> {
 /// per-method `Shape` keyed by wire method name.
 fn load_response_shapes(
     responses_path: &Path,
-    overrides_path: &Path,
+    overrides_doc: &overrides::OverridesDoc,
     wsdl: &Wsdl,
 ) -> Result<BTreeMap<String, Shape>, String> {
     let mut shapes: BTreeMap<String, Shape> = BTreeMap::new();
@@ -367,8 +513,6 @@ fn load_response_shapes(
         );
     }
 
-    let overrides_doc = overrides::load(overrides_path)?;
-    overrides_doc.check_version()?;
     let known: BTreeSet<&str> = wsdl.operations.iter().map(String::as_str).collect();
     for (name, mo) in &overrides_doc.methods {
         if !known.contains(name.as_str()) {

@@ -286,3 +286,95 @@ async fn typed_get_sub_accounts_tolerates_minus_one_sentinel_values() {
     assert_eq!(account.callerid_number, None);
     assert_eq!(account.canada_routing, None);
 }
+
+#[tokio::test]
+async fn typed_get_sub_accounts_decodes_enum_and_routing_fields() {
+    use voip_ms::{DtmfMode, Nat};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSubAccounts"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "accounts": [
+                {
+                    "id": "1",
+                    "account": "100000_fixture",
+                    "dtmf_mode": "rfc2833",
+                    "nat": "route"
+                }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope: GetSubAccountsResponse = client
+        .get_sub_accounts(&GetSubAccountsParams::default())
+        .await
+        .unwrap();
+
+    let account = envelope
+        .accounts
+        .as_ref()
+        .and_then(|accounts| accounts.first())
+        .expect("expected at least one sub-account");
+
+    assert_eq!(account.dtmf_mode, Some(DtmfMode::Rfc2833));
+    assert_eq!(account.nat, Some(Nat::Route));
+}
+
+#[tokio::test]
+async fn routing_param_serializes_as_tagged_string() {
+    use voip_ms::{Routing, SetDIDInfoParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setDIDInfo"))
+        .and(query_param("routing", "account:100001_VoIP"))
+        .and(query_param("failover_unreachable", "none:"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = SetDIDInfoParams {
+        did: Some("5551234567".into()),
+        routing: Some(Routing::Account("100001_VoIP".into())),
+        failover_unreachable: Some(Routing::None),
+        ..Default::default()
+    };
+    client.set_did_info_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn unknown_enum_value_is_preserved_verbatim() {
+    use voip_ms::DtmfMode;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSubAccounts"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "accounts": [
+                { "id": "1", "dtmf_mode": "future_mode" }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope: GetSubAccountsResponse = client
+        .get_sub_accounts(&GetSubAccountsParams::default())
+        .await
+        .unwrap();
+    let account = envelope.accounts.unwrap().into_iter().next().unwrap();
+    assert_eq!(
+        account.dtmf_mode,
+        Some(DtmfMode::Unknown("future_mode".into())),
+    );
+}
