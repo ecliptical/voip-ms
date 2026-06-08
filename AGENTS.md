@@ -58,6 +58,14 @@ generates `*Params`, from three inputs:
    handful of methods the extractor can't parse (`setSIPURI` has no
    Output block; `getLNPDetails` uses a non-standard PHP dialect).
 
+The same `extract-responses` pass also mines two doc-comment sources
+into `api-responses.json`: `param_docs` (per-parameter descriptions from
+each method's `Parameters` cell, including `[Required]` markers,
+examples, and value constraints) and `method_docs` (each method's
+one-line summary). `cargo xtask gen` renders these as `///` comments on
+the `*Params` fields and on the `*Params` struct + `Client` method,
+respectively.
+
 All response fields are `Option<T>` with `#[serde(default)]` so that
 voip.ms adding, removing, or omitting a field never breaks
 deserialization. Numbers, booleans (`0/1`, `Y/N`), dates, and decimals
@@ -73,12 +81,14 @@ overrides file covers the rest without polluting the generator.
 `*_raw` methods remain available for callers who want full forward
 compatibility with voip.ms drift on unknown fields.
 
-**How to apply**: When voip.ms updates the docs, save a fresh copy of
-`apidocs.php` HTML under `target/` (gitignored), run `cargo xtask
-extract-responses <path>` to refresh `tools/api-responses.json`, review
-the diff, and only edit `tools/api-response-overrides.json` if a scalar
-is mis-typed or a method's Output block can't be parsed. Then
-`cargo xtask gen` to refresh `src/generated.rs`.
+**How to apply**: When voip.ms updates the docs, re-run the full refresh
+procedure (re-extract `api-responses.json` *and* `api-statuses.json` from
+a freshly saved HTML page, review the diffs, correct only
+`api-response-overrides.json`, then `cargo xtask gen`). The exact
+commands, review checklist, and gotchas are in
+[DEVELOPMENT.md](DEVELOPMENT.md#regenerating-the-api-surface) — that is
+the canonical, reproducible procedure; keep it in sync when the codegen
+inputs or steps change.
 
 ### 3. All request fields are `Option<T>`
 
@@ -229,10 +239,21 @@ Three variants, no more:
 * `Error::Http` — wraps `reqwest::Error`. Includes both transport-level
   failures and `error_for_status`'s non-2xx surfacing.
 * `Error::Api(ApiStatus)` — the response parsed as `{ "status": "..." }`
-  with something other than `"success"`. The wire string is exposed
-  verbatim through `ApiStatus`; we intentionally do **not** define a
-  per-code enum because the set of statuses varies per method and is
-  not stable.
+  with something other than `"success"`. `ApiStatus` is a generated enum
+  with one PascalCase variant per documented code (~475 of them) plus an
+  `Unknown(String)` catch-all, so a code voip.ms returns but hasn't
+  documented is preserved verbatim rather than lost — the variant set is
+  documentation, not a closed contract. `ApiStatus::from_wire` /
+  `as_str` round-trip the wire string, `description()` returns the
+  documented meaning (`None` for `Unknown`), and `is_documented()`
+  reports whether it's a known variant. The enum, its impls, and the
+  description table are emitted by `cargo xtask gen` from
+  `tools/api-statuses.json`, which is extracted from the docs' global
+  "Error Codes" table via `cargo xtask extract-statuses <html>`. Because
+  the docs ship a couple of codes capitalized (`Invalid_threshold`), the
+  variant's `as_str` preserves the wire casing while the variant
+  *identifier* normalizes through the same acronym-aware PascalCase as
+  method/type names (`no_did` → `NoDID`).
 * `Error::InvalidResponse(String)` — the response was 2xx and JSON but
   didn't contain a `status` field. Should be rare; if it happens
   systematically for a method, that's a voip.ms-side break.
@@ -267,6 +288,7 @@ voip-ms/
 ├── tools/
 │   ├── server.wsdl                   # Committed WSDL snapshot
 │   ├── api-responses.json            # Extracted response shapes (generated)
+│   ├── api-statuses.json             # Extracted error-code table (generated)
 │   └── api-response-overrides.json   # Hand-edited shape corrections + enums
 └── xtask/
     ├── Cargo.toml

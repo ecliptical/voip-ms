@@ -1,6 +1,8 @@
 use rust_decimal::Decimal;
 use serde_json::{Value, json};
-use voip_ms::{Client, Error, GetBalanceParams, GetSubAccountsParams, GetSubAccountsResponse};
+use voip_ms::{
+    ApiStatus, Client, Error, GetBalanceParams, GetSubAccountsParams, GetSubAccountsResponse,
+};
 use wiremock::matchers::{method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -65,9 +67,56 @@ async fn api_status_other_than_success_is_an_error() {
         .unwrap_err();
 
     match err {
-        Error::Api(s) => assert_eq!(s.as_str(), "invalid_credentials"),
+        Error::Api(s) => {
+            assert_eq!(s, ApiStatus::InvalidCredentials);
+            assert_eq!(s.as_str(), "invalid_credentials");
+            assert_eq!(s.description(), Some("Username or Password is incorrect"));
+            assert!(s.is_documented());
+        }
         other => panic!("expected Error::Api, got {other:?}"),
     }
+}
+
+#[test]
+fn api_status_variants_and_descriptions() {
+    // A documented code round-trips to its typed variant and description.
+    let status = ApiStatus::from_wire("api_not_enabled");
+    assert_eq!(status, ApiStatus::APINotEnabled);
+    assert_eq!(status.as_str(), "api_not_enabled");
+    assert_eq!(
+        status.description(),
+        Some("API has not been enabled or has been disabled")
+    );
+    assert!(status.is_documented());
+    assert_eq!(status.to_string(), "api_not_enabled");
+
+    // Acronym-aware variant naming.
+    assert_eq!(ApiStatus::from_wire("no_did"), ApiStatus::NoDID);
+
+    // Codes the docs ship capitalized keep their wire casing on the wire
+    // side while normalizing to the lowercase-sibling variant form.
+    assert_eq!(
+        ApiStatus::InvalidThreshold.as_str(),
+        "Invalid_threshold",
+        "verbatim wire casing is preserved"
+    );
+    assert_eq!(
+        ApiStatus::from_wire("Invalid_threshold"),
+        ApiStatus::InvalidThreshold
+    );
+
+    // An undocumented code is preserved verbatim with no description.
+    let unknown = ApiStatus::from_wire("brand_new_code");
+    assert_eq!(unknown, ApiStatus::Unknown("brand_new_code".to_string()));
+    assert_eq!(unknown.as_str(), "brand_new_code");
+    assert_eq!(unknown.description(), None);
+    assert!(!unknown.is_documented());
+
+    // `From<String>`/`From<&str>` keep working against the enum.
+    assert_eq!(
+        ApiStatus::from("invalid_credentials"),
+        ApiStatus::InvalidCredentials
+    );
 }
 
 #[tokio::test]

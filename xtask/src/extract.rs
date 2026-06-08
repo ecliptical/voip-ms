@@ -30,6 +30,12 @@ pub struct Document {
     /// override flow, which only reads `methods`) keep parsing.
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub param_docs: serde_json::Map<String, JsonValue>,
+    /// Per-method one-line descriptions mined from each method's
+    /// description row in the docs. Keyed by wire method name. Most methods
+    /// carry one (~218 of 222); the rest are absent. Optional for
+    /// forward/backward compatibility with extracts that predate this field.
+    #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
+    pub method_docs: serde_json::Map<String, JsonValue>,
 }
 
 /// Inferred scalar primitive.
@@ -127,6 +133,221 @@ impl Shape {
     }
 }
 
+/// Top-level JSON document written to `tools/api-statuses.json`.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StatusDocument {
+    pub version: u32,
+    /// Documented `status` values, in source order. Each entry is the
+    /// verbatim wire string and its human-readable description.
+    pub statuses: Vec<StatusEntry>,
+}
+
+/// One row of the global "Error Codes" table.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StatusEntry {
+    /// Verbatim wire `status` string (e.g. `invalid_credentials`). voip.ms
+    /// ships a couple of these capitalized (`Invalid_threshold`), so the
+    /// case is preserved exactly as documented.
+    pub code: String,
+    /// Human-readable meaning from the docs.
+    pub description: String,
+}
+
+/// Extract the global "Error Codes" table from the saved API doc HTML into
+/// `tools/api-statuses.json`. The table is a flat `code → description`
+/// listing shared across every method (the docs do not map statuses to
+/// individual methods), so the output is a single ordered list.
+pub fn cmd_extract_statuses(html_path: &Path, out_path: &Path) -> Result<(), String> {
+    let bytes = fs::read(html_path).map_err(|e| format!("read {}: {e}", html_path.display()))?;
+    let html = String::from_utf8_lossy(&bytes).into_owned();
+
+    let statuses = scan_status_table(&html);
+    if statuses.is_empty() {
+        return Err("no `Error Codes` table found in HTML — \
+                    has the doc layout changed?"
+            .to_string());
+    }
+
+    let doc = StatusDocument {
+        version: 1,
+        statuses,
+    };
+    let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
+    fs::write(out_path, format!("{pretty}\n"))
+        .map_err(|e| format!("write {}: {e}", out_path.display()))?;
+
+    println!(
+        "wrote {} ({} status codes)",
+        out_path.display(),
+        doc.statuses.len(),
+    );
+    Ok(())
+}
+
+/// Scan the `Error Codes` table: the two-column rows that follow the
+/// `toptitlex normaltextbold` cell whose text is `Error Codes`. Each row
+/// is `<td …linefull…>CODE</td><td …linerightfull…>DESCRIPTION</td>`.
+///
+/// Those two cell classes are also used by per-method `Parameters`/`Output`
+/// rows elsewhere, so we anchor on the `Error Codes` title and stop at the
+/// next `toptitlex` section title to capture exactly the one table.
+fn scan_status_table(html: &str) -> Vec<StatusEntry> {
+    const TITLE_MARK: &str = "toptitlex normaltextbold";
+    const CODE_MARK: &str = "leftmenubottomtdlinefull normaltext";
+    const DESC_MARK: &str = "leftmenubottomtdlinerightfull normaltext";
+
+    // The whole table lives on a contiguous run of lines after the title;
+    // join into one string so a `<tr>` split across lines still matches.
+    let Some(title_pos) = find_error_codes_title(html, TITLE_MARK) else {
+        return Vec::new();
+    };
+    let region = &html[title_pos..];
+
+    let mut out: Vec<StatusEntry> = Vec::new();
+    let mut rest = region;
+    loop {
+        // Stop at the next section title — the error table is the last one
+        // in its `<table>`, so a following `toptitlex` means we've left it.
+        let next_title = rest.find(TITLE_MARK);
+        let Some(code_at) = rest.find(CODE_MARK) else {
+            break;
+        };
+        if next_title.is_some_and(|t| t < code_at) {
+            break;
+        }
+
+        // Advance past the code cell's opening `>` to its text.
+        let after_code_open = match rest[code_at..].find('>') {
+            Some(g) => code_at + g + 1,
+            None => break,
+        };
+        let code_end = match rest[after_code_open..].find("</td>") {
+            Some(e) => after_code_open + e,
+            None => break,
+        };
+        let code = clean_cell(&rest[after_code_open..code_end]);
+
+        // The description cell must immediately follow.
+        let desc_mark_at = match rest[code_end..].find(DESC_MARK) {
+            Some(d) => code_end + d,
+            None => break,
+        };
+        let after_desc_open = match rest[desc_mark_at..].find('>') {
+            Some(g) => desc_mark_at + g + 1,
+            None => break,
+        };
+        let desc_end = match rest[after_desc_open..].find("</td>") {
+            Some(e) => after_desc_open + e,
+            None => break,
+        };
+        let description = clean_cell(&rest[after_desc_open..desc_end]);
+
+        if !code.is_empty() && !description.is_empty() {
+            out.push(StatusEntry { code, description });
+        }
+
+        rest = &rest[desc_end..];
+    }
+
+    out
+}
+
+/// Find the byte offset just past the `Error Codes` title cell's class
+/// marker, so scanning starts inside that section.
+fn find_error_codes_title(html: &str, title_mark: &str) -> Option<usize> {
+    let mut from = 0;
+    while let Some(rel) = html[from..].find(title_mark) {
+        let mark_at = from + rel;
+        let after = mark_at + title_mark.len();
+        // Cell text runs from the next `>` to the closing `</td>`.
+        if let Some(g) = html[after..].find('>') {
+            let text_start = after + g + 1;
+            if let Some(e) = html[text_start..].find("</td>")
+                && clean_cell(&html[text_start..text_start + e]) == "Error Codes"
+            {
+                return Some(after);
+            }
+        }
+        from = after;
+    }
+    None
+}
+
+/// Strip inline tags, decode entities, and collapse whitespace in a table
+/// cell's inner HTML.
+fn clean_cell(raw: &str) -> String {
+    collapse_ws(&html_decode(&strip_tags(raw)))
+}
+
+/// Scan the doc's method-description rows for per-method one-line summaries.
+///
+/// These use the same two-column `<td …linefull…>NAME</td>
+/// <td …linerightfull…>DESC</td>` rows as the error table, but the left
+/// cell holds a camelCase wire method name. We keep only rows whose name is
+/// a known WSDL operation (so section headers and the error table are
+/// ignored), take the first description seen per method, and preserve the
+/// `<br>`-delimited bullet lines as newlines. Most methods carry a
+/// description (~218 of 222); the rest are simply absent.
+fn scan_method_docs(html: &str, known: &BTreeSet<&str>) -> serde_json::Map<String, JsonValue> {
+    const CODE_MARK: &str = "leftmenubottomtdlinefull normaltext";
+    const DESC_MARK: &str = "leftmenubottomtdlinerightfull normaltext";
+
+    let mut out = serde_json::Map::new();
+    let mut rest = html;
+    while let Some(code_at) = rest.find(CODE_MARK) {
+        let after_code_open = match rest[code_at..].find('>') {
+            Some(g) => code_at + g + 1,
+            None => break,
+        };
+        let code_end = match rest[after_code_open..].find("</td>") {
+            Some(e) => after_code_open + e,
+            None => break,
+        };
+        let name = clean_cell(&rest[after_code_open..code_end]);
+
+        // The description cell must immediately follow this code cell, with
+        // nothing but whitespace/markup in between.
+        let desc = rest[code_end..]
+            .find(DESC_MARK)
+            .map(|d| code_end + d)
+            .and_then(|mark_at| rest[mark_at..].find('>').map(|g| mark_at + g + 1))
+            .and_then(|start| {
+                rest[start..]
+                    .find("</td>")
+                    .map(|e| clean_method_desc(&rest[start..start + e]))
+            });
+
+        if known.contains(name.as_str())
+            && let Some(desc) = desc
+            && !desc.is_empty()
+            && !out.contains_key(&name)
+        {
+            out.insert(name, JsonValue::String(desc));
+        }
+
+        // Advance past this code cell to find the next row.
+        rest = &rest[code_end..];
+    }
+
+    out
+}
+
+/// Clean a TOC description cell: `<br>` becomes a newline (the source uses
+/// it to separate bullet-style clauses), other tags are dropped, entities
+/// decoded, and each line's internal whitespace collapsed. Leading
+/// `- ` bullet markers are kept verbatim — `render_doc` escapes them so they
+/// don't render as Markdown lists.
+fn clean_method_desc(raw: &str) -> String {
+    let with_breaks = raw.replace("<br>", "\n").replace("<br/>", "\n");
+    let stripped = html_decode(&strip_tags(&with_breaks));
+    stripped
+        .lines()
+        .map(collapse_ws)
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), String> {
     // The saved HTML occasionally contains stray Windows-1252 bytes
     // (smart quotes inside example text), so decode lossily rather than
@@ -141,6 +362,8 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
         fs::read_to_string(&wsdl_path).map_err(|e| format!("read {}: {e}", wsdl_path.display()))?;
     let wsdl = wsdl::parse_wsdl(&wsdl_text)?;
     let known: BTreeSet<&str> = wsdl.operations.iter().map(String::as_str).collect();
+
+    let method_docs = scan_method_docs(&html, &known);
 
     let blocks = scan_html(&html);
     let mut methods = serde_json::Map::new();
@@ -193,10 +416,12 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
         .map(serde_json::Map::len)
         .sum();
 
+    let method_doc_count = method_docs.len();
     let doc = Document {
         version: 1,
         methods,
         param_docs,
+        method_docs,
     };
     let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
     fs::write(out_path, format!("{pretty}\n"))
@@ -204,12 +429,14 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
 
     let missing: Vec<&&str> = known.iter().filter(|op| !covered.contains(**op)).collect();
     println!(
-        "wrote {} ({} methods covered, {} missing; {} param descriptions across {} methods)",
+        "wrote {} ({} methods covered, {} missing; {} param descriptions across \
+         {} methods; {} method descriptions)",
         out_path.display(),
         covered.len(),
         missing.len(),
         param_doc_count,
         params_covered.len(),
+        method_doc_count,
     );
     if !missing.is_empty() {
         let preview: Vec<&&&str> = missing.iter().take(10).collect();

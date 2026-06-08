@@ -30,8 +30,26 @@
 //!
 //! voip.ms uses an `api_username` (your account email) and an `api_password`
 //! that is **distinct** from your portal password — generate it under the
-//! "SOAP and REST/JSON API" page in the customer portal and allow-list the
-//! IP address you'll be calling from.
+//! "SOAP and REST/JSON API" page in the customer portal and enable API access
+//! there.
+//!
+//! ## IP allow-listing
+//!
+//! By default **no IP address** may consume the voip.ms API. Under
+//! "Main Menu" → "SOAP & REST/JSON API" in the portal, add the IP address(es)
+//! you'll call from and save. The portal accepts individual addresses, CIDR
+//! ranges, wildcard forms (`192.168.1.*`), and DNS names. The sole exception
+//! is `getIP` ([`Client::get_ip`]), which works without an allow-listed IP so
+//! you can discover the address to add.
+//!
+//! # Wire format
+//!
+//! All calls are HTTP `GET` against the REST endpoint ([`DEFAULT_BASE_URL`],
+//! `…/api/v1/rest.php`) with parameters in the query string. That endpoint
+//! returns the `{ "status": ... }` JSON envelope directly, which this crate
+//! deserializes — any status other than `success` surfaces as [`Error::Api`].
+//! (The generic `…/api/v1/` endpoint instead defaults to `text/html` and
+//! needs an explicit `content_type=json`; this crate does not use it.)
 
 mod client;
 mod error;
@@ -40,6 +58,6 @@ mod responses;
 mod types;
 
 pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL};
-pub use error::{ApiStatus, Error, Result};
+pub use error::{Error, Result};
 pub use generated::*;
 pub use types::{Routing, RoutingParseError};

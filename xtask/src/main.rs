@@ -200,6 +200,19 @@ fn rust_field_name(name: &str) -> String {
 /// wire parameter name. Empty when no extract is present.
 type ParamDocs = BTreeMap<String, BTreeMap<String, String>>;
 
+/// Per-method one-line descriptions, keyed by wire method name. Most
+/// methods carry one in the docs (~218 of 222); the rest are absent.
+type MethodDocs = BTreeMap<String, String>;
+
+/// Render a possibly multi-line method description as `///` lines at the
+/// given indent, wrapping each source line independently so bullet breaks
+/// are preserved.
+fn render_method_doc(out: &mut String, indent: &str, text: &str) {
+    for line in text.lines() {
+        render_doc(out, indent, line);
+    }
+}
+
 /// Wrap a description as one or more `///` lines at the given indent,
 /// hard-wrapping long lines so rustfmt doesn't have to.
 fn render_doc(out: &mut String, indent: &str, text: &str) {
@@ -211,7 +224,8 @@ fn render_doc(out: &mut String, indent: &str, text: &str) {
             line.clear();
         }
     };
-    for word in text.split_whitespace() {
+    for raw_word in text.split_whitespace() {
+        let word = sanitize_doc_word(raw_word);
         let prospective = if line.is_empty() {
             word.len()
         } else {
@@ -226,10 +240,38 @@ fn render_doc(out: &mut String, indent: &str, text: &str) {
             line.push(' ');
         }
 
-        line.push_str(word);
+        line.push_str(&word);
     }
 
     flush(&mut line);
+}
+
+/// Make a single word of mined doc text safe for rustdoc, which parses doc
+/// comments as Markdown:
+///
+/// * a bare `http(s)://…` URL is wrapped as an `<…>` autolink (rustdoc
+///   warns on bare URLs);
+/// * `[` / `]` are backslash-escaped so prose like `[Required]` or
+///   `[Optional]` isn't parsed as a (broken) shortcut intra-doc link.
+///
+/// URLs are checked first so their own characters aren't bracket-escaped.
+fn sanitize_doc_word(word: &str) -> String {
+    let trimmed = word.trim_start_matches(['(', '\'', '"']);
+    if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        // Wrap just the URL token, preserving any leading/trailing prose
+        // punctuation (quotes, parens) around it.
+        let lead_len = word.len() - trimmed.len();
+        let (lead, rest) = word.split_at(lead_len);
+        let url_end = rest.find(['\'', '"', ')', ',']).unwrap_or(rest.len());
+        let (url, trail) = rest.split_at(url_end);
+        return format!("{lead}<{url}>{trail}");
+    }
+
+    if word.contains('[') || word.contains(']') {
+        return word.replace('[', "\\[").replace(']', "\\]");
+    }
+
+    word.to_string()
 }
 
 /// Backslash-escape a leading Markdown list marker (`- `, `* `, `+ `, or
@@ -254,12 +296,167 @@ fn escape_doc_line(line: &str) -> String {
     }
 }
 
+/// The PascalCase variant identifier for a wire status code, using the
+/// same acronym-aware conversion as method/type names (`invalid_credentials`
+/// → `InvalidCredentials`, `no_did` → `NoDID`, `api_not_enabled` →
+/// `APINotEnabled`). The rare capitalized wire codes (`Invalid_threshold`)
+/// lower-case fine through the tokenizer, so the variant matches its
+/// lowercase-sibling form.
+fn status_variant_name(code: &str, acronyms: &[&'static str]) -> String {
+    camel_to_pascal(code, acronyms)
+}
+
+/// Emit the `ApiStatus` enum: one PascalCase variant per documented wire
+/// code (carrying its description as a doc comment) plus an `Unknown(String)`
+/// catch-all, with `as_str`/`from_wire`/`description`/`is_documented` and the
+/// `Display`/`Serialize`/`Deserialize`/`From<String>` impls. The wire strings
+/// are preserved verbatim (including the rare capitalized codes); only the
+/// variant *identifiers* are normalized.
+fn emit_statuses(statuses: &[(String, String)]) -> String {
+    if statuses.is_empty() {
+        return String::new();
+    }
+
+    let acronyms = acronyms_sorted();
+    let variants: Vec<(String, &String, &String)> = statuses
+        .iter()
+        .map(|(code, desc)| (status_variant_name(code, &acronyms), code, desc))
+        .collect();
+
+    let mut out = String::new();
+
+    // Enum declaration.
+    out.push_str(
+        "\n/// A non-success `status` returned by the voip.ms API.\n\
+         ///\n\
+         /// Every documented error code from the official API docs' global\n\
+         /// error-code table is a variant; [`ApiStatus::description`] returns its\n\
+         /// documented meaning. The set of codes is documentation, not a stable\n\
+         /// contract — a code voip.ms returns but hasn't documented is preserved\n\
+         /// verbatim in [`ApiStatus::Unknown`] rather than lost.\n\
+         ///\n\
+         /// ```\n\
+         /// # use voip_ms::ApiStatus;\n\
+         /// let status = ApiStatus::from_wire(\"invalid_credentials\");\n\
+         /// assert_eq!(status, ApiStatus::InvalidCredentials);\n\
+         /// assert_eq!(status.as_str(), \"invalid_credentials\");\n\
+         /// assert_eq!(status.description(), Some(\"Username or Password is incorrect\"));\n\
+         /// assert!(status.is_documented());\n\
+         ///\n\
+         /// let unknown = ApiStatus::from_wire(\"some_new_code\");\n\
+         /// assert_eq!(unknown, ApiStatus::Unknown(\"some_new_code\".to_string()));\n\
+         /// assert_eq!(unknown.description(), None);\n\
+         /// assert!(!unknown.is_documented());\n\
+         /// ```\n\
+         #[derive(Debug, Clone, PartialEq, Eq, Hash)]\n\
+         pub enum ApiStatus {\n",
+    );
+    for (variant, code, desc) in &variants {
+        out.push_str(&format!("    /// `{code}` — {desc}\n"));
+        out.push_str(&format!("    {variant},\n"));
+    }
+    out.push_str("    /// A `status` value not present in the documented table,\n");
+    out.push_str("    /// preserved verbatim.\n");
+    out.push_str("    Unknown(String),\n");
+    out.push_str("}\n\n");
+
+    out.push_str("impl ApiStatus {\n");
+
+    // as_str
+    out.push_str("    /// The verbatim wire `status` string.\n");
+    out.push_str("    pub fn as_str(&self) -> &str {\n");
+    out.push_str("        match self {\n");
+    for (variant, code, _) in &variants {
+        out.push_str(&format!("            ApiStatus::{variant} => {code:?},\n"));
+    }
+    out.push_str("            ApiStatus::Unknown(s) => s.as_str(),\n");
+    out.push_str("        }\n    }\n\n");
+
+    // from_wire
+    out.push_str("    /// Parse a wire `status` string. Unknown values are preserved\n");
+    out.push_str("    /// in [`ApiStatus::Unknown`].\n");
+    out.push_str("    pub fn from_wire(s: &str) -> Self {\n");
+    out.push_str("        match s {\n");
+    for (variant, code, _) in &variants {
+        out.push_str(&format!("            {code:?} => ApiStatus::{variant},\n"));
+    }
+    out.push_str("            other => ApiStatus::Unknown(other.to_string()),\n");
+    out.push_str("        }\n    }\n\n");
+
+    // description
+    out.push_str("    /// The human-readable description of this status from the\n");
+    out.push_str("    /// voip.ms docs, or `None` for [`ApiStatus::Unknown`].\n");
+    out.push_str("    pub fn description(&self) -> Option<&'static str> {\n");
+    out.push_str("        match self {\n");
+    for (variant, _, desc) in &variants {
+        out.push_str(&format!(
+            "            ApiStatus::{variant} => Some({desc:?}),\n"
+        ));
+    }
+    out.push_str("            ApiStatus::Unknown(_) => None,\n");
+    out.push_str("        }\n    }\n\n");
+
+    // is_documented
+    out.push_str("    /// Whether this status is a documented code (not\n");
+    out.push_str("    /// [`ApiStatus::Unknown`]).\n");
+    out.push_str("    pub fn is_documented(&self) -> bool {\n");
+    out.push_str("        !matches!(self, ApiStatus::Unknown(_))\n");
+    out.push_str("    }\n}\n\n");
+
+    // Display
+    out.push_str(
+        "impl std::fmt::Display for ApiStatus {\n    \
+             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        \
+                 f.write_str(self.as_str())\n    \
+             }\n\
+         }\n\n",
+    );
+
+    // From<String> / From<&str> — keep the prior `ApiStatus::from(String)`
+    // ergonomics working against the new enum.
+    out.push_str(
+        "impl From<String> for ApiStatus {\n    \
+             fn from(s: String) -> Self {\n        \
+                 ApiStatus::from_wire(&s)\n    \
+             }\n\
+         }\n\n\
+         impl From<&str> for ApiStatus {\n    \
+             fn from(s: &str) -> Self {\n        \
+                 ApiStatus::from_wire(s)\n    \
+             }\n\
+         }\n\n",
+    );
+
+    // Serialize
+    out.push_str(
+        "impl serde::Serialize for ApiStatus {\n    \
+             fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {\n        \
+                 s.serialize_str(self.as_str())\n    \
+             }\n\
+         }\n\n",
+    );
+
+    // Deserialize
+    out.push_str(
+        "impl<'de> serde::Deserialize<'de> for ApiStatus {\n    \
+             fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {\n        \
+                 let s = <String as serde::Deserialize>::deserialize(d)?;\n        \
+                 Ok(ApiStatus::from_wire(&s))\n    \
+             }\n\
+         }\n",
+    );
+
+    out
+}
+
 fn emit(
     wsdl: &Wsdl,
     responses: &BTreeMap<String, Shape>,
     param_docs: &ParamDocs,
+    method_docs: &MethodDocs,
     table: &field_overrides::Table,
     enum_decls: &str,
+    statuses: &[(String, String)],
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -278,6 +475,7 @@ fn emit(
     );
 
     out.push_str(enum_decls);
+    out.push_str(&emit_statuses(statuses));
 
     for op in &wsdl.operations {
         let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
@@ -285,8 +483,13 @@ fn emit(
         let empty = Vec::new();
         let fields = wsdl.types.get(&input_name).unwrap_or(&empty);
 
+        out.push('\n');
+        if let Some(desc) = method_docs.get(op) {
+            render_method_doc(&mut out, "", desc);
+            out.push_str("///\n");
+        }
         out.push_str(&format!(
-            "\n/// Parameters for [`Client::{}`] (wire method `{op}`).\n",
+            "/// Parameters for [`Client::{}`] (wire method `{op}`).\n",
             camel_to_snake(op, &acronyms),
         ));
         out.push_str("#[derive(Debug, Default, Clone, Serialize)]\n");
@@ -329,6 +532,10 @@ fn emit(
         let method = camel_to_snake(op, &acronyms);
         let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
         let response_name = format!("{}Response", camel_to_pascal(op, &acronyms));
+        if let Some(desc) = method_docs.get(op) {
+            render_method_doc(&mut out, "    ", desc);
+            out.push_str("    ///\n");
+        }
         out.push_str(&format!(
             "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
              pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
@@ -514,6 +721,7 @@ fn cmd_gen() -> Result<(), String> {
 
     let responses = load_response_shapes(&responses_path, &overrides_doc, &wsdl)?;
     let param_docs = load_param_docs(&responses_path)?;
+    let method_docs = load_method_docs(&responses_path)?;
 
     // Build the field-name override table by combining the built-in
     // routing entries with anything declared in `field_types`.
@@ -534,14 +742,27 @@ fn cmd_gen() -> Result<(), String> {
         );
     }
 
+    let statuses = load_statuses(&root.join("tools").join("api-statuses.json"))?;
+
     let enum_decls = emit_enums(&overrides_doc.enums);
-    let rendered = emit(&wsdl, &responses, &param_docs, &table, &enum_decls);
+    let rendered = emit(
+        &wsdl,
+        &responses,
+        &param_docs,
+        &method_docs,
+        &table,
+        &enum_decls,
+        &statuses,
+    );
     fs::write(&out_path, &rendered).map_err(|e| format!("write {}: {e}", out_path.display()))?;
     println!(
-        "wrote {} ({} methods, {} typed responses)",
+        "wrote {} ({} methods, {} method descriptions, {} typed responses, \
+         {} status codes)",
         out_path.display(),
         wsdl.operations.len(),
+        method_docs.len(),
         responses.len(),
+        statuses.len(),
     );
 
     match Command::new("rustfmt")
@@ -632,6 +853,62 @@ fn load_param_docs(responses_path: &Path) -> Result<ParamDocs, String> {
     Ok(out)
 }
 
+/// Read the `method_docs` section of `tools/api-responses.json`. Missing
+/// file or section yields an empty map — these doc comments are additive.
+fn load_method_docs(responses_path: &Path) -> Result<MethodDocs, String> {
+    if !responses_path.exists() {
+        return Ok(MethodDocs::new());
+    }
+
+    let text = fs::read_to_string(responses_path)
+        .map_err(|e| format!("read {}: {e}", responses_path.display()))?;
+    let doc: extract::Document = serde_json::from_str(&text)
+        .map_err(|e| format!("parse {}: {e}", responses_path.display()))?;
+
+    Ok(doc
+        .method_docs
+        .iter()
+        .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+        .collect())
+}
+
+/// Read `tools/api-statuses.json` into ordered `(code, description)`
+/// pairs. A missing file yields an empty list — status constants are
+/// additive, so codegen proceeds without them (with a warning).
+fn load_statuses(path: &Path) -> Result<Vec<(String, String)>, String> {
+    if !path.exists() {
+        eprintln!(
+            "warning: {} missing — skipping status-code generation",
+            path.display()
+        );
+        return Ok(Vec::new());
+    }
+
+    let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    let doc: extract::StatusDocument =
+        serde_json::from_str(&text).map_err(|e| format!("parse {}: {e}", path.display()))?;
+
+    // Guard against duplicate variant names — two distinct wire codes that
+    // collapse to the same PascalCase identifier would fail to compile.
+    let acronyms = acronyms_sorted();
+    let mut seen: BTreeMap<String, String> = BTreeMap::new();
+    for entry in &doc.statuses {
+        let ident = status_variant_name(&entry.code, &acronyms);
+        if let Some(prev) = seen.insert(ident.clone(), entry.code.clone()) {
+            return Err(format!(
+                "duplicate status variant `{ident}` (from codes `{prev}` and `{}`)",
+                entry.code
+            ));
+        }
+    }
+
+    Ok(doc
+        .statuses
+        .into_iter()
+        .map(|e| (e.code, e.description))
+        .collect())
+}
+
 fn cmd_extract(args: &[String]) -> Result<(), String> {
     let html = args.first().ok_or_else(|| {
         "extract-responses requires the path to the saved API doc HTML".to_string()
@@ -642,6 +919,16 @@ fn cmd_extract(args: &[String]) -> Result<(), String> {
     extract::cmd_extract_responses(&html_path, &out_path)
 }
 
+fn cmd_extract_statuses(args: &[String]) -> Result<(), String> {
+    let html = args.first().ok_or_else(|| {
+        "extract-statuses requires the path to the saved API doc HTML".to_string()
+    })?;
+
+    let html_path = PathBuf::from(html);
+    let out_path = repo_root().join("tools").join("api-statuses.json");
+    extract::cmd_extract_statuses(&html_path, &out_path)
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
     let cmd = args.first().map(String::as_str).unwrap_or("gen");
@@ -649,8 +936,10 @@ fn main() -> ExitCode {
     let res = match cmd {
         "gen" => cmd_gen(),
         "extract-responses" => cmd_extract(&rest),
+        "extract-statuses" => cmd_extract_statuses(&rest),
         other => Err(format!(
-            "unknown subcommand `{other}` (expected `gen` or `extract-responses`)"
+            "unknown subcommand `{other}` \
+             (expected `gen`, `extract-responses`, or `extract-statuses`)"
         )),
     };
 

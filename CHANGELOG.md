@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking:** `ApiStatus` is now an enum instead of a `String` newtype. It
+  has one variant per documented voip.ms `status` code (~475, e.g.
+  `ApiStatus::InvalidCredentials`, `ApiStatus::APINotEnabled`,
+  `ApiStatus::NoDID`) for ergonomic `match` arms, plus an
+  `ApiStatus::Unknown(String)` catch-all that preserves any undocumented code
+  verbatim. `ApiStatus::description()` returns the documented human-readable
+  meaning (`None` for `Unknown`), `as_str()` returns the verbatim wire string,
+  `is_documented()` reports whether the code is a known variant, and
+  `from_wire()` / `From<String>` / `From<&str>` parse the wire string. Code
+  matching on the old `ApiStatus(String)` tuple must migrate to the variants
+  (or match `ApiStatus::Unknown(s)` / call `as_str()`). The enum is generated
+  by `cargo xtask gen` from the new committed `tools/api-statuses.json`,
+  extracted from the docs' global error-code table via the new
+  `cargo xtask extract-statuses` subcommand.
+
+### Added
+
+- Generated `Client` methods and `*Params` structs now carry the official
+  per-method description as a doc comment (mined from the docs into the new
+  `method_docs` section of `tools/api-responses.json`; ~218 of 222 methods
+  have one).
+- Crate-level docs now cover IP allow-listing (and the `getIP` exemption) and
+  the REST wire format.
+
 ## [0.1.3] - 2026-05-25
 
 ### Changed

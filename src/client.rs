@@ -171,6 +171,6 @@ fn check_status(body: &Value) -> Result<()> {
     if status == "success" {
         Ok(())
     } else {
-        Err(Error::Api(ApiStatus(status.to_owned())))
+        Err(Error::Api(ApiStatus::from_wire(status)))
     }
 }

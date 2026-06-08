@@ -223,10 +223,24 @@ All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voi
 
 * `Error::Http` — the request failed at the transport or HTTP-status level.
 * `Error::Api(ApiStatus)` — the response was a well-formed JSON envelope but
-  the `status` field was something other than `success` (e.g.
-  `invalid_credentials`, `missing_method`, `api_not_enabled`). The wire
-  string is exposed verbatim — the set of values is per-method and not
-  stable, so consult the voip.ms documentation for the methods you use.
+  the `status` field was something other than `success`. `ApiStatus` is an
+  enum with a variant per documented code (`ApiStatus::InvalidCredentials`,
+  `ApiStatus::APINotEnabled`, …) for ergonomic match arms, plus an
+  `ApiStatus::Unknown(String)` catch-all that preserves any code voip.ms
+  hasn't documented. `ApiStatus::description()` returns the documented
+  human-readable meaning (or `None` for `Unknown`), `as_str()` gives the
+  verbatim wire string, and `is_documented()` reports whether it's a known
+  variant.
+
+  ```rust
+  match client.get_balance(&params).await {
+      Ok(balance) => { /* … */ }
+      Err(voip_ms::Error::Api(voip_ms::ApiStatus::InvalidCredentials)) => {
+          eprintln!("check your API username/password");
+      }
+      Err(e) => return Err(e),
+  }
+  ```
 * `Error::InvalidResponse` — the response was not the expected JSON envelope
   (e.g. missing `status` field).
 

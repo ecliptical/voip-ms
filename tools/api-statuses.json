@@ -1,0 +1,1905 @@
+{
+  "version": 1,
+  "statuses": [
+    {
+      "code": "account_with_dids",
+      "description": "The Account has DIDs assigned to it."
+    },
+    {
+      "code": "api_limit_exceeded",
+      "description": "API requests limit per minute has been reached"
+    },
+    {
+      "code": "api_not_enabled",
+      "description": "API has not been enabled or has been disabled"
+    },
+    {
+      "code": "cancel_failed",
+      "description": "The cancellation wasn't completed."
+    },
+    {
+      "code": "can_have_only_one_profile_without_pin",
+      "description": "The conference can just have one profile member without pin"
+    },
+    {
+      "code": "conference_member_relation_not_found",
+      "description": "There is no relation between the profile member and the conference."
+    },
+    {
+      "code": "did_in_use",
+      "description": "DID Number is already in use"
+    },
+    {
+      "code": "did_limit_reached",
+      "description": "You have reached the maximum number of DID numbers allowed for your account type. Please contact our team if you have a specific use case or if you would like to upgrade to a Business account."
+    },
+    {
+      "code": "duplicated_name",
+      "description": "There is already another entry with this name"
+    },
+    {
+      "code": "duplicated_pin",
+      "description": "The given pin has been duplicated"
+    },
+    {
+      "code": "e911_disabled",
+      "description": "DID e911 service it's not enabled."
+    },
+    {
+      "code": "e911_pending",
+      "description": "DID e911 service has been requested and is in validation process."
+    },
+    {
+      "code": "error_deleting_msg",
+      "description": "Error when deleting message"
+    },
+    {
+      "code": "error_moving_msg",
+      "description": "Error when move the voicemail message to folder"
+    },
+    {
+      "code": "exceeds_file_size",
+      "description": "The file exceeds the limite size allowed."
+    },
+    {
+      "code": "existing_did",
+      "description": "You can't set a callback to an existing VoIP.ms DID number"
+    },
+    {
+      "code": "forwards_exceeded",
+      "description": "Your account is limited to 4 forward entries"
+    },
+    {
+      "code": "invalid_account",
+      "description": "This is not a valid account"
+    },
+    {
+      "code": "invalid_address",
+      "description": "Address is missing or the format is invalid."
+    },
+    {
+      "code": "invalid_admin",
+      "description": "This is not a valid admin"
+    },
+    {
+      "code": "invalid_agent_ring_timeout",
+      "description": "This is not a valid Agent ring time out value"
+    },
+    {
+      "code": "invalid_allowedcodecs",
+      "description": "One of the codecs provided is invalid Format and Values: ulaw;g729;gsm;all"
+    },
+    {
+      "code": "invalid_announce_join_leave",
+      "description": "This is not a valid \"Announce join leave\""
+    },
+    {
+      "code": "invalid_announce_only_user",
+      "description": "This is not a valid \"Announce only user\""
+    },
+    {
+      "code": "invalid_announce_position_frequency",
+      "description": "This is not a valid Announce position frequency"
+    },
+    {
+      "code": "invalid_announce_round_seconds",
+      "description": "This is not a valid \"Announce round seconds\""
+    },
+    {
+      "code": "invalid_announce_user_count",
+      "description": "This is not a valid \"Announce user count\""
+    },
+    {
+      "code": "invalid_area_code",
+      "description": "this is not a valid Area Code."
+    },
+    {
+      "code": "invalid_attachid",
+      "description": "The given ID is invalid or doesn't exist."
+    },
+    {
+      "code": "invalid_attachmessage",
+      "description": "this is not a valid AttachMessage Should be: yes/no"
+    },
+    {
+      "code": "invalid_attach_file",
+      "description": "Valid formats: PDF, MS Word, BMP, JPG"
+    },
+    {
+      "code": "invalid_authtype",
+      "description": "This is not a valid Auth Type"
+    },
+    {
+      "code": "invalid_authtype_h323",
+      "description": "You must select IP Auth to use H.323"
+    },
+    {
+      "code": "invalid_authtype_iax2",
+      "description": "You must use User/Password Authentication for IAX2"
+    },
+    {
+      "code": "invalid_balancemanagement",
+      "description": "This is not a valid BalanceManagement"
+    },
+    {
+      "code": "invalid_base_recording",
+      "description": "This is not a valid recording path"
+    },
+    {
+      "code": "invalid_billingtype",
+      "description": "This is not a valid Billing Type Allowed values: 1 = PerMinute, 2 = Flat"
+    },
+    {
+      "code": "invalid_callback",
+      "description": "This is not a valid Callback"
+    },
+    {
+      "code": "invalid_callback_enable",
+      "description": "This is not a valid Callback enable value"
+    },
+    {
+      "code": "invalid_callback_retry",
+      "description": "This is not a valid Callback retry"
+    },
+    {
+      "code": "invalid_callerid",
+      "description": "This is not a valid CallerID"
+    },
+    {
+      "code": "invalid_calleridprefix",
+      "description": "This is not a valid CID Prefix, lenght should be less than 20 chars"
+    },
+    {
+      "code": "invalid_callerid_override",
+      "description": "This is not a valid CallerID Override"
+    },
+    {
+      "code": "invalid_callhunting",
+      "description": "This is not a valid Call Hunting"
+    },
+    {
+      "code": "invalid_callparking",
+      "description": "This is not a valid Call Parking"
+    },
+    {
+      "code": "invalid_callrecording",
+      "description": "This is not a valid Call recording"
+    },
+    {
+      "code": "invalid_call_type",
+      "description": "Call Type is not valid."
+    },
+    {
+      "code": "invalid_canada_routing",
+      "description": "This is not a valid Canada Route"
+    },
+    {
+      "code": "invalid_carrier",
+      "description": "This is not a valid Carrier"
+    },
+    {
+      "code": "invalid_charge",
+      "description": "This is not a valid Charge"
+    },
+    {
+      "code": "invalid_city",
+      "description": "City is missing or the format is invalid."
+    },
+    {
+      "code": "invalid_client",
+      "description": "This is not a valid Client"
+    },
+    {
+      "code": "invalid_cnam",
+      "description": "This is not a valid CNAM Should be: 1/0"
+    },
+    {
+      "code": "invalid_codec",
+      "description": "This is not a valid Codec"
+    },
+    {
+      "code": "invalid_conference",
+      "description": "This is not a valid Conference ID"
+    },
+    {
+      "code": "invalid_contact",
+      "description": "This is not a valid Contact Number"
+    },
+    {
+      "code": "invalid_country",
+      "description": "Country is missing or the format is invalid, must be in format ISO 3166-1 alpha-2, example: US, CA, etc. (You can use the values returned by the method getCountries)"
+    },
+    {
+      "code": "invalid_countryid",
+      "description": "This is not a valid Country ID"
+    },
+    {
+      "code": "invalid_credentials",
+      "description": "Username or Password is incorrect"
+    },
+    {
+      "code": "invalid_date",
+      "description": "This is not a valid date Format is: yyyy-mm-dd"
+    },
+    {
+      "code": "invalid_daterange",
+      "description": "Date Range should be 92 days or less"
+    },
+    {
+      "code": "invalid_datetime",
+      "description": "This is not a valid datetime Format is: yyyy-mm-dd hh:mm:ss"
+    },
+    {
+      "code": "invalid_date_from",
+      "description": "The \"From\" date should be prior to the \"To\" date."
+    },
+    {
+      "code": "invalid_dayrange",
+      "description": "This is not a valid Day Range"
+    },
+    {
+      "code": "invalid_delay_before",
+      "description": "This is not a valid DelayBefore"
+    },
+    {
+      "code": "invalid_deletemessage",
+      "description": "This is not a valid DeleteMessage Should be: yes/no"
+    },
+    {
+      "code": "invalid_description",
+      "description": "This is not a valid Description"
+    },
+    {
+      "code": "invalid_destination",
+      "description": "This is not a valid Destination"
+    },
+    {
+      "code": "invalid_destination_folder",
+      "description": "This is not a valid Destination Folder"
+    },
+    {
+      "code": "invalid_devicetype",
+      "description": "This is not a valid Device Type"
+    },
+    {
+      "code": "invalid_dialtime",
+      "description": "This is not a valid Dialtime"
+    },
+    {
+      "code": "invalid_did",
+      "description": "This is not a valid DID"
+    },
+    {
+      "code": "invalid_digits",
+      "description": "These are not valid DigitsOrderDIDVirtual: Digits must be 3 numbers"
+    },
+    {
+      "code": "invalid_digit_timeout",
+      "description": "This is not a valid DigitTimeOut"
+    },
+    {
+      "code": "invalid_disa",
+      "description": "This is not a valid DISA"
+    },
+    {
+      "code": "invalid_diversion_header",
+      "description": "This is not a valid Diversion Header. It must be a numeric value, accepting only 0 or 1."
+    },
+    {
+      "code": "invalid_drop_silence",
+      "description": "This is not a valid \"drop silence\" value"
+    },
+    {
+      "code": "invalid_dst",
+      "description": "This is not a valid Destination Number"
+    },
+    {
+      "code": "invalid_dtmfmode",
+      "description": "This is no a valid DTMF Mode"
+    },
+    {
+      "code": "invalid_dtmf_digits",
+      "description": "This is no a valid DTMF digit"
+    },
+    {
+      "code": "invalid_email",
+      "description": "This is not a valid email or email is already in database"
+    },
+    {
+      "code": "invalid_email_attachment_format",
+      "description": "This is not a valid format value"
+    },
+    {
+      "code": "invalid_email_enable",
+      "description": "This is not a valid email enable value"
+    },
+    {
+      "code": "invalid_enable_ip_restriction",
+      "description": "This is not a valid Enable IP Restriction value"
+    },
+    {
+      "code": "invalid_enable_pop_restriction",
+      "description": "This is not a valid Enable POP Restriction value"
+    },
+    {
+      "code": "invalid_endhour",
+      "description": "This is not a valid End Hour"
+    },
+    {
+      "code": "invalid_endminute",
+      "description": "This is not a valid End Minute"
+    },
+    {
+      "code": "invalid_extension",
+      "description": "This is not a valid extension Extension can only contain digits"
+    },
+    {
+      "code": "invalid_extensions",
+      "description": "Extensions cannot be: 098, 211, 311, 411, 4443, 4444, 4747, 511, 711, 811, 822, 911, 988"
+    },
+    {
+      "code": "invalid_extension_length",
+      "description": "Extensions should not contain more than 5 digits"
+    },
+    {
+      "code": "invalid_extension_prefix",
+      "description": "Extensions cannot start with: 068, 097"
+    },
+    {
+      "code": "invalid_failover_header",
+      "description": "This is not a valid failover header Should be: account/vm/fwd/none"
+    },
+    {
+      "code": "invalid_fax_id",
+      "description": "This is not a valid Fax Message ID"
+    },
+    {
+      "code": "invalid_file",
+      "description": "This is not a valid File"
+    },
+    {
+      "code": "invalid_filter",
+      "description": "This is not a valid Filter"
+    },
+    {
+      "code": "invalid_firstname",
+      "description": "First name is missing or the format is invalid."
+    },
+    {
+      "code": "invalid_foc_enddate",
+      "description": "Invalid date format, must be: YYYY-mm-dd. Example: 2018-02-22"
+    },
+    {
+      "code": "invalid_foc_startdate",
+      "description": "Invalid date format, must be: YYYY-mm-dd. Example: 2018-02-22"
+    },
+    {
+      "code": "invalid_folder",
+      "description": "This is not a valid Folder"
+    },
+    {
+      "code": "invalid_folder_id",
+      "description": "This is not a valid Fax Folder ID"
+    },
+    {
+      "code": "invalid_forwarding",
+      "description": "This is not a valid forwarding"
+    },
+    {
+      "code": "invalid_forwarding_did",
+      "description": "Forwarding to the same did is not allowed"
+    },
+    {
+      "code": "invalid_forward_enable",
+      "description": "This is not a valid forward enable value"
+    },
+    {
+      "code": "invalid_frequency_announcement",
+      "description": "This is not a valid Frequency announce"
+    },
+    {
+      "code": "invalid_from_number",
+      "description": "This is not a valid sender number."
+    },
+    {
+      "code": "invalid_fullname",
+      "description": "This is not a valid Full Name"
+    },
+    {
+      "code": "invalid_id",
+      "description": "This is not a valid ID"
+    },
+    {
+      "code": "invalid_if_announce_position_enabled_report_e",
+      "description": "This is not a Report estimated hold time type"
+    },
+    {
+      "code": "invalid_internaldialtime",
+      "description": "This is not a valid Internal Dialtime Should be: 1 to 60"
+    },
+    {
+      "code": "invalid_internalvoicemail",
+      "description": "This is not a valid Internal Voicemail"
+    },
+    {
+      "code": "invalid_internationalroute",
+      "description": "This is not a valid International Route"
+    },
+    {
+      "code": "invalid_invoice_type",
+      "description": "Invalid invoice type, possible values: 0 = US, 1 = CAN."
+    },
+    {
+      "code": "invalid_ip",
+      "description": "This is an invalid IP"
+    },
+    {
+      "code": "invalid_ip_auth",
+      "description": "Do not provide an IP address for User/Pass Authentication"
+    },
+    {
+      "code": "invalid_ip_iax2",
+      "description": "Do not provide an IP address for IAX2"
+    },
+    {
+      "code": "invalid_ivr",
+      "description": "This is not a valid IVR"
+    },
+    {
+      "code": "invalid_jitter_buffer",
+      "description": "This is not a valid \"jitter buffer\" value"
+    },
+    {
+      "code": "invalid_join_announcement",
+      "description": "This is not a valid 'Join Announcement' Type for a Queue"
+    },
+    {
+      "code": "invalid_join_empty_type",
+      "description": "This is not a valid 'JoinWhenEmpty' Type for a Queue"
+    },
+    {
+      "code": "invalid_language",
+      "description": "This is not a valid Language Should be: es/en/fr"
+    },
+    {
+      "code": "invalid_lastname",
+      "description": "Lastname is missing or the format is invalid."
+    },
+    {
+      "code": "invalid_listened",
+      "description": "This is not a valid Listened value"
+    },
+    {
+      "code": "invalid_location",
+      "description": "This is not a valid Location"
+    },
+    {
+      "code": "invalid_lockinternational",
+      "description": "This is not a valid Lock International"
+    },
+    {
+      "code": "invalid_mailbox",
+      "description": "This is not a valid mailbox"
+    },
+    {
+      "code": "invalid_maximum_callers",
+      "description": "This is not a valid maximum callers value"
+    },
+    {
+      "code": "invalid_maximum_wait_time",
+      "description": "This is not a valid maximum wait time value"
+    },
+    {
+      "code": "invalid_max_expiry",
+      "description": "This is not a valid Max Expiry (value must be between 60 and 3600 seconds)"
+    },
+    {
+      "code": "invalid_member",
+      "description": "This is not a valid Member"
+    },
+    {
+      "code": "invalid_member_delay",
+      "description": "This is not a valid Member Delay"
+    },
+    {
+      "code": "invalid_message_num",
+      "description": "This is not a valid Voicemail Message Number"
+    },
+    {
+      "code": "invalid_method",
+      "description": "This is not a valid Method"
+    },
+    {
+      "code": "invalid_minute",
+      "description": "This is not a valid Minute Rate"
+    },
+    {
+      "code": "invalid_mixed_numbers",
+      "description": "Toll-free numbers and local numbers can not be mixed in the same order."
+    },
+    {
+      "code": "invalid_monthly",
+      "description": "This is not a valid Montly Fee"
+    },
+    {
+      "code": "invalid_musiconhold",
+      "description": "This is not a valid Music on Hold"
+    },
+    {
+      "code": "invalid_name",
+      "description": "This is not a valid name, Alphanumeric Only"
+    },
+    {
+      "code": "invalid_nat",
+      "description": "This is not a valid NAT"
+    },
+    {
+      "code": "invalid_note",
+      "description": "This is not a valid Note, lenght should be less than 50 chars"
+    },
+    {
+      "code": "invalid_number",
+      "description": "This is not a valid Number"
+    },
+    {
+      "code": "invalid_numbermembers",
+      "description": "The element format of multiple data is not correct or it size does not match with other elements"
+    },
+    {
+      "code": "invalid_number_canadian",
+      "description": "You have entered a Canadian number (not valid in this portability process)."
+    },
+    {
+      "code": "invalid_number_exist",
+      "description": "The number is already in our network"
+    },
+    {
+      "code": "invalid_number_fax",
+      "description": "The Fax number can not be ported into our network"
+    },
+    {
+      "code": "invalid_number_porttype",
+      "description": "You have entered a local number (not valid in this portability process)"
+    },
+    {
+      "code": "invalid_number_us",
+      "description": "You have entered a USA number (not valid in this portability process)."
+    },
+    {
+      "code": "invalid_order",
+      "description": "This is not a valid \"order\" value"
+    },
+    {
+      "code": "invalid_package",
+      "description": "This is not a valid Package"
+    },
+    {
+      "code": "invalid_password",
+      "description": "This is not a valid passwordVoicemail: Must be 4 Digits SubAccounts: More than 6 chars, Must Contain Alphanumeric and !#$%&/()=?*[]_:.,{}+-"
+    },
+    {
+      "code": "invalid_password_auth",
+      "description": "Do not provide a Password for IP Authentication"
+    },
+    {
+      "code": "invalid_password_ilegal_characters",
+      "description": "This is not a valid password (Allowed characters: Alphanumeric and ! # $ % & / ( ) = ? * [ ] _ : . , { } + -)"
+    },
+    {
+      "code": "invalid_password_lessthan_8characters_long",
+      "description": "This is not a valid password (Less than 8 characters long)"
+    },
+    {
+      "code": "invalid_password_missing_lowercase",
+      "description": "This is not a valid password (Missing lower case character)"
+    },
+    {
+      "code": "invalid_password_missing_number",
+      "description": "This is not a valid password (Missing a number)"
+    },
+    {
+      "code": "invalid_password_missing_uppercase",
+      "description": "This is not a valid password (Missing upper case character)"
+    },
+    {
+      "code": "invalid_pause",
+      "description": "This is not a valid Pause"
+    },
+    {
+      "code": "invalid_payment",
+      "description": "This is not a valid Payment"
+    },
+    {
+      "code": "invalid_phonebook",
+      "description": "This is not a valid Phonebook"
+    },
+    {
+      "code": "invalid_phonenumber",
+      "description": "This is not a valid Phone Number"
+    },
+    {
+      "code": "invalid_pin",
+      "description": "This is not a valid PIN"
+    },
+    {
+      "code": "invalid_pin_number",
+      "description": "Must provide the account PIN number."
+    },
+    {
+      "code": "invalid_playinstructions",
+      "description": "This is not a valid PlayInstructions Should be: u/su"
+    },
+    {
+      "code": "invalid_pop_restriction",
+      "description": "This is not a valid POP Restriction"
+    },
+    {
+      "code": "invalid_portingid",
+      "description": "The given ID is invalid or doesn't exist."
+    },
+    {
+      "code": "invalid_porttype",
+      "description": "Must provide a valid port type."
+    },
+    {
+      "code": "invalid_port_status",
+      "description": "The status code is invalid. (You can use the values returned by the method getListStatus)"
+    },
+    {
+      "code": "invalid_priority",
+      "description": "This is not a valid Priority"
+    },
+    {
+      "code": "invalid_priority_weight",
+      "description": "This is not valid weight/priority value"
+    },
+    {
+      "code": "invalid_protocol",
+      "description": "This is not a valid Protocol"
+    },
+    {
+      "code": "invalid_provider_account",
+      "description": "You must provide your account # with the current provider"
+    },
+    {
+      "code": "invalid_provider_name",
+      "description": "You must provide the service provider name"
+    },
+    {
+      "code": "invalid_province",
+      "description": "This is not a valid Province"
+    },
+    {
+      "code": "invalid_quantity",
+      "description": "This is not a valid quantity"
+    },
+    {
+      "code": "invalid_query",
+      "description": "This is not a valid Query"
+    },
+    {
+      "code": "invalid_queue",
+      "description": "This is not a valid Queue"
+    },
+    {
+      "code": "invalid_quiet",
+      "description": "This is not a valid \"quiet\" value"
+    },
+    {
+      "code": "invalid_recording",
+      "description": "This is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_error_menu",
+      "description": "\"error menu\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_get_pin",
+      "description": "\"get pin\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_has_joined",
+      "description": "\"has_joined\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_has_left",
+      "description": "\"has_left\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_invalid_pin",
+      "description": "\"invalid pin\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_join",
+      "description": "\"join\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_kicked",
+      "description": "\"kicked\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_leave",
+      "description": "\"leave\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_locked",
+      "description": "\"locked\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_locked_now",
+      "description": "\"locked now\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_muted",
+      "description": "\"muted\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_only_one",
+      "description": "\"only one\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_only_person",
+      "description": "\"only person\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_other_in_party",
+      "description": "\"other in party\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_participants_muted",
+      "description": "\"participants muted\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_participants_unmuted",
+      "description": "\"participants unmuted\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_place_into_conference",
+      "description": "\"place into conference\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_there_are",
+      "description": "\"there are\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_unlocked_now",
+      "description": "\"unlocked now\" is not a valid recording"
+    },
+    {
+      "code": "invalid_recording_sound_unmuted",
+      "description": "\"unmuted\" is not a valid recording"
+    },
+    {
+      "code": "invalid_record_calls",
+      "description": "Record calls is not valid."
+    },
+    {
+      "code": "invalid_report_hold_time_agent",
+      "description": "This is not a valid Report hold time agent"
+    },
+    {
+      "code": "invalid_resellerclient",
+      "description": "This is not a valid Reseller Client"
+    },
+    {
+      "code": "invalid_resellernextbilling",
+      "description": "This is not a valid Reseller Next Billing date, date should not be set in the past."
+    },
+    {
+      "code": "invalid_resellerpackage",
+      "description": "This is not a valid Reseller Package"
+    },
+    {
+      "code": "invalid_response_timeout",
+      "description": "This is not a valid ResponseTimeOut"
+    },
+    {
+      "code": "invalid_retry_timer",
+      "description": "This is not a valid Retry timer"
+    },
+    {
+      "code": "invalid_ringgroup",
+      "description": "This is not a valid Ring group"
+    },
+    {
+      "code": "invalid_ring_inuse",
+      "description": "This is not a valid Ring in use value"
+    },
+    {
+      "code": "invalid_route",
+      "description": "This is not a valid Route"
+    },
+    {
+      "code": "invalid_routing_header",
+      "description": "This is not a valid Routing header Should be: account/vm/fwd"
+    },
+    {
+      "code": "invalid_rtp_hold_timeout",
+      "description": "This is not a valid RTP Hold Time Out (value must be between 1 and 3600 seconds)"
+    },
+    {
+      "code": "invalid_rtp_timeout",
+      "description": "This is not a valid RTP Time Out (value must be between 1 and 3600 seconds)"
+    },
+    {
+      "code": "invalid_saycallerid",
+      "description": "This is not a valid SayCallerID Should be: yes/no"
+    },
+    {
+      "code": "invalid_saytime",
+      "description": "This is not a valid SayTime Should be: yes/no"
+    },
+    {
+      "code": "invalid_security_code",
+      "description": "This is not a valid Security Code. Should be alphanumeric."
+    },
+    {
+      "code": "invalid_serverpop",
+      "description": "This is not a valid Server POP"
+    },
+    {
+      "code": "invalid_setup",
+      "description": "This is not a valid Setup Fee"
+    },
+    {
+      "code": "invalid_silence_threshold",
+      "description": "This is not a valid \"silence threshold\" value"
+    },
+    {
+      "code": "invalid_sipuri",
+      "description": "This is not a valid SIPURI"
+    },
+    {
+      "code": "invalid_sip_traffic",
+      "description": "This is not a valid Encrypted SIP Traffic value"
+    },
+    {
+      "code": "invalid_skippassword",
+      "description": "This is not a valid skippassword Should be: 1/0 - or - yes/no"
+    },
+    {
+      "code": "invalid_smpp_password",
+      "description": "This is not a valid SMPP Password"
+    },
+    {
+      "code": "invalid_smpp_url",
+      "description": "This is not a valid SMPP URL"
+    },
+    {
+      "code": "invalid_smpp_username",
+      "description": "This is not a valid SMPP Username"
+    },
+    {
+      "code": "invalid_sms",
+      "description": "This is not a valid SMS"
+    },
+    {
+      "code": "invalid_sms_forward",
+      "description": "This is not a valid SMS forward"
+    },
+    {
+      "code": "invalid_snn",
+      "description": "Must provide the 4 last digits of the SSN."
+    },
+    {
+      "code": "invalid_speed_dial",
+      "description": "This is not a valid Speed Dial"
+    },
+    {
+      "code": "invalid_starthour",
+      "description": "This is not a valid Start Hour"
+    },
+    {
+      "code": "invalid_startminute",
+      "description": "This is not a valid Start Minute"
+    },
+    {
+      "code": "invalid_start_muted",
+      "description": "This is not a valid Start Muted"
+    },
+    {
+      "code": "invalid_state",
+      "description": "This is not a valid State"
+    },
+    {
+      "code": "invalid_statement_name",
+      "description": "Statement Name is missing or the format is invalid."
+    },
+    {
+      "code": "invalid_strategy",
+      "description": "This is not a valid Ring Strategy"
+    },
+    {
+      "code": "invalid_street_name",
+      "description": "This is not a valid Street Name"
+    },
+    {
+      "code": "invalid_street_number",
+      "description": "This is not a valid Street Number"
+    },
+    {
+      "code": "invalid_talking_threshold",
+      "description": "This is not a valid \"talking threshold\" value"
+    },
+    {
+      "code": "invalid_talk_detection",
+      "description": "This is not a valid talk detection value"
+    },
+    {
+      "code": "invalid_tfnumber_porttype",
+      "description": "You have entered a toll-free number (not valid in this portability process)."
+    },
+    {
+      "code": "invalid_thankyou_for_your_patience",
+      "description": "This is not a valid Thankyou for your patience value"
+    },
+    {
+      "code": "Invalid_threshold",
+      "description": "This is not a valid Threshold Amount. The Threshold Amount should be between 1 and 250"
+    },
+    {
+      "code": "invalid_timecondition",
+      "description": "This is not a valid Time Condition"
+    },
+    {
+      "code": "invalid_timeout",
+      "description": "This is not a valid timeout"
+    },
+    {
+      "code": "invalid_timerange",
+      "description": "This is not a valid Timer Range"
+    },
+    {
+      "code": "invalid_timezone",
+      "description": "This is not a valid TimezoneCDR and resellerCDR: Must be numeric Voicemail: Values from getTimezone"
+    },
+    {
+      "code": "invalid_to_number",
+      "description": "This is not a valid destination number"
+    },
+    {
+      "code": "invalid_transcription_email",
+      "description": "Transcription email is not valid"
+    },
+    {
+      "code": "invalid_transcription_format",
+      "description": "Invalid Transcription Format"
+    },
+    {
+      "code": "invalid_transcription_locale",
+      "description": "Transcription locale is not valid."
+    },
+    {
+      "code": "invalid_transcription_redaction",
+      "description": "Invalid Transcription Redaction"
+    },
+    {
+      "code": "invalid_transcription_sentiment",
+      "description": "Invalid Transcription Sentiment"
+    },
+    {
+      "code": "invalid_transcription_summary",
+      "description": "Invalid Transcription Summary"
+    },
+    {
+      "code": "invalid_type",
+      "description": "This is not a valid Type"
+    },
+    {
+      "code": "invalid_urgent",
+      "description": "This is not valid urgent value"
+    },
+    {
+      "code": "invalid_username",
+      "description": "This is not a valid Username"
+    },
+    {
+      "code": "invalid_voicemailsetup",
+      "description": "This is not a valid voicemail"
+    },
+    {
+      "code": "invalid_voice_announcement",
+      "description": "This is not a valid Voice announce"
+    },
+    {
+      "code": "invalid_weekdayend",
+      "description": "This is not a valid Week End"
+    },
+    {
+      "code": "invalid_weekdaystart",
+      "description": "This is not a valid Week Start"
+    },
+    {
+      "code": "invalid_wrapup_time",
+      "description": "This is not a valid Wrapup time"
+    },
+    {
+      "code": "invalid_zip",
+      "description": "Zip Code is missing or the format is invalid."
+    },
+    {
+      "code": "ip_not_enabled",
+      "description": "This IP is not enabled for API use"
+    },
+    {
+      "code": "limit_reached",
+      "description": "You have reached the maximum number of messages allowed per day. - SMS limit using the API. - Fax limit applies using any method."
+    },
+    {
+      "code": "location_already_exists",
+      "description": "A location with this name already exists"
+    },
+    {
+      "code": "location_linked_to_subaccount",
+      "description": "This location is in use by one or more sub accounts and cannot be deleted"
+    },
+    {
+      "code": "location_not_found",
+      "description": "The specified location could not be found"
+    },
+    {
+      "code": "max_phonebook",
+      "description": "Your account is limited to 8 SIP, IAX or SIP URI members"
+    },
+    {
+      "code": "members_exceeded",
+      "description": "You have reached the maximum allowed entries for the Phonebook"
+    },
+    {
+      "code": "member_already_included",
+      "description": "The member has been included already"
+    },
+    {
+      "code": "message_empty",
+      "description": "The SMS Message is empty"
+    },
+    {
+      "code": "message_not_found",
+      "description": "The voicemail message was not found"
+    },
+    {
+      "code": "method_maintenance",
+      "description": "This API method is under maintenance"
+    },
+    {
+      "code": "mismatch_email_confirm",
+      "description": "e-mail confirm does not match with e-mail"
+    },
+    {
+      "code": "mismatch_password_confirm",
+      "description": "Pasword confirm does not match with Password"
+    },
+    {
+      "code": "missing_account",
+      "description": "Account was not provided"
+    },
+    {
+      "code": "missing_address",
+      "description": "Address was not provided"
+    },
+    {
+      "code": "missing_agent_ring_timeout",
+      "description": "Agent ring time out was not provided"
+    },
+    {
+      "code": "missing_allowedcodecs",
+      "description": "Allowed Codecs were not provided"
+    },
+    {
+      "code": "missing_attachmessage",
+      "description": "AttachMessage was not provided"
+    },
+    {
+      "code": "missing_authtype",
+      "description": "Auth Type was not provided"
+    },
+    {
+      "code": "missing_balancemanagement",
+      "description": "BalanceManagemente was not provided"
+    },
+    {
+      "code": "missing_billingtype",
+      "description": "Billing Type was not provided"
+    },
+    {
+      "code": "missing_callback",
+      "description": "Callback was not provided"
+    },
+    {
+      "code": "missing_callerid",
+      "description": "CallerID was not provided"
+    },
+    {
+      "code": "missing_callhunting",
+      "description": "Call hunting was not provided"
+    },
+    {
+      "code": "missing_callparking",
+      "description": "Call Parking was not provided"
+    },
+    {
+      "code": "missing_callrecording",
+      "description": "Call recording was not provided"
+    },
+    {
+      "code": "missing_carrier",
+      "description": "Carrier was not provided"
+    },
+    {
+      "code": "missing_charge",
+      "description": "Charge was not provided."
+    },
+    {
+      "code": "missing_choices",
+      "description": "Choices was not provided"
+    },
+    {
+      "code": "missing_city",
+      "description": "City was not provided"
+    },
+    {
+      "code": "missing_client",
+      "description": "Client was not provided"
+    },
+    {
+      "code": "missing_cnam",
+      "description": "CNAM was not provided"
+    },
+    {
+      "code": "missing_codec",
+      "description": "Codec was not provided"
+    },
+    {
+      "code": "missing_conference",
+      "description": "Conference was not provided"
+    },
+    {
+      "code": "missing_country",
+      "description": "Country was not provided"
+    },
+    {
+      "code": "missing_countryid",
+      "description": "Country ID was not provided"
+    },
+    {
+      "code": "missing_credentials",
+      "description": "Username or Password was not provided"
+    },
+    {
+      "code": "missing_datetime",
+      "description": "DateTime value was not provided"
+    },
+    {
+      "code": "missing_delay_before",
+      "description": "DelayBefore was not provided"
+    },
+    {
+      "code": "missing_deletemessage",
+      "description": "DeleteMessage was not provided"
+    },
+    {
+      "code": "missing_description",
+      "description": "Description was not provided"
+    },
+    {
+      "code": "missing_devicetype",
+      "description": "Device Type was not provided"
+    },
+    {
+      "code": "missing_dialtime",
+      "description": "Dialtime was not provided"
+    },
+    {
+      "code": "missing_did",
+      "description": "DID was not provided"
+    },
+    {
+      "code": "missing_digits",
+      "description": "Digits were not provided"
+    },
+    {
+      "code": "missing_digit_timeout",
+      "description": "DigitTimeOut was not provided"
+    },
+    {
+      "code": "missing_disa",
+      "description": "DISA was not provided"
+    },
+    {
+      "code": "missing_dtmfmode",
+      "description": "DTMF Mode was not provided"
+    },
+    {
+      "code": "missing_email",
+      "description": "e-mail was not provided"
+    },
+    {
+      "code": "missing_email_confirm",
+      "description": "e-mail confirm was not provided"
+    },
+    {
+      "code": "missing_enable",
+      "description": "Enable was not provided"
+    },
+    {
+      "code": "missing_endhour",
+      "description": "End Hour was not provided"
+    },
+    {
+      "code": "missing_endminute",
+      "description": "End Minute was not provided"
+    },
+    {
+      "code": "missing_failover_busy",
+      "description": "Failover Busy was not provided"
+    },
+    {
+      "code": "missing_failover_noanswer",
+      "description": "Failover NoAnswer was not provided"
+    },
+    {
+      "code": "missing_failover_unreachable",
+      "description": "Failover Unreachable was not provided"
+    },
+    {
+      "code": "missing_file",
+      "description": "File was not provided"
+    },
+    {
+      "code": "missing_filter",
+      "description": "Filter was not provided"
+    },
+    {
+      "code": "missing_firstname",
+      "description": "Firstname was not provided"
+    },
+    {
+      "code": "missing_folder",
+      "description": "folder was not provided"
+    },
+    {
+      "code": "missing_forwarding",
+      "description": "Forwarding was not provided"
+    },
+    {
+      "code": "missing_from_date",
+      "description": "From date was not provided"
+    },
+    {
+      "code": "missing_fullname",
+      "description": "Full Name was not provided"
+    },
+    {
+      "code": "missing_id",
+      "description": "ID was not provided"
+    },
+    {
+      "code": "missing_if_announce_position_enabled_report_e",
+      "description": "If announce position enabled report estimated hold time' type was not provided"
+    },
+    {
+      "code": "missing_internationalroute",
+      "description": "International Route was not provided"
+    },
+    {
+      "code": "missing_ip",
+      "description": "You need to provide an IP if you select IP Authentication Method"
+    },
+    {
+      "code": "missing_ip_h323",
+      "description": "You must enter an IP Address for H.323"
+    },
+    {
+      "code": "missing_ip_restriction",
+      "description": "IP Restriction was not provided"
+    },
+    {
+      "code": "missing_ivr",
+      "description": "IVR was not provided"
+    },
+    {
+      "code": "missing_join_when_empty",
+      "description": "JoinWhenEmpty' type was not provided"
+    },
+    {
+      "code": "missing_language",
+      "description": "Language was not provided"
+    },
+    {
+      "code": "missing_lastname",
+      "description": "Lastname was not provided"
+    },
+    {
+      "code": "missing_leave_when_empty",
+      "description": "LeaveWhenEmpty' type was not provided"
+    },
+    {
+      "code": "missing_length",
+      "description": "Length was not provided"
+    },
+    {
+      "code": "missing_listened",
+      "description": "Listened code was not provided"
+    },
+    {
+      "code": "missing_location",
+      "description": "Location was not provided"
+    },
+    {
+      "code": "missing_location_name",
+      "description": "Location Name Missing"
+    },
+    {
+      "code": "missing_lockinternational",
+      "description": "Lock International was not provided"
+    },
+    {
+      "code": "missing_mailbox",
+      "description": "Mailbox was not provided"
+    },
+    {
+      "code": "missing_member",
+      "description": "Member was not provided"
+    },
+    {
+      "code": "missing_members",
+      "description": "You need at least 1 member to create a ring group"
+    },
+    {
+      "code": "missing_message_num",
+      "description": "Voicemail message number was not provided"
+    },
+    {
+      "code": "missing_method",
+      "description": "Method must be provided when using the REST/JSON API"
+    },
+    {
+      "code": "missing_minute",
+      "description": "Minute Rate was not provided"
+    },
+    {
+      "code": "missing_monthly",
+      "description": "Monthly Fee was not provided"
+    },
+    {
+      "code": "missing_musiconhold",
+      "description": "Music on Hold was not provided"
+    },
+    {
+      "code": "missing_name",
+      "description": "Name was not provided"
+    },
+    {
+      "code": "missing_nat",
+      "description": "NAT was not provided"
+    },
+    {
+      "code": "missing_number",
+      "description": "Number was not provided"
+    },
+    {
+      "code": "missing_numbers",
+      "description": "You must enter at least one valid phone number."
+    },
+    {
+      "code": "missing_package",
+      "description": "Package was not provided"
+    },
+    {
+      "code": "missing_params",
+      "description": "Required parameters were not provided"
+    },
+    {
+      "code": "missing_password",
+      "description": "Password was not provided"
+    },
+    {
+      "code": "missing_password_confirm",
+      "description": "Password Confirm was not provided"
+    },
+    {
+      "code": "missing_payment",
+      "description": "Payment was not provided."
+    },
+    {
+      "code": "missing_phonebook",
+      "description": "Phonebook was not provided"
+    },
+    {
+      "code": "missing_phonenumber",
+      "description": "Phone Number was not provided"
+    },
+    {
+      "code": "missing_pin",
+      "description": "PIN was not provided"
+    },
+    {
+      "code": "missing_playinstructions",
+      "description": "PlayInstructions was not provided"
+    },
+    {
+      "code": "missing_pop_restriction",
+      "description": "POP Restriction was not provided"
+    },
+    {
+      "code": "missing_priority",
+      "description": "Priority was not provided"
+    },
+    {
+      "code": "missing_priority_weight",
+      "description": "Priority/Weight was not provided"
+    },
+    {
+      "code": "missing_protocol",
+      "description": "Protocol was not provided"
+    },
+    {
+      "code": "missing_province",
+      "description": "Province was not provided"
+    },
+    {
+      "code": "missing_query",
+      "description": "Query was not provided"
+    },
+    {
+      "code": "missing_recording",
+      "description": "Recording was not provided"
+    },
+    {
+      "code": "missing_report_hold_time_agent",
+      "description": "Report hold time agent was not provided"
+    },
+    {
+      "code": "missing_resellerclient",
+      "description": "Provide a Reseller Client or don't provide a Reseller Package"
+    },
+    {
+      "code": "missing_resellerpackage",
+      "description": "Provide a Reseller Package or don't provide a Reseller Client"
+    },
+    {
+      "code": "missing_response_timeout",
+      "description": "ResponseTimeOut was not provided"
+    },
+    {
+      "code": "missing_ringgroup",
+      "description": "Ring group was not provided"
+    },
+    {
+      "code": "missing_ring_inuse",
+      "description": "Ring in use was not provided"
+    },
+    {
+      "code": "missing_ring_strategy",
+      "description": "Ring strategy was not provided"
+    },
+    {
+      "code": "missing_route",
+      "description": "Route was not provided"
+    },
+    {
+      "code": "missing_routing",
+      "description": "Routing was not provided"
+    },
+    {
+      "code": "missing_saycallerid",
+      "description": "SayCallerID was not provided"
+    },
+    {
+      "code": "missing_saytime",
+      "description": "SayTime was not provided"
+    },
+    {
+      "code": "missing_serverpop",
+      "description": "Server POP was not provided"
+    },
+    {
+      "code": "missing_setup",
+      "description": "Setup Fee was not provided"
+    },
+    {
+      "code": "missing_sipuri",
+      "description": "SIPURI was not provided"
+    },
+    {
+      "code": "missing_skippassword",
+      "description": "SkipPassword was not provided"
+    },
+    {
+      "code": "missing_sms",
+      "description": "SMS was not provided"
+    },
+    {
+      "code": "missing_speed_dial",
+      "description": "Speed Dial was not provided"
+    },
+    {
+      "code": "missing_start",
+      "description": "Start date was not provided"
+    },
+    {
+      "code": "missing_starthour",
+      "description": "Start Hour was not provided"
+    },
+    {
+      "code": "missing_startminute",
+      "description": "Start Minute was not provided"
+    },
+    {
+      "code": "missing_state",
+      "description": "State was not provided"
+    },
+    {
+      "code": "missing_street_name",
+      "description": "Street Name was not provided"
+    },
+    {
+      "code": "missing_street_number",
+      "description": "Street Number was not provided"
+    },
+    {
+      "code": "missing_thankyou_for_your_patience",
+      "description": "Thankyou for your patience was not provided"
+    },
+    {
+      "code": "missing_timecondition",
+      "description": "Time Condition was not provided"
+    },
+    {
+      "code": "missing_timeout",
+      "description": "Timeout was not provided"
+    },
+    {
+      "code": "missing_timezone",
+      "description": "Timezone was not provided"
+    },
+    {
+      "code": "missing_to_date",
+      "description": "To date was not provided"
+    },
+    {
+      "code": "missing_transcription_email",
+      "description": "Transcription email is required."
+    },
+    {
+      "code": "missing_transcription_locale",
+      "description": "Transcription locale is required."
+    },
+    {
+      "code": "missing_type",
+      "description": "Type was not provided"
+    },
+    {
+      "code": "missing_urgent",
+      "description": "Urgent code was not provided"
+    },
+    {
+      "code": "missing_uri",
+      "description": "URI was not provided"
+    },
+    {
+      "code": "missing_username",
+      "description": "Username was not provided"
+    },
+    {
+      "code": "missing_voicemailsetup",
+      "description": "Voice mail setup was not provided"
+    },
+    {
+      "code": "missing_weekdayend",
+      "description": "Week End was not provide"
+    },
+    {
+      "code": "missing_weekdaystart",
+      "description": "Week Start was not provided"
+    },
+    {
+      "code": "missing_zip",
+      "description": "Zip Code was not provided"
+    },
+    {
+      "code": "moving_fail",
+      "description": "The Fax Message was not moved"
+    },
+    {
+      "code": "name_toolong",
+      "description": "The name exceeds character size limit"
+    },
+    {
+      "code": "non_sufficient_funds",
+      "description": "Your account does not have sufficient funds to proceed"
+    },
+    {
+      "code": "note_toolong",
+      "description": "The note exceeds character size limit"
+    },
+    {
+      "code": "no_account",
+      "description": "There are no accounts"
+    },
+    {
+      "code": "no_attachments",
+      "description": "Theres no attachments records to show."
+    },
+    {
+      "code": "no_base64file",
+      "description": "File not encoded in base64"
+    },
+    {
+      "code": "no_callback",
+      "description": "There are not Callbacks"
+    },
+    {
+      "code": "no_callhunting",
+      "description": "There are no Call Huntings"
+    },
+    {
+      "code": "no_callparking",
+      "description": "There are no Call Parking"
+    },
+    {
+      "code": "no_callstatus",
+      "description": "No Call Status was provided. One of the following parameters needs to be set to \"1\": answered, noanswer, busy, failed"
+    },
+    {
+      "code": "no_cdr",
+      "description": "There are no CDR entries for the filter"
+    },
+    {
+      "code": "no_change_billingtype",
+      "description": "Imposible change DID billing plan"
+    },
+    {
+      "code": "no_client",
+      "description": "There are no Clients"
+    },
+    {
+      "code": "no_conference",
+      "description": "There are no Conferences"
+    },
+    {
+      "code": "no_did",
+      "description": "There are no DIDs"
+    },
+    {
+      "code": "no_disa",
+      "description": "There are no DISAs"
+    },
+    {
+      "code": "no_filter",
+      "description": "There are no Filters"
+    },
+    {
+      "code": "no_forwarding",
+      "description": "There was no Forwarding"
+    },
+    {
+      "code": "no_ivr",
+      "description": "There are no ivr"
+    },
+    {
+      "code": "no_mailbox",
+      "description": "There are no Mailboxes"
+    },
+    {
+      "code": "no_member",
+      "description": "There are no Static Members"
+    },
+    {
+      "code": "no_message",
+      "description": "There are no Fax Message(s)"
+    },
+    {
+      "code": "no_messages",
+      "description": "There are no Voicemail Message(s)"
+    },
+    {
+      "code": "no_numbers",
+      "description": "There are no Fax Numbers"
+    },
+    {
+      "code": "no_package",
+      "description": "there are no Packages"
+    },
+    {
+      "code": "no_phonebook",
+      "description": "There are no Phonebook entries"
+    },
+    {
+      "code": "no_provision",
+      "description": "E911 service wasn't activated, this response comes with a description of the error."
+    },
+    {
+      "code": "no_provision_update",
+      "description": "E911 service wasn't updated, this response comes with a description of the error."
+    },
+    {
+      "code": "no_queue",
+      "description": "There are no Queue entries"
+    },
+    {
+      "code": "no_rate",
+      "description": "There are no Rates"
+    },
+    {
+      "code": "no_recording",
+      "description": "There are no recordings"
+    },
+    {
+      "code": "no_ringgroup",
+      "description": "There are no Ring groups"
+    },
+    {
+      "code": "no_sequences",
+      "description": "No sequence has been found"
+    },
+    {
+      "code": "no_sipuri",
+      "description": "There are no SIP URIs"
+    },
+    {
+      "code": "no_sms",
+      "description": "There are no SMS messages"
+    },
+    {
+      "code": "no_timecondition",
+      "description": "There are no Time Conditions"
+    },
+    {
+      "code": "order_failed",
+      "description": "The order wasn't completed."
+    },
+    {
+      "code": "problem_sending_mail",
+      "description": "There was a problem sending an email."
+    },
+    {
+      "code": "provider_outofservice",
+      "description": "One of our providers is out of service"
+    },
+    {
+      "code": "recording_in_use_caller_id_filtering",
+      "description": "You have a Caller ID Filtering using this Recording"
+    },
+    {
+      "code": "recording_in_use_caller_timecondition",
+      "description": "You have a Time Condition using this Recording"
+    },
+    {
+      "code": "recording_in_use_did",
+      "description": "You have a DID using this Recording"
+    },
+    {
+      "code": "recording_in_use_ivr",
+      "description": "You have an IVR using this Recording"
+    },
+    {
+      "code": "recording_in_use_queue",
+      "description": "You have a Calling Queue using this Recording"
+    },
+    {
+      "code": "repeated_ip",
+      "description": "You already have a Subaccount using this IP and Protocol"
+    },
+    {
+      "code": "reserved_ip",
+      "description": "This is a reserved IP used by VoIP.ms or other Companies"
+    },
+    {
+      "code": "rtp_timeout_greater_than_rtp_hold_timeout",
+      "description": "RTP Time Out can't be greater than RTP Hold Time Out"
+    },
+    {
+      "code": "same_did_billingtype",
+      "description": "The Billing Type provided and DID billing type are the same"
+    },
+    {
+      "code": "sent_fail",
+      "description": "The Fax Message it wasn't send."
+    },
+    {
+      "code": "sipuri_in_phonebook",
+      "description": "This SIPURI can't be deleted, it is mapped in the phonebook"
+    },
+    {
+      "code": "sms_apply_regulations",
+      "description": "The number was not updated due to SMS regulations, please contact customer service for more information"
+    },
+    {
+      "code": "sms_failed",
+      "description": "The SMS message was not sent"
+    },
+    {
+      "code": "sms_toolong",
+      "description": "The SMS message exceeds 160 characters"
+    },
+    {
+      "code": "sms_wait_message",
+      "description": "SMS was not (Enabled/Disabled) for this DID, please wait a minute before you try again."
+    },
+    {
+      "code": "tls_error",
+      "description": "Theres was a TLS error, please try later."
+    },
+    {
+      "code": "Unable_to_purchase",
+      "description": "Unable to purchase DIDs"
+    },
+    {
+      "code": "unavailable_info",
+      "description": "The information you requested is unavailable at this moment"
+    },
+    {
+      "code": "unsifficient_stock",
+      "description": "Theres no sufficient stock to complete the order."
+    },
+    {
+      "code": "used_description",
+      "description": "You already have a record with this Description"
+    },
+    {
+      "code": "used_email",
+      "description": "You already have an entry with this Email"
+    },
+    {
+      "code": "used_extension",
+      "description": "You already have a subaccount using this extension"
+    },
+    {
+      "code": "used_extension_in_location",
+      "description": "You already have a subaccount using extension in this location"
+    },
+    {
+      "code": "used_filter",
+      "description": "You already have a record with this Filter"
+    },
+    {
+      "code": "used_ip",
+      "description": "There is already another customer using this IP Address"
+    },
+    {
+      "code": "used_name",
+      "description": "You already have an entry using this name"
+    },
+    {
+      "code": "used_number",
+      "description": "You already have a record with this Number"
+    },
+    {
+      "code": "used_password",
+      "description": "This password has been used previously by this account."
+    },
+    {
+      "code": "used_speed_dial",
+      "description": "You have an entry with this Speed Dial"
+    },
+    {
+      "code": "used_username",
+      "description": "You already have a subaccount using this Username."
+    },
+    {
+      "code": "weak_password",
+      "description": "This Password is too weak or too common"
+    }
+  ]
+}

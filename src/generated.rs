@@ -582,6 +582,2733 @@ where
     }))
 }
 
+/// A non-success `status` returned by the voip.ms API.
+///
+/// Every documented error code from the official API docs' global
+/// error-code table is a variant; [`ApiStatus::description`] returns its
+/// documented meaning. The set of codes is documentation, not a stable
+/// contract — a code voip.ms returns but hasn't documented is preserved
+/// verbatim in [`ApiStatus::Unknown`] rather than lost.
+///
+/// ```
+/// # use voip_ms::ApiStatus;
+/// let status = ApiStatus::from_wire("invalid_credentials");
+/// assert_eq!(status, ApiStatus::InvalidCredentials);
+/// assert_eq!(status.as_str(), "invalid_credentials");
+/// assert_eq!(status.description(), Some("Username or Password is incorrect"));
+/// assert!(status.is_documented());
+///
+/// let unknown = ApiStatus::from_wire("some_new_code");
+/// assert_eq!(unknown, ApiStatus::Unknown("some_new_code".to_string()));
+/// assert_eq!(unknown.description(), None);
+/// assert!(!unknown.is_documented());
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ApiStatus {
+    /// `account_with_dids` — The Account has DIDs assigned to it.
+    AccountWithDIDs,
+    /// `api_limit_exceeded` — API requests limit per minute has been reached
+    APILimitExceeded,
+    /// `api_not_enabled` — API has not been enabled or has been disabled
+    APINotEnabled,
+    /// `cancel_failed` — The cancellation wasn't completed.
+    CancelFailed,
+    /// `can_have_only_one_profile_without_pin` — The conference can just have one profile member without pin
+    CANHaveOnlyOneProfileWithoutPIN,
+    /// `conference_member_relation_not_found` — There is no relation between the profile member and the conference.
+    ConferenceMemberRelationNotFound,
+    /// `did_in_use` — DID Number is already in use
+    DIDInUse,
+    /// `did_limit_reached` — You have reached the maximum number of DID numbers allowed for your account type. Please contact our team if you have a specific use case or if you would like to upgrade to a Business account.
+    DIDLimitReached,
+    /// `duplicated_name` — There is already another entry with this name
+    DuplicatedName,
+    /// `duplicated_pin` — The given pin has been duplicated
+    DuplicatedPIN,
+    /// `e911_disabled` — DID e911 service it's not enabled.
+    E911Disabled,
+    /// `e911_pending` — DID e911 service has been requested and is in validation process.
+    E911Pending,
+    /// `error_deleting_msg` — Error when deleting message
+    ErrorDeletingMsg,
+    /// `error_moving_msg` — Error when move the voicemail message to folder
+    ErrorMovingMsg,
+    /// `exceeds_file_size` — The file exceeds the limite size allowed.
+    ExceedsFileSize,
+    /// `existing_did` — You can't set a callback to an existing VoIP.ms DID number
+    ExistingDID,
+    /// `forwards_exceeded` — Your account is limited to 4 forward entries
+    ForwardsExceeded,
+    /// `invalid_account` — This is not a valid account
+    InvalidAccount,
+    /// `invalid_address` — Address is missing or the format is invalid.
+    InvalidAddress,
+    /// `invalid_admin` — This is not a valid admin
+    InvalidAdmin,
+    /// `invalid_agent_ring_timeout` — This is not a valid Agent ring time out value
+    InvalidAgentRingTimeout,
+    /// `invalid_allowedcodecs` — One of the codecs provided is invalid Format and Values: ulaw;g729;gsm;all
+    InvalidAllowedcodecs,
+    /// `invalid_announce_join_leave` — This is not a valid "Announce join leave"
+    InvalidAnnounceJoinLeave,
+    /// `invalid_announce_only_user` — This is not a valid "Announce only user"
+    InvalidAnnounceOnlyUser,
+    /// `invalid_announce_position_frequency` — This is not a valid Announce position frequency
+    InvalidAnnouncePositionFrequency,
+    /// `invalid_announce_round_seconds` — This is not a valid "Announce round seconds"
+    InvalidAnnounceRoundSeconds,
+    /// `invalid_announce_user_count` — This is not a valid "Announce user count"
+    InvalidAnnounceUserCount,
+    /// `invalid_area_code` — this is not a valid Area Code.
+    InvalidAreaCode,
+    /// `invalid_attachid` — The given ID is invalid or doesn't exist.
+    InvalidAttachid,
+    /// `invalid_attachmessage` — this is not a valid AttachMessage Should be: yes/no
+    InvalidAttachmessage,
+    /// `invalid_attach_file` — Valid formats: PDF, MS Word, BMP, JPG
+    InvalidAttachFile,
+    /// `invalid_authtype` — This is not a valid Auth Type
+    InvalidAuthtype,
+    /// `invalid_authtype_h323` — You must select IP Auth to use H.323
+    InvalidAuthtypeH323,
+    /// `invalid_authtype_iax2` — You must use User/Password Authentication for IAX2
+    InvalidAuthtypeIax2,
+    /// `invalid_balancemanagement` — This is not a valid BalanceManagement
+    InvalidBalancemanagement,
+    /// `invalid_base_recording` — This is not a valid recording path
+    InvalidBaseRecording,
+    /// `invalid_billingtype` — This is not a valid Billing Type Allowed values: 1 = PerMinute, 2 = Flat
+    InvalidBillingtype,
+    /// `invalid_callback` — This is not a valid Callback
+    InvalidCallback,
+    /// `invalid_callback_enable` — This is not a valid Callback enable value
+    InvalidCallbackEnable,
+    /// `invalid_callback_retry` — This is not a valid Callback retry
+    InvalidCallbackRetry,
+    /// `invalid_callerid` — This is not a valid CallerID
+    InvalidCallerid,
+    /// `invalid_calleridprefix` — This is not a valid CID Prefix, lenght should be less than 20 chars
+    InvalidCalleridprefix,
+    /// `invalid_callerid_override` — This is not a valid CallerID Override
+    InvalidCalleridOverride,
+    /// `invalid_callhunting` — This is not a valid Call Hunting
+    InvalidCallhunting,
+    /// `invalid_callparking` — This is not a valid Call Parking
+    InvalidCallparking,
+    /// `invalid_callrecording` — This is not a valid Call recording
+    InvalidCallrecording,
+    /// `invalid_call_type` — Call Type is not valid.
+    InvalidCallType,
+    /// `invalid_canada_routing` — This is not a valid Canada Route
+    InvalidCanadaRouting,
+    /// `invalid_carrier` — This is not a valid Carrier
+    InvalidCarrier,
+    /// `invalid_charge` — This is not a valid Charge
+    InvalidCharge,
+    /// `invalid_city` — City is missing or the format is invalid.
+    InvalidCity,
+    /// `invalid_client` — This is not a valid Client
+    InvalidClient,
+    /// `invalid_cnam` — This is not a valid CNAM Should be: 1/0
+    InvalidCNAM,
+    /// `invalid_codec` — This is not a valid Codec
+    InvalidCodec,
+    /// `invalid_conference` — This is not a valid Conference ID
+    InvalidConference,
+    /// `invalid_contact` — This is not a valid Contact Number
+    InvalidContact,
+    /// `invalid_country` — Country is missing or the format is invalid, must be in format ISO 3166-1 alpha-2, example: US, CA, etc. (You can use the values returned by the method getCountries)
+    InvalidCountry,
+    /// `invalid_countryid` — This is not a valid Country ID
+    InvalidCountryid,
+    /// `invalid_credentials` — Username or Password is incorrect
+    InvalidCredentials,
+    /// `invalid_date` — This is not a valid date Format is: yyyy-mm-dd
+    InvalidDate,
+    /// `invalid_daterange` — Date Range should be 92 days or less
+    InvalidDaterange,
+    /// `invalid_datetime` — This is not a valid datetime Format is: yyyy-mm-dd hh:mm:ss
+    InvalidDatetime,
+    /// `invalid_date_from` — The "From" date should be prior to the "To" date.
+    InvalidDateFrom,
+    /// `invalid_dayrange` — This is not a valid Day Range
+    InvalidDayrange,
+    /// `invalid_delay_before` — This is not a valid DelayBefore
+    InvalidDelayBefore,
+    /// `invalid_deletemessage` — This is not a valid DeleteMessage Should be: yes/no
+    InvalidDeletemessage,
+    /// `invalid_description` — This is not a valid Description
+    InvalidDescription,
+    /// `invalid_destination` — This is not a valid Destination
+    InvalidDestination,
+    /// `invalid_destination_folder` — This is not a valid Destination Folder
+    InvalidDestinationFolder,
+    /// `invalid_devicetype` — This is not a valid Device Type
+    InvalidDevicetype,
+    /// `invalid_dialtime` — This is not a valid Dialtime
+    InvalidDialtime,
+    /// `invalid_did` — This is not a valid DID
+    InvalidDID,
+    /// `invalid_digits` — These are not valid DigitsOrderDIDVirtual: Digits must be 3 numbers
+    InvalidDigits,
+    /// `invalid_digit_timeout` — This is not a valid DigitTimeOut
+    InvalidDigitTimeout,
+    /// `invalid_disa` — This is not a valid DISA
+    InvalidDISA,
+    /// `invalid_diversion_header` — This is not a valid Diversion Header. It must be a numeric value, accepting only 0 or 1.
+    InvalidDiversionHeader,
+    /// `invalid_drop_silence` — This is not a valid "drop silence" value
+    InvalidDropSilence,
+    /// `invalid_dst` — This is not a valid Destination Number
+    InvalidDST,
+    /// `invalid_dtmfmode` — This is no a valid DTMF Mode
+    InvalidDtmfmode,
+    /// `invalid_dtmf_digits` — This is no a valid DTMF digit
+    InvalidDTMFDigits,
+    /// `invalid_email` — This is not a valid email or email is already in database
+    InvalidEmail,
+    /// `invalid_email_attachment_format` — This is not a valid format value
+    InvalidEmailAttachmentFormat,
+    /// `invalid_email_enable` — This is not a valid email enable value
+    InvalidEmailEnable,
+    /// `invalid_enable_ip_restriction` — This is not a valid Enable IP Restriction value
+    InvalidEnableIPRestriction,
+    /// `invalid_enable_pop_restriction` — This is not a valid Enable POP Restriction value
+    InvalidEnablePOPRestriction,
+    /// `invalid_endhour` — This is not a valid End Hour
+    InvalidEndhour,
+    /// `invalid_endminute` — This is not a valid End Minute
+    InvalidEndminute,
+    /// `invalid_extension` — This is not a valid extension Extension can only contain digits
+    InvalidExtension,
+    /// `invalid_extensions` — Extensions cannot be: 098, 211, 311, 411, 4443, 4444, 4747, 511, 711, 811, 822, 911, 988
+    InvalidExtensions,
+    /// `invalid_extension_length` — Extensions should not contain more than 5 digits
+    InvalidExtensionLength,
+    /// `invalid_extension_prefix` — Extensions cannot start with: 068, 097
+    InvalidExtensionPrefix,
+    /// `invalid_failover_header` — This is not a valid failover header Should be: account/vm/fwd/none
+    InvalidFailoverHeader,
+    /// `invalid_fax_id` — This is not a valid Fax Message ID
+    InvalidFAXID,
+    /// `invalid_file` — This is not a valid File
+    InvalidFile,
+    /// `invalid_filter` — This is not a valid Filter
+    InvalidFilter,
+    /// `invalid_firstname` — First name is missing or the format is invalid.
+    InvalidFirstname,
+    /// `invalid_foc_enddate` — Invalid date format, must be: YYYY-mm-dd. Example: 2018-02-22
+    InvalidFocEnddate,
+    /// `invalid_foc_startdate` — Invalid date format, must be: YYYY-mm-dd. Example: 2018-02-22
+    InvalidFocStartdate,
+    /// `invalid_folder` — This is not a valid Folder
+    InvalidFolder,
+    /// `invalid_folder_id` — This is not a valid Fax Folder ID
+    InvalidFolderID,
+    /// `invalid_forwarding` — This is not a valid forwarding
+    InvalidForwarding,
+    /// `invalid_forwarding_did` — Forwarding to the same did is not allowed
+    InvalidForwardingDID,
+    /// `invalid_forward_enable` — This is not a valid forward enable value
+    InvalidForwardEnable,
+    /// `invalid_frequency_announcement` — This is not a valid Frequency announce
+    InvalidFrequencyAnnouncement,
+    /// `invalid_from_number` — This is not a valid sender number.
+    InvalidFromNumber,
+    /// `invalid_fullname` — This is not a valid Full Name
+    InvalidFullname,
+    /// `invalid_id` — This is not a valid ID
+    InvalidID,
+    /// `invalid_if_announce_position_enabled_report_e` — This is not a Report estimated hold time type
+    InvalidIfAnnouncePositionEnabledReportE,
+    /// `invalid_internaldialtime` — This is not a valid Internal Dialtime Should be: 1 to 60
+    InvalidInternaldialtime,
+    /// `invalid_internalvoicemail` — This is not a valid Internal Voicemail
+    InvalidInternalvoicemail,
+    /// `invalid_internationalroute` — This is not a valid International Route
+    InvalidInternationalroute,
+    /// `invalid_invoice_type` — Invalid invoice type, possible values: 0 = US, 1 = CAN.
+    InvalidInvoiceType,
+    /// `invalid_ip` — This is an invalid IP
+    InvalidIP,
+    /// `invalid_ip_auth` — Do not provide an IP address for User/Pass Authentication
+    InvalidIPAuth,
+    /// `invalid_ip_iax2` — Do not provide an IP address for IAX2
+    InvalidIPIax2,
+    /// `invalid_ivr` — This is not a valid IVR
+    InvalidIVR,
+    /// `invalid_jitter_buffer` — This is not a valid "jitter buffer" value
+    InvalidJitterBuffer,
+    /// `invalid_join_announcement` — This is not a valid 'Join Announcement' Type for a Queue
+    InvalidJoinAnnouncement,
+    /// `invalid_join_empty_type` — This is not a valid 'JoinWhenEmpty' Type for a Queue
+    InvalidJoinEmptyType,
+    /// `invalid_language` — This is not a valid Language Should be: es/en/fr
+    InvalidLanguage,
+    /// `invalid_lastname` — Lastname is missing or the format is invalid.
+    InvalidLastname,
+    /// `invalid_listened` — This is not a valid Listened value
+    InvalidListened,
+    /// `invalid_location` — This is not a valid Location
+    InvalidLocation,
+    /// `invalid_lockinternational` — This is not a valid Lock International
+    InvalidLockinternational,
+    /// `invalid_mailbox` — This is not a valid mailbox
+    InvalidMailbox,
+    /// `invalid_maximum_callers` — This is not a valid maximum callers value
+    InvalidMaximumCallers,
+    /// `invalid_maximum_wait_time` — This is not a valid maximum wait time value
+    InvalidMaximumWaitTime,
+    /// `invalid_max_expiry` — This is not a valid Max Expiry (value must be between 60 and 3600 seconds)
+    InvalidMaxExpiry,
+    /// `invalid_member` — This is not a valid Member
+    InvalidMember,
+    /// `invalid_member_delay` — This is not a valid Member Delay
+    InvalidMemberDelay,
+    /// `invalid_message_num` — This is not a valid Voicemail Message Number
+    InvalidMessageNum,
+    /// `invalid_method` — This is not a valid Method
+    InvalidMethod,
+    /// `invalid_minute` — This is not a valid Minute Rate
+    InvalidMinute,
+    /// `invalid_mixed_numbers` — Toll-free numbers and local numbers can not be mixed in the same order.
+    InvalidMixedNumbers,
+    /// `invalid_monthly` — This is not a valid Montly Fee
+    InvalidMonthly,
+    /// `invalid_musiconhold` — This is not a valid Music on Hold
+    InvalidMusiconhold,
+    /// `invalid_name` — This is not a valid name, Alphanumeric Only
+    InvalidName,
+    /// `invalid_nat` — This is not a valid NAT
+    InvalidNAT,
+    /// `invalid_note` — This is not a valid Note, lenght should be less than 50 chars
+    InvalidNote,
+    /// `invalid_number` — This is not a valid Number
+    InvalidNumber,
+    /// `invalid_numbermembers` — The element format of multiple data is not correct or it size does not match with other elements
+    InvalidNumbermembers,
+    /// `invalid_number_canadian` — You have entered a Canadian number (not valid in this portability process).
+    InvalidNumberCanadian,
+    /// `invalid_number_exist` — The number is already in our network
+    InvalidNumberExist,
+    /// `invalid_number_fax` — The Fax number can not be ported into our network
+    InvalidNumberFAX,
+    /// `invalid_number_porttype` — You have entered a local number (not valid in this portability process)
+    InvalidNumberPorttype,
+    /// `invalid_number_us` — You have entered a USA number (not valid in this portability process).
+    InvalidNumberUS,
+    /// `invalid_order` — This is not a valid "order" value
+    InvalidOrder,
+    /// `invalid_package` — This is not a valid Package
+    InvalidPackage,
+    /// `invalid_password` — This is not a valid passwordVoicemail: Must be 4 Digits SubAccounts: More than 6 chars, Must Contain Alphanumeric and !#$%&/()=?*[]_:.,{}+-
+    InvalidPassword,
+    /// `invalid_password_auth` — Do not provide a Password for IP Authentication
+    InvalidPasswordAuth,
+    /// `invalid_password_ilegal_characters` — This is not a valid password (Allowed characters: Alphanumeric and ! # $ % & / ( ) = ? * [ ] _ : . , { } + -)
+    InvalidPasswordIlegalCharacters,
+    /// `invalid_password_lessthan_8characters_long` — This is not a valid password (Less than 8 characters long)
+    InvalidPasswordLessthan8charactersLong,
+    /// `invalid_password_missing_lowercase` — This is not a valid password (Missing lower case character)
+    InvalidPasswordMissingLowercase,
+    /// `invalid_password_missing_number` — This is not a valid password (Missing a number)
+    InvalidPasswordMissingNumber,
+    /// `invalid_password_missing_uppercase` — This is not a valid password (Missing upper case character)
+    InvalidPasswordMissingUppercase,
+    /// `invalid_pause` — This is not a valid Pause
+    InvalidPause,
+    /// `invalid_payment` — This is not a valid Payment
+    InvalidPayment,
+    /// `invalid_phonebook` — This is not a valid Phonebook
+    InvalidPhonebook,
+    /// `invalid_phonenumber` — This is not a valid Phone Number
+    InvalidPhonenumber,
+    /// `invalid_pin` — This is not a valid PIN
+    InvalidPIN,
+    /// `invalid_pin_number` — Must provide the account PIN number.
+    InvalidPINNumber,
+    /// `invalid_playinstructions` — This is not a valid PlayInstructions Should be: u/su
+    InvalidPlayinstructions,
+    /// `invalid_pop_restriction` — This is not a valid POP Restriction
+    InvalidPOPRestriction,
+    /// `invalid_portingid` — The given ID is invalid or doesn't exist.
+    InvalidPortingid,
+    /// `invalid_porttype` — Must provide a valid port type.
+    InvalidPorttype,
+    /// `invalid_port_status` — The status code is invalid. (You can use the values returned by the method getListStatus)
+    InvalidPortStatus,
+    /// `invalid_priority` — This is not a valid Priority
+    InvalidPriority,
+    /// `invalid_priority_weight` — This is not valid weight/priority value
+    InvalidPriorityWeight,
+    /// `invalid_protocol` — This is not a valid Protocol
+    InvalidProtocol,
+    /// `invalid_provider_account` — You must provide your account # with the current provider
+    InvalidProviderAccount,
+    /// `invalid_provider_name` — You must provide the service provider name
+    InvalidProviderName,
+    /// `invalid_province` — This is not a valid Province
+    InvalidProvince,
+    /// `invalid_quantity` — This is not a valid quantity
+    InvalidQuantity,
+    /// `invalid_query` — This is not a valid Query
+    InvalidQuery,
+    /// `invalid_queue` — This is not a valid Queue
+    InvalidQueue,
+    /// `invalid_quiet` — This is not a valid "quiet" value
+    InvalidQuiet,
+    /// `invalid_recording` — This is not a valid recording
+    InvalidRecording,
+    /// `invalid_recording_sound_error_menu` — "error menu" is not a valid recording
+    InvalidRecordingSoundErrorMenu,
+    /// `invalid_recording_sound_get_pin` — "get pin" is not a valid recording
+    InvalidRecordingSoundGetPIN,
+    /// `invalid_recording_sound_has_joined` — "has_joined" is not a valid recording
+    InvalidRecordingSoundHasJoined,
+    /// `invalid_recording_sound_has_left` — "has_left" is not a valid recording
+    InvalidRecordingSoundHasLeft,
+    /// `invalid_recording_sound_invalid_pin` — "invalid pin" is not a valid recording
+    InvalidRecordingSoundInvalidPIN,
+    /// `invalid_recording_sound_join` — "join" is not a valid recording
+    InvalidRecordingSoundJoin,
+    /// `invalid_recording_sound_kicked` — "kicked" is not a valid recording
+    InvalidRecordingSoundKicked,
+    /// `invalid_recording_sound_leave` — "leave" is not a valid recording
+    InvalidRecordingSoundLeave,
+    /// `invalid_recording_sound_locked` — "locked" is not a valid recording
+    InvalidRecordingSoundLocked,
+    /// `invalid_recording_sound_locked_now` — "locked now" is not a valid recording
+    InvalidRecordingSoundLockedNow,
+    /// `invalid_recording_sound_muted` — "muted" is not a valid recording
+    InvalidRecordingSoundMuted,
+    /// `invalid_recording_sound_only_one` — "only one" is not a valid recording
+    InvalidRecordingSoundOnlyOne,
+    /// `invalid_recording_sound_only_person` — "only person" is not a valid recording
+    InvalidRecordingSoundOnlyPerson,
+    /// `invalid_recording_sound_other_in_party` — "other in party" is not a valid recording
+    InvalidRecordingSoundOtherInParty,
+    /// `invalid_recording_sound_participants_muted` — "participants muted" is not a valid recording
+    InvalidRecordingSoundParticipantsMuted,
+    /// `invalid_recording_sound_participants_unmuted` — "participants unmuted" is not a valid recording
+    InvalidRecordingSoundParticipantsUnmuted,
+    /// `invalid_recording_sound_place_into_conference` — "place into conference" is not a valid recording
+    InvalidRecordingSoundPlaceIntoConference,
+    /// `invalid_recording_sound_there_are` — "there are" is not a valid recording
+    InvalidRecordingSoundThereAre,
+    /// `invalid_recording_sound_unlocked_now` — "unlocked now" is not a valid recording
+    InvalidRecordingSoundUnlockedNow,
+    /// `invalid_recording_sound_unmuted` — "unmuted" is not a valid recording
+    InvalidRecordingSoundUnmuted,
+    /// `invalid_record_calls` — Record calls is not valid.
+    InvalidRecordCalls,
+    /// `invalid_report_hold_time_agent` — This is not a valid Report hold time agent
+    InvalidReportHoldTimeAgent,
+    /// `invalid_resellerclient` — This is not a valid Reseller Client
+    InvalidResellerclient,
+    /// `invalid_resellernextbilling` — This is not a valid Reseller Next Billing date, date should not be set in the past.
+    InvalidResellernextbilling,
+    /// `invalid_resellerpackage` — This is not a valid Reseller Package
+    InvalidResellerpackage,
+    /// `invalid_response_timeout` — This is not a valid ResponseTimeOut
+    InvalidResponseTimeout,
+    /// `invalid_retry_timer` — This is not a valid Retry timer
+    InvalidRetryTimer,
+    /// `invalid_ringgroup` — This is not a valid Ring group
+    InvalidRinggroup,
+    /// `invalid_ring_inuse` — This is not a valid Ring in use value
+    InvalidRingInuse,
+    /// `invalid_route` — This is not a valid Route
+    InvalidRoute,
+    /// `invalid_routing_header` — This is not a valid Routing header Should be: account/vm/fwd
+    InvalidRoutingHeader,
+    /// `invalid_rtp_hold_timeout` — This is not a valid RTP Hold Time Out (value must be between 1 and 3600 seconds)
+    InvalidRTPHoldTimeout,
+    /// `invalid_rtp_timeout` — This is not a valid RTP Time Out (value must be between 1 and 3600 seconds)
+    InvalidRTPTimeout,
+    /// `invalid_saycallerid` — This is not a valid SayCallerID Should be: yes/no
+    InvalidSaycallerid,
+    /// `invalid_saytime` — This is not a valid SayTime Should be: yes/no
+    InvalidSaytime,
+    /// `invalid_security_code` — This is not a valid Security Code. Should be alphanumeric.
+    InvalidSecurityCode,
+    /// `invalid_serverpop` — This is not a valid Server POP
+    InvalidServerpop,
+    /// `invalid_setup` — This is not a valid Setup Fee
+    InvalidSetup,
+    /// `invalid_silence_threshold` — This is not a valid "silence threshold" value
+    InvalidSilenceThreshold,
+    /// `invalid_sipuri` — This is not a valid SIPURI
+    InvalidSIPURI,
+    /// `invalid_sip_traffic` — This is not a valid Encrypted SIP Traffic value
+    InvalidSIPTraffic,
+    /// `invalid_skippassword` — This is not a valid skippassword Should be: 1/0 - or - yes/no
+    InvalidSkippassword,
+    /// `invalid_smpp_password` — This is not a valid SMPP Password
+    InvalidSmppPassword,
+    /// `invalid_smpp_url` — This is not a valid SMPP URL
+    InvalidSmppURL,
+    /// `invalid_smpp_username` — This is not a valid SMPP Username
+    InvalidSmppUsername,
+    /// `invalid_sms` — This is not a valid SMS
+    InvalidSMS,
+    /// `invalid_sms_forward` — This is not a valid SMS forward
+    InvalidSMSForward,
+    /// `invalid_snn` — Must provide the 4 last digits of the SSN.
+    InvalidSnn,
+    /// `invalid_speed_dial` — This is not a valid Speed Dial
+    InvalidSpeedDial,
+    /// `invalid_starthour` — This is not a valid Start Hour
+    InvalidStarthour,
+    /// `invalid_startminute` — This is not a valid Start Minute
+    InvalidStartminute,
+    /// `invalid_start_muted` — This is not a valid Start Muted
+    InvalidStartMuted,
+    /// `invalid_state` — This is not a valid State
+    InvalidState,
+    /// `invalid_statement_name` — Statement Name is missing or the format is invalid.
+    InvalidStatementName,
+    /// `invalid_strategy` — This is not a valid Ring Strategy
+    InvalidStrategy,
+    /// `invalid_street_name` — This is not a valid Street Name
+    InvalidStreetName,
+    /// `invalid_street_number` — This is not a valid Street Number
+    InvalidStreetNumber,
+    /// `invalid_talking_threshold` — This is not a valid "talking threshold" value
+    InvalidTalkingThreshold,
+    /// `invalid_talk_detection` — This is not a valid talk detection value
+    InvalidTalkDetection,
+    /// `invalid_tfnumber_porttype` — You have entered a toll-free number (not valid in this portability process).
+    InvalidTfnumberPorttype,
+    /// `invalid_thankyou_for_your_patience` — This is not a valid Thankyou for your patience value
+    InvalidThankyouForYourPatience,
+    /// `Invalid_threshold` — This is not a valid Threshold Amount. The Threshold Amount should be between 1 and 250
+    InvalidThreshold,
+    /// `invalid_timecondition` — This is not a valid Time Condition
+    InvalidTimecondition,
+    /// `invalid_timeout` — This is not a valid timeout
+    InvalidTimeout,
+    /// `invalid_timerange` — This is not a valid Timer Range
+    InvalidTimerange,
+    /// `invalid_timezone` — This is not a valid TimezoneCDR and resellerCDR: Must be numeric Voicemail: Values from getTimezone
+    InvalidTimezone,
+    /// `invalid_to_number` — This is not a valid destination number
+    InvalidToNumber,
+    /// `invalid_transcription_email` — Transcription email is not valid
+    InvalidTranscriptionEmail,
+    /// `invalid_transcription_format` — Invalid Transcription Format
+    InvalidTranscriptionFormat,
+    /// `invalid_transcription_locale` — Transcription locale is not valid.
+    InvalidTranscriptionLocale,
+    /// `invalid_transcription_redaction` — Invalid Transcription Redaction
+    InvalidTranscriptionRedaction,
+    /// `invalid_transcription_sentiment` — Invalid Transcription Sentiment
+    InvalidTranscriptionSentiment,
+    /// `invalid_transcription_summary` — Invalid Transcription Summary
+    InvalidTranscriptionSummary,
+    /// `invalid_type` — This is not a valid Type
+    InvalidType,
+    /// `invalid_urgent` — This is not valid urgent value
+    InvalidUrgent,
+    /// `invalid_username` — This is not a valid Username
+    InvalidUsername,
+    /// `invalid_voicemailsetup` — This is not a valid voicemail
+    InvalidVoicemailsetup,
+    /// `invalid_voice_announcement` — This is not a valid Voice announce
+    InvalidVoiceAnnouncement,
+    /// `invalid_weekdayend` — This is not a valid Week End
+    InvalidWeekdayend,
+    /// `invalid_weekdaystart` — This is not a valid Week Start
+    InvalidWeekdaystart,
+    /// `invalid_wrapup_time` — This is not a valid Wrapup time
+    InvalidWrapupTime,
+    /// `invalid_zip` — Zip Code is missing or the format is invalid.
+    InvalidZip,
+    /// `ip_not_enabled` — This IP is not enabled for API use
+    IPNotEnabled,
+    /// `limit_reached` — You have reached the maximum number of messages allowed per day. - SMS limit using the API. - Fax limit applies using any method.
+    LimitReached,
+    /// `location_already_exists` — A location with this name already exists
+    LocationAlreadyExists,
+    /// `location_linked_to_subaccount` — This location is in use by one or more sub accounts and cannot be deleted
+    LocationLinkedToSubaccount,
+    /// `location_not_found` — The specified location could not be found
+    LocationNotFound,
+    /// `max_phonebook` — Your account is limited to 8 SIP, IAX or SIP URI members
+    MaxPhonebook,
+    /// `members_exceeded` — You have reached the maximum allowed entries for the Phonebook
+    MembersExceeded,
+    /// `member_already_included` — The member has been included already
+    MemberAlreadyIncluded,
+    /// `message_empty` — The SMS Message is empty
+    MessageEmpty,
+    /// `message_not_found` — The voicemail message was not found
+    MessageNotFound,
+    /// `method_maintenance` — This API method is under maintenance
+    MethodMaintenance,
+    /// `mismatch_email_confirm` — e-mail confirm does not match with e-mail
+    MismatchEmailConfirm,
+    /// `mismatch_password_confirm` — Pasword confirm does not match with Password
+    MismatchPasswordConfirm,
+    /// `missing_account` — Account was not provided
+    MissingAccount,
+    /// `missing_address` — Address was not provided
+    MissingAddress,
+    /// `missing_agent_ring_timeout` — Agent ring time out was not provided
+    MissingAgentRingTimeout,
+    /// `missing_allowedcodecs` — Allowed Codecs were not provided
+    MissingAllowedcodecs,
+    /// `missing_attachmessage` — AttachMessage was not provided
+    MissingAttachmessage,
+    /// `missing_authtype` — Auth Type was not provided
+    MissingAuthtype,
+    /// `missing_balancemanagement` — BalanceManagemente was not provided
+    MissingBalancemanagement,
+    /// `missing_billingtype` — Billing Type was not provided
+    MissingBillingtype,
+    /// `missing_callback` — Callback was not provided
+    MissingCallback,
+    /// `missing_callerid` — CallerID was not provided
+    MissingCallerid,
+    /// `missing_callhunting` — Call hunting was not provided
+    MissingCallhunting,
+    /// `missing_callparking` — Call Parking was not provided
+    MissingCallparking,
+    /// `missing_callrecording` — Call recording was not provided
+    MissingCallrecording,
+    /// `missing_carrier` — Carrier was not provided
+    MissingCarrier,
+    /// `missing_charge` — Charge was not provided.
+    MissingCharge,
+    /// `missing_choices` — Choices was not provided
+    MissingChoices,
+    /// `missing_city` — City was not provided
+    MissingCity,
+    /// `missing_client` — Client was not provided
+    MissingClient,
+    /// `missing_cnam` — CNAM was not provided
+    MissingCNAM,
+    /// `missing_codec` — Codec was not provided
+    MissingCodec,
+    /// `missing_conference` — Conference was not provided
+    MissingConference,
+    /// `missing_country` — Country was not provided
+    MissingCountry,
+    /// `missing_countryid` — Country ID was not provided
+    MissingCountryid,
+    /// `missing_credentials` — Username or Password was not provided
+    MissingCredentials,
+    /// `missing_datetime` — DateTime value was not provided
+    MissingDatetime,
+    /// `missing_delay_before` — DelayBefore was not provided
+    MissingDelayBefore,
+    /// `missing_deletemessage` — DeleteMessage was not provided
+    MissingDeletemessage,
+    /// `missing_description` — Description was not provided
+    MissingDescription,
+    /// `missing_devicetype` — Device Type was not provided
+    MissingDevicetype,
+    /// `missing_dialtime` — Dialtime was not provided
+    MissingDialtime,
+    /// `missing_did` — DID was not provided
+    MissingDID,
+    /// `missing_digits` — Digits were not provided
+    MissingDigits,
+    /// `missing_digit_timeout` — DigitTimeOut was not provided
+    MissingDigitTimeout,
+    /// `missing_disa` — DISA was not provided
+    MissingDISA,
+    /// `missing_dtmfmode` — DTMF Mode was not provided
+    MissingDtmfmode,
+    /// `missing_email` — e-mail was not provided
+    MissingEmail,
+    /// `missing_email_confirm` — e-mail confirm was not provided
+    MissingEmailConfirm,
+    /// `missing_enable` — Enable was not provided
+    MissingEnable,
+    /// `missing_endhour` — End Hour was not provided
+    MissingEndhour,
+    /// `missing_endminute` — End Minute was not provided
+    MissingEndminute,
+    /// `missing_failover_busy` — Failover Busy was not provided
+    MissingFailoverBusy,
+    /// `missing_failover_noanswer` — Failover NoAnswer was not provided
+    MissingFailoverNoanswer,
+    /// `missing_failover_unreachable` — Failover Unreachable was not provided
+    MissingFailoverUnreachable,
+    /// `missing_file` — File was not provided
+    MissingFile,
+    /// `missing_filter` — Filter was not provided
+    MissingFilter,
+    /// `missing_firstname` — Firstname was not provided
+    MissingFirstname,
+    /// `missing_folder` — folder was not provided
+    MissingFolder,
+    /// `missing_forwarding` — Forwarding was not provided
+    MissingForwarding,
+    /// `missing_from_date` — From date was not provided
+    MissingFromDate,
+    /// `missing_fullname` — Full Name was not provided
+    MissingFullname,
+    /// `missing_id` — ID was not provided
+    MissingID,
+    /// `missing_if_announce_position_enabled_report_e` — If announce position enabled report estimated hold time' type was not provided
+    MissingIfAnnouncePositionEnabledReportE,
+    /// `missing_internationalroute` — International Route was not provided
+    MissingInternationalroute,
+    /// `missing_ip` — You need to provide an IP if you select IP Authentication Method
+    MissingIP,
+    /// `missing_ip_h323` — You must enter an IP Address for H.323
+    MissingIPH323,
+    /// `missing_ip_restriction` — IP Restriction was not provided
+    MissingIPRestriction,
+    /// `missing_ivr` — IVR was not provided
+    MissingIVR,
+    /// `missing_join_when_empty` — JoinWhenEmpty' type was not provided
+    MissingJoinWhenEmpty,
+    /// `missing_language` — Language was not provided
+    MissingLanguage,
+    /// `missing_lastname` — Lastname was not provided
+    MissingLastname,
+    /// `missing_leave_when_empty` — LeaveWhenEmpty' type was not provided
+    MissingLeaveWhenEmpty,
+    /// `missing_length` — Length was not provided
+    MissingLength,
+    /// `missing_listened` — Listened code was not provided
+    MissingListened,
+    /// `missing_location` — Location was not provided
+    MissingLocation,
+    /// `missing_location_name` — Location Name Missing
+    MissingLocationName,
+    /// `missing_lockinternational` — Lock International was not provided
+    MissingLockinternational,
+    /// `missing_mailbox` — Mailbox was not provided
+    MissingMailbox,
+    /// `missing_member` — Member was not provided
+    MissingMember,
+    /// `missing_members` — You need at least 1 member to create a ring group
+    MissingMembers,
+    /// `missing_message_num` — Voicemail message number was not provided
+    MissingMessageNum,
+    /// `missing_method` — Method must be provided when using the REST/JSON API
+    MissingMethod,
+    /// `missing_minute` — Minute Rate was not provided
+    MissingMinute,
+    /// `missing_monthly` — Monthly Fee was not provided
+    MissingMonthly,
+    /// `missing_musiconhold` — Music on Hold was not provided
+    MissingMusiconhold,
+    /// `missing_name` — Name was not provided
+    MissingName,
+    /// `missing_nat` — NAT was not provided
+    MissingNAT,
+    /// `missing_number` — Number was not provided
+    MissingNumber,
+    /// `missing_numbers` — You must enter at least one valid phone number.
+    MissingNumbers,
+    /// `missing_package` — Package was not provided
+    MissingPackage,
+    /// `missing_params` — Required parameters were not provided
+    MissingParams,
+    /// `missing_password` — Password was not provided
+    MissingPassword,
+    /// `missing_password_confirm` — Password Confirm was not provided
+    MissingPasswordConfirm,
+    /// `missing_payment` — Payment was not provided.
+    MissingPayment,
+    /// `missing_phonebook` — Phonebook was not provided
+    MissingPhonebook,
+    /// `missing_phonenumber` — Phone Number was not provided
+    MissingPhonenumber,
+    /// `missing_pin` — PIN was not provided
+    MissingPIN,
+    /// `missing_playinstructions` — PlayInstructions was not provided
+    MissingPlayinstructions,
+    /// `missing_pop_restriction` — POP Restriction was not provided
+    MissingPOPRestriction,
+    /// `missing_priority` — Priority was not provided
+    MissingPriority,
+    /// `missing_priority_weight` — Priority/Weight was not provided
+    MissingPriorityWeight,
+    /// `missing_protocol` — Protocol was not provided
+    MissingProtocol,
+    /// `missing_province` — Province was not provided
+    MissingProvince,
+    /// `missing_query` — Query was not provided
+    MissingQuery,
+    /// `missing_recording` — Recording was not provided
+    MissingRecording,
+    /// `missing_report_hold_time_agent` — Report hold time agent was not provided
+    MissingReportHoldTimeAgent,
+    /// `missing_resellerclient` — Provide a Reseller Client or don't provide a Reseller Package
+    MissingResellerclient,
+    /// `missing_resellerpackage` — Provide a Reseller Package or don't provide a Reseller Client
+    MissingResellerpackage,
+    /// `missing_response_timeout` — ResponseTimeOut was not provided
+    MissingResponseTimeout,
+    /// `missing_ringgroup` — Ring group was not provided
+    MissingRinggroup,
+    /// `missing_ring_inuse` — Ring in use was not provided
+    MissingRingInuse,
+    /// `missing_ring_strategy` — Ring strategy was not provided
+    MissingRingStrategy,
+    /// `missing_route` — Route was not provided
+    MissingRoute,
+    /// `missing_routing` — Routing was not provided
+    MissingRouting,
+    /// `missing_saycallerid` — SayCallerID was not provided
+    MissingSaycallerid,
+    /// `missing_saytime` — SayTime was not provided
+    MissingSaytime,
+    /// `missing_serverpop` — Server POP was not provided
+    MissingServerpop,
+    /// `missing_setup` — Setup Fee was not provided
+    MissingSetup,
+    /// `missing_sipuri` — SIPURI was not provided
+    MissingSIPURI,
+    /// `missing_skippassword` — SkipPassword was not provided
+    MissingSkippassword,
+    /// `missing_sms` — SMS was not provided
+    MissingSMS,
+    /// `missing_speed_dial` — Speed Dial was not provided
+    MissingSpeedDial,
+    /// `missing_start` — Start date was not provided
+    MissingStart,
+    /// `missing_starthour` — Start Hour was not provided
+    MissingStarthour,
+    /// `missing_startminute` — Start Minute was not provided
+    MissingStartminute,
+    /// `missing_state` — State was not provided
+    MissingState,
+    /// `missing_street_name` — Street Name was not provided
+    MissingStreetName,
+    /// `missing_street_number` — Street Number was not provided
+    MissingStreetNumber,
+    /// `missing_thankyou_for_your_patience` — Thankyou for your patience was not provided
+    MissingThankyouForYourPatience,
+    /// `missing_timecondition` — Time Condition was not provided
+    MissingTimecondition,
+    /// `missing_timeout` — Timeout was not provided
+    MissingTimeout,
+    /// `missing_timezone` — Timezone was not provided
+    MissingTimezone,
+    /// `missing_to_date` — To date was not provided
+    MissingToDate,
+    /// `missing_transcription_email` — Transcription email is required.
+    MissingTranscriptionEmail,
+    /// `missing_transcription_locale` — Transcription locale is required.
+    MissingTranscriptionLocale,
+    /// `missing_type` — Type was not provided
+    MissingType,
+    /// `missing_urgent` — Urgent code was not provided
+    MissingUrgent,
+    /// `missing_uri` — URI was not provided
+    MissingURI,
+    /// `missing_username` — Username was not provided
+    MissingUsername,
+    /// `missing_voicemailsetup` — Voice mail setup was not provided
+    MissingVoicemailsetup,
+    /// `missing_weekdayend` — Week End was not provide
+    MissingWeekdayend,
+    /// `missing_weekdaystart` — Week Start was not provided
+    MissingWeekdaystart,
+    /// `missing_zip` — Zip Code was not provided
+    MissingZip,
+    /// `moving_fail` — The Fax Message was not moved
+    MovingFail,
+    /// `name_toolong` — The name exceeds character size limit
+    NameToolong,
+    /// `non_sufficient_funds` — Your account does not have sufficient funds to proceed
+    NonSufficientFunds,
+    /// `note_toolong` — The note exceeds character size limit
+    NoteToolong,
+    /// `no_account` — There are no accounts
+    NoAccount,
+    /// `no_attachments` — Theres no attachments records to show.
+    NoAttachments,
+    /// `no_base64file` — File not encoded in base64
+    NoBase64file,
+    /// `no_callback` — There are not Callbacks
+    NoCallback,
+    /// `no_callhunting` — There are no Call Huntings
+    NoCallhunting,
+    /// `no_callparking` — There are no Call Parking
+    NoCallparking,
+    /// `no_callstatus` — No Call Status was provided. One of the following parameters needs to be set to "1": answered, noanswer, busy, failed
+    NoCallstatus,
+    /// `no_cdr` — There are no CDR entries for the filter
+    NoCDR,
+    /// `no_change_billingtype` — Imposible change DID billing plan
+    NoChangeBillingtype,
+    /// `no_client` — There are no Clients
+    NoClient,
+    /// `no_conference` — There are no Conferences
+    NoConference,
+    /// `no_did` — There are no DIDs
+    NoDID,
+    /// `no_disa` — There are no DISAs
+    NoDISA,
+    /// `no_filter` — There are no Filters
+    NoFilter,
+    /// `no_forwarding` — There was no Forwarding
+    NoForwarding,
+    /// `no_ivr` — There are no ivr
+    NoIVR,
+    /// `no_mailbox` — There are no Mailboxes
+    NoMailbox,
+    /// `no_member` — There are no Static Members
+    NoMember,
+    /// `no_message` — There are no Fax Message(s)
+    NoMessage,
+    /// `no_messages` — There are no Voicemail Message(s)
+    NoMessages,
+    /// `no_numbers` — There are no Fax Numbers
+    NoNumbers,
+    /// `no_package` — there are no Packages
+    NoPackage,
+    /// `no_phonebook` — There are no Phonebook entries
+    NoPhonebook,
+    /// `no_provision` — E911 service wasn't activated, this response comes with a description of the error.
+    NoProvision,
+    /// `no_provision_update` — E911 service wasn't updated, this response comes with a description of the error.
+    NoProvisionUpdate,
+    /// `no_queue` — There are no Queue entries
+    NoQueue,
+    /// `no_rate` — There are no Rates
+    NoRate,
+    /// `no_recording` — There are no recordings
+    NoRecording,
+    /// `no_ringgroup` — There are no Ring groups
+    NoRinggroup,
+    /// `no_sequences` — No sequence has been found
+    NoSequences,
+    /// `no_sipuri` — There are no SIP URIs
+    NoSIPURI,
+    /// `no_sms` — There are no SMS messages
+    NoSMS,
+    /// `no_timecondition` — There are no Time Conditions
+    NoTimecondition,
+    /// `order_failed` — The order wasn't completed.
+    OrderFailed,
+    /// `problem_sending_mail` — There was a problem sending an email.
+    ProblemSendingMail,
+    /// `provider_outofservice` — One of our providers is out of service
+    ProviderOutofservice,
+    /// `recording_in_use_caller_id_filtering` — You have a Caller ID Filtering using this Recording
+    RecordingInUseCallerIDFiltering,
+    /// `recording_in_use_caller_timecondition` — You have a Time Condition using this Recording
+    RecordingInUseCallerTimecondition,
+    /// `recording_in_use_did` — You have a DID using this Recording
+    RecordingInUseDID,
+    /// `recording_in_use_ivr` — You have an IVR using this Recording
+    RecordingInUseIVR,
+    /// `recording_in_use_queue` — You have a Calling Queue using this Recording
+    RecordingInUseQueue,
+    /// `repeated_ip` — You already have a Subaccount using this IP and Protocol
+    RepeatedIP,
+    /// `reserved_ip` — This is a reserved IP used by VoIP.ms or other Companies
+    ReservedIP,
+    /// `rtp_timeout_greater_than_rtp_hold_timeout` — RTP Time Out can't be greater than RTP Hold Time Out
+    RTPTimeoutGreaterThanRTPHoldTimeout,
+    /// `same_did_billingtype` — The Billing Type provided and DID billing type are the same
+    SameDIDBillingtype,
+    /// `sent_fail` — The Fax Message it wasn't send.
+    SentFail,
+    /// `sipuri_in_phonebook` — This SIPURI can't be deleted, it is mapped in the phonebook
+    SIPURIInPhonebook,
+    /// `sms_apply_regulations` — The number was not updated due to SMS regulations, please contact customer service for more information
+    SMSApplyRegulations,
+    /// `sms_failed` — The SMS message was not sent
+    SMSFailed,
+    /// `sms_toolong` — The SMS message exceeds 160 characters
+    SMSToolong,
+    /// `sms_wait_message` — SMS was not (Enabled/Disabled) for this DID, please wait a minute before you try again.
+    SMSWaitMessage,
+    /// `tls_error` — Theres was a TLS error, please try later.
+    TlsError,
+    /// `Unable_to_purchase` — Unable to purchase DIDs
+    UnableToPurchase,
+    /// `unavailable_info` — The information you requested is unavailable at this moment
+    UnavailableInfo,
+    /// `unsifficient_stock` — Theres no sufficient stock to complete the order.
+    UnsifficientStock,
+    /// `used_description` — You already have a record with this Description
+    UsedDescription,
+    /// `used_email` — You already have an entry with this Email
+    UsedEmail,
+    /// `used_extension` — You already have a subaccount using this extension
+    UsedExtension,
+    /// `used_extension_in_location` — You already have a subaccount using extension in this location
+    UsedExtensionInLocation,
+    /// `used_filter` — You already have a record with this Filter
+    UsedFilter,
+    /// `used_ip` — There is already another customer using this IP Address
+    UsedIP,
+    /// `used_name` — You already have an entry using this name
+    UsedName,
+    /// `used_number` — You already have a record with this Number
+    UsedNumber,
+    /// `used_password` — This password has been used previously by this account.
+    UsedPassword,
+    /// `used_speed_dial` — You have an entry with this Speed Dial
+    UsedSpeedDial,
+    /// `used_username` — You already have a subaccount using this Username.
+    UsedUsername,
+    /// `weak_password` — This Password is too weak or too common
+    WeakPassword,
+    /// A `status` value not present in the documented table,
+    /// preserved verbatim.
+    Unknown(String),
+}
+
+impl ApiStatus {
+    /// The verbatim wire `status` string.
+    pub fn as_str(&self) -> &str {
+        match self {
+            ApiStatus::AccountWithDIDs => "account_with_dids",
+            ApiStatus::APILimitExceeded => "api_limit_exceeded",
+            ApiStatus::APINotEnabled => "api_not_enabled",
+            ApiStatus::CancelFailed => "cancel_failed",
+            ApiStatus::CANHaveOnlyOneProfileWithoutPIN => "can_have_only_one_profile_without_pin",
+            ApiStatus::ConferenceMemberRelationNotFound => "conference_member_relation_not_found",
+            ApiStatus::DIDInUse => "did_in_use",
+            ApiStatus::DIDLimitReached => "did_limit_reached",
+            ApiStatus::DuplicatedName => "duplicated_name",
+            ApiStatus::DuplicatedPIN => "duplicated_pin",
+            ApiStatus::E911Disabled => "e911_disabled",
+            ApiStatus::E911Pending => "e911_pending",
+            ApiStatus::ErrorDeletingMsg => "error_deleting_msg",
+            ApiStatus::ErrorMovingMsg => "error_moving_msg",
+            ApiStatus::ExceedsFileSize => "exceeds_file_size",
+            ApiStatus::ExistingDID => "existing_did",
+            ApiStatus::ForwardsExceeded => "forwards_exceeded",
+            ApiStatus::InvalidAccount => "invalid_account",
+            ApiStatus::InvalidAddress => "invalid_address",
+            ApiStatus::InvalidAdmin => "invalid_admin",
+            ApiStatus::InvalidAgentRingTimeout => "invalid_agent_ring_timeout",
+            ApiStatus::InvalidAllowedcodecs => "invalid_allowedcodecs",
+            ApiStatus::InvalidAnnounceJoinLeave => "invalid_announce_join_leave",
+            ApiStatus::InvalidAnnounceOnlyUser => "invalid_announce_only_user",
+            ApiStatus::InvalidAnnouncePositionFrequency => "invalid_announce_position_frequency",
+            ApiStatus::InvalidAnnounceRoundSeconds => "invalid_announce_round_seconds",
+            ApiStatus::InvalidAnnounceUserCount => "invalid_announce_user_count",
+            ApiStatus::InvalidAreaCode => "invalid_area_code",
+            ApiStatus::InvalidAttachid => "invalid_attachid",
+            ApiStatus::InvalidAttachmessage => "invalid_attachmessage",
+            ApiStatus::InvalidAttachFile => "invalid_attach_file",
+            ApiStatus::InvalidAuthtype => "invalid_authtype",
+            ApiStatus::InvalidAuthtypeH323 => "invalid_authtype_h323",
+            ApiStatus::InvalidAuthtypeIax2 => "invalid_authtype_iax2",
+            ApiStatus::InvalidBalancemanagement => "invalid_balancemanagement",
+            ApiStatus::InvalidBaseRecording => "invalid_base_recording",
+            ApiStatus::InvalidBillingtype => "invalid_billingtype",
+            ApiStatus::InvalidCallback => "invalid_callback",
+            ApiStatus::InvalidCallbackEnable => "invalid_callback_enable",
+            ApiStatus::InvalidCallbackRetry => "invalid_callback_retry",
+            ApiStatus::InvalidCallerid => "invalid_callerid",
+            ApiStatus::InvalidCalleridprefix => "invalid_calleridprefix",
+            ApiStatus::InvalidCalleridOverride => "invalid_callerid_override",
+            ApiStatus::InvalidCallhunting => "invalid_callhunting",
+            ApiStatus::InvalidCallparking => "invalid_callparking",
+            ApiStatus::InvalidCallrecording => "invalid_callrecording",
+            ApiStatus::InvalidCallType => "invalid_call_type",
+            ApiStatus::InvalidCanadaRouting => "invalid_canada_routing",
+            ApiStatus::InvalidCarrier => "invalid_carrier",
+            ApiStatus::InvalidCharge => "invalid_charge",
+            ApiStatus::InvalidCity => "invalid_city",
+            ApiStatus::InvalidClient => "invalid_client",
+            ApiStatus::InvalidCNAM => "invalid_cnam",
+            ApiStatus::InvalidCodec => "invalid_codec",
+            ApiStatus::InvalidConference => "invalid_conference",
+            ApiStatus::InvalidContact => "invalid_contact",
+            ApiStatus::InvalidCountry => "invalid_country",
+            ApiStatus::InvalidCountryid => "invalid_countryid",
+            ApiStatus::InvalidCredentials => "invalid_credentials",
+            ApiStatus::InvalidDate => "invalid_date",
+            ApiStatus::InvalidDaterange => "invalid_daterange",
+            ApiStatus::InvalidDatetime => "invalid_datetime",
+            ApiStatus::InvalidDateFrom => "invalid_date_from",
+            ApiStatus::InvalidDayrange => "invalid_dayrange",
+            ApiStatus::InvalidDelayBefore => "invalid_delay_before",
+            ApiStatus::InvalidDeletemessage => "invalid_deletemessage",
+            ApiStatus::InvalidDescription => "invalid_description",
+            ApiStatus::InvalidDestination => "invalid_destination",
+            ApiStatus::InvalidDestinationFolder => "invalid_destination_folder",
+            ApiStatus::InvalidDevicetype => "invalid_devicetype",
+            ApiStatus::InvalidDialtime => "invalid_dialtime",
+            ApiStatus::InvalidDID => "invalid_did",
+            ApiStatus::InvalidDigits => "invalid_digits",
+            ApiStatus::InvalidDigitTimeout => "invalid_digit_timeout",
+            ApiStatus::InvalidDISA => "invalid_disa",
+            ApiStatus::InvalidDiversionHeader => "invalid_diversion_header",
+            ApiStatus::InvalidDropSilence => "invalid_drop_silence",
+            ApiStatus::InvalidDST => "invalid_dst",
+            ApiStatus::InvalidDtmfmode => "invalid_dtmfmode",
+            ApiStatus::InvalidDTMFDigits => "invalid_dtmf_digits",
+            ApiStatus::InvalidEmail => "invalid_email",
+            ApiStatus::InvalidEmailAttachmentFormat => "invalid_email_attachment_format",
+            ApiStatus::InvalidEmailEnable => "invalid_email_enable",
+            ApiStatus::InvalidEnableIPRestriction => "invalid_enable_ip_restriction",
+            ApiStatus::InvalidEnablePOPRestriction => "invalid_enable_pop_restriction",
+            ApiStatus::InvalidEndhour => "invalid_endhour",
+            ApiStatus::InvalidEndminute => "invalid_endminute",
+            ApiStatus::InvalidExtension => "invalid_extension",
+            ApiStatus::InvalidExtensions => "invalid_extensions",
+            ApiStatus::InvalidExtensionLength => "invalid_extension_length",
+            ApiStatus::InvalidExtensionPrefix => "invalid_extension_prefix",
+            ApiStatus::InvalidFailoverHeader => "invalid_failover_header",
+            ApiStatus::InvalidFAXID => "invalid_fax_id",
+            ApiStatus::InvalidFile => "invalid_file",
+            ApiStatus::InvalidFilter => "invalid_filter",
+            ApiStatus::InvalidFirstname => "invalid_firstname",
+            ApiStatus::InvalidFocEnddate => "invalid_foc_enddate",
+            ApiStatus::InvalidFocStartdate => "invalid_foc_startdate",
+            ApiStatus::InvalidFolder => "invalid_folder",
+            ApiStatus::InvalidFolderID => "invalid_folder_id",
+            ApiStatus::InvalidForwarding => "invalid_forwarding",
+            ApiStatus::InvalidForwardingDID => "invalid_forwarding_did",
+            ApiStatus::InvalidForwardEnable => "invalid_forward_enable",
+            ApiStatus::InvalidFrequencyAnnouncement => "invalid_frequency_announcement",
+            ApiStatus::InvalidFromNumber => "invalid_from_number",
+            ApiStatus::InvalidFullname => "invalid_fullname",
+            ApiStatus::InvalidID => "invalid_id",
+            ApiStatus::InvalidIfAnnouncePositionEnabledReportE => {
+                "invalid_if_announce_position_enabled_report_e"
+            }
+            ApiStatus::InvalidInternaldialtime => "invalid_internaldialtime",
+            ApiStatus::InvalidInternalvoicemail => "invalid_internalvoicemail",
+            ApiStatus::InvalidInternationalroute => "invalid_internationalroute",
+            ApiStatus::InvalidInvoiceType => "invalid_invoice_type",
+            ApiStatus::InvalidIP => "invalid_ip",
+            ApiStatus::InvalidIPAuth => "invalid_ip_auth",
+            ApiStatus::InvalidIPIax2 => "invalid_ip_iax2",
+            ApiStatus::InvalidIVR => "invalid_ivr",
+            ApiStatus::InvalidJitterBuffer => "invalid_jitter_buffer",
+            ApiStatus::InvalidJoinAnnouncement => "invalid_join_announcement",
+            ApiStatus::InvalidJoinEmptyType => "invalid_join_empty_type",
+            ApiStatus::InvalidLanguage => "invalid_language",
+            ApiStatus::InvalidLastname => "invalid_lastname",
+            ApiStatus::InvalidListened => "invalid_listened",
+            ApiStatus::InvalidLocation => "invalid_location",
+            ApiStatus::InvalidLockinternational => "invalid_lockinternational",
+            ApiStatus::InvalidMailbox => "invalid_mailbox",
+            ApiStatus::InvalidMaximumCallers => "invalid_maximum_callers",
+            ApiStatus::InvalidMaximumWaitTime => "invalid_maximum_wait_time",
+            ApiStatus::InvalidMaxExpiry => "invalid_max_expiry",
+            ApiStatus::InvalidMember => "invalid_member",
+            ApiStatus::InvalidMemberDelay => "invalid_member_delay",
+            ApiStatus::InvalidMessageNum => "invalid_message_num",
+            ApiStatus::InvalidMethod => "invalid_method",
+            ApiStatus::InvalidMinute => "invalid_minute",
+            ApiStatus::InvalidMixedNumbers => "invalid_mixed_numbers",
+            ApiStatus::InvalidMonthly => "invalid_monthly",
+            ApiStatus::InvalidMusiconhold => "invalid_musiconhold",
+            ApiStatus::InvalidName => "invalid_name",
+            ApiStatus::InvalidNAT => "invalid_nat",
+            ApiStatus::InvalidNote => "invalid_note",
+            ApiStatus::InvalidNumber => "invalid_number",
+            ApiStatus::InvalidNumbermembers => "invalid_numbermembers",
+            ApiStatus::InvalidNumberCanadian => "invalid_number_canadian",
+            ApiStatus::InvalidNumberExist => "invalid_number_exist",
+            ApiStatus::InvalidNumberFAX => "invalid_number_fax",
+            ApiStatus::InvalidNumberPorttype => "invalid_number_porttype",
+            ApiStatus::InvalidNumberUS => "invalid_number_us",
+            ApiStatus::InvalidOrder => "invalid_order",
+            ApiStatus::InvalidPackage => "invalid_package",
+            ApiStatus::InvalidPassword => "invalid_password",
+            ApiStatus::InvalidPasswordAuth => "invalid_password_auth",
+            ApiStatus::InvalidPasswordIlegalCharacters => "invalid_password_ilegal_characters",
+            ApiStatus::InvalidPasswordLessthan8charactersLong => {
+                "invalid_password_lessthan_8characters_long"
+            }
+            ApiStatus::InvalidPasswordMissingLowercase => "invalid_password_missing_lowercase",
+            ApiStatus::InvalidPasswordMissingNumber => "invalid_password_missing_number",
+            ApiStatus::InvalidPasswordMissingUppercase => "invalid_password_missing_uppercase",
+            ApiStatus::InvalidPause => "invalid_pause",
+            ApiStatus::InvalidPayment => "invalid_payment",
+            ApiStatus::InvalidPhonebook => "invalid_phonebook",
+            ApiStatus::InvalidPhonenumber => "invalid_phonenumber",
+            ApiStatus::InvalidPIN => "invalid_pin",
+            ApiStatus::InvalidPINNumber => "invalid_pin_number",
+            ApiStatus::InvalidPlayinstructions => "invalid_playinstructions",
+            ApiStatus::InvalidPOPRestriction => "invalid_pop_restriction",
+            ApiStatus::InvalidPortingid => "invalid_portingid",
+            ApiStatus::InvalidPorttype => "invalid_porttype",
+            ApiStatus::InvalidPortStatus => "invalid_port_status",
+            ApiStatus::InvalidPriority => "invalid_priority",
+            ApiStatus::InvalidPriorityWeight => "invalid_priority_weight",
+            ApiStatus::InvalidProtocol => "invalid_protocol",
+            ApiStatus::InvalidProviderAccount => "invalid_provider_account",
+            ApiStatus::InvalidProviderName => "invalid_provider_name",
+            ApiStatus::InvalidProvince => "invalid_province",
+            ApiStatus::InvalidQuantity => "invalid_quantity",
+            ApiStatus::InvalidQuery => "invalid_query",
+            ApiStatus::InvalidQueue => "invalid_queue",
+            ApiStatus::InvalidQuiet => "invalid_quiet",
+            ApiStatus::InvalidRecording => "invalid_recording",
+            ApiStatus::InvalidRecordingSoundErrorMenu => "invalid_recording_sound_error_menu",
+            ApiStatus::InvalidRecordingSoundGetPIN => "invalid_recording_sound_get_pin",
+            ApiStatus::InvalidRecordingSoundHasJoined => "invalid_recording_sound_has_joined",
+            ApiStatus::InvalidRecordingSoundHasLeft => "invalid_recording_sound_has_left",
+            ApiStatus::InvalidRecordingSoundInvalidPIN => "invalid_recording_sound_invalid_pin",
+            ApiStatus::InvalidRecordingSoundJoin => "invalid_recording_sound_join",
+            ApiStatus::InvalidRecordingSoundKicked => "invalid_recording_sound_kicked",
+            ApiStatus::InvalidRecordingSoundLeave => "invalid_recording_sound_leave",
+            ApiStatus::InvalidRecordingSoundLocked => "invalid_recording_sound_locked",
+            ApiStatus::InvalidRecordingSoundLockedNow => "invalid_recording_sound_locked_now",
+            ApiStatus::InvalidRecordingSoundMuted => "invalid_recording_sound_muted",
+            ApiStatus::InvalidRecordingSoundOnlyOne => "invalid_recording_sound_only_one",
+            ApiStatus::InvalidRecordingSoundOnlyPerson => "invalid_recording_sound_only_person",
+            ApiStatus::InvalidRecordingSoundOtherInParty => {
+                "invalid_recording_sound_other_in_party"
+            }
+            ApiStatus::InvalidRecordingSoundParticipantsMuted => {
+                "invalid_recording_sound_participants_muted"
+            }
+            ApiStatus::InvalidRecordingSoundParticipantsUnmuted => {
+                "invalid_recording_sound_participants_unmuted"
+            }
+            ApiStatus::InvalidRecordingSoundPlaceIntoConference => {
+                "invalid_recording_sound_place_into_conference"
+            }
+            ApiStatus::InvalidRecordingSoundThereAre => "invalid_recording_sound_there_are",
+            ApiStatus::InvalidRecordingSoundUnlockedNow => "invalid_recording_sound_unlocked_now",
+            ApiStatus::InvalidRecordingSoundUnmuted => "invalid_recording_sound_unmuted",
+            ApiStatus::InvalidRecordCalls => "invalid_record_calls",
+            ApiStatus::InvalidReportHoldTimeAgent => "invalid_report_hold_time_agent",
+            ApiStatus::InvalidResellerclient => "invalid_resellerclient",
+            ApiStatus::InvalidResellernextbilling => "invalid_resellernextbilling",
+            ApiStatus::InvalidResellerpackage => "invalid_resellerpackage",
+            ApiStatus::InvalidResponseTimeout => "invalid_response_timeout",
+            ApiStatus::InvalidRetryTimer => "invalid_retry_timer",
+            ApiStatus::InvalidRinggroup => "invalid_ringgroup",
+            ApiStatus::InvalidRingInuse => "invalid_ring_inuse",
+            ApiStatus::InvalidRoute => "invalid_route",
+            ApiStatus::InvalidRoutingHeader => "invalid_routing_header",
+            ApiStatus::InvalidRTPHoldTimeout => "invalid_rtp_hold_timeout",
+            ApiStatus::InvalidRTPTimeout => "invalid_rtp_timeout",
+            ApiStatus::InvalidSaycallerid => "invalid_saycallerid",
+            ApiStatus::InvalidSaytime => "invalid_saytime",
+            ApiStatus::InvalidSecurityCode => "invalid_security_code",
+            ApiStatus::InvalidServerpop => "invalid_serverpop",
+            ApiStatus::InvalidSetup => "invalid_setup",
+            ApiStatus::InvalidSilenceThreshold => "invalid_silence_threshold",
+            ApiStatus::InvalidSIPURI => "invalid_sipuri",
+            ApiStatus::InvalidSIPTraffic => "invalid_sip_traffic",
+            ApiStatus::InvalidSkippassword => "invalid_skippassword",
+            ApiStatus::InvalidSmppPassword => "invalid_smpp_password",
+            ApiStatus::InvalidSmppURL => "invalid_smpp_url",
+            ApiStatus::InvalidSmppUsername => "invalid_smpp_username",
+            ApiStatus::InvalidSMS => "invalid_sms",
+            ApiStatus::InvalidSMSForward => "invalid_sms_forward",
+            ApiStatus::InvalidSnn => "invalid_snn",
+            ApiStatus::InvalidSpeedDial => "invalid_speed_dial",
+            ApiStatus::InvalidStarthour => "invalid_starthour",
+            ApiStatus::InvalidStartminute => "invalid_startminute",
+            ApiStatus::InvalidStartMuted => "invalid_start_muted",
+            ApiStatus::InvalidState => "invalid_state",
+            ApiStatus::InvalidStatementName => "invalid_statement_name",
+            ApiStatus::InvalidStrategy => "invalid_strategy",
+            ApiStatus::InvalidStreetName => "invalid_street_name",
+            ApiStatus::InvalidStreetNumber => "invalid_street_number",
+            ApiStatus::InvalidTalkingThreshold => "invalid_talking_threshold",
+            ApiStatus::InvalidTalkDetection => "invalid_talk_detection",
+            ApiStatus::InvalidTfnumberPorttype => "invalid_tfnumber_porttype",
+            ApiStatus::InvalidThankyouForYourPatience => "invalid_thankyou_for_your_patience",
+            ApiStatus::InvalidThreshold => "Invalid_threshold",
+            ApiStatus::InvalidTimecondition => "invalid_timecondition",
+            ApiStatus::InvalidTimeout => "invalid_timeout",
+            ApiStatus::InvalidTimerange => "invalid_timerange",
+            ApiStatus::InvalidTimezone => "invalid_timezone",
+            ApiStatus::InvalidToNumber => "invalid_to_number",
+            ApiStatus::InvalidTranscriptionEmail => "invalid_transcription_email",
+            ApiStatus::InvalidTranscriptionFormat => "invalid_transcription_format",
+            ApiStatus::InvalidTranscriptionLocale => "invalid_transcription_locale",
+            ApiStatus::InvalidTranscriptionRedaction => "invalid_transcription_redaction",
+            ApiStatus::InvalidTranscriptionSentiment => "invalid_transcription_sentiment",
+            ApiStatus::InvalidTranscriptionSummary => "invalid_transcription_summary",
+            ApiStatus::InvalidType => "invalid_type",
+            ApiStatus::InvalidUrgent => "invalid_urgent",
+            ApiStatus::InvalidUsername => "invalid_username",
+            ApiStatus::InvalidVoicemailsetup => "invalid_voicemailsetup",
+            ApiStatus::InvalidVoiceAnnouncement => "invalid_voice_announcement",
+            ApiStatus::InvalidWeekdayend => "invalid_weekdayend",
+            ApiStatus::InvalidWeekdaystart => "invalid_weekdaystart",
+            ApiStatus::InvalidWrapupTime => "invalid_wrapup_time",
+            ApiStatus::InvalidZip => "invalid_zip",
+            ApiStatus::IPNotEnabled => "ip_not_enabled",
+            ApiStatus::LimitReached => "limit_reached",
+            ApiStatus::LocationAlreadyExists => "location_already_exists",
+            ApiStatus::LocationLinkedToSubaccount => "location_linked_to_subaccount",
+            ApiStatus::LocationNotFound => "location_not_found",
+            ApiStatus::MaxPhonebook => "max_phonebook",
+            ApiStatus::MembersExceeded => "members_exceeded",
+            ApiStatus::MemberAlreadyIncluded => "member_already_included",
+            ApiStatus::MessageEmpty => "message_empty",
+            ApiStatus::MessageNotFound => "message_not_found",
+            ApiStatus::MethodMaintenance => "method_maintenance",
+            ApiStatus::MismatchEmailConfirm => "mismatch_email_confirm",
+            ApiStatus::MismatchPasswordConfirm => "mismatch_password_confirm",
+            ApiStatus::MissingAccount => "missing_account",
+            ApiStatus::MissingAddress => "missing_address",
+            ApiStatus::MissingAgentRingTimeout => "missing_agent_ring_timeout",
+            ApiStatus::MissingAllowedcodecs => "missing_allowedcodecs",
+            ApiStatus::MissingAttachmessage => "missing_attachmessage",
+            ApiStatus::MissingAuthtype => "missing_authtype",
+            ApiStatus::MissingBalancemanagement => "missing_balancemanagement",
+            ApiStatus::MissingBillingtype => "missing_billingtype",
+            ApiStatus::MissingCallback => "missing_callback",
+            ApiStatus::MissingCallerid => "missing_callerid",
+            ApiStatus::MissingCallhunting => "missing_callhunting",
+            ApiStatus::MissingCallparking => "missing_callparking",
+            ApiStatus::MissingCallrecording => "missing_callrecording",
+            ApiStatus::MissingCarrier => "missing_carrier",
+            ApiStatus::MissingCharge => "missing_charge",
+            ApiStatus::MissingChoices => "missing_choices",
+            ApiStatus::MissingCity => "missing_city",
+            ApiStatus::MissingClient => "missing_client",
+            ApiStatus::MissingCNAM => "missing_cnam",
+            ApiStatus::MissingCodec => "missing_codec",
+            ApiStatus::MissingConference => "missing_conference",
+            ApiStatus::MissingCountry => "missing_country",
+            ApiStatus::MissingCountryid => "missing_countryid",
+            ApiStatus::MissingCredentials => "missing_credentials",
+            ApiStatus::MissingDatetime => "missing_datetime",
+            ApiStatus::MissingDelayBefore => "missing_delay_before",
+            ApiStatus::MissingDeletemessage => "missing_deletemessage",
+            ApiStatus::MissingDescription => "missing_description",
+            ApiStatus::MissingDevicetype => "missing_devicetype",
+            ApiStatus::MissingDialtime => "missing_dialtime",
+            ApiStatus::MissingDID => "missing_did",
+            ApiStatus::MissingDigits => "missing_digits",
+            ApiStatus::MissingDigitTimeout => "missing_digit_timeout",
+            ApiStatus::MissingDISA => "missing_disa",
+            ApiStatus::MissingDtmfmode => "missing_dtmfmode",
+            ApiStatus::MissingEmail => "missing_email",
+            ApiStatus::MissingEmailConfirm => "missing_email_confirm",
+            ApiStatus::MissingEnable => "missing_enable",
+            ApiStatus::MissingEndhour => "missing_endhour",
+            ApiStatus::MissingEndminute => "missing_endminute",
+            ApiStatus::MissingFailoverBusy => "missing_failover_busy",
+            ApiStatus::MissingFailoverNoanswer => "missing_failover_noanswer",
+            ApiStatus::MissingFailoverUnreachable => "missing_failover_unreachable",
+            ApiStatus::MissingFile => "missing_file",
+            ApiStatus::MissingFilter => "missing_filter",
+            ApiStatus::MissingFirstname => "missing_firstname",
+            ApiStatus::MissingFolder => "missing_folder",
+            ApiStatus::MissingForwarding => "missing_forwarding",
+            ApiStatus::MissingFromDate => "missing_from_date",
+            ApiStatus::MissingFullname => "missing_fullname",
+            ApiStatus::MissingID => "missing_id",
+            ApiStatus::MissingIfAnnouncePositionEnabledReportE => {
+                "missing_if_announce_position_enabled_report_e"
+            }
+            ApiStatus::MissingInternationalroute => "missing_internationalroute",
+            ApiStatus::MissingIP => "missing_ip",
+            ApiStatus::MissingIPH323 => "missing_ip_h323",
+            ApiStatus::MissingIPRestriction => "missing_ip_restriction",
+            ApiStatus::MissingIVR => "missing_ivr",
+            ApiStatus::MissingJoinWhenEmpty => "missing_join_when_empty",
+            ApiStatus::MissingLanguage => "missing_language",
+            ApiStatus::MissingLastname => "missing_lastname",
+            ApiStatus::MissingLeaveWhenEmpty => "missing_leave_when_empty",
+            ApiStatus::MissingLength => "missing_length",
+            ApiStatus::MissingListened => "missing_listened",
+            ApiStatus::MissingLocation => "missing_location",
+            ApiStatus::MissingLocationName => "missing_location_name",
+            ApiStatus::MissingLockinternational => "missing_lockinternational",
+            ApiStatus::MissingMailbox => "missing_mailbox",
+            ApiStatus::MissingMember => "missing_member",
+            ApiStatus::MissingMembers => "missing_members",
+            ApiStatus::MissingMessageNum => "missing_message_num",
+            ApiStatus::MissingMethod => "missing_method",
+            ApiStatus::MissingMinute => "missing_minute",
+            ApiStatus::MissingMonthly => "missing_monthly",
+            ApiStatus::MissingMusiconhold => "missing_musiconhold",
+            ApiStatus::MissingName => "missing_name",
+            ApiStatus::MissingNAT => "missing_nat",
+            ApiStatus::MissingNumber => "missing_number",
+            ApiStatus::MissingNumbers => "missing_numbers",
+            ApiStatus::MissingPackage => "missing_package",
+            ApiStatus::MissingParams => "missing_params",
+            ApiStatus::MissingPassword => "missing_password",
+            ApiStatus::MissingPasswordConfirm => "missing_password_confirm",
+            ApiStatus::MissingPayment => "missing_payment",
+            ApiStatus::MissingPhonebook => "missing_phonebook",
+            ApiStatus::MissingPhonenumber => "missing_phonenumber",
+            ApiStatus::MissingPIN => "missing_pin",
+            ApiStatus::MissingPlayinstructions => "missing_playinstructions",
+            ApiStatus::MissingPOPRestriction => "missing_pop_restriction",
+            ApiStatus::MissingPriority => "missing_priority",
+            ApiStatus::MissingPriorityWeight => "missing_priority_weight",
+            ApiStatus::MissingProtocol => "missing_protocol",
+            ApiStatus::MissingProvince => "missing_province",
+            ApiStatus::MissingQuery => "missing_query",
+            ApiStatus::MissingRecording => "missing_recording",
+            ApiStatus::MissingReportHoldTimeAgent => "missing_report_hold_time_agent",
+            ApiStatus::MissingResellerclient => "missing_resellerclient",
+            ApiStatus::MissingResellerpackage => "missing_resellerpackage",
+            ApiStatus::MissingResponseTimeout => "missing_response_timeout",
+            ApiStatus::MissingRinggroup => "missing_ringgroup",
+            ApiStatus::MissingRingInuse => "missing_ring_inuse",
+            ApiStatus::MissingRingStrategy => "missing_ring_strategy",
+            ApiStatus::MissingRoute => "missing_route",
+            ApiStatus::MissingRouting => "missing_routing",
+            ApiStatus::MissingSaycallerid => "missing_saycallerid",
+            ApiStatus::MissingSaytime => "missing_saytime",
+            ApiStatus::MissingServerpop => "missing_serverpop",
+            ApiStatus::MissingSetup => "missing_setup",
+            ApiStatus::MissingSIPURI => "missing_sipuri",
+            ApiStatus::MissingSkippassword => "missing_skippassword",
+            ApiStatus::MissingSMS => "missing_sms",
+            ApiStatus::MissingSpeedDial => "missing_speed_dial",
+            ApiStatus::MissingStart => "missing_start",
+            ApiStatus::MissingStarthour => "missing_starthour",
+            ApiStatus::MissingStartminute => "missing_startminute",
+            ApiStatus::MissingState => "missing_state",
+            ApiStatus::MissingStreetName => "missing_street_name",
+            ApiStatus::MissingStreetNumber => "missing_street_number",
+            ApiStatus::MissingThankyouForYourPatience => "missing_thankyou_for_your_patience",
+            ApiStatus::MissingTimecondition => "missing_timecondition",
+            ApiStatus::MissingTimeout => "missing_timeout",
+            ApiStatus::MissingTimezone => "missing_timezone",
+            ApiStatus::MissingToDate => "missing_to_date",
+            ApiStatus::MissingTranscriptionEmail => "missing_transcription_email",
+            ApiStatus::MissingTranscriptionLocale => "missing_transcription_locale",
+            ApiStatus::MissingType => "missing_type",
+            ApiStatus::MissingUrgent => "missing_urgent",
+            ApiStatus::MissingURI => "missing_uri",
+            ApiStatus::MissingUsername => "missing_username",
+            ApiStatus::MissingVoicemailsetup => "missing_voicemailsetup",
+            ApiStatus::MissingWeekdayend => "missing_weekdayend",
+            ApiStatus::MissingWeekdaystart => "missing_weekdaystart",
+            ApiStatus::MissingZip => "missing_zip",
+            ApiStatus::MovingFail => "moving_fail",
+            ApiStatus::NameToolong => "name_toolong",
+            ApiStatus::NonSufficientFunds => "non_sufficient_funds",
+            ApiStatus::NoteToolong => "note_toolong",
+            ApiStatus::NoAccount => "no_account",
+            ApiStatus::NoAttachments => "no_attachments",
+            ApiStatus::NoBase64file => "no_base64file",
+            ApiStatus::NoCallback => "no_callback",
+            ApiStatus::NoCallhunting => "no_callhunting",
+            ApiStatus::NoCallparking => "no_callparking",
+            ApiStatus::NoCallstatus => "no_callstatus",
+            ApiStatus::NoCDR => "no_cdr",
+            ApiStatus::NoChangeBillingtype => "no_change_billingtype",
+            ApiStatus::NoClient => "no_client",
+            ApiStatus::NoConference => "no_conference",
+            ApiStatus::NoDID => "no_did",
+            ApiStatus::NoDISA => "no_disa",
+            ApiStatus::NoFilter => "no_filter",
+            ApiStatus::NoForwarding => "no_forwarding",
+            ApiStatus::NoIVR => "no_ivr",
+            ApiStatus::NoMailbox => "no_mailbox",
+            ApiStatus::NoMember => "no_member",
+            ApiStatus::NoMessage => "no_message",
+            ApiStatus::NoMessages => "no_messages",
+            ApiStatus::NoNumbers => "no_numbers",
+            ApiStatus::NoPackage => "no_package",
+            ApiStatus::NoPhonebook => "no_phonebook",
+            ApiStatus::NoProvision => "no_provision",
+            ApiStatus::NoProvisionUpdate => "no_provision_update",
+            ApiStatus::NoQueue => "no_queue",
+            ApiStatus::NoRate => "no_rate",
+            ApiStatus::NoRecording => "no_recording",
+            ApiStatus::NoRinggroup => "no_ringgroup",
+            ApiStatus::NoSequences => "no_sequences",
+            ApiStatus::NoSIPURI => "no_sipuri",
+            ApiStatus::NoSMS => "no_sms",
+            ApiStatus::NoTimecondition => "no_timecondition",
+            ApiStatus::OrderFailed => "order_failed",
+            ApiStatus::ProblemSendingMail => "problem_sending_mail",
+            ApiStatus::ProviderOutofservice => "provider_outofservice",
+            ApiStatus::RecordingInUseCallerIDFiltering => "recording_in_use_caller_id_filtering",
+            ApiStatus::RecordingInUseCallerTimecondition => "recording_in_use_caller_timecondition",
+            ApiStatus::RecordingInUseDID => "recording_in_use_did",
+            ApiStatus::RecordingInUseIVR => "recording_in_use_ivr",
+            ApiStatus::RecordingInUseQueue => "recording_in_use_queue",
+            ApiStatus::RepeatedIP => "repeated_ip",
+            ApiStatus::ReservedIP => "reserved_ip",
+            ApiStatus::RTPTimeoutGreaterThanRTPHoldTimeout => {
+                "rtp_timeout_greater_than_rtp_hold_timeout"
+            }
+            ApiStatus::SameDIDBillingtype => "same_did_billingtype",
+            ApiStatus::SentFail => "sent_fail",
+            ApiStatus::SIPURIInPhonebook => "sipuri_in_phonebook",
+            ApiStatus::SMSApplyRegulations => "sms_apply_regulations",
+            ApiStatus::SMSFailed => "sms_failed",
+            ApiStatus::SMSToolong => "sms_toolong",
+            ApiStatus::SMSWaitMessage => "sms_wait_message",
+            ApiStatus::TlsError => "tls_error",
+            ApiStatus::UnableToPurchase => "Unable_to_purchase",
+            ApiStatus::UnavailableInfo => "unavailable_info",
+            ApiStatus::UnsifficientStock => "unsifficient_stock",
+            ApiStatus::UsedDescription => "used_description",
+            ApiStatus::UsedEmail => "used_email",
+            ApiStatus::UsedExtension => "used_extension",
+            ApiStatus::UsedExtensionInLocation => "used_extension_in_location",
+            ApiStatus::UsedFilter => "used_filter",
+            ApiStatus::UsedIP => "used_ip",
+            ApiStatus::UsedName => "used_name",
+            ApiStatus::UsedNumber => "used_number",
+            ApiStatus::UsedPassword => "used_password",
+            ApiStatus::UsedSpeedDial => "used_speed_dial",
+            ApiStatus::UsedUsername => "used_username",
+            ApiStatus::WeakPassword => "weak_password",
+            ApiStatus::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire `status` string. Unknown values are preserved
+    /// in [`ApiStatus::Unknown`].
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "account_with_dids" => ApiStatus::AccountWithDIDs,
+            "api_limit_exceeded" => ApiStatus::APILimitExceeded,
+            "api_not_enabled" => ApiStatus::APINotEnabled,
+            "cancel_failed" => ApiStatus::CancelFailed,
+            "can_have_only_one_profile_without_pin" => ApiStatus::CANHaveOnlyOneProfileWithoutPIN,
+            "conference_member_relation_not_found" => ApiStatus::ConferenceMemberRelationNotFound,
+            "did_in_use" => ApiStatus::DIDInUse,
+            "did_limit_reached" => ApiStatus::DIDLimitReached,
+            "duplicated_name" => ApiStatus::DuplicatedName,
+            "duplicated_pin" => ApiStatus::DuplicatedPIN,
+            "e911_disabled" => ApiStatus::E911Disabled,
+            "e911_pending" => ApiStatus::E911Pending,
+            "error_deleting_msg" => ApiStatus::ErrorDeletingMsg,
+            "error_moving_msg" => ApiStatus::ErrorMovingMsg,
+            "exceeds_file_size" => ApiStatus::ExceedsFileSize,
+            "existing_did" => ApiStatus::ExistingDID,
+            "forwards_exceeded" => ApiStatus::ForwardsExceeded,
+            "invalid_account" => ApiStatus::InvalidAccount,
+            "invalid_address" => ApiStatus::InvalidAddress,
+            "invalid_admin" => ApiStatus::InvalidAdmin,
+            "invalid_agent_ring_timeout" => ApiStatus::InvalidAgentRingTimeout,
+            "invalid_allowedcodecs" => ApiStatus::InvalidAllowedcodecs,
+            "invalid_announce_join_leave" => ApiStatus::InvalidAnnounceJoinLeave,
+            "invalid_announce_only_user" => ApiStatus::InvalidAnnounceOnlyUser,
+            "invalid_announce_position_frequency" => ApiStatus::InvalidAnnouncePositionFrequency,
+            "invalid_announce_round_seconds" => ApiStatus::InvalidAnnounceRoundSeconds,
+            "invalid_announce_user_count" => ApiStatus::InvalidAnnounceUserCount,
+            "invalid_area_code" => ApiStatus::InvalidAreaCode,
+            "invalid_attachid" => ApiStatus::InvalidAttachid,
+            "invalid_attachmessage" => ApiStatus::InvalidAttachmessage,
+            "invalid_attach_file" => ApiStatus::InvalidAttachFile,
+            "invalid_authtype" => ApiStatus::InvalidAuthtype,
+            "invalid_authtype_h323" => ApiStatus::InvalidAuthtypeH323,
+            "invalid_authtype_iax2" => ApiStatus::InvalidAuthtypeIax2,
+            "invalid_balancemanagement" => ApiStatus::InvalidBalancemanagement,
+            "invalid_base_recording" => ApiStatus::InvalidBaseRecording,
+            "invalid_billingtype" => ApiStatus::InvalidBillingtype,
+            "invalid_callback" => ApiStatus::InvalidCallback,
+            "invalid_callback_enable" => ApiStatus::InvalidCallbackEnable,
+            "invalid_callback_retry" => ApiStatus::InvalidCallbackRetry,
+            "invalid_callerid" => ApiStatus::InvalidCallerid,
+            "invalid_calleridprefix" => ApiStatus::InvalidCalleridprefix,
+            "invalid_callerid_override" => ApiStatus::InvalidCalleridOverride,
+            "invalid_callhunting" => ApiStatus::InvalidCallhunting,
+            "invalid_callparking" => ApiStatus::InvalidCallparking,
+            "invalid_callrecording" => ApiStatus::InvalidCallrecording,
+            "invalid_call_type" => ApiStatus::InvalidCallType,
+            "invalid_canada_routing" => ApiStatus::InvalidCanadaRouting,
+            "invalid_carrier" => ApiStatus::InvalidCarrier,
+            "invalid_charge" => ApiStatus::InvalidCharge,
+            "invalid_city" => ApiStatus::InvalidCity,
+            "invalid_client" => ApiStatus::InvalidClient,
+            "invalid_cnam" => ApiStatus::InvalidCNAM,
+            "invalid_codec" => ApiStatus::InvalidCodec,
+            "invalid_conference" => ApiStatus::InvalidConference,
+            "invalid_contact" => ApiStatus::InvalidContact,
+            "invalid_country" => ApiStatus::InvalidCountry,
+            "invalid_countryid" => ApiStatus::InvalidCountryid,
+            "invalid_credentials" => ApiStatus::InvalidCredentials,
+            "invalid_date" => ApiStatus::InvalidDate,
+            "invalid_daterange" => ApiStatus::InvalidDaterange,
+            "invalid_datetime" => ApiStatus::InvalidDatetime,
+            "invalid_date_from" => ApiStatus::InvalidDateFrom,
+            "invalid_dayrange" => ApiStatus::InvalidDayrange,
+            "invalid_delay_before" => ApiStatus::InvalidDelayBefore,
+            "invalid_deletemessage" => ApiStatus::InvalidDeletemessage,
+            "invalid_description" => ApiStatus::InvalidDescription,
+            "invalid_destination" => ApiStatus::InvalidDestination,
+            "invalid_destination_folder" => ApiStatus::InvalidDestinationFolder,
+            "invalid_devicetype" => ApiStatus::InvalidDevicetype,
+            "invalid_dialtime" => ApiStatus::InvalidDialtime,
+            "invalid_did" => ApiStatus::InvalidDID,
+            "invalid_digits" => ApiStatus::InvalidDigits,
+            "invalid_digit_timeout" => ApiStatus::InvalidDigitTimeout,
+            "invalid_disa" => ApiStatus::InvalidDISA,
+            "invalid_diversion_header" => ApiStatus::InvalidDiversionHeader,
+            "invalid_drop_silence" => ApiStatus::InvalidDropSilence,
+            "invalid_dst" => ApiStatus::InvalidDST,
+            "invalid_dtmfmode" => ApiStatus::InvalidDtmfmode,
+            "invalid_dtmf_digits" => ApiStatus::InvalidDTMFDigits,
+            "invalid_email" => ApiStatus::InvalidEmail,
+            "invalid_email_attachment_format" => ApiStatus::InvalidEmailAttachmentFormat,
+            "invalid_email_enable" => ApiStatus::InvalidEmailEnable,
+            "invalid_enable_ip_restriction" => ApiStatus::InvalidEnableIPRestriction,
+            "invalid_enable_pop_restriction" => ApiStatus::InvalidEnablePOPRestriction,
+            "invalid_endhour" => ApiStatus::InvalidEndhour,
+            "invalid_endminute" => ApiStatus::InvalidEndminute,
+            "invalid_extension" => ApiStatus::InvalidExtension,
+            "invalid_extensions" => ApiStatus::InvalidExtensions,
+            "invalid_extension_length" => ApiStatus::InvalidExtensionLength,
+            "invalid_extension_prefix" => ApiStatus::InvalidExtensionPrefix,
+            "invalid_failover_header" => ApiStatus::InvalidFailoverHeader,
+            "invalid_fax_id" => ApiStatus::InvalidFAXID,
+            "invalid_file" => ApiStatus::InvalidFile,
+            "invalid_filter" => ApiStatus::InvalidFilter,
+            "invalid_firstname" => ApiStatus::InvalidFirstname,
+            "invalid_foc_enddate" => ApiStatus::InvalidFocEnddate,
+            "invalid_foc_startdate" => ApiStatus::InvalidFocStartdate,
+            "invalid_folder" => ApiStatus::InvalidFolder,
+            "invalid_folder_id" => ApiStatus::InvalidFolderID,
+            "invalid_forwarding" => ApiStatus::InvalidForwarding,
+            "invalid_forwarding_did" => ApiStatus::InvalidForwardingDID,
+            "invalid_forward_enable" => ApiStatus::InvalidForwardEnable,
+            "invalid_frequency_announcement" => ApiStatus::InvalidFrequencyAnnouncement,
+            "invalid_from_number" => ApiStatus::InvalidFromNumber,
+            "invalid_fullname" => ApiStatus::InvalidFullname,
+            "invalid_id" => ApiStatus::InvalidID,
+            "invalid_if_announce_position_enabled_report_e" => {
+                ApiStatus::InvalidIfAnnouncePositionEnabledReportE
+            }
+            "invalid_internaldialtime" => ApiStatus::InvalidInternaldialtime,
+            "invalid_internalvoicemail" => ApiStatus::InvalidInternalvoicemail,
+            "invalid_internationalroute" => ApiStatus::InvalidInternationalroute,
+            "invalid_invoice_type" => ApiStatus::InvalidInvoiceType,
+            "invalid_ip" => ApiStatus::InvalidIP,
+            "invalid_ip_auth" => ApiStatus::InvalidIPAuth,
+            "invalid_ip_iax2" => ApiStatus::InvalidIPIax2,
+            "invalid_ivr" => ApiStatus::InvalidIVR,
+            "invalid_jitter_buffer" => ApiStatus::InvalidJitterBuffer,
+            "invalid_join_announcement" => ApiStatus::InvalidJoinAnnouncement,
+            "invalid_join_empty_type" => ApiStatus::InvalidJoinEmptyType,
+            "invalid_language" => ApiStatus::InvalidLanguage,
+            "invalid_lastname" => ApiStatus::InvalidLastname,
+            "invalid_listened" => ApiStatus::InvalidListened,
+            "invalid_location" => ApiStatus::InvalidLocation,
+            "invalid_lockinternational" => ApiStatus::InvalidLockinternational,
+            "invalid_mailbox" => ApiStatus::InvalidMailbox,
+            "invalid_maximum_callers" => ApiStatus::InvalidMaximumCallers,
+            "invalid_maximum_wait_time" => ApiStatus::InvalidMaximumWaitTime,
+            "invalid_max_expiry" => ApiStatus::InvalidMaxExpiry,
+            "invalid_member" => ApiStatus::InvalidMember,
+            "invalid_member_delay" => ApiStatus::InvalidMemberDelay,
+            "invalid_message_num" => ApiStatus::InvalidMessageNum,
+            "invalid_method" => ApiStatus::InvalidMethod,
+            "invalid_minute" => ApiStatus::InvalidMinute,
+            "invalid_mixed_numbers" => ApiStatus::InvalidMixedNumbers,
+            "invalid_monthly" => ApiStatus::InvalidMonthly,
+            "invalid_musiconhold" => ApiStatus::InvalidMusiconhold,
+            "invalid_name" => ApiStatus::InvalidName,
+            "invalid_nat" => ApiStatus::InvalidNAT,
+            "invalid_note" => ApiStatus::InvalidNote,
+            "invalid_number" => ApiStatus::InvalidNumber,
+            "invalid_numbermembers" => ApiStatus::InvalidNumbermembers,
+            "invalid_number_canadian" => ApiStatus::InvalidNumberCanadian,
+            "invalid_number_exist" => ApiStatus::InvalidNumberExist,
+            "invalid_number_fax" => ApiStatus::InvalidNumberFAX,
+            "invalid_number_porttype" => ApiStatus::InvalidNumberPorttype,
+            "invalid_number_us" => ApiStatus::InvalidNumberUS,
+            "invalid_order" => ApiStatus::InvalidOrder,
+            "invalid_package" => ApiStatus::InvalidPackage,
+            "invalid_password" => ApiStatus::InvalidPassword,
+            "invalid_password_auth" => ApiStatus::InvalidPasswordAuth,
+            "invalid_password_ilegal_characters" => ApiStatus::InvalidPasswordIlegalCharacters,
+            "invalid_password_lessthan_8characters_long" => {
+                ApiStatus::InvalidPasswordLessthan8charactersLong
+            }
+            "invalid_password_missing_lowercase" => ApiStatus::InvalidPasswordMissingLowercase,
+            "invalid_password_missing_number" => ApiStatus::InvalidPasswordMissingNumber,
+            "invalid_password_missing_uppercase" => ApiStatus::InvalidPasswordMissingUppercase,
+            "invalid_pause" => ApiStatus::InvalidPause,
+            "invalid_payment" => ApiStatus::InvalidPayment,
+            "invalid_phonebook" => ApiStatus::InvalidPhonebook,
+            "invalid_phonenumber" => ApiStatus::InvalidPhonenumber,
+            "invalid_pin" => ApiStatus::InvalidPIN,
+            "invalid_pin_number" => ApiStatus::InvalidPINNumber,
+            "invalid_playinstructions" => ApiStatus::InvalidPlayinstructions,
+            "invalid_pop_restriction" => ApiStatus::InvalidPOPRestriction,
+            "invalid_portingid" => ApiStatus::InvalidPortingid,
+            "invalid_porttype" => ApiStatus::InvalidPorttype,
+            "invalid_port_status" => ApiStatus::InvalidPortStatus,
+            "invalid_priority" => ApiStatus::InvalidPriority,
+            "invalid_priority_weight" => ApiStatus::InvalidPriorityWeight,
+            "invalid_protocol" => ApiStatus::InvalidProtocol,
+            "invalid_provider_account" => ApiStatus::InvalidProviderAccount,
+            "invalid_provider_name" => ApiStatus::InvalidProviderName,
+            "invalid_province" => ApiStatus::InvalidProvince,
+            "invalid_quantity" => ApiStatus::InvalidQuantity,
+            "invalid_query" => ApiStatus::InvalidQuery,
+            "invalid_queue" => ApiStatus::InvalidQueue,
+            "invalid_quiet" => ApiStatus::InvalidQuiet,
+            "invalid_recording" => ApiStatus::InvalidRecording,
+            "invalid_recording_sound_error_menu" => ApiStatus::InvalidRecordingSoundErrorMenu,
+            "invalid_recording_sound_get_pin" => ApiStatus::InvalidRecordingSoundGetPIN,
+            "invalid_recording_sound_has_joined" => ApiStatus::InvalidRecordingSoundHasJoined,
+            "invalid_recording_sound_has_left" => ApiStatus::InvalidRecordingSoundHasLeft,
+            "invalid_recording_sound_invalid_pin" => ApiStatus::InvalidRecordingSoundInvalidPIN,
+            "invalid_recording_sound_join" => ApiStatus::InvalidRecordingSoundJoin,
+            "invalid_recording_sound_kicked" => ApiStatus::InvalidRecordingSoundKicked,
+            "invalid_recording_sound_leave" => ApiStatus::InvalidRecordingSoundLeave,
+            "invalid_recording_sound_locked" => ApiStatus::InvalidRecordingSoundLocked,
+            "invalid_recording_sound_locked_now" => ApiStatus::InvalidRecordingSoundLockedNow,
+            "invalid_recording_sound_muted" => ApiStatus::InvalidRecordingSoundMuted,
+            "invalid_recording_sound_only_one" => ApiStatus::InvalidRecordingSoundOnlyOne,
+            "invalid_recording_sound_only_person" => ApiStatus::InvalidRecordingSoundOnlyPerson,
+            "invalid_recording_sound_other_in_party" => {
+                ApiStatus::InvalidRecordingSoundOtherInParty
+            }
+            "invalid_recording_sound_participants_muted" => {
+                ApiStatus::InvalidRecordingSoundParticipantsMuted
+            }
+            "invalid_recording_sound_participants_unmuted" => {
+                ApiStatus::InvalidRecordingSoundParticipantsUnmuted
+            }
+            "invalid_recording_sound_place_into_conference" => {
+                ApiStatus::InvalidRecordingSoundPlaceIntoConference
+            }
+            "invalid_recording_sound_there_are" => ApiStatus::InvalidRecordingSoundThereAre,
+            "invalid_recording_sound_unlocked_now" => ApiStatus::InvalidRecordingSoundUnlockedNow,
+            "invalid_recording_sound_unmuted" => ApiStatus::InvalidRecordingSoundUnmuted,
+            "invalid_record_calls" => ApiStatus::InvalidRecordCalls,
+            "invalid_report_hold_time_agent" => ApiStatus::InvalidReportHoldTimeAgent,
+            "invalid_resellerclient" => ApiStatus::InvalidResellerclient,
+            "invalid_resellernextbilling" => ApiStatus::InvalidResellernextbilling,
+            "invalid_resellerpackage" => ApiStatus::InvalidResellerpackage,
+            "invalid_response_timeout" => ApiStatus::InvalidResponseTimeout,
+            "invalid_retry_timer" => ApiStatus::InvalidRetryTimer,
+            "invalid_ringgroup" => ApiStatus::InvalidRinggroup,
+            "invalid_ring_inuse" => ApiStatus::InvalidRingInuse,
+            "invalid_route" => ApiStatus::InvalidRoute,
+            "invalid_routing_header" => ApiStatus::InvalidRoutingHeader,
+            "invalid_rtp_hold_timeout" => ApiStatus::InvalidRTPHoldTimeout,
+            "invalid_rtp_timeout" => ApiStatus::InvalidRTPTimeout,
+            "invalid_saycallerid" => ApiStatus::InvalidSaycallerid,
+            "invalid_saytime" => ApiStatus::InvalidSaytime,
+            "invalid_security_code" => ApiStatus::InvalidSecurityCode,
+            "invalid_serverpop" => ApiStatus::InvalidServerpop,
+            "invalid_setup" => ApiStatus::InvalidSetup,
+            "invalid_silence_threshold" => ApiStatus::InvalidSilenceThreshold,
+            "invalid_sipuri" => ApiStatus::InvalidSIPURI,
+            "invalid_sip_traffic" => ApiStatus::InvalidSIPTraffic,
+            "invalid_skippassword" => ApiStatus::InvalidSkippassword,
+            "invalid_smpp_password" => ApiStatus::InvalidSmppPassword,
+            "invalid_smpp_url" => ApiStatus::InvalidSmppURL,
+            "invalid_smpp_username" => ApiStatus::InvalidSmppUsername,
+            "invalid_sms" => ApiStatus::InvalidSMS,
+            "invalid_sms_forward" => ApiStatus::InvalidSMSForward,
+            "invalid_snn" => ApiStatus::InvalidSnn,
+            "invalid_speed_dial" => ApiStatus::InvalidSpeedDial,
+            "invalid_starthour" => ApiStatus::InvalidStarthour,
+            "invalid_startminute" => ApiStatus::InvalidStartminute,
+            "invalid_start_muted" => ApiStatus::InvalidStartMuted,
+            "invalid_state" => ApiStatus::InvalidState,
+            "invalid_statement_name" => ApiStatus::InvalidStatementName,
+            "invalid_strategy" => ApiStatus::InvalidStrategy,
+            "invalid_street_name" => ApiStatus::InvalidStreetName,
+            "invalid_street_number" => ApiStatus::InvalidStreetNumber,
+            "invalid_talking_threshold" => ApiStatus::InvalidTalkingThreshold,
+            "invalid_talk_detection" => ApiStatus::InvalidTalkDetection,
+            "invalid_tfnumber_porttype" => ApiStatus::InvalidTfnumberPorttype,
+            "invalid_thankyou_for_your_patience" => ApiStatus::InvalidThankyouForYourPatience,
+            "Invalid_threshold" => ApiStatus::InvalidThreshold,
+            "invalid_timecondition" => ApiStatus::InvalidTimecondition,
+            "invalid_timeout" => ApiStatus::InvalidTimeout,
+            "invalid_timerange" => ApiStatus::InvalidTimerange,
+            "invalid_timezone" => ApiStatus::InvalidTimezone,
+            "invalid_to_number" => ApiStatus::InvalidToNumber,
+            "invalid_transcription_email" => ApiStatus::InvalidTranscriptionEmail,
+            "invalid_transcription_format" => ApiStatus::InvalidTranscriptionFormat,
+            "invalid_transcription_locale" => ApiStatus::InvalidTranscriptionLocale,
+            "invalid_transcription_redaction" => ApiStatus::InvalidTranscriptionRedaction,
+            "invalid_transcription_sentiment" => ApiStatus::InvalidTranscriptionSentiment,
+            "invalid_transcription_summary" => ApiStatus::InvalidTranscriptionSummary,
+            "invalid_type" => ApiStatus::InvalidType,
+            "invalid_urgent" => ApiStatus::InvalidUrgent,
+            "invalid_username" => ApiStatus::InvalidUsername,
+            "invalid_voicemailsetup" => ApiStatus::InvalidVoicemailsetup,
+            "invalid_voice_announcement" => ApiStatus::InvalidVoiceAnnouncement,
+            "invalid_weekdayend" => ApiStatus::InvalidWeekdayend,
+            "invalid_weekdaystart" => ApiStatus::InvalidWeekdaystart,
+            "invalid_wrapup_time" => ApiStatus::InvalidWrapupTime,
+            "invalid_zip" => ApiStatus::InvalidZip,
+            "ip_not_enabled" => ApiStatus::IPNotEnabled,
+            "limit_reached" => ApiStatus::LimitReached,
+            "location_already_exists" => ApiStatus::LocationAlreadyExists,
+            "location_linked_to_subaccount" => ApiStatus::LocationLinkedToSubaccount,
+            "location_not_found" => ApiStatus::LocationNotFound,
+            "max_phonebook" => ApiStatus::MaxPhonebook,
+            "members_exceeded" => ApiStatus::MembersExceeded,
+            "member_already_included" => ApiStatus::MemberAlreadyIncluded,
+            "message_empty" => ApiStatus::MessageEmpty,
+            "message_not_found" => ApiStatus::MessageNotFound,
+            "method_maintenance" => ApiStatus::MethodMaintenance,
+            "mismatch_email_confirm" => ApiStatus::MismatchEmailConfirm,
+            "mismatch_password_confirm" => ApiStatus::MismatchPasswordConfirm,
+            "missing_account" => ApiStatus::MissingAccount,
+            "missing_address" => ApiStatus::MissingAddress,
+            "missing_agent_ring_timeout" => ApiStatus::MissingAgentRingTimeout,
+            "missing_allowedcodecs" => ApiStatus::MissingAllowedcodecs,
+            "missing_attachmessage" => ApiStatus::MissingAttachmessage,
+            "missing_authtype" => ApiStatus::MissingAuthtype,
+            "missing_balancemanagement" => ApiStatus::MissingBalancemanagement,
+            "missing_billingtype" => ApiStatus::MissingBillingtype,
+            "missing_callback" => ApiStatus::MissingCallback,
+            "missing_callerid" => ApiStatus::MissingCallerid,
+            "missing_callhunting" => ApiStatus::MissingCallhunting,
+            "missing_callparking" => ApiStatus::MissingCallparking,
+            "missing_callrecording" => ApiStatus::MissingCallrecording,
+            "missing_carrier" => ApiStatus::MissingCarrier,
+            "missing_charge" => ApiStatus::MissingCharge,
+            "missing_choices" => ApiStatus::MissingChoices,
+            "missing_city" => ApiStatus::MissingCity,
+            "missing_client" => ApiStatus::MissingClient,
+            "missing_cnam" => ApiStatus::MissingCNAM,
+            "missing_codec" => ApiStatus::MissingCodec,
+            "missing_conference" => ApiStatus::MissingConference,
+            "missing_country" => ApiStatus::MissingCountry,
+            "missing_countryid" => ApiStatus::MissingCountryid,
+            "missing_credentials" => ApiStatus::MissingCredentials,
+            "missing_datetime" => ApiStatus::MissingDatetime,
+            "missing_delay_before" => ApiStatus::MissingDelayBefore,
+            "missing_deletemessage" => ApiStatus::MissingDeletemessage,
+            "missing_description" => ApiStatus::MissingDescription,
+            "missing_devicetype" => ApiStatus::MissingDevicetype,
+            "missing_dialtime" => ApiStatus::MissingDialtime,
+            "missing_did" => ApiStatus::MissingDID,
+            "missing_digits" => ApiStatus::MissingDigits,
+            "missing_digit_timeout" => ApiStatus::MissingDigitTimeout,
+            "missing_disa" => ApiStatus::MissingDISA,
+            "missing_dtmfmode" => ApiStatus::MissingDtmfmode,
+            "missing_email" => ApiStatus::MissingEmail,
+            "missing_email_confirm" => ApiStatus::MissingEmailConfirm,
+            "missing_enable" => ApiStatus::MissingEnable,
+            "missing_endhour" => ApiStatus::MissingEndhour,
+            "missing_endminute" => ApiStatus::MissingEndminute,
+            "missing_failover_busy" => ApiStatus::MissingFailoverBusy,
+            "missing_failover_noanswer" => ApiStatus::MissingFailoverNoanswer,
+            "missing_failover_unreachable" => ApiStatus::MissingFailoverUnreachable,
+            "missing_file" => ApiStatus::MissingFile,
+            "missing_filter" => ApiStatus::MissingFilter,
+            "missing_firstname" => ApiStatus::MissingFirstname,
+            "missing_folder" => ApiStatus::MissingFolder,
+            "missing_forwarding" => ApiStatus::MissingForwarding,
+            "missing_from_date" => ApiStatus::MissingFromDate,
+            "missing_fullname" => ApiStatus::MissingFullname,
+            "missing_id" => ApiStatus::MissingID,
+            "missing_if_announce_position_enabled_report_e" => {
+                ApiStatus::MissingIfAnnouncePositionEnabledReportE
+            }
+            "missing_internationalroute" => ApiStatus::MissingInternationalroute,
+            "missing_ip" => ApiStatus::MissingIP,
+            "missing_ip_h323" => ApiStatus::MissingIPH323,
+            "missing_ip_restriction" => ApiStatus::MissingIPRestriction,
+            "missing_ivr" => ApiStatus::MissingIVR,
+            "missing_join_when_empty" => ApiStatus::MissingJoinWhenEmpty,
+            "missing_language" => ApiStatus::MissingLanguage,
+            "missing_lastname" => ApiStatus::MissingLastname,
+            "missing_leave_when_empty" => ApiStatus::MissingLeaveWhenEmpty,
+            "missing_length" => ApiStatus::MissingLength,
+            "missing_listened" => ApiStatus::MissingListened,
+            "missing_location" => ApiStatus::MissingLocation,
+            "missing_location_name" => ApiStatus::MissingLocationName,
+            "missing_lockinternational" => ApiStatus::MissingLockinternational,
+            "missing_mailbox" => ApiStatus::MissingMailbox,
+            "missing_member" => ApiStatus::MissingMember,
+            "missing_members" => ApiStatus::MissingMembers,
+            "missing_message_num" => ApiStatus::MissingMessageNum,
+            "missing_method" => ApiStatus::MissingMethod,
+            "missing_minute" => ApiStatus::MissingMinute,
+            "missing_monthly" => ApiStatus::MissingMonthly,
+            "missing_musiconhold" => ApiStatus::MissingMusiconhold,
+            "missing_name" => ApiStatus::MissingName,
+            "missing_nat" => ApiStatus::MissingNAT,
+            "missing_number" => ApiStatus::MissingNumber,
+            "missing_numbers" => ApiStatus::MissingNumbers,
+            "missing_package" => ApiStatus::MissingPackage,
+            "missing_params" => ApiStatus::MissingParams,
+            "missing_password" => ApiStatus::MissingPassword,
+            "missing_password_confirm" => ApiStatus::MissingPasswordConfirm,
+            "missing_payment" => ApiStatus::MissingPayment,
+            "missing_phonebook" => ApiStatus::MissingPhonebook,
+            "missing_phonenumber" => ApiStatus::MissingPhonenumber,
+            "missing_pin" => ApiStatus::MissingPIN,
+            "missing_playinstructions" => ApiStatus::MissingPlayinstructions,
+            "missing_pop_restriction" => ApiStatus::MissingPOPRestriction,
+            "missing_priority" => ApiStatus::MissingPriority,
+            "missing_priority_weight" => ApiStatus::MissingPriorityWeight,
+            "missing_protocol" => ApiStatus::MissingProtocol,
+            "missing_province" => ApiStatus::MissingProvince,
+            "missing_query" => ApiStatus::MissingQuery,
+            "missing_recording" => ApiStatus::MissingRecording,
+            "missing_report_hold_time_agent" => ApiStatus::MissingReportHoldTimeAgent,
+            "missing_resellerclient" => ApiStatus::MissingResellerclient,
+            "missing_resellerpackage" => ApiStatus::MissingResellerpackage,
+            "missing_response_timeout" => ApiStatus::MissingResponseTimeout,
+            "missing_ringgroup" => ApiStatus::MissingRinggroup,
+            "missing_ring_inuse" => ApiStatus::MissingRingInuse,
+            "missing_ring_strategy" => ApiStatus::MissingRingStrategy,
+            "missing_route" => ApiStatus::MissingRoute,
+            "missing_routing" => ApiStatus::MissingRouting,
+            "missing_saycallerid" => ApiStatus::MissingSaycallerid,
+            "missing_saytime" => ApiStatus::MissingSaytime,
+            "missing_serverpop" => ApiStatus::MissingServerpop,
+            "missing_setup" => ApiStatus::MissingSetup,
+            "missing_sipuri" => ApiStatus::MissingSIPURI,
+            "missing_skippassword" => ApiStatus::MissingSkippassword,
+            "missing_sms" => ApiStatus::MissingSMS,
+            "missing_speed_dial" => ApiStatus::MissingSpeedDial,
+            "missing_start" => ApiStatus::MissingStart,
+            "missing_starthour" => ApiStatus::MissingStarthour,
+            "missing_startminute" => ApiStatus::MissingStartminute,
+            "missing_state" => ApiStatus::MissingState,
+            "missing_street_name" => ApiStatus::MissingStreetName,
+            "missing_street_number" => ApiStatus::MissingStreetNumber,
+            "missing_thankyou_for_your_patience" => ApiStatus::MissingThankyouForYourPatience,
+            "missing_timecondition" => ApiStatus::MissingTimecondition,
+            "missing_timeout" => ApiStatus::MissingTimeout,
+            "missing_timezone" => ApiStatus::MissingTimezone,
+            "missing_to_date" => ApiStatus::MissingToDate,
+            "missing_transcription_email" => ApiStatus::MissingTranscriptionEmail,
+            "missing_transcription_locale" => ApiStatus::MissingTranscriptionLocale,
+            "missing_type" => ApiStatus::MissingType,
+            "missing_urgent" => ApiStatus::MissingUrgent,
+            "missing_uri" => ApiStatus::MissingURI,
+            "missing_username" => ApiStatus::MissingUsername,
+            "missing_voicemailsetup" => ApiStatus::MissingVoicemailsetup,
+            "missing_weekdayend" => ApiStatus::MissingWeekdayend,
+            "missing_weekdaystart" => ApiStatus::MissingWeekdaystart,
+            "missing_zip" => ApiStatus::MissingZip,
+            "moving_fail" => ApiStatus::MovingFail,
+            "name_toolong" => ApiStatus::NameToolong,
+            "non_sufficient_funds" => ApiStatus::NonSufficientFunds,
+            "note_toolong" => ApiStatus::NoteToolong,
+            "no_account" => ApiStatus::NoAccount,
+            "no_attachments" => ApiStatus::NoAttachments,
+            "no_base64file" => ApiStatus::NoBase64file,
+            "no_callback" => ApiStatus::NoCallback,
+            "no_callhunting" => ApiStatus::NoCallhunting,
+            "no_callparking" => ApiStatus::NoCallparking,
+            "no_callstatus" => ApiStatus::NoCallstatus,
+            "no_cdr" => ApiStatus::NoCDR,
+            "no_change_billingtype" => ApiStatus::NoChangeBillingtype,
+            "no_client" => ApiStatus::NoClient,
+            "no_conference" => ApiStatus::NoConference,
+            "no_did" => ApiStatus::NoDID,
+            "no_disa" => ApiStatus::NoDISA,
+            "no_filter" => ApiStatus::NoFilter,
+            "no_forwarding" => ApiStatus::NoForwarding,
+            "no_ivr" => ApiStatus::NoIVR,
+            "no_mailbox" => ApiStatus::NoMailbox,
+            "no_member" => ApiStatus::NoMember,
+            "no_message" => ApiStatus::NoMessage,
+            "no_messages" => ApiStatus::NoMessages,
+            "no_numbers" => ApiStatus::NoNumbers,
+            "no_package" => ApiStatus::NoPackage,
+            "no_phonebook" => ApiStatus::NoPhonebook,
+            "no_provision" => ApiStatus::NoProvision,
+            "no_provision_update" => ApiStatus::NoProvisionUpdate,
+            "no_queue" => ApiStatus::NoQueue,
+            "no_rate" => ApiStatus::NoRate,
+            "no_recording" => ApiStatus::NoRecording,
+            "no_ringgroup" => ApiStatus::NoRinggroup,
+            "no_sequences" => ApiStatus::NoSequences,
+            "no_sipuri" => ApiStatus::NoSIPURI,
+            "no_sms" => ApiStatus::NoSMS,
+            "no_timecondition" => ApiStatus::NoTimecondition,
+            "order_failed" => ApiStatus::OrderFailed,
+            "problem_sending_mail" => ApiStatus::ProblemSendingMail,
+            "provider_outofservice" => ApiStatus::ProviderOutofservice,
+            "recording_in_use_caller_id_filtering" => ApiStatus::RecordingInUseCallerIDFiltering,
+            "recording_in_use_caller_timecondition" => ApiStatus::RecordingInUseCallerTimecondition,
+            "recording_in_use_did" => ApiStatus::RecordingInUseDID,
+            "recording_in_use_ivr" => ApiStatus::RecordingInUseIVR,
+            "recording_in_use_queue" => ApiStatus::RecordingInUseQueue,
+            "repeated_ip" => ApiStatus::RepeatedIP,
+            "reserved_ip" => ApiStatus::ReservedIP,
+            "rtp_timeout_greater_than_rtp_hold_timeout" => {
+                ApiStatus::RTPTimeoutGreaterThanRTPHoldTimeout
+            }
+            "same_did_billingtype" => ApiStatus::SameDIDBillingtype,
+            "sent_fail" => ApiStatus::SentFail,
+            "sipuri_in_phonebook" => ApiStatus::SIPURIInPhonebook,
+            "sms_apply_regulations" => ApiStatus::SMSApplyRegulations,
+            "sms_failed" => ApiStatus::SMSFailed,
+            "sms_toolong" => ApiStatus::SMSToolong,
+            "sms_wait_message" => ApiStatus::SMSWaitMessage,
+            "tls_error" => ApiStatus::TlsError,
+            "Unable_to_purchase" => ApiStatus::UnableToPurchase,
+            "unavailable_info" => ApiStatus::UnavailableInfo,
+            "unsifficient_stock" => ApiStatus::UnsifficientStock,
+            "used_description" => ApiStatus::UsedDescription,
+            "used_email" => ApiStatus::UsedEmail,
+            "used_extension" => ApiStatus::UsedExtension,
+            "used_extension_in_location" => ApiStatus::UsedExtensionInLocation,
+            "used_filter" => ApiStatus::UsedFilter,
+            "used_ip" => ApiStatus::UsedIP,
+            "used_name" => ApiStatus::UsedName,
+            "used_number" => ApiStatus::UsedNumber,
+            "used_password" => ApiStatus::UsedPassword,
+            "used_speed_dial" => ApiStatus::UsedSpeedDial,
+            "used_username" => ApiStatus::UsedUsername,
+            "weak_password" => ApiStatus::WeakPassword,
+            other => ApiStatus::Unknown(other.to_string()),
+        }
+    }
+
+    /// The human-readable description of this status from the
+    /// voip.ms docs, or `None` for [`ApiStatus::Unknown`].
+    pub fn description(&self) -> Option<&'static str> {
+        match self {
+            ApiStatus::AccountWithDIDs => Some("The Account has DIDs assigned to it."),
+            ApiStatus::APILimitExceeded => Some("API requests limit per minute has been reached"),
+            ApiStatus::APINotEnabled => Some("API has not been enabled or has been disabled"),
+            ApiStatus::CancelFailed => Some("The cancellation wasn't completed."),
+            ApiStatus::CANHaveOnlyOneProfileWithoutPIN => {
+                Some("The conference can just have one profile member without pin")
+            }
+            ApiStatus::ConferenceMemberRelationNotFound => {
+                Some("There is no relation between the profile member and the conference.")
+            }
+            ApiStatus::DIDInUse => Some("DID Number is already in use"),
+            ApiStatus::DIDLimitReached => Some(
+                "You have reached the maximum number of DID numbers allowed for your account type. Please contact our team if you have a specific use case or if you would like to upgrade to a Business account.",
+            ),
+            ApiStatus::DuplicatedName => Some("There is already another entry with this name"),
+            ApiStatus::DuplicatedPIN => Some("The given pin has been duplicated"),
+            ApiStatus::E911Disabled => Some("DID e911 service it's not enabled."),
+            ApiStatus::E911Pending => {
+                Some("DID e911 service has been requested and is in validation process.")
+            }
+            ApiStatus::ErrorDeletingMsg => Some("Error when deleting message"),
+            ApiStatus::ErrorMovingMsg => Some("Error when move the voicemail message to folder"),
+            ApiStatus::ExceedsFileSize => Some("The file exceeds the limite size allowed."),
+            ApiStatus::ExistingDID => {
+                Some("You can't set a callback to an existing VoIP.ms DID number")
+            }
+            ApiStatus::ForwardsExceeded => Some("Your account is limited to 4 forward entries"),
+            ApiStatus::InvalidAccount => Some("This is not a valid account"),
+            ApiStatus::InvalidAddress => Some("Address is missing or the format is invalid."),
+            ApiStatus::InvalidAdmin => Some("This is not a valid admin"),
+            ApiStatus::InvalidAgentRingTimeout => {
+                Some("This is not a valid Agent ring time out value")
+            }
+            ApiStatus::InvalidAllowedcodecs => {
+                Some("One of the codecs provided is invalid Format and Values: ulaw;g729;gsm;all")
+            }
+            ApiStatus::InvalidAnnounceJoinLeave => {
+                Some("This is not a valid \"Announce join leave\"")
+            }
+            ApiStatus::InvalidAnnounceOnlyUser => {
+                Some("This is not a valid \"Announce only user\"")
+            }
+            ApiStatus::InvalidAnnouncePositionFrequency => {
+                Some("This is not a valid Announce position frequency")
+            }
+            ApiStatus::InvalidAnnounceRoundSeconds => {
+                Some("This is not a valid \"Announce round seconds\"")
+            }
+            ApiStatus::InvalidAnnounceUserCount => {
+                Some("This is not a valid \"Announce user count\"")
+            }
+            ApiStatus::InvalidAreaCode => Some("this is not a valid Area Code."),
+            ApiStatus::InvalidAttachid => Some("The given ID is invalid or doesn't exist."),
+            ApiStatus::InvalidAttachmessage => {
+                Some("this is not a valid AttachMessage Should be: yes/no")
+            }
+            ApiStatus::InvalidAttachFile => Some("Valid formats: PDF, MS Word, BMP, JPG"),
+            ApiStatus::InvalidAuthtype => Some("This is not a valid Auth Type"),
+            ApiStatus::InvalidAuthtypeH323 => Some("You must select IP Auth to use H.323"),
+            ApiStatus::InvalidAuthtypeIax2 => {
+                Some("You must use User/Password Authentication for IAX2")
+            }
+            ApiStatus::InvalidBalancemanagement => Some("This is not a valid BalanceManagement"),
+            ApiStatus::InvalidBaseRecording => Some("This is not a valid recording path"),
+            ApiStatus::InvalidBillingtype => {
+                Some("This is not a valid Billing Type Allowed values: 1 = PerMinute, 2 = Flat")
+            }
+            ApiStatus::InvalidCallback => Some("This is not a valid Callback"),
+            ApiStatus::InvalidCallbackEnable => Some("This is not a valid Callback enable value"),
+            ApiStatus::InvalidCallbackRetry => Some("This is not a valid Callback retry"),
+            ApiStatus::InvalidCallerid => Some("This is not a valid CallerID"),
+            ApiStatus::InvalidCalleridprefix => {
+                Some("This is not a valid CID Prefix, lenght should be less than 20 chars")
+            }
+            ApiStatus::InvalidCalleridOverride => Some("This is not a valid CallerID Override"),
+            ApiStatus::InvalidCallhunting => Some("This is not a valid Call Hunting"),
+            ApiStatus::InvalidCallparking => Some("This is not a valid Call Parking"),
+            ApiStatus::InvalidCallrecording => Some("This is not a valid Call recording"),
+            ApiStatus::InvalidCallType => Some("Call Type is not valid."),
+            ApiStatus::InvalidCanadaRouting => Some("This is not a valid Canada Route"),
+            ApiStatus::InvalidCarrier => Some("This is not a valid Carrier"),
+            ApiStatus::InvalidCharge => Some("This is not a valid Charge"),
+            ApiStatus::InvalidCity => Some("City is missing or the format is invalid."),
+            ApiStatus::InvalidClient => Some("This is not a valid Client"),
+            ApiStatus::InvalidCNAM => Some("This is not a valid CNAM Should be: 1/0"),
+            ApiStatus::InvalidCodec => Some("This is not a valid Codec"),
+            ApiStatus::InvalidConference => Some("This is not a valid Conference ID"),
+            ApiStatus::InvalidContact => Some("This is not a valid Contact Number"),
+            ApiStatus::InvalidCountry => Some(
+                "Country is missing or the format is invalid, must be in format ISO 3166-1 alpha-2, example: US, CA, etc. (You can use the values returned by the method getCountries)",
+            ),
+            ApiStatus::InvalidCountryid => Some("This is not a valid Country ID"),
+            ApiStatus::InvalidCredentials => Some("Username or Password is incorrect"),
+            ApiStatus::InvalidDate => Some("This is not a valid date Format is: yyyy-mm-dd"),
+            ApiStatus::InvalidDaterange => Some("Date Range should be 92 days or less"),
+            ApiStatus::InvalidDatetime => {
+                Some("This is not a valid datetime Format is: yyyy-mm-dd hh:mm:ss")
+            }
+            ApiStatus::InvalidDateFrom => {
+                Some("The \"From\" date should be prior to the \"To\" date.")
+            }
+            ApiStatus::InvalidDayrange => Some("This is not a valid Day Range"),
+            ApiStatus::InvalidDelayBefore => Some("This is not a valid DelayBefore"),
+            ApiStatus::InvalidDeletemessage => {
+                Some("This is not a valid DeleteMessage Should be: yes/no")
+            }
+            ApiStatus::InvalidDescription => Some("This is not a valid Description"),
+            ApiStatus::InvalidDestination => Some("This is not a valid Destination"),
+            ApiStatus::InvalidDestinationFolder => Some("This is not a valid Destination Folder"),
+            ApiStatus::InvalidDevicetype => Some("This is not a valid Device Type"),
+            ApiStatus::InvalidDialtime => Some("This is not a valid Dialtime"),
+            ApiStatus::InvalidDID => Some("This is not a valid DID"),
+            ApiStatus::InvalidDigits => {
+                Some("These are not valid DigitsOrderDIDVirtual: Digits must be 3 numbers")
+            }
+            ApiStatus::InvalidDigitTimeout => Some("This is not a valid DigitTimeOut"),
+            ApiStatus::InvalidDISA => Some("This is not a valid DISA"),
+            ApiStatus::InvalidDiversionHeader => Some(
+                "This is not a valid Diversion Header. It must be a numeric value, accepting only 0 or 1.",
+            ),
+            ApiStatus::InvalidDropSilence => Some("This is not a valid \"drop silence\" value"),
+            ApiStatus::InvalidDST => Some("This is not a valid Destination Number"),
+            ApiStatus::InvalidDtmfmode => Some("This is no a valid DTMF Mode"),
+            ApiStatus::InvalidDTMFDigits => Some("This is no a valid DTMF digit"),
+            ApiStatus::InvalidEmail => {
+                Some("This is not a valid email or email is already in database")
+            }
+            ApiStatus::InvalidEmailAttachmentFormat => Some("This is not a valid format value"),
+            ApiStatus::InvalidEmailEnable => Some("This is not a valid email enable value"),
+            ApiStatus::InvalidEnableIPRestriction => {
+                Some("This is not a valid Enable IP Restriction value")
+            }
+            ApiStatus::InvalidEnablePOPRestriction => {
+                Some("This is not a valid Enable POP Restriction value")
+            }
+            ApiStatus::InvalidEndhour => Some("This is not a valid End Hour"),
+            ApiStatus::InvalidEndminute => Some("This is not a valid End Minute"),
+            ApiStatus::InvalidExtension => {
+                Some("This is not a valid extension Extension can only contain digits")
+            }
+            ApiStatus::InvalidExtensions => Some(
+                "Extensions cannot be: 098, 211, 311, 411, 4443, 4444, 4747, 511, 711, 811, 822, 911, 988",
+            ),
+            ApiStatus::InvalidExtensionLength => {
+                Some("Extensions should not contain more than 5 digits")
+            }
+            ApiStatus::InvalidExtensionPrefix => Some("Extensions cannot start with: 068, 097"),
+            ApiStatus::InvalidFailoverHeader => {
+                Some("This is not a valid failover header Should be: account/vm/fwd/none")
+            }
+            ApiStatus::InvalidFAXID => Some("This is not a valid Fax Message ID"),
+            ApiStatus::InvalidFile => Some("This is not a valid File"),
+            ApiStatus::InvalidFilter => Some("This is not a valid Filter"),
+            ApiStatus::InvalidFirstname => Some("First name is missing or the format is invalid."),
+            ApiStatus::InvalidFocEnddate => {
+                Some("Invalid date format, must be: YYYY-mm-dd. Example: 2018-02-22")
+            }
+            ApiStatus::InvalidFocStartdate => {
+                Some("Invalid date format, must be: YYYY-mm-dd. Example: 2018-02-22")
+            }
+            ApiStatus::InvalidFolder => Some("This is not a valid Folder"),
+            ApiStatus::InvalidFolderID => Some("This is not a valid Fax Folder ID"),
+            ApiStatus::InvalidForwarding => Some("This is not a valid forwarding"),
+            ApiStatus::InvalidForwardingDID => Some("Forwarding to the same did is not allowed"),
+            ApiStatus::InvalidForwardEnable => Some("This is not a valid forward enable value"),
+            ApiStatus::InvalidFrequencyAnnouncement => {
+                Some("This is not a valid Frequency announce")
+            }
+            ApiStatus::InvalidFromNumber => Some("This is not a valid sender number."),
+            ApiStatus::InvalidFullname => Some("This is not a valid Full Name"),
+            ApiStatus::InvalidID => Some("This is not a valid ID"),
+            ApiStatus::InvalidIfAnnouncePositionEnabledReportE => {
+                Some("This is not a Report estimated hold time type")
+            }
+            ApiStatus::InvalidInternaldialtime => {
+                Some("This is not a valid Internal Dialtime Should be: 1 to 60")
+            }
+            ApiStatus::InvalidInternalvoicemail => Some("This is not a valid Internal Voicemail"),
+            ApiStatus::InvalidInternationalroute => Some("This is not a valid International Route"),
+            ApiStatus::InvalidInvoiceType => {
+                Some("Invalid invoice type, possible values: 0 = US, 1 = CAN.")
+            }
+            ApiStatus::InvalidIP => Some("This is an invalid IP"),
+            ApiStatus::InvalidIPAuth => {
+                Some("Do not provide an IP address for User/Pass Authentication")
+            }
+            ApiStatus::InvalidIPIax2 => Some("Do not provide an IP address for IAX2"),
+            ApiStatus::InvalidIVR => Some("This is not a valid IVR"),
+            ApiStatus::InvalidJitterBuffer => Some("This is not a valid \"jitter buffer\" value"),
+            ApiStatus::InvalidJoinAnnouncement => {
+                Some("This is not a valid 'Join Announcement' Type for a Queue")
+            }
+            ApiStatus::InvalidJoinEmptyType => {
+                Some("This is not a valid 'JoinWhenEmpty' Type for a Queue")
+            }
+            ApiStatus::InvalidLanguage => Some("This is not a valid Language Should be: es/en/fr"),
+            ApiStatus::InvalidLastname => Some("Lastname is missing or the format is invalid."),
+            ApiStatus::InvalidListened => Some("This is not a valid Listened value"),
+            ApiStatus::InvalidLocation => Some("This is not a valid Location"),
+            ApiStatus::InvalidLockinternational => Some("This is not a valid Lock International"),
+            ApiStatus::InvalidMailbox => Some("This is not a valid mailbox"),
+            ApiStatus::InvalidMaximumCallers => Some("This is not a valid maximum callers value"),
+            ApiStatus::InvalidMaximumWaitTime => {
+                Some("This is not a valid maximum wait time value")
+            }
+            ApiStatus::InvalidMaxExpiry => {
+                Some("This is not a valid Max Expiry (value must be between 60 and 3600 seconds)")
+            }
+            ApiStatus::InvalidMember => Some("This is not a valid Member"),
+            ApiStatus::InvalidMemberDelay => Some("This is not a valid Member Delay"),
+            ApiStatus::InvalidMessageNum => Some("This is not a valid Voicemail Message Number"),
+            ApiStatus::InvalidMethod => Some("This is not a valid Method"),
+            ApiStatus::InvalidMinute => Some("This is not a valid Minute Rate"),
+            ApiStatus::InvalidMixedNumbers => {
+                Some("Toll-free numbers and local numbers can not be mixed in the same order.")
+            }
+            ApiStatus::InvalidMonthly => Some("This is not a valid Montly Fee"),
+            ApiStatus::InvalidMusiconhold => Some("This is not a valid Music on Hold"),
+            ApiStatus::InvalidName => Some("This is not a valid name, Alphanumeric Only"),
+            ApiStatus::InvalidNAT => Some("This is not a valid NAT"),
+            ApiStatus::InvalidNote => {
+                Some("This is not a valid Note, lenght should be less than 50 chars")
+            }
+            ApiStatus::InvalidNumber => Some("This is not a valid Number"),
+            ApiStatus::InvalidNumbermembers => Some(
+                "The element format of multiple data is not correct or it size does not match with other elements",
+            ),
+            ApiStatus::InvalidNumberCanadian => {
+                Some("You have entered a Canadian number (not valid in this portability process).")
+            }
+            ApiStatus::InvalidNumberExist => Some("The number is already in our network"),
+            ApiStatus::InvalidNumberFAX => {
+                Some("The Fax number can not be ported into our network")
+            }
+            ApiStatus::InvalidNumberPorttype => {
+                Some("You have entered a local number (not valid in this portability process)")
+            }
+            ApiStatus::InvalidNumberUS => {
+                Some("You have entered a USA number (not valid in this portability process).")
+            }
+            ApiStatus::InvalidOrder => Some("This is not a valid \"order\" value"),
+            ApiStatus::InvalidPackage => Some("This is not a valid Package"),
+            ApiStatus::InvalidPassword => Some(
+                "This is not a valid passwordVoicemail: Must be 4 Digits SubAccounts: More than 6 chars, Must Contain Alphanumeric and !#$%&/()=?*[]_:.,{}+-",
+            ),
+            ApiStatus::InvalidPasswordAuth => {
+                Some("Do not provide a Password for IP Authentication")
+            }
+            ApiStatus::InvalidPasswordIlegalCharacters => Some(
+                "This is not a valid password (Allowed characters: Alphanumeric and ! # $ % & / ( ) = ? * [ ] _ : . , { } + -)",
+            ),
+            ApiStatus::InvalidPasswordLessthan8charactersLong => {
+                Some("This is not a valid password (Less than 8 characters long)")
+            }
+            ApiStatus::InvalidPasswordMissingLowercase => {
+                Some("This is not a valid password (Missing lower case character)")
+            }
+            ApiStatus::InvalidPasswordMissingNumber => {
+                Some("This is not a valid password (Missing a number)")
+            }
+            ApiStatus::InvalidPasswordMissingUppercase => {
+                Some("This is not a valid password (Missing upper case character)")
+            }
+            ApiStatus::InvalidPause => Some("This is not a valid Pause"),
+            ApiStatus::InvalidPayment => Some("This is not a valid Payment"),
+            ApiStatus::InvalidPhonebook => Some("This is not a valid Phonebook"),
+            ApiStatus::InvalidPhonenumber => Some("This is not a valid Phone Number"),
+            ApiStatus::InvalidPIN => Some("This is not a valid PIN"),
+            ApiStatus::InvalidPINNumber => Some("Must provide the account PIN number."),
+            ApiStatus::InvalidPlayinstructions => {
+                Some("This is not a valid PlayInstructions Should be: u/su")
+            }
+            ApiStatus::InvalidPOPRestriction => Some("This is not a valid POP Restriction"),
+            ApiStatus::InvalidPortingid => Some("The given ID is invalid or doesn't exist."),
+            ApiStatus::InvalidPorttype => Some("Must provide a valid port type."),
+            ApiStatus::InvalidPortStatus => Some(
+                "The status code is invalid. (You can use the values returned by the method getListStatus)",
+            ),
+            ApiStatus::InvalidPriority => Some("This is not a valid Priority"),
+            ApiStatus::InvalidPriorityWeight => Some("This is not valid weight/priority value"),
+            ApiStatus::InvalidProtocol => Some("This is not a valid Protocol"),
+            ApiStatus::InvalidProviderAccount => {
+                Some("You must provide your account # with the current provider")
+            }
+            ApiStatus::InvalidProviderName => Some("You must provide the service provider name"),
+            ApiStatus::InvalidProvince => Some("This is not a valid Province"),
+            ApiStatus::InvalidQuantity => Some("This is not a valid quantity"),
+            ApiStatus::InvalidQuery => Some("This is not a valid Query"),
+            ApiStatus::InvalidQueue => Some("This is not a valid Queue"),
+            ApiStatus::InvalidQuiet => Some("This is not a valid \"quiet\" value"),
+            ApiStatus::InvalidRecording => Some("This is not a valid recording"),
+            ApiStatus::InvalidRecordingSoundErrorMenu => {
+                Some("\"error menu\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundGetPIN => Some("\"get pin\" is not a valid recording"),
+            ApiStatus::InvalidRecordingSoundHasJoined => {
+                Some("\"has_joined\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundHasLeft => {
+                Some("\"has_left\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundInvalidPIN => {
+                Some("\"invalid pin\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundJoin => Some("\"join\" is not a valid recording"),
+            ApiStatus::InvalidRecordingSoundKicked => Some("\"kicked\" is not a valid recording"),
+            ApiStatus::InvalidRecordingSoundLeave => Some("\"leave\" is not a valid recording"),
+            ApiStatus::InvalidRecordingSoundLocked => Some("\"locked\" is not a valid recording"),
+            ApiStatus::InvalidRecordingSoundLockedNow => {
+                Some("\"locked now\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundMuted => Some("\"muted\" is not a valid recording"),
+            ApiStatus::InvalidRecordingSoundOnlyOne => {
+                Some("\"only one\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundOnlyPerson => {
+                Some("\"only person\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundOtherInParty => {
+                Some("\"other in party\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundParticipantsMuted => {
+                Some("\"participants muted\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundParticipantsUnmuted => {
+                Some("\"participants unmuted\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundPlaceIntoConference => {
+                Some("\"place into conference\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundThereAre => {
+                Some("\"there are\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundUnlockedNow => {
+                Some("\"unlocked now\" is not a valid recording")
+            }
+            ApiStatus::InvalidRecordingSoundUnmuted => Some("\"unmuted\" is not a valid recording"),
+            ApiStatus::InvalidRecordCalls => Some("Record calls is not valid."),
+            ApiStatus::InvalidReportHoldTimeAgent => {
+                Some("This is not a valid Report hold time agent")
+            }
+            ApiStatus::InvalidResellerclient => Some("This is not a valid Reseller Client"),
+            ApiStatus::InvalidResellernextbilling => Some(
+                "This is not a valid Reseller Next Billing date, date should not be set in the past.",
+            ),
+            ApiStatus::InvalidResellerpackage => Some("This is not a valid Reseller Package"),
+            ApiStatus::InvalidResponseTimeout => Some("This is not a valid ResponseTimeOut"),
+            ApiStatus::InvalidRetryTimer => Some("This is not a valid Retry timer"),
+            ApiStatus::InvalidRinggroup => Some("This is not a valid Ring group"),
+            ApiStatus::InvalidRingInuse => Some("This is not a valid Ring in use value"),
+            ApiStatus::InvalidRoute => Some("This is not a valid Route"),
+            ApiStatus::InvalidRoutingHeader => {
+                Some("This is not a valid Routing header Should be: account/vm/fwd")
+            }
+            ApiStatus::InvalidRTPHoldTimeout => Some(
+                "This is not a valid RTP Hold Time Out (value must be between 1 and 3600 seconds)",
+            ),
+            ApiStatus::InvalidRTPTimeout => {
+                Some("This is not a valid RTP Time Out (value must be between 1 and 3600 seconds)")
+            }
+            ApiStatus::InvalidSaycallerid => {
+                Some("This is not a valid SayCallerID Should be: yes/no")
+            }
+            ApiStatus::InvalidSaytime => Some("This is not a valid SayTime Should be: yes/no"),
+            ApiStatus::InvalidSecurityCode => {
+                Some("This is not a valid Security Code. Should be alphanumeric.")
+            }
+            ApiStatus::InvalidServerpop => Some("This is not a valid Server POP"),
+            ApiStatus::InvalidSetup => Some("This is not a valid Setup Fee"),
+            ApiStatus::InvalidSilenceThreshold => {
+                Some("This is not a valid \"silence threshold\" value")
+            }
+            ApiStatus::InvalidSIPURI => Some("This is not a valid SIPURI"),
+            ApiStatus::InvalidSIPTraffic => Some("This is not a valid Encrypted SIP Traffic value"),
+            ApiStatus::InvalidSkippassword => {
+                Some("This is not a valid skippassword Should be: 1/0 - or - yes/no")
+            }
+            ApiStatus::InvalidSmppPassword => Some("This is not a valid SMPP Password"),
+            ApiStatus::InvalidSmppURL => Some("This is not a valid SMPP URL"),
+            ApiStatus::InvalidSmppUsername => Some("This is not a valid SMPP Username"),
+            ApiStatus::InvalidSMS => Some("This is not a valid SMS"),
+            ApiStatus::InvalidSMSForward => Some("This is not a valid SMS forward"),
+            ApiStatus::InvalidSnn => Some("Must provide the 4 last digits of the SSN."),
+            ApiStatus::InvalidSpeedDial => Some("This is not a valid Speed Dial"),
+            ApiStatus::InvalidStarthour => Some("This is not a valid Start Hour"),
+            ApiStatus::InvalidStartminute => Some("This is not a valid Start Minute"),
+            ApiStatus::InvalidStartMuted => Some("This is not a valid Start Muted"),
+            ApiStatus::InvalidState => Some("This is not a valid State"),
+            ApiStatus::InvalidStatementName => {
+                Some("Statement Name is missing or the format is invalid.")
+            }
+            ApiStatus::InvalidStrategy => Some("This is not a valid Ring Strategy"),
+            ApiStatus::InvalidStreetName => Some("This is not a valid Street Name"),
+            ApiStatus::InvalidStreetNumber => Some("This is not a valid Street Number"),
+            ApiStatus::InvalidTalkingThreshold => {
+                Some("This is not a valid \"talking threshold\" value")
+            }
+            ApiStatus::InvalidTalkDetection => Some("This is not a valid talk detection value"),
+            ApiStatus::InvalidTfnumberPorttype => {
+                Some("You have entered a toll-free number (not valid in this portability process).")
+            }
+            ApiStatus::InvalidThankyouForYourPatience => {
+                Some("This is not a valid Thankyou for your patience value")
+            }
+            ApiStatus::InvalidThreshold => Some(
+                "This is not a valid Threshold Amount. The Threshold Amount should be between 1 and 250",
+            ),
+            ApiStatus::InvalidTimecondition => Some("This is not a valid Time Condition"),
+            ApiStatus::InvalidTimeout => Some("This is not a valid timeout"),
+            ApiStatus::InvalidTimerange => Some("This is not a valid Timer Range"),
+            ApiStatus::InvalidTimezone => Some(
+                "This is not a valid TimezoneCDR and resellerCDR: Must be numeric Voicemail: Values from getTimezone",
+            ),
+            ApiStatus::InvalidToNumber => Some("This is not a valid destination number"),
+            ApiStatus::InvalidTranscriptionEmail => Some("Transcription email is not valid"),
+            ApiStatus::InvalidTranscriptionFormat => Some("Invalid Transcription Format"),
+            ApiStatus::InvalidTranscriptionLocale => Some("Transcription locale is not valid."),
+            ApiStatus::InvalidTranscriptionRedaction => Some("Invalid Transcription Redaction"),
+            ApiStatus::InvalidTranscriptionSentiment => Some("Invalid Transcription Sentiment"),
+            ApiStatus::InvalidTranscriptionSummary => Some("Invalid Transcription Summary"),
+            ApiStatus::InvalidType => Some("This is not a valid Type"),
+            ApiStatus::InvalidUrgent => Some("This is not valid urgent value"),
+            ApiStatus::InvalidUsername => Some("This is not a valid Username"),
+            ApiStatus::InvalidVoicemailsetup => Some("This is not a valid voicemail"),
+            ApiStatus::InvalidVoiceAnnouncement => Some("This is not a valid Voice announce"),
+            ApiStatus::InvalidWeekdayend => Some("This is not a valid Week End"),
+            ApiStatus::InvalidWeekdaystart => Some("This is not a valid Week Start"),
+            ApiStatus::InvalidWrapupTime => Some("This is not a valid Wrapup time"),
+            ApiStatus::InvalidZip => Some("Zip Code is missing or the format is invalid."),
+            ApiStatus::IPNotEnabled => Some("This IP is not enabled for API use"),
+            ApiStatus::LimitReached => Some(
+                "You have reached the maximum number of messages allowed per day. - SMS limit using the API. - Fax limit applies using any method.",
+            ),
+            ApiStatus::LocationAlreadyExists => Some("A location with this name already exists"),
+            ApiStatus::LocationLinkedToSubaccount => {
+                Some("This location is in use by one or more sub accounts and cannot be deleted")
+            }
+            ApiStatus::LocationNotFound => Some("The specified location could not be found"),
+            ApiStatus::MaxPhonebook => {
+                Some("Your account is limited to 8 SIP, IAX or SIP URI members")
+            }
+            ApiStatus::MembersExceeded => {
+                Some("You have reached the maximum allowed entries for the Phonebook")
+            }
+            ApiStatus::MemberAlreadyIncluded => Some("The member has been included already"),
+            ApiStatus::MessageEmpty => Some("The SMS Message is empty"),
+            ApiStatus::MessageNotFound => Some("The voicemail message was not found"),
+            ApiStatus::MethodMaintenance => Some("This API method is under maintenance"),
+            ApiStatus::MismatchEmailConfirm => Some("e-mail confirm does not match with e-mail"),
+            ApiStatus::MismatchPasswordConfirm => {
+                Some("Pasword confirm does not match with Password")
+            }
+            ApiStatus::MissingAccount => Some("Account was not provided"),
+            ApiStatus::MissingAddress => Some("Address was not provided"),
+            ApiStatus::MissingAgentRingTimeout => Some("Agent ring time out was not provided"),
+            ApiStatus::MissingAllowedcodecs => Some("Allowed Codecs were not provided"),
+            ApiStatus::MissingAttachmessage => Some("AttachMessage was not provided"),
+            ApiStatus::MissingAuthtype => Some("Auth Type was not provided"),
+            ApiStatus::MissingBalancemanagement => Some("BalanceManagemente was not provided"),
+            ApiStatus::MissingBillingtype => Some("Billing Type was not provided"),
+            ApiStatus::MissingCallback => Some("Callback was not provided"),
+            ApiStatus::MissingCallerid => Some("CallerID was not provided"),
+            ApiStatus::MissingCallhunting => Some("Call hunting was not provided"),
+            ApiStatus::MissingCallparking => Some("Call Parking was not provided"),
+            ApiStatus::MissingCallrecording => Some("Call recording was not provided"),
+            ApiStatus::MissingCarrier => Some("Carrier was not provided"),
+            ApiStatus::MissingCharge => Some("Charge was not provided."),
+            ApiStatus::MissingChoices => Some("Choices was not provided"),
+            ApiStatus::MissingCity => Some("City was not provided"),
+            ApiStatus::MissingClient => Some("Client was not provided"),
+            ApiStatus::MissingCNAM => Some("CNAM was not provided"),
+            ApiStatus::MissingCodec => Some("Codec was not provided"),
+            ApiStatus::MissingConference => Some("Conference was not provided"),
+            ApiStatus::MissingCountry => Some("Country was not provided"),
+            ApiStatus::MissingCountryid => Some("Country ID was not provided"),
+            ApiStatus::MissingCredentials => Some("Username or Password was not provided"),
+            ApiStatus::MissingDatetime => Some("DateTime value was not provided"),
+            ApiStatus::MissingDelayBefore => Some("DelayBefore was not provided"),
+            ApiStatus::MissingDeletemessage => Some("DeleteMessage was not provided"),
+            ApiStatus::MissingDescription => Some("Description was not provided"),
+            ApiStatus::MissingDevicetype => Some("Device Type was not provided"),
+            ApiStatus::MissingDialtime => Some("Dialtime was not provided"),
+            ApiStatus::MissingDID => Some("DID was not provided"),
+            ApiStatus::MissingDigits => Some("Digits were not provided"),
+            ApiStatus::MissingDigitTimeout => Some("DigitTimeOut was not provided"),
+            ApiStatus::MissingDISA => Some("DISA was not provided"),
+            ApiStatus::MissingDtmfmode => Some("DTMF Mode was not provided"),
+            ApiStatus::MissingEmail => Some("e-mail was not provided"),
+            ApiStatus::MissingEmailConfirm => Some("e-mail confirm was not provided"),
+            ApiStatus::MissingEnable => Some("Enable was not provided"),
+            ApiStatus::MissingEndhour => Some("End Hour was not provided"),
+            ApiStatus::MissingEndminute => Some("End Minute was not provided"),
+            ApiStatus::MissingFailoverBusy => Some("Failover Busy was not provided"),
+            ApiStatus::MissingFailoverNoanswer => Some("Failover NoAnswer was not provided"),
+            ApiStatus::MissingFailoverUnreachable => Some("Failover Unreachable was not provided"),
+            ApiStatus::MissingFile => Some("File was not provided"),
+            ApiStatus::MissingFilter => Some("Filter was not provided"),
+            ApiStatus::MissingFirstname => Some("Firstname was not provided"),
+            ApiStatus::MissingFolder => Some("folder was not provided"),
+            ApiStatus::MissingForwarding => Some("Forwarding was not provided"),
+            ApiStatus::MissingFromDate => Some("From date was not provided"),
+            ApiStatus::MissingFullname => Some("Full Name was not provided"),
+            ApiStatus::MissingID => Some("ID was not provided"),
+            ApiStatus::MissingIfAnnouncePositionEnabledReportE => Some(
+                "If announce position enabled report estimated hold time' type was not provided",
+            ),
+            ApiStatus::MissingInternationalroute => Some("International Route was not provided"),
+            ApiStatus::MissingIP => {
+                Some("You need to provide an IP if you select IP Authentication Method")
+            }
+            ApiStatus::MissingIPH323 => Some("You must enter an IP Address for H.323"),
+            ApiStatus::MissingIPRestriction => Some("IP Restriction was not provided"),
+            ApiStatus::MissingIVR => Some("IVR was not provided"),
+            ApiStatus::MissingJoinWhenEmpty => Some("JoinWhenEmpty' type was not provided"),
+            ApiStatus::MissingLanguage => Some("Language was not provided"),
+            ApiStatus::MissingLastname => Some("Lastname was not provided"),
+            ApiStatus::MissingLeaveWhenEmpty => Some("LeaveWhenEmpty' type was not provided"),
+            ApiStatus::MissingLength => Some("Length was not provided"),
+            ApiStatus::MissingListened => Some("Listened code was not provided"),
+            ApiStatus::MissingLocation => Some("Location was not provided"),
+            ApiStatus::MissingLocationName => Some("Location Name Missing"),
+            ApiStatus::MissingLockinternational => Some("Lock International was not provided"),
+            ApiStatus::MissingMailbox => Some("Mailbox was not provided"),
+            ApiStatus::MissingMember => Some("Member was not provided"),
+            ApiStatus::MissingMembers => Some("You need at least 1 member to create a ring group"),
+            ApiStatus::MissingMessageNum => Some("Voicemail message number was not provided"),
+            ApiStatus::MissingMethod => {
+                Some("Method must be provided when using the REST/JSON API")
+            }
+            ApiStatus::MissingMinute => Some("Minute Rate was not provided"),
+            ApiStatus::MissingMonthly => Some("Monthly Fee was not provided"),
+            ApiStatus::MissingMusiconhold => Some("Music on Hold was not provided"),
+            ApiStatus::MissingName => Some("Name was not provided"),
+            ApiStatus::MissingNAT => Some("NAT was not provided"),
+            ApiStatus::MissingNumber => Some("Number was not provided"),
+            ApiStatus::MissingNumbers => Some("You must enter at least one valid phone number."),
+            ApiStatus::MissingPackage => Some("Package was not provided"),
+            ApiStatus::MissingParams => Some("Required parameters were not provided"),
+            ApiStatus::MissingPassword => Some("Password was not provided"),
+            ApiStatus::MissingPasswordConfirm => Some("Password Confirm was not provided"),
+            ApiStatus::MissingPayment => Some("Payment was not provided."),
+            ApiStatus::MissingPhonebook => Some("Phonebook was not provided"),
+            ApiStatus::MissingPhonenumber => Some("Phone Number was not provided"),
+            ApiStatus::MissingPIN => Some("PIN was not provided"),
+            ApiStatus::MissingPlayinstructions => Some("PlayInstructions was not provided"),
+            ApiStatus::MissingPOPRestriction => Some("POP Restriction was not provided"),
+            ApiStatus::MissingPriority => Some("Priority was not provided"),
+            ApiStatus::MissingPriorityWeight => Some("Priority/Weight was not provided"),
+            ApiStatus::MissingProtocol => Some("Protocol was not provided"),
+            ApiStatus::MissingProvince => Some("Province was not provided"),
+            ApiStatus::MissingQuery => Some("Query was not provided"),
+            ApiStatus::MissingRecording => Some("Recording was not provided"),
+            ApiStatus::MissingReportHoldTimeAgent => {
+                Some("Report hold time agent was not provided")
+            }
+            ApiStatus::MissingResellerclient => {
+                Some("Provide a Reseller Client or don't provide a Reseller Package")
+            }
+            ApiStatus::MissingResellerpackage => {
+                Some("Provide a Reseller Package or don't provide a Reseller Client")
+            }
+            ApiStatus::MissingResponseTimeout => Some("ResponseTimeOut was not provided"),
+            ApiStatus::MissingRinggroup => Some("Ring group was not provided"),
+            ApiStatus::MissingRingInuse => Some("Ring in use was not provided"),
+            ApiStatus::MissingRingStrategy => Some("Ring strategy was not provided"),
+            ApiStatus::MissingRoute => Some("Route was not provided"),
+            ApiStatus::MissingRouting => Some("Routing was not provided"),
+            ApiStatus::MissingSaycallerid => Some("SayCallerID was not provided"),
+            ApiStatus::MissingSaytime => Some("SayTime was not provided"),
+            ApiStatus::MissingServerpop => Some("Server POP was not provided"),
+            ApiStatus::MissingSetup => Some("Setup Fee was not provided"),
+            ApiStatus::MissingSIPURI => Some("SIPURI was not provided"),
+            ApiStatus::MissingSkippassword => Some("SkipPassword was not provided"),
+            ApiStatus::MissingSMS => Some("SMS was not provided"),
+            ApiStatus::MissingSpeedDial => Some("Speed Dial was not provided"),
+            ApiStatus::MissingStart => Some("Start date was not provided"),
+            ApiStatus::MissingStarthour => Some("Start Hour was not provided"),
+            ApiStatus::MissingStartminute => Some("Start Minute was not provided"),
+            ApiStatus::MissingState => Some("State was not provided"),
+            ApiStatus::MissingStreetName => Some("Street Name was not provided"),
+            ApiStatus::MissingStreetNumber => Some("Street Number was not provided"),
+            ApiStatus::MissingThankyouForYourPatience => {
+                Some("Thankyou for your patience was not provided")
+            }
+            ApiStatus::MissingTimecondition => Some("Time Condition was not provided"),
+            ApiStatus::MissingTimeout => Some("Timeout was not provided"),
+            ApiStatus::MissingTimezone => Some("Timezone was not provided"),
+            ApiStatus::MissingToDate => Some("To date was not provided"),
+            ApiStatus::MissingTranscriptionEmail => Some("Transcription email is required."),
+            ApiStatus::MissingTranscriptionLocale => Some("Transcription locale is required."),
+            ApiStatus::MissingType => Some("Type was not provided"),
+            ApiStatus::MissingUrgent => Some("Urgent code was not provided"),
+            ApiStatus::MissingURI => Some("URI was not provided"),
+            ApiStatus::MissingUsername => Some("Username was not provided"),
+            ApiStatus::MissingVoicemailsetup => Some("Voice mail setup was not provided"),
+            ApiStatus::MissingWeekdayend => Some("Week End was not provide"),
+            ApiStatus::MissingWeekdaystart => Some("Week Start was not provided"),
+            ApiStatus::MissingZip => Some("Zip Code was not provided"),
+            ApiStatus::MovingFail => Some("The Fax Message was not moved"),
+            ApiStatus::NameToolong => Some("The name exceeds character size limit"),
+            ApiStatus::NonSufficientFunds => {
+                Some("Your account does not have sufficient funds to proceed")
+            }
+            ApiStatus::NoteToolong => Some("The note exceeds character size limit"),
+            ApiStatus::NoAccount => Some("There are no accounts"),
+            ApiStatus::NoAttachments => Some("Theres no attachments records to show."),
+            ApiStatus::NoBase64file => Some("File not encoded in base64"),
+            ApiStatus::NoCallback => Some("There are not Callbacks"),
+            ApiStatus::NoCallhunting => Some("There are no Call Huntings"),
+            ApiStatus::NoCallparking => Some("There are no Call Parking"),
+            ApiStatus::NoCallstatus => Some(
+                "No Call Status was provided. One of the following parameters needs to be set to \"1\": answered, noanswer, busy, failed",
+            ),
+            ApiStatus::NoCDR => Some("There are no CDR entries for the filter"),
+            ApiStatus::NoChangeBillingtype => Some("Imposible change DID billing plan"),
+            ApiStatus::NoClient => Some("There are no Clients"),
+            ApiStatus::NoConference => Some("There are no Conferences"),
+            ApiStatus::NoDID => Some("There are no DIDs"),
+            ApiStatus::NoDISA => Some("There are no DISAs"),
+            ApiStatus::NoFilter => Some("There are no Filters"),
+            ApiStatus::NoForwarding => Some("There was no Forwarding"),
+            ApiStatus::NoIVR => Some("There are no ivr"),
+            ApiStatus::NoMailbox => Some("There are no Mailboxes"),
+            ApiStatus::NoMember => Some("There are no Static Members"),
+            ApiStatus::NoMessage => Some("There are no Fax Message(s)"),
+            ApiStatus::NoMessages => Some("There are no Voicemail Message(s)"),
+            ApiStatus::NoNumbers => Some("There are no Fax Numbers"),
+            ApiStatus::NoPackage => Some("there are no Packages"),
+            ApiStatus::NoPhonebook => Some("There are no Phonebook entries"),
+            ApiStatus::NoProvision => Some(
+                "E911 service wasn't activated, this response comes with a description of the error.",
+            ),
+            ApiStatus::NoProvisionUpdate => Some(
+                "E911 service wasn't updated, this response comes with a description of the error.",
+            ),
+            ApiStatus::NoQueue => Some("There are no Queue entries"),
+            ApiStatus::NoRate => Some("There are no Rates"),
+            ApiStatus::NoRecording => Some("There are no recordings"),
+            ApiStatus::NoRinggroup => Some("There are no Ring groups"),
+            ApiStatus::NoSequences => Some("No sequence has been found"),
+            ApiStatus::NoSIPURI => Some("There are no SIP URIs"),
+            ApiStatus::NoSMS => Some("There are no SMS messages"),
+            ApiStatus::NoTimecondition => Some("There are no Time Conditions"),
+            ApiStatus::OrderFailed => Some("The order wasn't completed."),
+            ApiStatus::ProblemSendingMail => Some("There was a problem sending an email."),
+            ApiStatus::ProviderOutofservice => Some("One of our providers is out of service"),
+            ApiStatus::RecordingInUseCallerIDFiltering => {
+                Some("You have a Caller ID Filtering using this Recording")
+            }
+            ApiStatus::RecordingInUseCallerTimecondition => {
+                Some("You have a Time Condition using this Recording")
+            }
+            ApiStatus::RecordingInUseDID => Some("You have a DID using this Recording"),
+            ApiStatus::RecordingInUseIVR => Some("You have an IVR using this Recording"),
+            ApiStatus::RecordingInUseQueue => Some("You have a Calling Queue using this Recording"),
+            ApiStatus::RepeatedIP => {
+                Some("You already have a Subaccount using this IP and Protocol")
+            }
+            ApiStatus::ReservedIP => {
+                Some("This is a reserved IP used by VoIP.ms or other Companies")
+            }
+            ApiStatus::RTPTimeoutGreaterThanRTPHoldTimeout => {
+                Some("RTP Time Out can't be greater than RTP Hold Time Out")
+            }
+            ApiStatus::SameDIDBillingtype => {
+                Some("The Billing Type provided and DID billing type are the same")
+            }
+            ApiStatus::SentFail => Some("The Fax Message it wasn't send."),
+            ApiStatus::SIPURIInPhonebook => {
+                Some("This SIPURI can't be deleted, it is mapped in the phonebook")
+            }
+            ApiStatus::SMSApplyRegulations => Some(
+                "The number was not updated due to SMS regulations, please contact customer service for more information",
+            ),
+            ApiStatus::SMSFailed => Some("The SMS message was not sent"),
+            ApiStatus::SMSToolong => Some("The SMS message exceeds 160 characters"),
+            ApiStatus::SMSWaitMessage => Some(
+                "SMS was not (Enabled/Disabled) for this DID, please wait a minute before you try again.",
+            ),
+            ApiStatus::TlsError => Some("Theres was a TLS error, please try later."),
+            ApiStatus::UnableToPurchase => Some("Unable to purchase DIDs"),
+            ApiStatus::UnavailableInfo => {
+                Some("The information you requested is unavailable at this moment")
+            }
+            ApiStatus::UnsifficientStock => {
+                Some("Theres no sufficient stock to complete the order.")
+            }
+            ApiStatus::UsedDescription => Some("You already have a record with this Description"),
+            ApiStatus::UsedEmail => Some("You already have an entry with this Email"),
+            ApiStatus::UsedExtension => Some("You already have a subaccount using this extension"),
+            ApiStatus::UsedExtensionInLocation => {
+                Some("You already have a subaccount using extension in this location")
+            }
+            ApiStatus::UsedFilter => Some("You already have a record with this Filter"),
+            ApiStatus::UsedIP => Some("There is already another customer using this IP Address"),
+            ApiStatus::UsedName => Some("You already have an entry using this name"),
+            ApiStatus::UsedNumber => Some("You already have a record with this Number"),
+            ApiStatus::UsedPassword => {
+                Some("This password has been used previously by this account.")
+            }
+            ApiStatus::UsedSpeedDial => Some("You have an entry with this Speed Dial"),
+            ApiStatus::UsedUsername => Some("You already have a subaccount using this Username."),
+            ApiStatus::WeakPassword => Some("This Password is too weak or too common"),
+            ApiStatus::Unknown(_) => None,
+        }
+    }
+
+    /// Whether this status is a documented code (not
+    /// [`ApiStatus::Unknown`]).
+    pub fn is_documented(&self) -> bool {
+        !matches!(self, ApiStatus::Unknown(_))
+    }
+}
+
+impl std::fmt::Display for ApiStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl From<String> for ApiStatus {
+    fn from(s: String) -> Self {
+        ApiStatus::from_wire(&s)
+    }
+}
+
+impl From<&str> for ApiStatus {
+    fn from(s: &str) -> Self {
+        ApiStatus::from_wire(s)
+    }
+}
+
+impl serde::Serialize for ApiStatus {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for ApiStatus {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(ApiStatus::from_wire(&s))
+    }
+}
+
+/// \- Adds a Charge to a specific Reseller Client
+///
 /// Parameters for [`Client::add_charge`] (wire method `addCharge`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddChargeParams {
@@ -600,6 +3327,8 @@ pub struct AddChargeParams {
     pub test: Option<bool>,
 }
 
+/// \- Add an invoice file to a portability process.
+///
 /// Parameters for [`Client::add_lnp_file`] (wire method `addLNPFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddLNPFileParams {
@@ -611,6 +3340,8 @@ pub struct AddLNPFileParams {
     pub file: Option<String>,
 }
 
+/// \- Add one or more numbers to start a portability process.
+///
 /// Parameters for [`Client::add_lnp_port`] (wire method `addLNPPort`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddLNPPortParams {
@@ -642,20 +3373,20 @@ pub struct AddLNPPortParams {
     /// PIN Number
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<String>,
-    /// [Required If isMobile = 1] BTN: It is the phone number to which all the
-    /// other numbers of the customer are charged, in a consolidated telephone
-    /// bill (instead of showing separate charges for each number you own).
-    /// Please try to find the BTN on your invoice, and if you are unable to do
-    /// so please contact the current provider to obtain it.
+    /// \[Required If isMobile = 1\] BTN: It is the phone number to which all
+    /// the other numbers of the customer are charged, in a consolidated
+    /// telephone bill (instead of showing separate charges for each number you
+    /// own). Please try to find the BTN on your invoice, and if you are unable
+    /// to do so please contact the current provider to obtain it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub btn: Option<String>,
-    /// [Required If isMobile = 1] Please be specific and describe ALL remaining
-    /// services with the current carrier. This includes DSL/Data services, Hunt
-    /// Group services, etc. Any services NOT listed below may be disconnected
-    /// upon completion of this port order.
+    /// \[Required If isMobile = 1\] Please be specific and describe ALL
+    /// remaining services with the current carrier. This includes DSL/Data
+    /// services, Hunt Group services, etc. Any services NOT listed below may be
+    /// disconnected upon completion of this port order.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub services: Option<String>,
-    /// [Required If portType = 3] Values: 1 - American Carrier, American
+    /// \[Required If portType = 3\] Values: 1 - American Carrier, American
     /// Callers Only, 2 - American Carrier, American and Canadian Callers
     /// allowed, 3 - Canadian Carrier
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -711,6 +3442,8 @@ pub struct AddLNPPortParams {
     pub notes: Option<String>,
 }
 
+/// \- Add Member to a Conference
+///
 /// Parameters for [`Client::add_member_to_conference`] (wire method `addMemberToConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddMemberToConferenceParams {
@@ -722,6 +3455,8 @@ pub struct AddMemberToConferenceParams {
     pub conference: Option<i64>,
 }
 
+/// \- Adds a Payment to a specific Reseller Client
+///
 /// Parameters for [`Client::add_payment`] (wire method `addPayment`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddPaymentParams {
@@ -740,6 +3475,9 @@ pub struct AddPaymentParams {
     pub test: Option<bool>,
 }
 
+/// \- Assigns a Per Minute DID to a VPRI (Flat Rate DIDs can&rsquo;t be
+/// assigned)
+///
 /// Parameters for [`Client::assign_did_vpri`] (wire method `assignDIDvPRI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AssignDIDvPRIParams {
@@ -751,6 +3489,8 @@ pub struct AssignDIDvPRIParams {
     pub did: Option<String>,
 }
 
+/// \- Backorder DID (CANADA) from a specific ratecenter and province.
+///
 /// Parameters for [`Client::back_order_did_can`] (wire method `backOrderDIDCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct BackOrderDIDCANParams {
@@ -816,6 +3556,8 @@ pub struct BackOrderDIDCANParams {
     pub test: Option<bool>,
 }
 
+/// \- Backorder DID (USA) from a specific ratecenter and state.
+///
 /// Parameters for [`Client::back_order_did_usa`] (wire method `backOrderDIDUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct BackOrderDIDUSAParams {
@@ -881,6 +3623,8 @@ pub struct BackOrderDIDUSAParams {
     pub test: Option<bool>,
 }
 
+/// \- Deletes a specific DID from your Account.
+///
 /// Parameters for [`Client::cancel_did`] (wire method `cancelDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CancelDIDParams {
@@ -899,6 +3643,8 @@ pub struct CancelDIDParams {
     pub test: Option<bool>,
 }
 
+/// \- Deletes a specific Fax Number from your Account.
+///
 /// Parameters for [`Client::cancel_fax_number`] (wire method `cancelFaxNumber`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CancelFAXNumberParams {
@@ -910,6 +3656,8 @@ pub struct CancelFAXNumberParams {
     pub test: Option<i64>,
 }
 
+/// \- Connects a specific DID to a specific Reseller Client Sub Account
+///
 /// Parameters for [`Client::connect_did`] (wire method `connectDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct ConnectDIDParams {
@@ -940,6 +3688,8 @@ pub struct ConnectDIDParams {
     pub dont_charge_monthly: Option<f64>,
 }
 
+/// \- Connects a specific FAX DID to a specific Reseller Client Sub Account
+///
 /// Parameters for [`Client::connect_fax`] (wire method `connectFAX`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct ConnectFAXParams {
@@ -970,6 +3720,8 @@ pub struct ConnectFAXParams {
     pub dont_charge_monthly: Option<f64>,
 }
 
+/// \- Adds a new Sub Account entry to your Account
+///
 /// Parameters for [`Client::create_sub_account`] (wire method `createSubAccount`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CreateSubAccountParams {
@@ -1112,6 +3864,8 @@ pub struct CreateSubAccountParams {
     pub internal_extension_location: Option<i64>,
 }
 
+/// \- Adds a new Voicemail entry to your Account
+///
 /// Parameters for [`Client::create_voicemail`] (wire method `createVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CreateVoicemailParams {
@@ -1182,6 +3936,8 @@ pub struct CreateVoicemailParams {
     pub transcription_format: Option<TranscriptionFormat>,
 }
 
+/// \- Deletes a specific Call Hunting from your Account.
+///
 /// Parameters for [`Client::del_call_hunting`] (wire method `delCallHunting`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallHuntingParams {
@@ -1190,6 +3946,8 @@ pub struct DelCallHuntingParams {
     pub callhunting: Option<i64>,
 }
 
+/// \- Deletes a specific Call Parking entry from your Account.
+///
 /// Parameters for [`Client::del_call_parking`] (wire method `delCallParking`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallParkingParams {
@@ -1198,6 +3956,8 @@ pub struct DelCallParkingParams {
     pub callparking: Option<i64>,
 }
 
+/// \- Delete specific call recording, audio file and information related.
+///
 /// Parameters for [`Client::del_call_recording`] (wire method `delCallRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallRecordingParams {
@@ -1210,6 +3970,8 @@ pub struct DelCallRecordingParams {
     pub account: Option<String>,
 }
 
+/// \- Deletes a specific Callback from your Account.
+///
 /// Parameters for [`Client::del_callback`] (wire method `delCallback`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallbackParams {
@@ -1218,6 +3980,8 @@ pub struct DelCallbackParams {
     pub callback: Option<i64>,
 }
 
+/// \- Deletes a specific CallerID Filtering from your Account.
+///
 /// Parameters for [`Client::del_caller_id_filtering`] (wire method `delCallerIDFiltering`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallerIDFilteringParams {
@@ -1226,6 +3990,8 @@ pub struct DelCallerIDFilteringParams {
     pub filtering: Option<i64>,
 }
 
+/// \- Deletes a specific reseller client from your Account.
+///
 /// Parameters for [`Client::del_client`] (wire method `delClient`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelClientParams {
@@ -1234,6 +4000,8 @@ pub struct DelClientParams {
     pub client: Option<i64>,
 }
 
+/// \- Deletes a specific Conference from your Account.
+///
 /// Parameters for [`Client::del_conference`] (wire method `delConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelConferenceParams {
@@ -1242,6 +4010,8 @@ pub struct DelConferenceParams {
     pub conference: Option<i64>,
 }
 
+/// \- Deletes a specific Member profile from your Account.
+///
 /// Parameters for [`Client::del_conference_member`] (wire method `delConferenceMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelConferenceMemberParams {
@@ -1250,6 +4020,8 @@ pub struct DelConferenceMemberParams {
     pub member: Option<i64>,
 }
 
+/// \- Deletes a specific DISA from your Account.
+///
 /// Parameters for [`Client::del_disa`] (wire method `delDISA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelDISAParams {
@@ -1258,6 +4030,8 @@ pub struct DelDISAParams {
     pub disa: Option<i64>,
 }
 
+/// \- Deletes a specific "Email to Fax configuration" from your Account.
+///
 /// Parameters for [`Client::del_email_to_fax`] (wire method `delEmailToFax`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelEmailToFAXParams {
@@ -1269,6 +4043,8 @@ pub struct DelEmailToFAXParams {
     pub test: Option<i64>,
 }
 
+/// \- Deletes a specific Fax Folder from your Account.
+///
 /// Parameters for [`Client::del_fax_folder`] (wire method `delFaxFolder`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelFAXFolderParams {
@@ -1280,6 +4056,8 @@ pub struct DelFAXFolderParams {
     pub test: Option<i64>,
 }
 
+/// \- Deletes a specific Forwarding from your Account.
+///
 /// Parameters for [`Client::del_forwarding`] (wire method `delForwarding`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelForwardingParams {
@@ -1288,6 +4066,8 @@ pub struct DelForwardingParams {
     pub forwarding: Option<i64>,
 }
 
+/// \- Deletes a specific IVR from your Account.
+///
 /// Parameters for [`Client::del_ivr`] (wire method `delIVR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelIVRParams {
@@ -1307,6 +4087,8 @@ pub struct DelLocationParams {
     pub id: Option<String>,
 }
 
+/// \- Removes a member profile from a specific Conference from your Account
+///
 /// Parameters for [`Client::del_member_from_conference`] (wire method `delMemberFromConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelMemberFromConferenceParams {
@@ -1318,6 +4100,9 @@ pub struct DelMemberFromConferenceParams {
     pub conference: Option<i64>,
 }
 
+/// \- Deletes all messages in all servers from a specific Voicemail from your
+/// Account
+///
 /// Parameters for [`Client::del_messages`] (wire method `delMessages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelMessagesParams {
@@ -1334,6 +4119,8 @@ pub struct DelMessagesParams {
     pub message_num: Option<i64>,
 }
 
+/// \- Deletes a specific custom Music on Hold.
+///
 /// Parameters for [`Client::del_music_on_hold`] (wire method `delMusicOnHold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelMusicOnHoldParams {
@@ -1342,6 +4129,8 @@ pub struct DelMusicOnHoldParams {
     pub music_on_hold: Option<String>,
 }
 
+/// \- Deletes a specific Phonebook from your Account.
+///
 /// Parameters for [`Client::del_phonebook`] (wire method `delPhonebook`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelPhonebookParams {
@@ -1350,6 +4139,8 @@ pub struct DelPhonebookParams {
     pub phonebook: Option<i64>,
 }
 
+/// \- Deletes a specific Phonebook group from your Account.
+///
 /// Parameters for [`Client::del_phonebook_group`] (wire method `delPhonebookGroup`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelPhonebookGroupParams {
@@ -1358,6 +4149,8 @@ pub struct DelPhonebookGroupParams {
     pub group: Option<String>,
 }
 
+/// \- Deletes a specific Queue from your Account.
+///
 /// Parameters for [`Client::del_queue`] (wire method `delQueue`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelQueueParams {
@@ -1366,6 +4159,8 @@ pub struct DelQueueParams {
     pub queue: Option<i64>,
 }
 
+/// \- Deletes a specific Recording from your Account.
+///
 /// Parameters for [`Client::del_recording`] (wire method `delRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelRecordingParams {
@@ -1374,6 +4169,8 @@ pub struct DelRecordingParams {
     pub recording: Option<i64>,
 }
 
+/// \- Deletes a specific Ring Group from your Account.
+///
 /// Parameters for [`Client::del_ring_group`] (wire method `delRingGroup`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelRingGroupParams {
@@ -1382,6 +4179,8 @@ pub struct DelRingGroupParams {
     pub ringgroup: Option<i64>,
 }
 
+/// \- Deletes a specific SIP URI from your Account.
+///
 /// Parameters for [`Client::del_sip_uri`] (wire method `delSIPURI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelSIPURIParams {
@@ -1390,6 +4189,8 @@ pub struct DelSIPURIParams {
     pub sipuri: Option<i64>,
 }
 
+/// \- Deletes a specific Static Member from Queue.
+///
 /// Parameters for [`Client::del_static_member`] (wire method `delStaticMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelStaticMemberParams {
@@ -1401,6 +4202,8 @@ pub struct DelStaticMemberParams {
     pub queue: Option<i64>,
 }
 
+/// \- Deletes a specific Sub Account from your Account
+///
 /// Parameters for [`Client::del_sub_account`] (wire method `delSubAccount`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelSubAccountParams {
@@ -1409,6 +4212,8 @@ pub struct DelSubAccountParams {
     pub id: Option<i64>,
 }
 
+/// \- Deletes a specific Time Condition from your Account.
+///
 /// Parameters for [`Client::del_time_condition`] (wire method `delTimeCondition`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelTimeConditionParams {
@@ -1417,6 +4222,8 @@ pub struct DelTimeConditionParams {
     pub timecondition: Option<i64>,
 }
 
+/// \- Deletes a specific Voicemail from your Account
+///
 /// Parameters for [`Client::del_voicemail`] (wire method `delVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelVoicemailParams {
@@ -1425,6 +4232,8 @@ pub struct DelVoicemailParams {
     pub mailbox: Option<i64>,
 }
 
+/// \- Deletes a specific Fax Message from your Account.
+///
 /// Parameters for [`Client::delete_fax_message`] (wire method `deleteFaxMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DeleteFAXMessageParams {
@@ -1436,6 +4245,8 @@ pub struct DeleteFAXMessageParams {
     pub test: Option<i64>,
 }
 
+/// \- Deletes a specific MMS from your Account.
+///
 /// Parameters for [`Client::delete_mms`] (wire method `deleteMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DeleteMMSParams {
@@ -1444,6 +4255,8 @@ pub struct DeleteMMSParams {
     pub id: Option<i64>,
 }
 
+/// \- Deletes a specific SMS from your Account.
+///
 /// Parameters for [`Client::delete_sms`] (wire method `deleteSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DeleteSMSParams {
@@ -1452,6 +4265,10 @@ pub struct DeleteSMSParams {
     pub id: Option<i64>,
 }
 
+/// \- Retrieves a list of e911 Address Types if no additional parameter is
+/// provided.
+/// \- Retrieves a specific e911 Address Type if an Address code is provided.
+///
 /// Parameters for [`Client::e911_address_types`] (wire method `e911AddressTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911AddressTypesParams {
@@ -1460,6 +4277,8 @@ pub struct E911AddressTypesParams {
     pub r#type: Option<String>,
 }
 
+/// \- Cancel the e911 Service from a specific DID.
+///
 /// Parameters for [`Client::e911_cancel`] (wire method `e911Cancel`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911CancelParams {
@@ -1468,6 +4287,8 @@ pub struct E911CancelParams {
     pub did: Option<String>,
 }
 
+/// \- Retrieves the e911 information from a specific DID.
+///
 /// Parameters for [`Client::e911_info`] (wire method `e911Info`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911InfoParams {
@@ -1476,6 +4297,8 @@ pub struct E911InfoParams {
     pub did: Option<String>,
 }
 
+/// \- Subscribes your DID to the e911 Emergency Services.
+///
 /// Parameters for [`Client::e911_provision`] (wire method `e911Provision`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911ProvisionParams {
@@ -1521,6 +4344,9 @@ pub struct E911ProvisionParams {
     pub other_info: Option<String>,
 }
 
+/// \- Subscribes your DID to the e911 Emergency Services.
+/// \- All e911 information will be validated by the VoIP.ms staff.
+///
 /// Parameters for [`Client::e911_provision_manually`] (wire method `e911ProvisionManually`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911ProvisionManuallyParams {
@@ -1566,6 +4392,8 @@ pub struct E911ProvisionManuallyParams {
     pub other_info: Option<String>,
 }
 
+/// \- Updates the Information from your e911 Emergency Services Subscription.
+///
 /// Parameters for [`Client::e911_update`] (wire method `e911Update`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911UpdateParams {
@@ -1611,6 +4439,9 @@ pub struct E911UpdateParams {
     pub other_info: Option<String>,
 }
 
+/// \- Validates your e911 information in order to start your e911 Emergency
+/// Services Subscription.
+///
 /// Parameters for [`Client::e911_validate`] (wire method `e911Validate`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911ValidateParams {
@@ -1654,6 +4485,9 @@ pub struct E911ValidateParams {
     pub other_info: Option<String>,
 }
 
+/// \- Retrieves a list of Allowed Codecs if no additional parameter is provided.
+/// \- Retrieves a specific Allowed Codec if a codec code is provided.
+///
 /// Parameters for [`Client::get_allowed_codecs`] (wire method `getAllowedCodecs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetAllowedCodecsParams {
@@ -1662,6 +4496,10 @@ pub struct GetAllowedCodecsParams {
     pub codec: Option<String>,
 }
 
+/// \- Retrieves a list of Authentication Types if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Authentication Type if an auth type code is provided.
+///
 /// Parameters for [`Client::get_auth_types`] (wire method `getAuthTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetAuthTypesParams {
@@ -1670,6 +4508,9 @@ pub struct GetAuthTypesParams {
     pub r#type: Option<String>,
 }
 
+/// \- Retrieves a list of backorder DIDs if no additional parameter is provided.
+/// \- Retrieves a specific backorder DID if a backorder DID code is provided.
+///
 /// Parameters for [`Client::get_back_orders`] (wire method `getBackOrders`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetBackOrdersParams {
@@ -1678,6 +4519,10 @@ pub struct GetBackOrdersParams {
     pub id: Option<String>,
 }
 
+/// \- Retrieves Balance for your Account if no additional parameter is provided.
+/// \- Retrieves Balance and Calls Statistics for your Account if "advanced"
+/// parameter is true.
+///
 /// Parameters for [`Client::get_balance`] (wire method `getBalance`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetBalanceParams {
@@ -1686,6 +4531,10 @@ pub struct GetBalanceParams {
     pub advanced: Option<bool>,
 }
 
+/// \- Retrieves a list of Balance Management Options if no additional parameter
+/// is provided.
+/// \- Retrieves a specific Balance Management Option if a code is provided.
+///
 /// Parameters for [`Client::get_balance_management`] (wire method `getBalanceManagement`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetBalanceManagementParams {
@@ -1694,6 +4543,8 @@ pub struct GetBalanceManagementParams {
     pub balance_management: Option<String>,
 }
 
+/// \- Retrieves the Call Detail Records of all your calls.
+///
 /// Parameters for [`Client::get_cdr`] (wire method `getCDR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCDRParams {
@@ -1730,14 +4581,22 @@ pub struct GetCDRParams {
     pub account: Option<String>,
 }
 
+/// \- Retrieves all Sub Accounts if no additional parameter is provided.
+/// \- Retrieves Reseller Client Accounts if Reseller Client ID is provided.
+///
 /// Parameters for [`Client::get_call_accounts`] (wire method `getCallAccounts`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallAccountsParams {}
 
+/// \- Retrieves a list of Call Billing Options.
+///
 /// Parameters for [`Client::get_call_billing`] (wire method `getCallBilling`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallBillingParams {}
 
+/// \- Retrieves a list of Call Huntings if no additional parameter is provided.
+/// \- Retrieves a specific Call Huntings if a Call Hunting code is provided.
+///
 /// Parameters for [`Client::get_call_huntings`] (wire method `getCallHuntings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallHuntingsParams {
@@ -1746,6 +4605,9 @@ pub struct GetCallHuntingsParams {
     pub callhunting: Option<i64>,
 }
 
+/// \- Retrieves all Call Parking entries if no additional parameter is provided.
+/// \- Retrieves a specific Parking entry if a Call Parking ID is provided.
+///
 /// Parameters for [`Client::get_call_parking`] (wire method `getCallParking`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallParkingParams {
@@ -1754,6 +4616,9 @@ pub struct GetCallParkingParams {
     pub callparking: Option<i64>,
 }
 
+/// \- Retrieves one especific call recording information, including the
+/// recording file on mp3 format.
+///
 /// Parameters for [`Client::get_call_recording`] (wire method `getCallRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallRecordingParams {
@@ -1766,6 +4631,8 @@ pub struct GetCallRecordingParams {
     pub account: Option<String>,
 }
 
+/// \- Retrieves all call recordings related to account.
+///
 /// Parameters for [`Client::get_call_recordings`] (wire method `getCallRecordings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallRecordingsParams {
@@ -1788,6 +4655,8 @@ pub struct GetCallRecordingsParams {
     pub date_to: Option<String>,
 }
 
+/// \- Retrieves all Call Transcriptions if no additional parameter is provided.
+///
 /// Parameters for [`Client::get_call_transcriptions`] (wire method `getCallTranscriptions`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallTranscriptionsParams {
@@ -1805,6 +4674,11 @@ pub struct GetCallTranscriptionsParams {
     pub call_type: Option<String>,
 }
 
+/// \- Retrieves a list of Call Types and All DIDs if no additional parameter is
+/// provided.
+/// \- Retrieves a list of Call Types and Reseller Client DIDs if a Reseller
+/// Client ID is provided.
+///
 /// Parameters for [`Client::get_call_types`] (wire method `getCallTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallTypesParams {
@@ -1813,6 +4687,9 @@ pub struct GetCallTypesParams {
     pub client: Option<String>,
 }
 
+/// \- Retrieves a list of Callbacks if no additional parameter is provided.
+/// \- Retrieves a specific Callback if a Callback code is provided.
+///
 /// Parameters for [`Client::get_callbacks`] (wire method `getCallbacks`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallbacksParams {
@@ -1821,6 +4698,11 @@ pub struct GetCallbacksParams {
     pub callback: Option<String>,
 }
 
+/// \- Retrieves a list of CallerID Filterings if no additional parameter is
+/// provided.
+/// \- Retrieves a specific CallerID Filtering if a CallerID Filtering code is
+/// provided.
+///
 /// Parameters for [`Client::get_caller_id_filtering`] (wire method `getCallerIDFiltering`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallerIDFilteringParams {
@@ -1832,6 +4714,11 @@ pub struct GetCallerIDFilteringParams {
     pub did: Option<String>,
 }
 
+/// \- Retrieves a list of Carriers for Vanity Numbers if no additional parameter
+/// is provided.
+/// \- Retrieves a specific Carrier for Vanity Numbers if a carrier code is
+/// provided.
+///
 /// Parameters for [`Client::get_carriers`] (wire method `getCarriers`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCarriersParams {
@@ -1840,6 +4727,8 @@ pub struct GetCarriersParams {
     pub carrier: Option<String>,
 }
 
+/// \- Retrieves Charges made to a specific Reseller Client.
+///
 /// Parameters for [`Client::get_charges`] (wire method `getCharges`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetChargesParams {
@@ -1848,6 +4737,8 @@ pub struct GetChargesParams {
     pub client: Option<String>,
 }
 
+/// \- Retrieves a list of Packages for a specific Reseller Client.
+///
 /// Parameters for [`Client::get_client_packages`] (wire method `getClientPackages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetClientPackagesParams {
@@ -1856,6 +4747,8 @@ pub struct GetClientPackagesParams {
     pub client: Option<String>,
 }
 
+/// \- Retrieves the Threshold Information for a specific Reseller Client.
+///
 /// Parameters for [`Client::get_client_threshold`] (wire method `getClientThreshold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetClientThresholdParams {
@@ -1864,16 +4757,24 @@ pub struct GetClientThresholdParams {
     pub client: Option<String>,
 }
 
+/// \- Retrieves a list of all Clients if no additional parameter is provided.-
+/// Retrieves a specific Reseller Client if a Reseller Client ID is provided.
+/// \- Retrieves a specific Reseller Client if a Reseller Client e-mail is
+/// provided.
+///
 /// Parameters for [`Client::get_clients`] (wire method `getClients`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetClientsParams {
-    /// Parameter could have the following values: * Empty Value [Not Required]
-    /// \* Specific Reseller Client ID (Example: 561115) * Specific Reseller
-    /// Client e-mail (Example: '[email protected]')
+    /// Parameter could have the following values: * Empty Value \[Not
+    /// Required\] * Specific Reseller Client ID (Example: 561115) * Specific
+    /// Reseller Client e-mail (Example: '\[email protected\]')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
 
+/// \- Retrieves a list of Conferences if no additional parameter is provided.
+/// \- Retrieves a specific Conference if a conference code is provided.
+///
 /// Parameters for [`Client::get_conference`] (wire method `getConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceParams {
@@ -1882,6 +4783,10 @@ pub struct GetConferenceParams {
     pub conference: Option<i64>,
 }
 
+/// \- Retrieves a list of Member profiles if no additional parameter is
+/// provided.
+/// \- Retrieves a specific member if a member code is provided.
+///
 /// Parameters for [`Client::get_conference_members`] (wire method `getConferenceMembers`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceMembersParams {
@@ -1890,6 +4795,8 @@ pub struct GetConferenceMembersParams {
     pub member: Option<i64>,
 }
 
+/// \- Retrieves a specific Recording File data in Base64 format.
+///
 /// Parameters for [`Client::get_conference_recording_file`] (wire method `getConferenceRecordingFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceRecordingFileParams {
@@ -1901,6 +4808,8 @@ pub struct GetConferenceRecordingFileParams {
     pub recording: Option<i64>,
 }
 
+/// \- Retrieves a list of recordings of a specific conference.
+///
 /// Parameters for [`Client::get_conference_recordings`] (wire method `getConferenceRecordings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceRecordingsParams {
@@ -1915,6 +4824,9 @@ pub struct GetConferenceRecordingsParams {
     pub date_to: Option<String>,
 }
 
+/// \- Retrieves a list of Countries if no additional parameter is provided.
+/// \- Retrieves a specific Country if a country code is provided.
+///
 /// Parameters for [`Client::get_countries`] (wire method `getCountries`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCountriesParams {
@@ -1923,6 +4835,11 @@ pub struct GetCountriesParams {
     pub country: Option<String>,
 }
 
+/// \- Retrieves a list of Countries for International DIDs if no country code is
+/// provided.
+/// \- Retrieves a specific Country for International DIDs if a country code is
+/// provided.
+///
 /// Parameters for [`Client::get_did_countries`] (wire method `getDIDCountries`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDCountriesParams {
@@ -1934,6 +4851,8 @@ pub struct GetDIDCountriesParams {
     pub r#type: Option<String>,
 }
 
+/// \- Retrives a list of Canadian DIDs by Province and Ratecenter.
+///
 /// Parameters for [`Client::get_dids_can`] (wire method `getDIDsCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsCANParams {
@@ -1945,12 +4864,20 @@ pub struct GetDIDsCANParams {
     pub ratecenter: Option<String>,
 }
 
+/// \- Retrieves information from all your DIDs if no additional parameter is
+/// provided.
+/// \- Retrieves information from Reseller Client's DIDs if a Reseller Client ID
+/// is provided.
+/// \- Retrieves information from Sub Account's DIDs if a Sub Accunt is provided.
+/// \- Retrieves information from a specific DID if a DID Number is provided.
+/// \- Retrieves SMS information from a specific DID if the SMS is available.
+///
 /// Parameters for [`Client::get_dids_info`] (wire method `getDIDsInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInfoParams {
-    /// Parameter could have the following values: * Empty Value [Not Required]
-    /// \* Specific Reseller Client ID (Example: 561115) * Specific Sub Account
-    /// (Example: '100001_VoIP')
+    /// Parameter could have the following values: * Empty Value \[Not
+    /// Required\] * Specific Reseller Client ID (Example: 561115) * Specific
+    /// Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
     /// DID from Client or Sub Account (Example: 5551234567)
@@ -1958,6 +4885,8 @@ pub struct GetDIDsInfoParams {
     pub did: Option<String>,
 }
 
+/// \- Retrieves a list of International Geographic DIDs by Country.
+///
 /// Parameters for [`Client::get_dids_international_geographic`] (wire method `getDIDsInternationalGeographic`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInternationalGeographicParams {
@@ -1966,6 +4895,8 @@ pub struct GetDIDsInternationalGeographicParams {
     pub country_id: Option<String>,
 }
 
+/// \- Retrieves a list of International National DIDs by Country.
+///
 /// Parameters for [`Client::get_dids_international_national`] (wire method `getDIDsInternationalNational`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInternationalNationalParams {
@@ -1974,6 +4905,8 @@ pub struct GetDIDsInternationalNationalParams {
     pub country_id: Option<String>,
 }
 
+/// \- Retrieves a list of International TollFree DIDs by Country.
+///
 /// Parameters for [`Client::get_dids_international_toll_free`] (wire method `getDIDsInternationalTollFree`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInternationalTollFreeParams {
@@ -1982,6 +4915,8 @@ pub struct GetDIDsInternationalTollFreeParams {
     pub country_id: Option<String>,
 }
 
+/// \- Retrives a list of USA DIDs by State and Ratecenter.
+///
 /// Parameters for [`Client::get_dids_usa`] (wire method `getDIDsUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsUSAParams {
@@ -1993,6 +4928,8 @@ pub struct GetDIDsUSAParams {
     pub ratecenter: Option<String>,
 }
 
+/// \- Retrives the list of DIDs assigned to the VPRI.
+///
 /// Parameters for [`Client::get_did_vpri`] (wire method `getDIDvPRI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDvPRIParams {
@@ -2001,6 +4938,9 @@ pub struct GetDIDvPRIParams {
     pub vpri: Option<String>,
 }
 
+/// \- Retrieves a list of DISAs if no additional parameter is provided.
+/// \- Retrieves a specific DISA if a DISA code is provided.
+///
 /// Parameters for [`Client::get_disas`] (wire method `getDISAs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDISAsParams {
@@ -2009,6 +4949,9 @@ pub struct GetDISAsParams {
     pub disa: Option<String>,
 }
 
+/// \- Retrieves a list of DTMF Modes if no additional parameter is provided.
+/// \- Retrieves a specific DTMF Mode if a DTMF mode code is provided.
+///
 /// Parameters for [`Client::get_dtmf_modes`] (wire method `getDTMFModes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDTMFModesParams {
@@ -2017,6 +4960,8 @@ pub struct GetDTMFModesParams {
     pub dtmf_mode: Option<DtmfMode>,
 }
 
+/// \- Retrieves Deposits made for a specific Reseller Client.
+///
 /// Parameters for [`Client::get_deposits`] (wire method `getDeposits`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDepositsParams {
@@ -2025,6 +4970,9 @@ pub struct GetDepositsParams {
     pub client: Option<String>,
 }
 
+/// \- Retrieves a list of Device Types if no additional parameter is provided.
+/// \- Retrieves a specific Device Type if a device type code is provided.
+///
 /// Parameters for [`Client::get_device_types`] (wire method `getDeviceTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDeviceTypesParams {
@@ -2033,6 +4981,11 @@ pub struct GetDeviceTypesParams {
     pub device_type: Option<String>,
 }
 
+/// \- Retrieves a list of "Email to Fax configurations" from your account if no
+/// additional parameter is provided.
+/// \- Retrieves a specific "Email to Fax configuration" from your account if a
+/// ID is provided.
+///
 /// Parameters for [`Client::get_email_to_fax`] (wire method `getEmailToFax`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetEmailToFAXParams {
@@ -2040,6 +4993,8 @@ pub struct GetEmailToFAXParams {
     pub id: Option<i64>,
 }
 
+/// \- Retrieves a list of Fax Folders from your account.
+///
 /// Parameters for [`Client::get_fax_folders`] (wire method `getFaxFolders`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXFoldersParams {
@@ -2047,6 +5002,8 @@ pub struct GetFAXFoldersParams {
     pub id: Option<i64>,
 }
 
+/// \- Retrieves a Base64 code of the Fax Message to create a PDF file.
+///
 /// Parameters for [`Client::get_fax_message_pdf`] (wire method `getFaxMessagePDF`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXMessagePDFParams {
@@ -2055,6 +5012,9 @@ pub struct GetFAXMessagePDFParams {
     pub id: Option<i64>,
 }
 
+/// \- Retrieves a list of Fax Messages.
+/// \- Retrieves a specific Fax Message if a Fax Message ID is provided.
+///
 /// Parameters for [`Client::get_fax_messages`] (wire method `getFaxMessages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXMessagesParams {
@@ -2074,6 +5034,8 @@ pub struct GetFAXMessagesParams {
     pub id: Option<i64>,
 }
 
+/// \- Retrieves a list of Fax Numbers.
+///
 /// Parameters for [`Client::get_fax_numbers_info`] (wire method `getFaxNumbersInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXNumbersInfoParams {
@@ -2083,6 +5045,8 @@ pub struct GetFAXNumbersInfoParams {
     pub did: Option<i64>,
 }
 
+/// \- Shows if a Fax Number can be ported into our network
+///
 /// Parameters for [`Client::get_fax_numbers_portability`] (wire method `getFaxNumbersPortability`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXNumbersPortabilityParams {
@@ -2092,6 +5056,10 @@ pub struct GetFAXNumbersPortabilityParams {
     pub did: Option<i64>,
 }
 
+/// \- Retrieves a list of Canadian Fax Provinces if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Canadian Fax Province if a province code is provided.
+///
 /// Parameters for [`Client::get_fax_provinces`] (wire method `getFaxProvinces`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXProvincesParams {
@@ -2100,6 +5068,8 @@ pub struct GetFAXProvincesParams {
     pub province: Option<String>,
 }
 
+/// \- Retrieves a list of Canadian Ratecenters by Province.
+///
 /// Parameters for [`Client::get_fax_rate_centers_can`] (wire method `getFaxRateCentersCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXRateCentersCANParams {
@@ -2108,6 +5078,8 @@ pub struct GetFAXRateCentersCANParams {
     pub province: Option<String>,
 }
 
+/// \- Retrieves a list of USA Ratecenters by State.
+///
 /// Parameters for [`Client::get_fax_rate_centers_usa`] (wire method `getFaxRateCentersUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXRateCentersUSAParams {
@@ -2116,6 +5088,10 @@ pub struct GetFAXRateCentersUSAParams {
     pub state: Option<String>,
 }
 
+/// \- Retrieves a list of American Fax States if no additional parameter is
+/// provided.
+/// \- Retrieves a specific American Fax State if a state code is provided.
+///
 /// Parameters for [`Client::get_fax_states`] (wire method `getFaxStates`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXStatesParams {
@@ -2124,6 +5100,9 @@ pub struct GetFAXStatesParams {
     pub state: Option<String>,
 }
 
+/// \- Retrieves a list of Forwardings if no additional parameter is provided.
+/// \- Retrieves a specific Forwarding if a fwd code is provided.
+///
 /// Parameters for [`Client::get_forwardings`] (wire method `getForwardings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetForwardingsParams {
@@ -2132,10 +5111,18 @@ pub struct GetForwardingsParams {
     pub forwarding: Option<String>,
 }
 
+/// \- Shows the IP used by the client application requesting information from
+/// the API
+/// \* this is the only function not using the IP for authentication.
+/// \* the IP returned should be the one used in the API Configuration.
+///
 /// Parameters for [`Client::get_ip`] (wire method `getIP`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetIPParams {}
 
+/// \- Retrieves a list of IVRs if no additional parameter is provided.
+/// \- Retrieves a specific IVR if a IVR code is provided.
+///
 /// Parameters for [`Client::get_ivrs`] (wire method `getIVRs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetIVRsParams {
@@ -2144,6 +5131,11 @@ pub struct GetIVRsParams {
     pub ivr: Option<String>,
 }
 
+/// \- Retrieves a list of Types for International DIDs if no additional
+/// parameter is provided.
+/// \- Retrieves a specific Types for International DIDs if a type code is
+/// provided.
+///
 /// Parameters for [`Client::get_international_types`] (wire method `getInternationalTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetInternationalTypesParams {
@@ -2152,6 +5144,10 @@ pub struct GetInternationalTypesParams {
     pub r#type: Option<String>,
 }
 
+/// \- Retrieves a list of 'JoinWhenEmpty' Types if no additional parameter is
+/// provided.
+/// \- Retrieves a specific 'JoinWhenEmpty' Types if a type code is provided.
+///
 /// Parameters for [`Client::get_join_when_empty_types`] (wire method `getJoinWhenEmptyTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetJoinWhenEmptyTypesParams {
@@ -2160,6 +5156,8 @@ pub struct GetJoinWhenEmptyTypesParams {
     pub r#type: Option<String>,
 }
 
+/// \- Retrieve the details of an attached invoice.
+///
 /// Parameters for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPAttachParams {
@@ -2168,6 +5166,9 @@ pub struct GetLNPAttachParams {
     pub attachid: Option<i64>,
 }
 
+/// \- Retrieve the list of invoice (attached) files from a given portability
+/// process.
+///
 /// Parameters for [`Client::get_lnp_attach_list`] (wire method `getLNPAttachList`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPAttachListParams {
@@ -2176,6 +5177,8 @@ pub struct GetLNPAttachListParams {
     pub portid: Option<i64>,
 }
 
+/// \- Retrieve the details of a given portability process.
+///
 /// Parameters for [`Client::get_lnp_details`] (wire method `getLNPDetails`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPDetailsParams {
@@ -2184,6 +5187,8 @@ pub struct GetLNPDetailsParams {
     pub portid: Option<i64>,
 }
 
+/// \- Retrieve the full list of all your portability processes.
+///
 /// Parameters for [`Client::get_lnp_list`] (wire method `getLNPList`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPListParams {
@@ -2202,10 +5207,14 @@ pub struct GetLNPListParams {
     pub endDate: Option<String>,
 }
 
+/// \- Retrieve the list of possible status of a portability process.
+///
 /// Parameters for [`Client::get_lnp_list_status`] (wire method `getLNPListStatus`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPListStatusParams {}
 
+/// \- Retrieve the list of notes from the given portability process.
+///
 /// Parameters for [`Client::get_lnp_notes`] (wire method `getLNPNotes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPNotesParams {
@@ -2214,6 +5223,8 @@ pub struct GetLNPNotesParams {
     pub portid: Option<i64>,
 }
 
+/// \- Retrieve the current status of a given portability process.
+///
 /// Parameters for [`Client::get_lnp_status`] (wire method `getLNPStatus`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPStatusParams {
@@ -2222,6 +5233,9 @@ pub struct GetLNPStatusParams {
     pub portid: Option<i64>,
 }
 
+/// \- Retrieves a list of Languages if no additional parameter is provided.
+/// \- Retrieves a specific Language if a language code is provided.
+///
 /// Parameters for [`Client::get_languages`] (wire method `getLanguages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLanguagesParams {
@@ -2230,6 +5244,9 @@ pub struct GetLanguagesParams {
     pub language: Option<String>,
 }
 
+/// \- Retrieves a list of locale codes if no additional parameter is provided.
+/// \- Retrieves a specific locale code if a language code is provided.
+///
 /// Parameters for [`Client::get_locales`] (wire method `getLocales`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLocalesParams {
@@ -2242,6 +5259,9 @@ pub struct GetLocalesParams {
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLocationsParams {}
 
+/// \- Retrieves a list of Lock Modes if no additional parameter is provided.
+/// \- Retrieves a specific Lock Mode if a lock code is provided.
+///
 /// Parameters for [`Client::get_lock_international`] (wire method `getLockInternational`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLockInternationalParams {
@@ -2250,6 +5270,9 @@ pub struct GetLockInternationalParams {
     pub lock_international: Option<String>,
 }
 
+/// \- Retrieves a list of MMS messages by: date range, mms type, DID number, and
+/// contact.
+///
 /// Parameters for [`Client::get_mms`] (wire method `getMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetMMSParams {
@@ -2285,6 +5308,8 @@ pub struct GetMMSParams {
     pub all_messages: Option<i64>,
 }
 
+/// \- Retrieves media files from the message.
+///
 /// Parameters for [`Client::get_media_mms`] (wire method `getMediaMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetMediaMMSParams {
@@ -2297,6 +5322,10 @@ pub struct GetMediaMMSParams {
     pub media_as_array: Option<i64>,
 }
 
+/// \- Retrieves a list of Music on Hold Options if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Music on Hold Option if a MOH code is provided.
+///
 /// Parameters for [`Client::get_music_on_hold`] (wire method `getMusicOnHold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetMusicOnHoldParams {
@@ -2305,6 +5334,9 @@ pub struct GetMusicOnHoldParams {
     pub music_on_hold: Option<String>,
 }
 
+/// \- Retrieves a list of NAT Options if no additional parameter is provided.
+/// \- Retrieves a specific NAT Option if a NAT code is provided.
+///
 /// Parameters for [`Client::get_nat`] (wire method `getNAT`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetNATParams {
@@ -2313,6 +5345,9 @@ pub struct GetNATParams {
     pub nat: Option<Nat>,
 }
 
+/// \- Retrieves a list of Packages if no additional parameter is provided.-
+/// Retrieves a specific Package if a package code is provided.
+///
 /// Parameters for [`Client::get_packages`] (wire method `getPackages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPackagesParams {
@@ -2321,6 +5356,15 @@ pub struct GetPackagesParams {
     pub package: Option<String>,
 }
 
+/// \- Retrieves a list of Phonebook entries if no additional parameter is
+/// provided.
+/// \- Retrieves a list of Phonebook entries if a name is provided.
+/// \- Retrieves a specific Phonebook entry if a Phonebook code is provided.
+/// \- Retrieves a list of Phonebook entries if a phonebook group name is
+/// provided.
+/// \- Retrieves a list of Phonebook entries if a phonebook group code is
+/// provided.
+///
 /// Parameters for [`Client::get_phonebook`] (wire method `getPhonebook`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPhonebookParams {
@@ -2338,6 +5382,11 @@ pub struct GetPhonebookParams {
     pub group_name: Option<String>,
 }
 
+/// \- Retrieves a list of Phonebook groups if no additional parameter is
+/// provided.
+/// \- Retrieves a list of Phonebook groups if a name is provided.
+/// \- Retrieves a specific Phonebook group if a group ID is provided.
+///
 /// Parameters for [`Client::get_phonebook_groups`] (wire method `getPhonebookGroups`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPhonebookGroupsParams {
@@ -2349,6 +5398,10 @@ pub struct GetPhonebookGroupsParams {
     pub group: Option<String>,
 }
 
+/// \- Retrieves a list of Play Instructions modes if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Play Instructions mode if a play code is provided.
+///
 /// Parameters for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPlayInstructionsParams {
@@ -2357,6 +5410,10 @@ pub struct GetPlayInstructionsParams {
     pub play_instructions: Option<PlayInstructions>,
 }
 
+/// \- Shows if a DID Number can be ported into our network.
+/// \- Display plans and rates available if the DID Number can be ported into our
+/// network.
+///
 /// Parameters for [`Client::get_portability`] (wire method `getPortability`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPortabilityParams {
@@ -2366,6 +5423,9 @@ pub struct GetPortabilityParams {
     pub did: Option<String>,
 }
 
+/// \- Retrieves a list of Protocols if no additional parameter is provided.
+/// \- Retrieves a specific Protocol if a protocol code is provided.
+///
 /// Parameters for [`Client::get_protocols`] (wire method `getProtocols`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetProtocolsParams {
@@ -2374,10 +5434,15 @@ pub struct GetProtocolsParams {
     pub protocol: Option<String>,
 }
 
+/// \- Retrieves a list of Canadian Provinces.
+///
 /// Parameters for [`Client::get_provinces`] (wire method `getProvinces`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetProvincesParams {}
 
+/// \- Retrieves a list of Queue entries if no additional parameter is provided.
+/// \- Retrieves a specific Queue entry if a Queue code is provided.
+///
 /// Parameters for [`Client::get_queues`] (wire method `getQueues`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetQueuesParams {
@@ -2386,6 +5451,8 @@ pub struct GetQueuesParams {
     pub queue: Option<String>,
 }
 
+/// \- Retrieves a list of Canadian Ratecenters by Province.
+///
 /// Parameters for [`Client::get_rate_centers_can`] (wire method `getRateCentersCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRateCentersCANParams {
@@ -2394,6 +5461,8 @@ pub struct GetRateCentersCANParams {
     pub province: Option<String>,
 }
 
+/// \- Retrieves a list of USA Ratecenters by State.
+///
 /// Parameters for [`Client::get_rate_centers_usa`] (wire method `getRateCentersUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRateCentersUSAParams {
@@ -2402,6 +5471,8 @@ pub struct GetRateCentersUSAParams {
     pub state: Option<String>,
 }
 
+/// \- Retrieves the Rates for a specific Package and a Search term.
+///
 /// Parameters for [`Client::get_rates`] (wire method `getRates`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRatesParams {
@@ -2413,6 +5484,8 @@ pub struct GetRatesParams {
     pub query: Option<String>,
 }
 
+/// \- Retrieves a specific Recording File data in Base64 format.
+///
 /// Parameters for [`Client::get_recording_file`] (wire method `getRecordingFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRecordingFileParams {
@@ -2421,6 +5494,9 @@ pub struct GetRecordingFileParams {
     pub recording: Option<String>,
 }
 
+/// \- Retrieves a list of Recordings if no additional parameter is provided.
+/// \- Retrieves a specific Recording if a Recording code is provided.
+///
 /// Parameters for [`Client::get_recordings`] (wire method `getRecordings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRecordingsParams {
@@ -2429,6 +5505,9 @@ pub struct GetRecordingsParams {
     pub recording: Option<String>,
 }
 
+/// \- Retrieves the Registration Status of all accounts if no account is
+/// provided.
+///
 /// Parameters for [`Client::get_registration_status`] (wire method `getRegistrationStatus`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRegistrationStatusParams {
@@ -2437,6 +5516,11 @@ pub struct GetRegistrationStatusParams {
     pub account: Option<String>,
 }
 
+/// \- Retrieves a list of 'ReportEstimateHoldTime' Types if no additional
+/// parameter is provided.
+/// \- Retrieves a specific 'ReportEstimateHoldTime' Type if a type code is
+/// provided.
+///
 /// Parameters for [`Client::get_report_estimated_hold_time`] (wire method `getReportEstimatedHoldTime`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetReportEstimatedHoldTimeParams {
@@ -2445,6 +5529,9 @@ pub struct GetReportEstimatedHoldTimeParams {
     pub r#type: Option<String>,
 }
 
+/// \- Retrieves Balance and Calls Statistics for a specific Reseller Client for
+/// the last 30 days and current day.
+///
 /// Parameters for [`Client::get_reseller_balance`] (wire method `getResellerBalance`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetResellerBalanceParams {
@@ -2453,6 +5540,8 @@ pub struct GetResellerBalanceParams {
     pub client: Option<String>,
 }
 
+/// \- Retrieves the Call Detail Records for a specific Reseller Client.
+///
 /// Parameters for [`Client::get_reseller_cdr`] (wire method `getResellerCDR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetResellerCDRParams {
@@ -2492,6 +5581,9 @@ pub struct GetResellerCDRParams {
     pub account: Option<String>,
 }
 
+/// \- Retrieves a list of MMS messages for a specific Reseller Client. by: date
+/// range, mms type, DID number, and contact
+///
 /// Parameters for [`Client::get_reseller_mms`] (wire method `getResellerMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetResellerMMSParams {
@@ -2504,7 +5596,7 @@ pub struct GetResellerMMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
     /// End Date for Filtering MMSs (Example: '2014-03-30') - Default value:
-    /// Todayclient => [Required] ID for a specific Reseller Client (Example:
+    /// Todayclient => \[Required\] ID for a specific Reseller Client (Example:
     /// 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
@@ -2529,6 +5621,9 @@ pub struct GetResellerMMSParams {
     pub all_messages: Option<i64>,
 }
 
+/// \- Retrieves a list of SMS messages for a specific Reseller Client. by: date
+/// range, sms type, DID number, and contact
+///
 /// Parameters for [`Client::get_reseller_sms`] (wire method `getResellerSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetResellerSMSParams {
@@ -2542,7 +5637,7 @@ pub struct GetResellerSMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
     /// End Date for Filtering SMSs (Example: '2014-03-30') - Default value:
-    /// Todayclient => [Required] ID for a specific Reseller Client (Example:
+    /// Todayclient => \[Required\] ID for a specific Reseller Client (Example:
     /// 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
@@ -2567,6 +5662,9 @@ pub struct GetResellerSMSParams {
     pub all_messages: Option<i64>,
 }
 
+/// \- Retrieves a list of Ring Groups if no additional parameter is provided.
+/// \- Retrieves a specific Ring Group if a ring group code is provided.
+///
 /// Parameters for [`Client::get_ring_groups`] (wire method `getRingGroups`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRingGroupsParams {
@@ -2575,6 +5673,10 @@ pub struct GetRingGroupsParams {
     pub ring_group: Option<String>,
 }
 
+/// \- Retrieves a list of Ring Strategies if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Ring Strategy if a ring strategy code is provided.
+///
 /// Parameters for [`Client::get_ring_strategies`] (wire method `getRingStrategies`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRingStrategiesParams {
@@ -2583,6 +5685,9 @@ pub struct GetRingStrategiesParams {
     pub strategy: Option<String>,
 }
 
+/// \- Retrieves a list of Route Options if no additional parameter is provided.
+/// \- Retrieves a specific Route Option if a route code is provided.
+///
 /// Parameters for [`Client::get_routes`] (wire method `getRoutes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRoutesParams {
@@ -2591,6 +5696,9 @@ pub struct GetRoutesParams {
     pub route: Option<String>,
 }
 
+/// \- Retrieves a list of SIP URIs if no additional parameter is provided.
+/// \- Retrieves a specific SIP URI if a SIP URI code is provided.
+///
 /// Parameters for [`Client::get_sip_uris`] (wire method `getSIPURIs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetSIPURIsParams {
@@ -2599,6 +5707,9 @@ pub struct GetSIPURIsParams {
     pub sipuri: Option<String>,
 }
 
+/// \- Retrieves a list of SMS messages by: date range, sms type, DID number, and
+/// contact.
+///
 /// Parameters for [`Client::get_sms`] (wire method `getSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetSMSParams {
@@ -2634,6 +5745,10 @@ pub struct GetSMSParams {
     pub all_messages: Option<i64>,
 }
 
+/// \- Retrieves a list of Servers with their info if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Server with its info if a Server POP is provided.
+///
 /// Parameters for [`Client::get_servers_info`] (wire method `getServersInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetServersInfoParams {
@@ -2642,10 +5757,17 @@ pub struct GetServersInfoParams {
     pub server_pop: Option<String>,
 }
 
+/// \- Retrieves a list of USA States.
+///
 /// Parameters for [`Client::get_states`] (wire method `getStates`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetStatesParams {}
 
+/// \- Retrieves a list of Static Members from a queue if no additional parameter
+/// is provided.
+/// \- Retrieves a specific Static Member from a queue if Queue ID and Member ID
+/// are provided
+///
 /// Parameters for [`Client::get_static_members`] (wire method `getStaticMembers`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetStaticMembersParams {
@@ -2658,16 +5780,23 @@ pub struct GetStaticMembersParams {
     pub member: Option<String>,
 }
 
+/// \- Retrieves all Sub Accounts if no additional parameter is provided.
+/// \- Retrieves Reseller Client Accounts if Reseller Client ID is provided.
+/// \- Retrieves a specific Sub Account if a Sub Account is provided.
+///
 /// Parameters for [`Client::get_sub_accounts`] (wire method `getSubAccounts`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetSubAccountsParams {
-    /// Parameter could have the following values: * Empty Value [Not Required]
-    /// \* Specific Sub Account (Example: '100000_VoIP') * Specific Reseller
-    /// Client ID (Example: 561115)
+    /// Parameter could have the following values: * Empty Value \[Not
+    /// Required\] * Specific Sub Account (Example: '100000_VoIP') * Specific
+    /// Reseller Client ID (Example: 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
 
+/// \- Retrieves the Rates for a specific Route (Premium, Value) and a Search
+/// term.
+///
 /// Parameters for [`Client::get_termination_rates`] (wire method `getTerminationRates`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTerminationRatesParams {
@@ -2679,6 +5808,10 @@ pub struct GetTerminationRatesParams {
     pub route: Option<i64>,
 }
 
+/// \- Retrieves a list of Time Conditions if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Time Condition if a time condition code is provided.
+///
 /// Parameters for [`Client::get_time_conditions`] (wire method `getTimeConditions`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTimeConditionsParams {
@@ -2687,6 +5820,9 @@ pub struct GetTimeConditionsParams {
     pub timecondition: Option<i64>,
 }
 
+/// \- Retrieves a list of Timezones if no additional parameter is provided.
+/// \- Retrieves a specific Timezone if a timezone code is provided.
+///
 /// Parameters for [`Client::get_timezones`] (wire method `getTimezones`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTimezonesParams {
@@ -2695,6 +5831,8 @@ pub struct GetTimezonesParams {
     pub timezone: Option<String>,
 }
 
+/// \- Retrieves the Transaction History records between two dates.
+///
 /// Parameters for [`Client::get_transaction_history`] (wire method `getTransactionHistory`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTransactionHistoryParams {
@@ -2706,10 +5844,17 @@ pub struct GetTransactionHistoryParams {
     pub date_to: Option<String>,
 }
 
+/// \- Retrieves a list of vpri.
+///
 /// Parameters for [`Client::get_vpris`] (wire method `getVPRIs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVPRIsParams {}
 
+/// \- Retrieves a list of Email Attachment Format Options if no additional
+/// parameter is provided.
+/// \- Retrieves a specific Email Attachment Format Option if a format value is
+/// provided.
+///
 /// Parameters for [`Client::get_voicemail_attachment_formats`] (wire method `getVoicemailAttachmentFormats`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailAttachmentFormatsParams {
@@ -2718,6 +5863,12 @@ pub struct GetVoicemailAttachmentFormatsParams {
     pub email_attachment_format: Option<EmailAttachmentFormat>,
 }
 
+/// \- Retrieves a list of default Voicemail Folders if no additional parameter
+/// is provided.
+/// \- Retrieves a list of Voicemail Folders within a mailbox if mailbox
+/// parameter is provided.
+/// \- Retrieves a specific Folder if a folder name is provided.
+///
 /// Parameters for [`Client::get_voicemail_folders`] (wire method `getVoicemailFolders`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailFoldersParams {
@@ -2726,6 +5877,8 @@ pub struct GetVoicemailFoldersParams {
     pub folder: Option<VoicemailFolder>,
 }
 
+/// \- Retrieves a specific Voicemail Message File in Base64 format.
+///
 /// Parameters for [`Client::get_voicemail_message_file`] (wire method `getVoicemailMessageFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailMessageFileParams {
@@ -2741,6 +5894,12 @@ pub struct GetVoicemailMessageFileParams {
     pub message_num: Option<i64>,
 }
 
+/// \- Retrieves a list of Voicemail Messages if mailbox parameter is provided.
+/// \- Retrieves a list of Voicemail Messages in a Folder if a folder is
+/// provided.
+/// \- Retrieves a list of Voicemail Messages in a date range if a from and to
+/// are provided.
+///
 /// Parameters for [`Client::get_voicemail_messages`] (wire method `getVoicemailMessages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailMessagesParams {
@@ -2759,6 +5918,11 @@ pub struct GetVoicemailMessagesParams {
     pub date_to: Option<String>,
 }
 
+/// \- Retrieves a list of Voicemail Setup Options if no additional parameter is
+/// provided.
+/// \- Retrieves a specific Voicemail Setup Option if a voicemail setup code is
+/// provided.
+///
 /// Parameters for [`Client::get_voicemail_setups`] (wire method `getVoicemailSetups`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailSetupsParams {
@@ -2767,6 +5931,9 @@ pub struct GetVoicemailSetupsParams {
     pub voicemailsetup: Option<String>,
 }
 
+/// \- Retrieves all Voicemail Transcriptions if no additional parameter is
+/// provided.
+///
 /// Parameters for [`Client::get_voicemail_transcriptions`] (wire method `getVoicemailTranscriptions`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailTranscriptionsParams {
@@ -2787,6 +5954,9 @@ pub struct GetVoicemailTranscriptionsParams {
     pub folder: Option<VoicemailFolder>,
 }
 
+/// \- Retrieves a list of Voicemails if no additional parameter is provided.
+/// \- Retrieves a specific Voicemail if a voicemail code is provided.
+///
 /// Parameters for [`Client::get_voicemails`] (wire method `getVoicemails`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailsParams {
@@ -2795,17 +5965,25 @@ pub struct GetVoicemailsParams {
     pub mailbox: Option<String>,
 }
 
+/// \- Send a Fax Message attached as a PDF file to an email destination.
+///
 /// Parameters for [`Client::mail_fax_message_pdf`] (wire method `mailFaxMessagePDF`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MailFAXMessagePDFParams {
     /// ID of the Fax Message requested (Values from getFaxMessages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
-    /// Destination email adreess (example: [email protected]) (required)
+    /// Destination email adreess (example: \[email protected\]) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
 
+/// \- Mark a Voicemail Message as Listened or Unlistened.
+/// \- If value is 'yes', the voicemail message will be marked as listened and
+/// will be moved to the Old Folder.
+/// \- If value is 'no', the voicemail message will be marked as not-listened and
+/// will be moved to the INBOX Folder.
+///
 /// Parameters for [`Client::mark_listened_voicemail_message`] (wire method `markListenedVoicemailMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MarkListenedVoicemailMessageParams {
@@ -2825,6 +6003,12 @@ pub struct MarkListenedVoicemailMessageParams {
     pub listened: Option<String>,
 }
 
+/// \- Mark Voicemail Message as Urgent or not Urgent.
+/// \- If value is 'yes', the voicemail message will be marked as urgent and will
+/// be moved to the Urgent Folder.
+/// \- If value is 'no', the voicemail message will be unmarked as urgent and
+/// will be moved to the INBOX Folder.
+///
 /// Parameters for [`Client::mark_urgent_voicemail_message`] (wire method `markUrgentVoicemailMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MarkUrgentVoicemailMessageParams {
@@ -2844,6 +6028,8 @@ pub struct MarkUrgentVoicemailMessageParams {
     pub urgent: Option<String>,
 }
 
+/// \- Moves a Fax Message to a different folder.
+///
 /// Parameters for [`Client::move_fax_message`] (wire method `moveFaxMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MoveFAXMessageParams {
@@ -2858,6 +6044,8 @@ pub struct MoveFAXMessageParams {
     pub test: Option<i64>,
 }
 
+/// \- Move Voicemail Message to a Destination Folder.
+///
 /// Parameters for [`Client::move_folder_voicemail_message`] (wire method `moveFolderVoicemailMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MoveFolderVoicemailMessageParams {
@@ -2877,6 +6065,8 @@ pub struct MoveFolderVoicemailMessageParams {
     pub new_folder: Option<String>,
 }
 
+/// \- Orders and Adds a new DID Number to the Account.
+///
 /// Parameters for [`Client::order_did`] (wire method `orderDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDParams {
@@ -2948,6 +6138,8 @@ pub struct OrderDIDParams {
     pub test: Option<bool>,
 }
 
+/// \- Orders and Adds new International Geographic DID Numbers to the Account.
+///
 /// Parameters for [`Client::order_did_international_geographic`] (wire method `orderDIDInternationalGeographic`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDInternationalGeographicParams {
@@ -3023,6 +6215,8 @@ pub struct OrderDIDInternationalGeographicParams {
     pub test: Option<i64>,
 }
 
+/// \- Orders and Adds new International National DID Numbers to the Account.
+///
 /// Parameters for [`Client::order_did_international_national`] (wire method `orderDIDInternationalNational`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDInternationalNationalParams {
@@ -3098,6 +6292,8 @@ pub struct OrderDIDInternationalNationalParams {
     pub test: Option<i64>,
 }
 
+/// \- Orders and Adds new International TollFree DID Numbers to the Account.
+///
 /// Parameters for [`Client::order_did_international_toll_free`] (wire method `orderDIDInternationalTollFree`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDInternationalTollFreeParams {
@@ -3170,6 +6366,8 @@ pub struct OrderDIDInternationalTollFreeParams {
     pub test: Option<i64>,
 }
 
+/// \- Orders and Adds a new Virtual DID Number to the Account.
+///
 /// Parameters for [`Client::order_did_virtual`] (wire method `orderDIDVirtual`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDVirtualParams {
@@ -3238,6 +6436,8 @@ pub struct OrderDIDVirtualParams {
     pub test: Option<i64>,
 }
 
+/// \- Orders and Adds a new Fax Number to the Account.
+///
 /// Parameters for [`Client::order_fax_number`] (wire method `orderFaxNumber`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderFAXNumberParams {
@@ -3249,7 +6449,7 @@ pub struct OrderFAXNumberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: [email protected])
+    /// (Example: \[email protected\])
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
@@ -3276,6 +6476,8 @@ pub struct OrderFAXNumberParams {
     pub test: Option<i64>,
 }
 
+/// \- Orders and Adds a new Toll Free Number to the Account.
+///
 /// Parameters for [`Client::order_toll_free`] (wire method `orderTollFree`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderTollFreeParams {
@@ -3344,6 +6546,8 @@ pub struct OrderTollFreeParams {
     pub test: Option<bool>,
 }
 
+/// \- Orders and Adds a new Vanity Toll Free Number to the Account.
+///
 /// Parameters for [`Client::order_vanity`] (wire method `orderVanity`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderVanityParams {
@@ -3415,6 +6619,8 @@ pub struct OrderVanityParams {
     pub test: Option<bool>,
 }
 
+/// \- Removes a DID from a VPRI
+///
 /// Parameters for [`Client::remove_did_vpri`] (wire method `removeDIDvPRI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct RemoveDIDvPRIParams {
@@ -3426,6 +6632,8 @@ pub struct RemoveDIDvPRIParams {
     pub did: Option<String>,
 }
 
+/// \- Searches for Canadian DIDs by Province using a Search Criteria.
+///
 /// Parameters for [`Client::search_dids_can`] (wire method `searchDIDsCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchDIDsCANParams {
@@ -3440,6 +6648,8 @@ pub struct SearchDIDsCANParams {
     pub query: Option<String>,
 }
 
+/// \- Searches for USA DIDs by State using a Search Criteria.
+///
 /// Parameters for [`Client::search_dids_usa`] (wire method `searchDIDsUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchDIDsUSAParams {
@@ -3454,6 +6664,8 @@ pub struct SearchDIDsUSAParams {
     pub query: Option<String>,
 }
 
+/// \- Retrieves a list of Canadian Ratecenters searched by Area Code.
+///
 /// Parameters for [`Client::search_fax_area_code_can`] (wire method `searchFaxAreaCodeCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchFAXAreaCodeCANParams {
@@ -3463,6 +6675,8 @@ pub struct SearchFAXAreaCodeCANParams {
     pub area_code: Option<i64>,
 }
 
+/// \- Retrieves a list of USA Ratecenters searched by Area Code.
+///
 /// Parameters for [`Client::search_fax_area_code_usa`] (wire method `searchFaxAreaCodeUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchFAXAreaCodeUSAParams {
@@ -3472,6 +6686,10 @@ pub struct SearchFAXAreaCodeUSAParams {
     pub area_code: Option<i64>,
 }
 
+/// \- Searches for USA/Canada Toll Free Numbers using a Search Criteria.
+/// \- Shows all USA/Canada Toll Free Numbers available if no criteria is
+/// provided.
+///
 /// Parameters for [`Client::search_toll_free_can_us`] (wire method `searchTollFreeCanUS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchTollFreeCANUSParams {
@@ -3483,6 +6701,9 @@ pub struct SearchTollFreeCANUSParams {
     pub query: Option<String>,
 }
 
+/// \- Searches for USA Toll Free Numbers using a Search Criteria.
+/// \- Shows all USA Toll Free Numbers available if no criteria is provided.
+///
 /// Parameters for [`Client::search_toll_free_usa`] (wire method `searchTollFreeUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchTollFreeUSAParams {
@@ -3494,6 +6715,8 @@ pub struct SearchTollFreeUSAParams {
     pub query: Option<String>,
 }
 
+/// \- Searches for Vanity Toll Free Numbers using a Search Criteria.
+///
 /// Parameters for [`Client::search_vanity`] (wire method `searchVanity`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchVanityParams {
@@ -3507,6 +6730,8 @@ pub struct SearchVanityParams {
     pub query: Option<String>,
 }
 
+/// \- Send information and audio file to email account.
+///
 /// Parameters for [`Client::send_call_recording_email`] (wire method `sendCallRecordingEmail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendCallRecordingEmailParams {
@@ -3522,6 +6747,8 @@ pub struct SendCallRecordingEmailParams {
     pub email: Option<String>,
 }
 
+/// \- Send a Fax message to a Destination Number.
+///
 /// Parameters for [`Client::send_fax_message`] (wire method `sendFaxMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendFAXMessageParams {
@@ -3553,6 +6780,8 @@ pub struct SendFAXMessageParams {
     pub test: Option<i64>,
 }
 
+/// \- Send a MMS message to a Destination Number.
+///
 /// Parameters for [`Client::send_mms`] (wire method `sendMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendMMSParams {
@@ -3568,7 +6797,7 @@ pub struct SendMMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
     /// Url to media file (Example:
-    /// 'https://voip.ms/themes/voipms/assets/img/talent.jpg?v=2' (optional)
+    /// '<https://voip.ms/themes/voipms/assets/img/talent.jpg?v=2>' (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media1: Option<String>,
     /// Base 64 image encode (Example:
@@ -3580,6 +6809,8 @@ pub struct SendMMSParams {
     pub media3: Option<String>,
 }
 
+/// \- Send a SMS message to a Destination Number.
+///
 /// Parameters for [`Client::send_sms`] (wire method `sendSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendSMSParams {
@@ -3596,6 +6827,8 @@ pub struct SendSMSParams {
     pub message: Option<String>,
 }
 
+/// \- Send a Voicemail Message File to an Email Address.
+///
 /// Parameters for [`Client::send_voicemail_email`] (wire method `sendVoicemailEmail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendVoicemailEmailParams {
@@ -3609,11 +6842,14 @@ pub struct SendVoicemailEmailParams {
     /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
-    /// Destination Email address (Example: [email protected]) (required)
+    /// Destination Email address (Example: \[email protected\]) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
 }
 
+/// \- Updates a specific Call Hunting if a Call Hunting code is provided.
+/// \- Adds a new Call Hunting if no Call Hunting code is provided.
+///
 /// Parameters for [`Client::set_call_hunting`] (wire method `setCallHunting`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallHuntingParams {
@@ -3650,6 +6886,9 @@ pub struct SetCallHuntingParams {
     pub press: Option<String>,
 }
 
+/// \- Updates a specific Call Parking entry if a Call Parking ID is provided.
+/// \- Adds a new Call Parking entry if no Call Parking ID is provided.
+///
 /// Parameters for [`Client::set_call_parking`] (wire method `setCallParking`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallParkingParams {
@@ -3686,6 +6925,9 @@ pub struct SetCallParkingParams {
     pub delay: Option<i64>,
 }
 
+/// \- Updates a specific Callback if a callback code is provided.
+/// \- Adds a new Callback entry if no callback code is provided.
+///
 /// Parameters for [`Client::set_callback`] (wire method `setCallback`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallbackParams {
@@ -3713,6 +6955,9 @@ pub struct SetCallbackParams {
     pub callerid_number: Option<String>,
 }
 
+/// \- Updates a specific Caller ID Filtering if a filtering code is provided.
+/// \- Adds a new Caller ID Filtering if no filtering code is provided.
+///
 /// Parameters for [`Client::set_caller_id_filtering`] (wire method `setCallerIDFiltering`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallerIDFilteringParams {
@@ -3745,6 +6990,8 @@ pub struct SetCallerIDFilteringParams {
     pub note: Option<String>,
 }
 
+/// \- Updates Reseller Client information.
+///
 /// Parameters for [`Client::set_client`] (wire method `setClient`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetClientParams {
@@ -3789,6 +7036,10 @@ pub struct SetClientParams {
     pub balance_management: Option<i64>,
 }
 
+/// \- Update the Threshold Amount for a specific Reseller Client.- Update the
+/// Threshold notification e-mail for a specific Reseller Client if the e-mail
+/// address is provided.
+///
 /// Parameters for [`Client::set_client_threshold`] (wire method `setClientThreshold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetClientThresholdParams {
@@ -3803,6 +7054,9 @@ pub struct SetClientThresholdParams {
     pub threshold: Option<i64>,
 }
 
+/// \- Updates a specific Conference if a conference code is provided.
+/// \- Adds a new Conference entry if no conference code is provided.
+///
 /// Parameters for [`Client::set_conference`] (wire method `setConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetConferenceParams {
@@ -3906,6 +7160,9 @@ pub struct SetConferenceParams {
     pub language: Option<String>,
 }
 
+/// \- Updates a specific Member profile if a member code is provided.
+/// \- Adds a new Member profile entry if no member code is provided.
+///
 /// Parameters for [`Client::set_conference_member`] (wire method `setConferenceMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetConferenceMemberParams {
@@ -3980,6 +7237,8 @@ pub struct SetConferenceMemberParams {
     pub jitter_buffer: Option<String>,
 }
 
+/// \- Updates the Billing Plan from a specific DID.
+///
 /// Parameters for [`Client::set_did_billing_type`] (wire method `setDIDBillingType`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDBillingTypeParams {
@@ -3991,6 +7250,8 @@ pub struct SetDIDBillingTypeParams {
     pub billing_type: Option<i64>,
 }
 
+/// \- Updates the information from a specific DID.
+///
 /// Parameters for [`Client::set_did_info`] (wire method `setDIDInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDInfoParams {
@@ -4072,6 +7333,8 @@ pub struct SetDIDInfoParams {
     pub voicemail_threshold: Option<i64>,
 }
 
+/// \- Updates the POP from a specific DID.
+///
 /// Parameters for [`Client::set_did_pop`] (wire method `setDIDPOP`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDPOPParams {
@@ -4084,6 +7347,8 @@ pub struct SetDIDPOPParams {
     pub pop: Option<i64>,
 }
 
+/// \- Updates the Routing from a specific DID.
+///
 /// Parameters for [`Client::set_did_routing`] (wire method `setDIDRouting`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDRoutingParams {
@@ -4104,6 +7369,8 @@ pub struct SetDIDRoutingParams {
     pub routing: Option<crate::Routing>,
 }
 
+/// \- Updates the Voicemail from a specific DID.
+///
 /// Parameters for [`Client::set_did_voicemail`] (wire method `setDIDVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDVoicemailParams {
@@ -4115,6 +7382,9 @@ pub struct SetDIDVoicemailParams {
     pub voicemail: Option<String>,
 }
 
+/// \- Updates a specific DISA if a disa code is provided.
+/// \- Adds a new DISA entry if no disa code is provided.
+///
 /// Parameters for [`Client::set_disa`] (wire method `setDISA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDISAParams {
@@ -4138,10 +7408,13 @@ pub struct SetDISAParams {
     pub language: Option<String>,
 }
 
+/// \- Create or update the information of a specific "Email to Fax
+/// configuration".
+///
 /// Parameters for [`Client::set_email_to_fax`] (wire method `setEmailToFax`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetEmailToFAXParams {
-    /// [Only for updates] ID of the "Email to Fax" to edit (Values from
+    /// \[Only for updates\] ID of the "Email to Fax" to edit (Values from
     /// getEmailToFax)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
@@ -4169,10 +7442,12 @@ pub struct SetEmailToFAXParams {
     pub test: Option<i64>,
 }
 
+/// \- Create or update the information of a specific Fax Folder.
+///
 /// Parameters for [`Client::set_fax_folder`] (wire method `setFaxFolder`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXFolderParams {
-    /// [Only for updates] ID of the Fax Folder to edit (Values from
+    /// \[Only for updates\] ID of the Fax Folder to edit (Values from
     /// getFaxFolders)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
@@ -4184,6 +7459,8 @@ pub struct SetFAXFolderParams {
     pub test: Option<i64>,
 }
 
+/// \- Updates the email configuration from a specific Fax Number.
+///
 /// Parameters for [`Client::set_fax_number_email`] (wire method `setFaxNumberEmail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXNumberEmailParams {
@@ -4192,7 +7469,7 @@ pub struct SetFAXNumberEmailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<i64>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: [email protected])
+    /// (Example: \[email protected\])
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
@@ -4208,6 +7485,8 @@ pub struct SetFAXNumberEmailParams {
     pub test: Option<i64>,
 }
 
+/// \- Updates the information from a specific Fax Number.
+///
 /// Parameters for [`Client::set_fax_number_info`] (wire method `setFaxNumberInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXNumberInfoParams {
@@ -4216,7 +7495,7 @@ pub struct SetFAXNumberInfoParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<i64>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: [email protected])
+    /// (Example: \[email protected\])
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
@@ -4242,6 +7521,8 @@ pub struct SetFAXNumberInfoParams {
     pub test: Option<i64>,
 }
 
+/// \- Updates the url callback configuration from a specific Fax Number.
+///
 /// Parameters for [`Client::set_fax_number_url_callback`] (wire method `setFaxNumberURLCallback`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXNumberURLCallbackParams {
@@ -4264,6 +7545,9 @@ pub struct SetFAXNumberURLCallbackParams {
     pub test: Option<i64>,
 }
 
+/// \- Updates a specific Forwarding if a fwd code is provided.
+/// \- Adds a new Forwarding entry if no fwd code is provided.
+///
 /// Parameters for [`Client::set_forwarding`] (wire method `setForwarding`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetForwardingParams {
@@ -4292,6 +7576,9 @@ pub struct SetForwardingParams {
     pub diversion_header: Option<i64>,
 }
 
+/// \- Updates a specific IVR if an IVR code is provided.
+/// \- Adds a new IVR entry if no IVR code is provided.
+///
 /// Parameters for [`Client::set_ivr`] (wire method `setIVR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetIVRParams {
@@ -4347,6 +7634,9 @@ pub struct SetMusicOnHoldParams {
     pub recordings: Option<String>,
 }
 
+/// \- Updates a specific Phonebook entry if a phonebook code is provided.
+/// \- Adds a new Phonebook entry if no phonebook code is provided.
+///
 /// Parameters for [`Client::set_phonebook`] (wire method `setPhonebook`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetPhonebookParams {
@@ -4375,6 +7665,10 @@ pub struct SetPhonebookParams {
     pub group: Option<i64>,
 }
 
+/// \- Updates a specific Phonebook group if a phonebook code is provided.
+/// \- Adds a new Phonebook group if no phonebook group code is provided.
+/// \- Assigns or modifies group members if a member list is provided
+///
 /// Parameters for [`Client::set_phonebook_group`] (wire method `setPhonebookGroup`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetPhonebookGroupParams {
@@ -4392,6 +7686,9 @@ pub struct SetPhonebookGroupParams {
     pub members: Option<String>,
 }
 
+/// \- Updates a specific Queue entry if a queue code is provided.
+/// \- Adds a new Queue entry if no queue code is provided.
+///
 /// Parameters for [`Client::set_queue`] (wire method `setQueue`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetQueueParams {
@@ -4529,6 +7826,9 @@ pub struct SetQueueParams {
     pub fail_over_routing_leave_unavail: Option<crate::Routing>,
 }
 
+/// \- Updates a specific Recording File if a Recording ID is provided.
+/// \- Adds a new Recording file entry if no Recording ID is provided.
+///
 /// Parameters for [`Client::set_recording`] (wire method `setRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetRecordingParams {
@@ -4548,6 +7848,9 @@ pub struct SetRecordingParams {
     pub name: Option<String>,
 }
 
+/// \- Updates a specific Ring Group if a ring group code is provided.
+/// \- Adds a new Ring Group entry if no ring group code is provided.
+///
 /// Parameters for [`Client::set_ring_group`] (wire method `setRingGroup`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetRingGroupParams {
@@ -4583,6 +7886,9 @@ pub struct SetRingGroupParams {
     pub language: Option<String>,
 }
 
+/// \- Updates a specific SIP URI if a SIP URI code is provided.
+/// \- Adds a new SIP URI entry if no SIP URI code is provided.
+///
 /// Parameters for [`Client::set_sip_uri`] (wire method `setSIPURI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetSIPURIParams {
@@ -4590,7 +7896,7 @@ pub struct SetSIPURIParams {
     /// one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sipuri: Option<String>,
-    /// SIP URI (Example: '[email protected]') (required)
+    /// SIP URI (Example: '\[email protected\]') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uri: Option<String>,
     /// Description for the SIP URI
@@ -4606,6 +7912,9 @@ pub struct SetSIPURIParams {
     pub callerid_e164: Option<i64>,
 }
 
+/// \- Enable/Disable the SMS Service for a DID
+/// \- Change the SMS settings for a DID
+///
 /// Parameters for [`Client::set_sms`] (wire method `setSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetSMSParams {
@@ -4640,7 +7949,7 @@ pub struct SetSMSParams {
     /// callback provided Available Variables for your URL {FROM} The phone
     /// number that sent you the message. {TO} The DID number that received the
     /// message. {MESSAGE} The content of the message. Example:
-    /// http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}
+    /// <http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}>
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
     /// Enable URL callback Retry (Values: 1=Enable / 0=Disable) we will be
@@ -4659,6 +7968,9 @@ pub struct SetSMSParams {
     pub sms_sipaccount_enabled: Option<String>,
 }
 
+/// \- Updates a specific Member from queue if a Member code is provided.
+/// \- Adds a new Member to Queue if no Member code is provided.
+///
 /// Parameters for [`Client::set_static_member`] (wire method `setStaticMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetStaticMemberParams {
@@ -4681,6 +7993,8 @@ pub struct SetStaticMemberParams {
     pub priority: Option<i64>,
 }
 
+/// \- Updates Sub Account information.
+///
 /// Parameters for [`Client::set_sub_account`] (wire method `setSubAccount`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetSubAccountParams {
@@ -4812,6 +8126,9 @@ pub struct SetSubAccountParams {
     pub default_e911: Option<String>,
 }
 
+/// \- Updates a specific Time Condition if a time condition code is provided.
+/// \- Adds a new Time Condition entry if no time condition code is provided.
+///
 /// Parameters for [`Client::set_time_condition`] (wire method `setTimeCondition`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetTimeConditionParams {
@@ -4848,6 +8165,8 @@ pub struct SetTimeConditionParams {
     pub weekdayend: Option<String>,
 }
 
+/// \- Updates the information from a specific Voicemail.
+///
 /// Parameters for [`Client::set_voicemail`] (wire method `setVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetVoicemailParams {
@@ -4917,6 +8236,8 @@ pub struct SetVoicemailParams {
     pub transcription_format: Option<TranscriptionFormat>,
 }
 
+/// \- Signs a new Reseller Client to your Reseller Account.
+///
 /// Parameters for [`Client::signup_client`] (wire method `signupClient`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SignupClientParams {
@@ -4967,6 +8288,8 @@ pub struct SignupClientParams {
     pub balance_management: Option<i64>,
 }
 
+/// \- Unconnects specific DID from Reseller Client Sub Account.
+///
 /// Parameters for [`Client::unconnect_did`] (wire method `unconnectDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct UnconnectDIDParams {
@@ -4976,6 +8299,8 @@ pub struct UnconnectDIDParams {
     pub did: Option<String>,
 }
 
+/// \- Unconnects specific FAX DID from Reseller Client Sub Account.
+///
 /// Parameters for [`Client::unconnect_fax`] (wire method `unconnectFAX`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct UnconnectFAXParams {
@@ -11944,6 +15269,8 @@ pub struct UnconnectFAXResponse {
 }
 
 impl Client {
+    /// \- Adds a Charge to a specific Reseller Client
+    ///
     /// Call the `addCharge` API method and deserialize into [`AddChargeResponse`].
     pub async fn add_charge(&self, params: &AddChargeParams) -> Result<AddChargeResponse> {
         self.call("addCharge", params).await
@@ -11954,6 +15281,8 @@ impl Client {
         self.call_raw("addCharge", params).await
     }
 
+    /// \- Add an invoice file to a portability process.
+    ///
     /// Call the `addLNPFile` API method and deserialize into [`AddLNPFileResponse`].
     pub async fn add_lnp_file(&self, params: &AddLNPFileParams) -> Result<AddLNPFileResponse> {
         self.call("addLNPFile", params).await
@@ -11964,6 +15293,8 @@ impl Client {
         self.call_raw("addLNPFile", params).await
     }
 
+    /// \- Add one or more numbers to start a portability process.
+    ///
     /// Call the `addLNPPort` API method and deserialize into [`AddLNPPortResponse`].
     pub async fn add_lnp_port(&self, params: &AddLNPPortParams) -> Result<AddLNPPortResponse> {
         self.call("addLNPPort", params).await
@@ -11974,6 +15305,8 @@ impl Client {
         self.call_raw("addLNPPort", params).await
     }
 
+    /// \- Add Member to a Conference
+    ///
     /// Call the `addMemberToConference` API method and deserialize into [`AddMemberToConferenceResponse`].
     pub async fn add_member_to_conference(
         &self,
@@ -11990,6 +15323,8 @@ impl Client {
         self.call_raw("addMemberToConference", params).await
     }
 
+    /// \- Adds a Payment to a specific Reseller Client
+    ///
     /// Call the `addPayment` API method and deserialize into [`AddPaymentResponse`].
     pub async fn add_payment(&self, params: &AddPaymentParams) -> Result<AddPaymentResponse> {
         self.call("addPayment", params).await
@@ -12000,6 +15335,9 @@ impl Client {
         self.call_raw("addPayment", params).await
     }
 
+    /// \- Assigns a Per Minute DID to a VPRI (Flat Rate DIDs can&rsquo;t be
+    /// assigned)
+    ///
     /// Call the `assignDIDvPRI` API method and deserialize into [`AssignDIDvPRIResponse`].
     pub async fn assign_did_vpri(
         &self,
@@ -12013,6 +15351,8 @@ impl Client {
         self.call_raw("assignDIDvPRI", params).await
     }
 
+    /// \- Backorder DID (CANADA) from a specific ratecenter and province.
+    ///
     /// Call the `backOrderDIDCAN` API method and deserialize into [`BackOrderDIDCANResponse`].
     pub async fn back_order_did_can(
         &self,
@@ -12026,6 +15366,8 @@ impl Client {
         self.call_raw("backOrderDIDCAN", params).await
     }
 
+    /// \- Backorder DID (USA) from a specific ratecenter and state.
+    ///
     /// Call the `backOrderDIDUSA` API method and deserialize into [`BackOrderDIDUSAResponse`].
     pub async fn back_order_did_usa(
         &self,
@@ -12039,6 +15381,8 @@ impl Client {
         self.call_raw("backOrderDIDUSA", params).await
     }
 
+    /// \- Deletes a specific DID from your Account.
+    ///
     /// Call the `cancelDID` API method and deserialize into [`CancelDIDResponse`].
     pub async fn cancel_did(&self, params: &CancelDIDParams) -> Result<CancelDIDResponse> {
         self.call("cancelDID", params).await
@@ -12049,6 +15393,8 @@ impl Client {
         self.call_raw("cancelDID", params).await
     }
 
+    /// \- Deletes a specific Fax Number from your Account.
+    ///
     /// Call the `cancelFaxNumber` API method and deserialize into [`CancelFAXNumberResponse`].
     pub async fn cancel_fax_number(
         &self,
@@ -12062,6 +15408,8 @@ impl Client {
         self.call_raw("cancelFaxNumber", params).await
     }
 
+    /// \- Connects a specific DID to a specific Reseller Client Sub Account
+    ///
     /// Call the `connectDID` API method and deserialize into [`ConnectDIDResponse`].
     pub async fn connect_did(&self, params: &ConnectDIDParams) -> Result<ConnectDIDResponse> {
         self.call("connectDID", params).await
@@ -12072,6 +15420,8 @@ impl Client {
         self.call_raw("connectDID", params).await
     }
 
+    /// \- Connects a specific FAX DID to a specific Reseller Client Sub Account
+    ///
     /// Call the `connectFAX` API method and deserialize into [`ConnectFAXResponse`].
     pub async fn connect_fax(&self, params: &ConnectFAXParams) -> Result<ConnectFAXResponse> {
         self.call("connectFAX", params).await
@@ -12082,6 +15432,8 @@ impl Client {
         self.call_raw("connectFAX", params).await
     }
 
+    /// \- Adds a new Sub Account entry to your Account
+    ///
     /// Call the `createSubAccount` API method and deserialize into [`CreateSubAccountResponse`].
     pub async fn create_sub_account(
         &self,
@@ -12095,6 +15447,8 @@ impl Client {
         self.call_raw("createSubAccount", params).await
     }
 
+    /// \- Adds a new Voicemail entry to your Account
+    ///
     /// Call the `createVoicemail` API method and deserialize into [`CreateVoicemailResponse`].
     pub async fn create_voicemail(
         &self,
@@ -12108,6 +15462,8 @@ impl Client {
         self.call_raw("createVoicemail", params).await
     }
 
+    /// \- Deletes a specific Call Hunting from your Account.
+    ///
     /// Call the `delCallHunting` API method and deserialize into [`DelCallHuntingResponse`].
     pub async fn del_call_hunting(
         &self,
@@ -12121,6 +15477,8 @@ impl Client {
         self.call_raw("delCallHunting", params).await
     }
 
+    /// \- Deletes a specific Call Parking entry from your Account.
+    ///
     /// Call the `delCallParking` API method and deserialize into [`DelCallParkingResponse`].
     pub async fn del_call_parking(
         &self,
@@ -12134,6 +15492,8 @@ impl Client {
         self.call_raw("delCallParking", params).await
     }
 
+    /// \- Delete specific call recording, audio file and information related.
+    ///
     /// Call the `delCallRecording` API method and deserialize into [`DelCallRecordingResponse`].
     pub async fn del_call_recording(
         &self,
@@ -12147,6 +15507,8 @@ impl Client {
         self.call_raw("delCallRecording", params).await
     }
 
+    /// \- Deletes a specific Callback from your Account.
+    ///
     /// Call the `delCallback` API method and deserialize into [`DelCallbackResponse`].
     pub async fn del_callback(&self, params: &DelCallbackParams) -> Result<DelCallbackResponse> {
         self.call("delCallback", params).await
@@ -12157,6 +15519,8 @@ impl Client {
         self.call_raw("delCallback", params).await
     }
 
+    /// \- Deletes a specific CallerID Filtering from your Account.
+    ///
     /// Call the `delCallerIDFiltering` API method and deserialize into [`DelCallerIDFilteringResponse`].
     pub async fn del_caller_id_filtering(
         &self,
@@ -12173,6 +15537,8 @@ impl Client {
         self.call_raw("delCallerIDFiltering", params).await
     }
 
+    /// \- Deletes a specific reseller client from your Account.
+    ///
     /// Call the `delClient` API method and deserialize into [`DelClientResponse`].
     pub async fn del_client(&self, params: &DelClientParams) -> Result<DelClientResponse> {
         self.call("delClient", params).await
@@ -12183,6 +15549,8 @@ impl Client {
         self.call_raw("delClient", params).await
     }
 
+    /// \- Deletes a specific Conference from your Account.
+    ///
     /// Call the `delConference` API method and deserialize into [`DelConferenceResponse`].
     pub async fn del_conference(
         &self,
@@ -12196,6 +15564,8 @@ impl Client {
         self.call_raw("delConference", params).await
     }
 
+    /// \- Deletes a specific Member profile from your Account.
+    ///
     /// Call the `delConferenceMember` API method and deserialize into [`DelConferenceMemberResponse`].
     pub async fn del_conference_member(
         &self,
@@ -12212,6 +15582,8 @@ impl Client {
         self.call_raw("delConferenceMember", params).await
     }
 
+    /// \- Deletes a specific DISA from your Account.
+    ///
     /// Call the `delDISA` API method and deserialize into [`DelDISAResponse`].
     pub async fn del_disa(&self, params: &DelDISAParams) -> Result<DelDISAResponse> {
         self.call("delDISA", params).await
@@ -12222,6 +15594,8 @@ impl Client {
         self.call_raw("delDISA", params).await
     }
 
+    /// \- Deletes a specific "Email to Fax configuration" from your Account.
+    ///
     /// Call the `delEmailToFax` API method and deserialize into [`DelEmailToFAXResponse`].
     pub async fn del_email_to_fax(
         &self,
@@ -12235,6 +15609,8 @@ impl Client {
         self.call_raw("delEmailToFax", params).await
     }
 
+    /// \- Deletes a specific Fax Folder from your Account.
+    ///
     /// Call the `delFaxFolder` API method and deserialize into [`DelFAXFolderResponse`].
     pub async fn del_fax_folder(
         &self,
@@ -12248,6 +15624,8 @@ impl Client {
         self.call_raw("delFaxFolder", params).await
     }
 
+    /// \- Deletes a specific Forwarding from your Account.
+    ///
     /// Call the `delForwarding` API method and deserialize into [`DelForwardingResponse`].
     pub async fn del_forwarding(
         &self,
@@ -12261,6 +15639,8 @@ impl Client {
         self.call_raw("delForwarding", params).await
     }
 
+    /// \- Deletes a specific IVR from your Account.
+    ///
     /// Call the `delIVR` API method and deserialize into [`DelIVRResponse`].
     pub async fn del_ivr(&self, params: &DelIVRParams) -> Result<DelIVRResponse> {
         self.call("delIVR", params).await
@@ -12281,6 +15661,8 @@ impl Client {
         self.call_raw("delLocation", params).await
     }
 
+    /// \- Removes a member profile from a specific Conference from your Account
+    ///
     /// Call the `delMemberFromConference` API method and deserialize into [`DelMemberFromConferenceResponse`].
     pub async fn del_member_from_conference(
         &self,
@@ -12297,6 +15679,9 @@ impl Client {
         self.call_raw("delMemberFromConference", params).await
     }
 
+    /// \- Deletes all messages in all servers from a specific Voicemail from
+    /// your Account
+    ///
     /// Call the `delMessages` API method and deserialize into [`DelMessagesResponse`].
     pub async fn del_messages(&self, params: &DelMessagesParams) -> Result<DelMessagesResponse> {
         self.call("delMessages", params).await
@@ -12307,6 +15692,8 @@ impl Client {
         self.call_raw("delMessages", params).await
     }
 
+    /// \- Deletes a specific custom Music on Hold.
+    ///
     /// Call the `delMusicOnHold` API method and deserialize into [`DelMusicOnHoldResponse`].
     pub async fn del_music_on_hold(
         &self,
@@ -12320,6 +15707,8 @@ impl Client {
         self.call_raw("delMusicOnHold", params).await
     }
 
+    /// \- Deletes a specific Phonebook from your Account.
+    ///
     /// Call the `delPhonebook` API method and deserialize into [`DelPhonebookResponse`].
     pub async fn del_phonebook(&self, params: &DelPhonebookParams) -> Result<DelPhonebookResponse> {
         self.call("delPhonebook", params).await
@@ -12330,6 +15719,8 @@ impl Client {
         self.call_raw("delPhonebook", params).await
     }
 
+    /// \- Deletes a specific Phonebook group from your Account.
+    ///
     /// Call the `delPhonebookGroup` API method and deserialize into [`DelPhonebookGroupResponse`].
     pub async fn del_phonebook_group(
         &self,
@@ -12343,6 +15734,8 @@ impl Client {
         self.call_raw("delPhonebookGroup", params).await
     }
 
+    /// \- Deletes a specific Queue from your Account.
+    ///
     /// Call the `delQueue` API method and deserialize into [`DelQueueResponse`].
     pub async fn del_queue(&self, params: &DelQueueParams) -> Result<DelQueueResponse> {
         self.call("delQueue", params).await
@@ -12353,6 +15746,8 @@ impl Client {
         self.call_raw("delQueue", params).await
     }
 
+    /// \- Deletes a specific Recording from your Account.
+    ///
     /// Call the `delRecording` API method and deserialize into [`DelRecordingResponse`].
     pub async fn del_recording(&self, params: &DelRecordingParams) -> Result<DelRecordingResponse> {
         self.call("delRecording", params).await
@@ -12363,6 +15758,8 @@ impl Client {
         self.call_raw("delRecording", params).await
     }
 
+    /// \- Deletes a specific Ring Group from your Account.
+    ///
     /// Call the `delRingGroup` API method and deserialize into [`DelRingGroupResponse`].
     pub async fn del_ring_group(
         &self,
@@ -12376,6 +15773,8 @@ impl Client {
         self.call_raw("delRingGroup", params).await
     }
 
+    /// \- Deletes a specific SIP URI from your Account.
+    ///
     /// Call the `delSIPURI` API method and deserialize into [`DelSIPURIResponse`].
     pub async fn del_sip_uri(&self, params: &DelSIPURIParams) -> Result<DelSIPURIResponse> {
         self.call("delSIPURI", params).await
@@ -12386,6 +15785,8 @@ impl Client {
         self.call_raw("delSIPURI", params).await
     }
 
+    /// \- Deletes a specific Static Member from Queue.
+    ///
     /// Call the `delStaticMember` API method and deserialize into [`DelStaticMemberResponse`].
     pub async fn del_static_member(
         &self,
@@ -12399,6 +15800,8 @@ impl Client {
         self.call_raw("delStaticMember", params).await
     }
 
+    /// \- Deletes a specific Sub Account from your Account
+    ///
     /// Call the `delSubAccount` API method and deserialize into [`DelSubAccountResponse`].
     pub async fn del_sub_account(
         &self,
@@ -12412,6 +15815,8 @@ impl Client {
         self.call_raw("delSubAccount", params).await
     }
 
+    /// \- Deletes a specific Time Condition from your Account.
+    ///
     /// Call the `delTimeCondition` API method and deserialize into [`DelTimeConditionResponse`].
     pub async fn del_time_condition(
         &self,
@@ -12425,6 +15830,8 @@ impl Client {
         self.call_raw("delTimeCondition", params).await
     }
 
+    /// \- Deletes a specific Voicemail from your Account
+    ///
     /// Call the `delVoicemail` API method and deserialize into [`DelVoicemailResponse`].
     pub async fn del_voicemail(&self, params: &DelVoicemailParams) -> Result<DelVoicemailResponse> {
         self.call("delVoicemail", params).await
@@ -12435,6 +15842,8 @@ impl Client {
         self.call_raw("delVoicemail", params).await
     }
 
+    /// \- Deletes a specific Fax Message from your Account.
+    ///
     /// Call the `deleteFaxMessage` API method and deserialize into [`DeleteFAXMessageResponse`].
     pub async fn delete_fax_message(
         &self,
@@ -12448,6 +15857,8 @@ impl Client {
         self.call_raw("deleteFaxMessage", params).await
     }
 
+    /// \- Deletes a specific MMS from your Account.
+    ///
     /// Call the `deleteMMS` API method and deserialize into [`DeleteMMSResponse`].
     pub async fn delete_mms(&self, params: &DeleteMMSParams) -> Result<DeleteMMSResponse> {
         self.call("deleteMMS", params).await
@@ -12458,6 +15869,8 @@ impl Client {
         self.call_raw("deleteMMS", params).await
     }
 
+    /// \- Deletes a specific SMS from your Account.
+    ///
     /// Call the `deleteSMS` API method and deserialize into [`DeleteSMSResponse`].
     pub async fn delete_sms(&self, params: &DeleteSMSParams) -> Result<DeleteSMSResponse> {
         self.call("deleteSMS", params).await
@@ -12468,6 +15881,10 @@ impl Client {
         self.call_raw("deleteSMS", params).await
     }
 
+    /// \- Retrieves a list of e911 Address Types if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific e911 Address Type if an Address code is provided.
+    ///
     /// Call the `e911AddressTypes` API method and deserialize into [`E911AddressTypesResponse`].
     pub async fn e911_address_types(
         &self,
@@ -12481,6 +15898,8 @@ impl Client {
         self.call_raw("e911AddressTypes", params).await
     }
 
+    /// \- Cancel the e911 Service from a specific DID.
+    ///
     /// Call the `e911Cancel` API method and deserialize into [`E911CancelResponse`].
     pub async fn e911_cancel(&self, params: &E911CancelParams) -> Result<E911CancelResponse> {
         self.call("e911Cancel", params).await
@@ -12491,6 +15910,8 @@ impl Client {
         self.call_raw("e911Cancel", params).await
     }
 
+    /// \- Retrieves the e911 information from a specific DID.
+    ///
     /// Call the `e911Info` API method and deserialize into [`E911InfoResponse`].
     pub async fn e911_info(&self, params: &E911InfoParams) -> Result<E911InfoResponse> {
         self.call("e911Info", params).await
@@ -12501,6 +15922,8 @@ impl Client {
         self.call_raw("e911Info", params).await
     }
 
+    /// \- Subscribes your DID to the e911 Emergency Services.
+    ///
     /// Call the `e911Provision` API method and deserialize into [`E911ProvisionResponse`].
     pub async fn e911_provision(
         &self,
@@ -12514,6 +15937,9 @@ impl Client {
         self.call_raw("e911Provision", params).await
     }
 
+    /// \- Subscribes your DID to the e911 Emergency Services.
+    /// \- All e911 information will be validated by the VoIP.ms staff.
+    ///
     /// Call the `e911ProvisionManually` API method and deserialize into [`E911ProvisionManuallyResponse`].
     pub async fn e911_provision_manually(
         &self,
@@ -12530,6 +15956,9 @@ impl Client {
         self.call_raw("e911ProvisionManually", params).await
     }
 
+    /// \- Updates the Information from your e911 Emergency Services
+    /// Subscription.
+    ///
     /// Call the `e911Update` API method and deserialize into [`E911UpdateResponse`].
     pub async fn e911_update(&self, params: &E911UpdateParams) -> Result<E911UpdateResponse> {
         self.call("e911Update", params).await
@@ -12540,6 +15969,9 @@ impl Client {
         self.call_raw("e911Update", params).await
     }
 
+    /// \- Validates your e911 information in order to start your e911 Emergency
+    /// Services Subscription.
+    ///
     /// Call the `e911Validate` API method and deserialize into [`E911ValidateResponse`].
     pub async fn e911_validate(&self, params: &E911ValidateParams) -> Result<E911ValidateResponse> {
         self.call("e911Validate", params).await
@@ -12550,6 +15982,10 @@ impl Client {
         self.call_raw("e911Validate", params).await
     }
 
+    /// \- Retrieves a list of Allowed Codecs if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Allowed Codec if a codec code is provided.
+    ///
     /// Call the `getAllowedCodecs` API method and deserialize into [`GetAllowedCodecsResponse`].
     pub async fn get_allowed_codecs(
         &self,
@@ -12563,6 +15999,11 @@ impl Client {
         self.call_raw("getAllowedCodecs", params).await
     }
 
+    /// \- Retrieves a list of Authentication Types if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Authentication Type if an auth type code is
+    /// provided.
+    ///
     /// Call the `getAuthTypes` API method and deserialize into [`GetAuthTypesResponse`].
     pub async fn get_auth_types(
         &self,
@@ -12576,6 +16017,11 @@ impl Client {
         self.call_raw("getAuthTypes", params).await
     }
 
+    /// \- Retrieves a list of backorder DIDs if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific backorder DID if a backorder DID code is
+    /// provided.
+    ///
     /// Call the `getBackOrders` API method and deserialize into [`GetBackOrdersResponse`].
     pub async fn get_back_orders(
         &self,
@@ -12589,6 +16035,11 @@ impl Client {
         self.call_raw("getBackOrders", params).await
     }
 
+    /// \- Retrieves Balance for your Account if no additional parameter is
+    /// provided.
+    /// \- Retrieves Balance and Calls Statistics for your Account if "advanced"
+    /// parameter is true.
+    ///
     /// Call the `getBalance` API method and deserialize into [`GetBalanceResponse`].
     pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {
         self.call("getBalance", params).await
@@ -12599,6 +16050,10 @@ impl Client {
         self.call_raw("getBalance", params).await
     }
 
+    /// \- Retrieves a list of Balance Management Options if no additional
+    /// parameter is provided.
+    /// \- Retrieves a specific Balance Management Option if a code is provided.
+    ///
     /// Call the `getBalanceManagement` API method and deserialize into [`GetBalanceManagementResponse`].
     pub async fn get_balance_management(
         &self,
@@ -12615,6 +16070,8 @@ impl Client {
         self.call_raw("getBalanceManagement", params).await
     }
 
+    /// \- Retrieves the Call Detail Records of all your calls.
+    ///
     /// Call the `getCDR` API method and deserialize into [`GetCDRResponse`].
     pub async fn get_cdr(&self, params: &GetCDRParams) -> Result<GetCDRResponse> {
         self.call("getCDR", params).await
@@ -12625,6 +16082,9 @@ impl Client {
         self.call_raw("getCDR", params).await
     }
 
+    /// \- Retrieves all Sub Accounts if no additional parameter is provided.
+    /// \- Retrieves Reseller Client Accounts if Reseller Client ID is provided.
+    ///
     /// Call the `getCallAccounts` API method and deserialize into [`GetCallAccountsResponse`].
     pub async fn get_call_accounts(
         &self,
@@ -12638,6 +16098,8 @@ impl Client {
         self.call_raw("getCallAccounts", params).await
     }
 
+    /// \- Retrieves a list of Call Billing Options.
+    ///
     /// Call the `getCallBilling` API method and deserialize into [`GetCallBillingResponse`].
     pub async fn get_call_billing(
         &self,
@@ -12651,6 +16113,10 @@ impl Client {
         self.call_raw("getCallBilling", params).await
     }
 
+    /// \- Retrieves a list of Call Huntings if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Call Huntings if a Call Hunting code is provided.
+    ///
     /// Call the `getCallHuntings` API method and deserialize into [`GetCallHuntingsResponse`].
     pub async fn get_call_huntings(
         &self,
@@ -12664,6 +16130,10 @@ impl Client {
         self.call_raw("getCallHuntings", params).await
     }
 
+    /// \- Retrieves all Call Parking entries if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Parking entry if a Call Parking ID is provided.
+    ///
     /// Call the `getCallParking` API method and deserialize into [`GetCallParkingResponse`].
     pub async fn get_call_parking(
         &self,
@@ -12677,6 +16147,9 @@ impl Client {
         self.call_raw("getCallParking", params).await
     }
 
+    /// \- Retrieves one especific call recording information, including the
+    /// recording file on mp3 format.
+    ///
     /// Call the `getCallRecording` API method and deserialize into [`GetCallRecordingResponse`].
     pub async fn get_call_recording(
         &self,
@@ -12690,6 +16163,8 @@ impl Client {
         self.call_raw("getCallRecording", params).await
     }
 
+    /// \- Retrieves all call recordings related to account.
+    ///
     /// Call the `getCallRecordings` API method and deserialize into [`GetCallRecordingsResponse`].
     pub async fn get_call_recordings(
         &self,
@@ -12703,6 +16178,9 @@ impl Client {
         self.call_raw("getCallRecordings", params).await
     }
 
+    /// \- Retrieves all Call Transcriptions if no additional parameter is
+    /// provided.
+    ///
     /// Call the `getCallTranscriptions` API method and deserialize into [`GetCallTranscriptionsResponse`].
     pub async fn get_call_transcriptions(
         &self,
@@ -12719,6 +16197,11 @@ impl Client {
         self.call_raw("getCallTranscriptions", params).await
     }
 
+    /// \- Retrieves a list of Call Types and All DIDs if no additional parameter
+    /// is provided.
+    /// \- Retrieves a list of Call Types and Reseller Client DIDs if a Reseller
+    /// Client ID is provided.
+    ///
     /// Call the `getCallTypes` API method and deserialize into [`GetCallTypesResponse`].
     pub async fn get_call_types(
         &self,
@@ -12732,6 +16215,9 @@ impl Client {
         self.call_raw("getCallTypes", params).await
     }
 
+    /// \- Retrieves a list of Callbacks if no additional parameter is provided.
+    /// \- Retrieves a specific Callback if a Callback code is provided.
+    ///
     /// Call the `getCallbacks` API method and deserialize into [`GetCallbacksResponse`].
     pub async fn get_callbacks(&self, params: &GetCallbacksParams) -> Result<GetCallbacksResponse> {
         self.call("getCallbacks", params).await
@@ -12742,6 +16228,11 @@ impl Client {
         self.call_raw("getCallbacks", params).await
     }
 
+    /// \- Retrieves a list of CallerID Filterings if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific CallerID Filtering if a CallerID Filtering code
+    /// is provided.
+    ///
     /// Call the `getCallerIDFiltering` API method and deserialize into [`GetCallerIDFilteringResponse`].
     pub async fn get_caller_id_filtering(
         &self,
@@ -12758,6 +16249,11 @@ impl Client {
         self.call_raw("getCallerIDFiltering", params).await
     }
 
+    /// \- Retrieves a list of Carriers for Vanity Numbers if no additional
+    /// parameter is provided.
+    /// \- Retrieves a specific Carrier for Vanity Numbers if a carrier code is
+    /// provided.
+    ///
     /// Call the `getCarriers` API method and deserialize into [`GetCarriersResponse`].
     pub async fn get_carriers(&self, params: &GetCarriersParams) -> Result<GetCarriersResponse> {
         self.call("getCarriers", params).await
@@ -12768,6 +16264,8 @@ impl Client {
         self.call_raw("getCarriers", params).await
     }
 
+    /// \- Retrieves Charges made to a specific Reseller Client.
+    ///
     /// Call the `getCharges` API method and deserialize into [`GetChargesResponse`].
     pub async fn get_charges(&self, params: &GetChargesParams) -> Result<GetChargesResponse> {
         self.call("getCharges", params).await
@@ -12778,6 +16276,8 @@ impl Client {
         self.call_raw("getCharges", params).await
     }
 
+    /// \- Retrieves a list of Packages for a specific Reseller Client.
+    ///
     /// Call the `getClientPackages` API method and deserialize into [`GetClientPackagesResponse`].
     pub async fn get_client_packages(
         &self,
@@ -12791,6 +16291,8 @@ impl Client {
         self.call_raw("getClientPackages", params).await
     }
 
+    /// \- Retrieves the Threshold Information for a specific Reseller Client.
+    ///
     /// Call the `getClientThreshold` API method and deserialize into [`GetClientThresholdResponse`].
     pub async fn get_client_threshold(
         &self,
@@ -12807,6 +16309,12 @@ impl Client {
         self.call_raw("getClientThreshold", params).await
     }
 
+    /// \- Retrieves a list of all Clients if no additional parameter is
+    /// provided.- Retrieves a specific Reseller Client if a Reseller Client ID
+    /// is provided.
+    /// \- Retrieves a specific Reseller Client if a Reseller Client e-mail is
+    /// provided.
+    ///
     /// Call the `getClients` API method and deserialize into [`GetClientsResponse`].
     pub async fn get_clients(&self, params: &GetClientsParams) -> Result<GetClientsResponse> {
         self.call("getClients", params).await
@@ -12817,6 +16325,10 @@ impl Client {
         self.call_raw("getClients", params).await
     }
 
+    /// \- Retrieves a list of Conferences if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Conference if a conference code is provided.
+    ///
     /// Call the `getConference` API method and deserialize into [`GetConferenceResponse`].
     pub async fn get_conference(
         &self,
@@ -12830,6 +16342,10 @@ impl Client {
         self.call_raw("getConference", params).await
     }
 
+    /// \- Retrieves a list of Member profiles if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific member if a member code is provided.
+    ///
     /// Call the `getConferenceMembers` API method and deserialize into [`GetConferenceMembersResponse`].
     pub async fn get_conference_members(
         &self,
@@ -12846,6 +16362,8 @@ impl Client {
         self.call_raw("getConferenceMembers", params).await
     }
 
+    /// \- Retrieves a specific Recording File data in Base64 format.
+    ///
     /// Call the `getConferenceRecordingFile` API method and deserialize into [`GetConferenceRecordingFileResponse`].
     pub async fn get_conference_recording_file(
         &self,
@@ -12862,6 +16380,8 @@ impl Client {
         self.call_raw("getConferenceRecordingFile", params).await
     }
 
+    /// \- Retrieves a list of recordings of a specific conference.
+    ///
     /// Call the `getConferenceRecordings` API method and deserialize into [`GetConferenceRecordingsResponse`].
     pub async fn get_conference_recordings(
         &self,
@@ -12878,6 +16398,9 @@ impl Client {
         self.call_raw("getConferenceRecordings", params).await
     }
 
+    /// \- Retrieves a list of Countries if no additional parameter is provided.
+    /// \- Retrieves a specific Country if a country code is provided.
+    ///
     /// Call the `getCountries` API method and deserialize into [`GetCountriesResponse`].
     pub async fn get_countries(&self, params: &GetCountriesParams) -> Result<GetCountriesResponse> {
         self.call("getCountries", params).await
@@ -12888,6 +16411,11 @@ impl Client {
         self.call_raw("getCountries", params).await
     }
 
+    /// \- Retrieves a list of Countries for International DIDs if no country
+    /// code is provided.
+    /// \- Retrieves a specific Country for International DIDs if a country code
+    /// is provided.
+    ///
     /// Call the `getDIDCountries` API method and deserialize into [`GetDIDCountriesResponse`].
     pub async fn get_did_countries(
         &self,
@@ -12901,6 +16429,8 @@ impl Client {
         self.call_raw("getDIDCountries", params).await
     }
 
+    /// \- Retrives a list of Canadian DIDs by Province and Ratecenter.
+    ///
     /// Call the `getDIDsCAN` API method and deserialize into [`GetDIDsCANResponse`].
     pub async fn get_dids_can(&self, params: &GetDIDsCANParams) -> Result<GetDIDsCANResponse> {
         self.call("getDIDsCAN", params).await
@@ -12911,6 +16441,15 @@ impl Client {
         self.call_raw("getDIDsCAN", params).await
     }
 
+    /// \- Retrieves information from all your DIDs if no additional parameter is
+    /// provided.
+    /// \- Retrieves information from Reseller Client's DIDs if a Reseller Client
+    /// ID is provided.
+    /// \- Retrieves information from Sub Account's DIDs if a Sub Accunt is
+    /// provided.
+    /// \- Retrieves information from a specific DID if a DID Number is provided.
+    /// \- Retrieves SMS information from a specific DID if the SMS is available.
+    ///
     /// Call the `getDIDsInfo` API method and deserialize into [`GetDIDsInfoResponse`].
     pub async fn get_dids_info(&self, params: &GetDIDsInfoParams) -> Result<GetDIDsInfoResponse> {
         self.call("getDIDsInfo", params).await
@@ -12921,6 +16460,8 @@ impl Client {
         self.call_raw("getDIDsInfo", params).await
     }
 
+    /// \- Retrieves a list of International Geographic DIDs by Country.
+    ///
     /// Call the `getDIDsInternationalGeographic` API method and deserialize into [`GetDIDsInternationalGeographicResponse`].
     pub async fn get_dids_international_geographic(
         &self,
@@ -12938,6 +16479,8 @@ impl Client {
             .await
     }
 
+    /// \- Retrieves a list of International National DIDs by Country.
+    ///
     /// Call the `getDIDsInternationalNational` API method and deserialize into [`GetDIDsInternationalNationalResponse`].
     pub async fn get_dids_international_national(
         &self,
@@ -12954,6 +16497,8 @@ impl Client {
         self.call_raw("getDIDsInternationalNational", params).await
     }
 
+    /// \- Retrieves a list of International TollFree DIDs by Country.
+    ///
     /// Call the `getDIDsInternationalTollFree` API method and deserialize into [`GetDIDsInternationalTollFreeResponse`].
     pub async fn get_dids_international_toll_free(
         &self,
@@ -12970,6 +16515,8 @@ impl Client {
         self.call_raw("getDIDsInternationalTollFree", params).await
     }
 
+    /// \- Retrives a list of USA DIDs by State and Ratecenter.
+    ///
     /// Call the `getDIDsUSA` API method and deserialize into [`GetDIDsUSAResponse`].
     pub async fn get_dids_usa(&self, params: &GetDIDsUSAParams) -> Result<GetDIDsUSAResponse> {
         self.call("getDIDsUSA", params).await
@@ -12980,6 +16527,8 @@ impl Client {
         self.call_raw("getDIDsUSA", params).await
     }
 
+    /// \- Retrives the list of DIDs assigned to the VPRI.
+    ///
     /// Call the `getDIDvPRI` API method and deserialize into [`GetDIDvPRIResponse`].
     pub async fn get_did_vpri(&self, params: &GetDIDvPRIParams) -> Result<GetDIDvPRIResponse> {
         self.call("getDIDvPRI", params).await
@@ -12990,6 +16539,9 @@ impl Client {
         self.call_raw("getDIDvPRI", params).await
     }
 
+    /// \- Retrieves a list of DISAs if no additional parameter is provided.
+    /// \- Retrieves a specific DISA if a DISA code is provided.
+    ///
     /// Call the `getDISAs` API method and deserialize into [`GetDISAsResponse`].
     pub async fn get_disas(&self, params: &GetDISAsParams) -> Result<GetDISAsResponse> {
         self.call("getDISAs", params).await
@@ -13000,6 +16552,9 @@ impl Client {
         self.call_raw("getDISAs", params).await
     }
 
+    /// \- Retrieves a list of DTMF Modes if no additional parameter is provided.
+    /// \- Retrieves a specific DTMF Mode if a DTMF mode code is provided.
+    ///
     /// Call the `getDTMFModes` API method and deserialize into [`GetDTMFModesResponse`].
     pub async fn get_dtmf_modes(
         &self,
@@ -13013,6 +16568,8 @@ impl Client {
         self.call_raw("getDTMFModes", params).await
     }
 
+    /// \- Retrieves Deposits made for a specific Reseller Client.
+    ///
     /// Call the `getDeposits` API method and deserialize into [`GetDepositsResponse`].
     pub async fn get_deposits(&self, params: &GetDepositsParams) -> Result<GetDepositsResponse> {
         self.call("getDeposits", params).await
@@ -13023,6 +16580,10 @@ impl Client {
         self.call_raw("getDeposits", params).await
     }
 
+    /// \- Retrieves a list of Device Types if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Device Type if a device type code is provided.
+    ///
     /// Call the `getDeviceTypes` API method and deserialize into [`GetDeviceTypesResponse`].
     pub async fn get_device_types(
         &self,
@@ -13036,6 +16597,11 @@ impl Client {
         self.call_raw("getDeviceTypes", params).await
     }
 
+    /// \- Retrieves a list of "Email to Fax configurations" from your account if
+    /// no additional parameter is provided.
+    /// \- Retrieves a specific "Email to Fax configuration" from your account if
+    /// a ID is provided.
+    ///
     /// Call the `getEmailToFax` API method and deserialize into [`GetEmailToFAXResponse`].
     pub async fn get_email_to_fax(
         &self,
@@ -13049,6 +16615,8 @@ impl Client {
         self.call_raw("getEmailToFax", params).await
     }
 
+    /// \- Retrieves a list of Fax Folders from your account.
+    ///
     /// Call the `getFaxFolders` API method and deserialize into [`GetFAXFoldersResponse`].
     pub async fn get_fax_folders(
         &self,
@@ -13062,6 +16630,8 @@ impl Client {
         self.call_raw("getFaxFolders", params).await
     }
 
+    /// \- Retrieves a Base64 code of the Fax Message to create a PDF file.
+    ///
     /// Call the `getFaxMessagePDF` API method and deserialize into [`GetFAXMessagePDFResponse`].
     pub async fn get_fax_message_pdf(
         &self,
@@ -13075,6 +16645,9 @@ impl Client {
         self.call_raw("getFaxMessagePDF", params).await
     }
 
+    /// \- Retrieves a list of Fax Messages.
+    /// \- Retrieves a specific Fax Message if a Fax Message ID is provided.
+    ///
     /// Call the `getFaxMessages` API method and deserialize into [`GetFAXMessagesResponse`].
     pub async fn get_fax_messages(
         &self,
@@ -13088,6 +16661,8 @@ impl Client {
         self.call_raw("getFaxMessages", params).await
     }
 
+    /// \- Retrieves a list of Fax Numbers.
+    ///
     /// Call the `getFaxNumbersInfo` API method and deserialize into [`GetFAXNumbersInfoResponse`].
     pub async fn get_fax_numbers_info(
         &self,
@@ -13104,6 +16679,8 @@ impl Client {
         self.call_raw("getFaxNumbersInfo", params).await
     }
 
+    /// \- Shows if a Fax Number can be ported into our network
+    ///
     /// Call the `getFaxNumbersPortability` API method and deserialize into [`GetFAXNumbersPortabilityResponse`].
     pub async fn get_fax_numbers_portability(
         &self,
@@ -13120,6 +16697,11 @@ impl Client {
         self.call_raw("getFaxNumbersPortability", params).await
     }
 
+    /// \- Retrieves a list of Canadian Fax Provinces if no additional parameter
+    /// is provided.
+    /// \- Retrieves a specific Canadian Fax Province if a province code is
+    /// provided.
+    ///
     /// Call the `getFaxProvinces` API method and deserialize into [`GetFAXProvincesResponse`].
     pub async fn get_fax_provinces(
         &self,
@@ -13133,6 +16715,8 @@ impl Client {
         self.call_raw("getFaxProvinces", params).await
     }
 
+    /// \- Retrieves a list of Canadian Ratecenters by Province.
+    ///
     /// Call the `getFaxRateCentersCAN` API method and deserialize into [`GetFAXRateCentersCANResponse`].
     pub async fn get_fax_rate_centers_can(
         &self,
@@ -13149,6 +16733,8 @@ impl Client {
         self.call_raw("getFaxRateCentersCAN", params).await
     }
 
+    /// \- Retrieves a list of USA Ratecenters by State.
+    ///
     /// Call the `getFaxRateCentersUSA` API method and deserialize into [`GetFAXRateCentersUSAResponse`].
     pub async fn get_fax_rate_centers_usa(
         &self,
@@ -13165,6 +16751,10 @@ impl Client {
         self.call_raw("getFaxRateCentersUSA", params).await
     }
 
+    /// \- Retrieves a list of American Fax States if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific American Fax State if a state code is provided.
+    ///
     /// Call the `getFaxStates` API method and deserialize into [`GetFAXStatesResponse`].
     pub async fn get_fax_states(
         &self,
@@ -13178,6 +16768,10 @@ impl Client {
         self.call_raw("getFaxStates", params).await
     }
 
+    /// \- Retrieves a list of Forwardings if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Forwarding if a fwd code is provided.
+    ///
     /// Call the `getForwardings` API method and deserialize into [`GetForwardingsResponse`].
     pub async fn get_forwardings(
         &self,
@@ -13191,6 +16785,11 @@ impl Client {
         self.call_raw("getForwardings", params).await
     }
 
+    /// \- Shows the IP used by the client application requesting information
+    /// from the API
+    /// \* this is the only function not using the IP for authentication.
+    /// \* the IP returned should be the one used in the API Configuration.
+    ///
     /// Call the `getIP` API method and deserialize into [`GetIPResponse`].
     pub async fn get_ip(&self, params: &GetIPParams) -> Result<GetIPResponse> {
         self.call("getIP", params).await
@@ -13201,6 +16800,9 @@ impl Client {
         self.call_raw("getIP", params).await
     }
 
+    /// \- Retrieves a list of IVRs if no additional parameter is provided.
+    /// \- Retrieves a specific IVR if a IVR code is provided.
+    ///
     /// Call the `getIVRs` API method and deserialize into [`GetIVRsResponse`].
     pub async fn get_ivrs(&self, params: &GetIVRsParams) -> Result<GetIVRsResponse> {
         self.call("getIVRs", params).await
@@ -13211,6 +16813,11 @@ impl Client {
         self.call_raw("getIVRs", params).await
     }
 
+    /// \- Retrieves a list of Types for International DIDs if no additional
+    /// parameter is provided.
+    /// \- Retrieves a specific Types for International DIDs if a type code is
+    /// provided.
+    ///
     /// Call the `getInternationalTypes` API method and deserialize into [`GetInternationalTypesResponse`].
     pub async fn get_international_types(
         &self,
@@ -13227,6 +16834,10 @@ impl Client {
         self.call_raw("getInternationalTypes", params).await
     }
 
+    /// \- Retrieves a list of 'JoinWhenEmpty' Types if no additional parameter
+    /// is provided.
+    /// \- Retrieves a specific 'JoinWhenEmpty' Types if a type code is provided.
+    ///
     /// Call the `getJoinWhenEmptyTypes` API method and deserialize into [`GetJoinWhenEmptyTypesResponse`].
     pub async fn get_join_when_empty_types(
         &self,
@@ -13243,6 +16854,8 @@ impl Client {
         self.call_raw("getJoinWhenEmptyTypes", params).await
     }
 
+    /// \- Retrieve the details of an attached invoice.
+    ///
     /// Call the `getLNPAttach` API method and deserialize into [`GetLNPAttachResponse`].
     pub async fn get_lnp_attach(
         &self,
@@ -13256,6 +16869,9 @@ impl Client {
         self.call_raw("getLNPAttach", params).await
     }
 
+    /// \- Retrieve the list of invoice (attached) files from a given portability
+    /// process.
+    ///
     /// Call the `getLNPAttachList` API method and deserialize into [`GetLNPAttachListResponse`].
     pub async fn get_lnp_attach_list(
         &self,
@@ -13269,6 +16885,8 @@ impl Client {
         self.call_raw("getLNPAttachList", params).await
     }
 
+    /// \- Retrieve the details of a given portability process.
+    ///
     /// Call the `getLNPDetails` API method and deserialize into [`GetLNPDetailsResponse`].
     pub async fn get_lnp_details(
         &self,
@@ -13282,6 +16900,8 @@ impl Client {
         self.call_raw("getLNPDetails", params).await
     }
 
+    /// \- Retrieve the full list of all your portability processes.
+    ///
     /// Call the `getLNPList` API method and deserialize into [`GetLNPListResponse`].
     pub async fn get_lnp_list(&self, params: &GetLNPListParams) -> Result<GetLNPListResponse> {
         self.call("getLNPList", params).await
@@ -13292,6 +16912,8 @@ impl Client {
         self.call_raw("getLNPList", params).await
     }
 
+    /// \- Retrieve the list of possible status of a portability process.
+    ///
     /// Call the `getLNPListStatus` API method and deserialize into [`GetLNPListStatusResponse`].
     pub async fn get_lnp_list_status(
         &self,
@@ -13305,6 +16927,8 @@ impl Client {
         self.call_raw("getLNPListStatus", params).await
     }
 
+    /// \- Retrieve the list of notes from the given portability process.
+    ///
     /// Call the `getLNPNotes` API method and deserialize into [`GetLNPNotesResponse`].
     pub async fn get_lnp_notes(&self, params: &GetLNPNotesParams) -> Result<GetLNPNotesResponse> {
         self.call("getLNPNotes", params).await
@@ -13315,6 +16939,8 @@ impl Client {
         self.call_raw("getLNPNotes", params).await
     }
 
+    /// \- Retrieve the current status of a given portability process.
+    ///
     /// Call the `getLNPStatus` API method and deserialize into [`GetLNPStatusResponse`].
     pub async fn get_lnp_status(
         &self,
@@ -13328,6 +16954,9 @@ impl Client {
         self.call_raw("getLNPStatus", params).await
     }
 
+    /// \- Retrieves a list of Languages if no additional parameter is provided.
+    /// \- Retrieves a specific Language if a language code is provided.
+    ///
     /// Call the `getLanguages` API method and deserialize into [`GetLanguagesResponse`].
     pub async fn get_languages(&self, params: &GetLanguagesParams) -> Result<GetLanguagesResponse> {
         self.call("getLanguages", params).await
@@ -13338,6 +16967,10 @@ impl Client {
         self.call_raw("getLanguages", params).await
     }
 
+    /// \- Retrieves a list of locale codes if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific locale code if a language code is provided.
+    ///
     /// Call the `getLocales` API method and deserialize into [`GetLocalesResponse`].
     pub async fn get_locales(&self, params: &GetLocalesParams) -> Result<GetLocalesResponse> {
         self.call("getLocales", params).await
@@ -13358,6 +16991,9 @@ impl Client {
         self.call_raw("getLocations", params).await
     }
 
+    /// \- Retrieves a list of Lock Modes if no additional parameter is provided.
+    /// \- Retrieves a specific Lock Mode if a lock code is provided.
+    ///
     /// Call the `getLockInternational` API method and deserialize into [`GetLockInternationalResponse`].
     pub async fn get_lock_international(
         &self,
@@ -13374,6 +17010,9 @@ impl Client {
         self.call_raw("getLockInternational", params).await
     }
 
+    /// \- Retrieves a list of MMS messages by: date range, mms type, DID number,
+    /// and contact.
+    ///
     /// Call the `getMMS` API method and deserialize into [`GetMMSResponse`].
     pub async fn get_mms(&self, params: &GetMMSParams) -> Result<GetMMSResponse> {
         self.call("getMMS", params).await
@@ -13384,6 +17023,8 @@ impl Client {
         self.call_raw("getMMS", params).await
     }
 
+    /// \- Retrieves media files from the message.
+    ///
     /// Call the `getMediaMMS` API method and deserialize into [`GetMediaMMSResponse`].
     pub async fn get_media_mms(&self, params: &GetMediaMMSParams) -> Result<GetMediaMMSResponse> {
         self.call("getMediaMMS", params).await
@@ -13394,6 +17035,10 @@ impl Client {
         self.call_raw("getMediaMMS", params).await
     }
 
+    /// \- Retrieves a list of Music on Hold Options if no additional parameter
+    /// is provided.
+    /// \- Retrieves a specific Music on Hold Option if a MOH code is provided.
+    ///
     /// Call the `getMusicOnHold` API method and deserialize into [`GetMusicOnHoldResponse`].
     pub async fn get_music_on_hold(
         &self,
@@ -13407,6 +17052,10 @@ impl Client {
         self.call_raw("getMusicOnHold", params).await
     }
 
+    /// \- Retrieves a list of NAT Options if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific NAT Option if a NAT code is provided.
+    ///
     /// Call the `getNAT` API method and deserialize into [`GetNATResponse`].
     pub async fn get_nat(&self, params: &GetNATParams) -> Result<GetNATResponse> {
         self.call("getNAT", params).await
@@ -13417,6 +17066,9 @@ impl Client {
         self.call_raw("getNAT", params).await
     }
 
+    /// \- Retrieves a list of Packages if no additional parameter is provided.-
+    /// Retrieves a specific Package if a package code is provided.
+    ///
     /// Call the `getPackages` API method and deserialize into [`GetPackagesResponse`].
     pub async fn get_packages(&self, params: &GetPackagesParams) -> Result<GetPackagesResponse> {
         self.call("getPackages", params).await
@@ -13427,6 +17079,15 @@ impl Client {
         self.call_raw("getPackages", params).await
     }
 
+    /// \- Retrieves a list of Phonebook entries if no additional parameter is
+    /// provided.
+    /// \- Retrieves a list of Phonebook entries if a name is provided.
+    /// \- Retrieves a specific Phonebook entry if a Phonebook code is provided.
+    /// \- Retrieves a list of Phonebook entries if a phonebook group name is
+    /// provided.
+    /// \- Retrieves a list of Phonebook entries if a phonebook group code is
+    /// provided.
+    ///
     /// Call the `getPhonebook` API method and deserialize into [`GetPhonebookResponse`].
     pub async fn get_phonebook(&self, params: &GetPhonebookParams) -> Result<GetPhonebookResponse> {
         self.call("getPhonebook", params).await
@@ -13437,6 +17098,11 @@ impl Client {
         self.call_raw("getPhonebook", params).await
     }
 
+    /// \- Retrieves a list of Phonebook groups if no additional parameter is
+    /// provided.
+    /// \- Retrieves a list of Phonebook groups if a name is provided.
+    /// \- Retrieves a specific Phonebook group if a group ID is provided.
+    ///
     /// Call the `getPhonebookGroups` API method and deserialize into [`GetPhonebookGroupsResponse`].
     pub async fn get_phonebook_groups(
         &self,
@@ -13453,6 +17119,11 @@ impl Client {
         self.call_raw("getPhonebookGroups", params).await
     }
 
+    /// \- Retrieves a list of Play Instructions modes if no additional parameter
+    /// is provided.
+    /// \- Retrieves a specific Play Instructions mode if a play code is
+    /// provided.
+    ///
     /// Call the `getPlayInstructions` API method and deserialize into [`GetPlayInstructionsResponse`].
     pub async fn get_play_instructions(
         &self,
@@ -13469,6 +17140,10 @@ impl Client {
         self.call_raw("getPlayInstructions", params).await
     }
 
+    /// \- Shows if a DID Number can be ported into our network.
+    /// \- Display plans and rates available if the DID Number can be ported into
+    /// our network.
+    ///
     /// Call the `getPortability` API method and deserialize into [`GetPortabilityResponse`].
     pub async fn get_portability(
         &self,
@@ -13482,6 +17157,9 @@ impl Client {
         self.call_raw("getPortability", params).await
     }
 
+    /// \- Retrieves a list of Protocols if no additional parameter is provided.
+    /// \- Retrieves a specific Protocol if a protocol code is provided.
+    ///
     /// Call the `getProtocols` API method and deserialize into [`GetProtocolsResponse`].
     pub async fn get_protocols(&self, params: &GetProtocolsParams) -> Result<GetProtocolsResponse> {
         self.call("getProtocols", params).await
@@ -13492,6 +17170,8 @@ impl Client {
         self.call_raw("getProtocols", params).await
     }
 
+    /// \- Retrieves a list of Canadian Provinces.
+    ///
     /// Call the `getProvinces` API method and deserialize into [`GetProvincesResponse`].
     pub async fn get_provinces(&self, params: &GetProvincesParams) -> Result<GetProvincesResponse> {
         self.call("getProvinces", params).await
@@ -13502,6 +17182,10 @@ impl Client {
         self.call_raw("getProvinces", params).await
     }
 
+    /// \- Retrieves a list of Queue entries if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Queue entry if a Queue code is provided.
+    ///
     /// Call the `getQueues` API method and deserialize into [`GetQueuesResponse`].
     pub async fn get_queues(&self, params: &GetQueuesParams) -> Result<GetQueuesResponse> {
         self.call("getQueues", params).await
@@ -13512,6 +17196,8 @@ impl Client {
         self.call_raw("getQueues", params).await
     }
 
+    /// \- Retrieves a list of Canadian Ratecenters by Province.
+    ///
     /// Call the `getRateCentersCAN` API method and deserialize into [`GetRateCentersCANResponse`].
     pub async fn get_rate_centers_can(
         &self,
@@ -13528,6 +17214,8 @@ impl Client {
         self.call_raw("getRateCentersCAN", params).await
     }
 
+    /// \- Retrieves a list of USA Ratecenters by State.
+    ///
     /// Call the `getRateCentersUSA` API method and deserialize into [`GetRateCentersUSAResponse`].
     pub async fn get_rate_centers_usa(
         &self,
@@ -13544,6 +17232,8 @@ impl Client {
         self.call_raw("getRateCentersUSA", params).await
     }
 
+    /// \- Retrieves the Rates for a specific Package and a Search term.
+    ///
     /// Call the `getRates` API method and deserialize into [`GetRatesResponse`].
     pub async fn get_rates(&self, params: &GetRatesParams) -> Result<GetRatesResponse> {
         self.call("getRates", params).await
@@ -13554,6 +17244,8 @@ impl Client {
         self.call_raw("getRates", params).await
     }
 
+    /// \- Retrieves a specific Recording File data in Base64 format.
+    ///
     /// Call the `getRecordingFile` API method and deserialize into [`GetRecordingFileResponse`].
     pub async fn get_recording_file(
         &self,
@@ -13567,6 +17259,9 @@ impl Client {
         self.call_raw("getRecordingFile", params).await
     }
 
+    /// \- Retrieves a list of Recordings if no additional parameter is provided.
+    /// \- Retrieves a specific Recording if a Recording code is provided.
+    ///
     /// Call the `getRecordings` API method and deserialize into [`GetRecordingsResponse`].
     pub async fn get_recordings(
         &self,
@@ -13580,6 +17275,9 @@ impl Client {
         self.call_raw("getRecordings", params).await
     }
 
+    /// \- Retrieves the Registration Status of all accounts if no account is
+    /// provided.
+    ///
     /// Call the `getRegistrationStatus` API method and deserialize into [`GetRegistrationStatusResponse`].
     pub async fn get_registration_status(
         &self,
@@ -13596,6 +17294,11 @@ impl Client {
         self.call_raw("getRegistrationStatus", params).await
     }
 
+    /// \- Retrieves a list of 'ReportEstimateHoldTime' Types if no additional
+    /// parameter is provided.
+    /// \- Retrieves a specific 'ReportEstimateHoldTime' Type if a type code is
+    /// provided.
+    ///
     /// Call the `getReportEstimatedHoldTime` API method and deserialize into [`GetReportEstimatedHoldTimeResponse`].
     pub async fn get_report_estimated_hold_time(
         &self,
@@ -13612,6 +17315,9 @@ impl Client {
         self.call_raw("getReportEstimatedHoldTime", params).await
     }
 
+    /// \- Retrieves Balance and Calls Statistics for a specific Reseller Client
+    /// for the last 30 days and current day.
+    ///
     /// Call the `getResellerBalance` API method and deserialize into [`GetResellerBalanceResponse`].
     pub async fn get_reseller_balance(
         &self,
@@ -13628,6 +17334,8 @@ impl Client {
         self.call_raw("getResellerBalance", params).await
     }
 
+    /// \- Retrieves the Call Detail Records for a specific Reseller Client.
+    ///
     /// Call the `getResellerCDR` API method and deserialize into [`GetResellerCDRResponse`].
     pub async fn get_reseller_cdr(
         &self,
@@ -13641,6 +17349,9 @@ impl Client {
         self.call_raw("getResellerCDR", params).await
     }
 
+    /// \- Retrieves a list of MMS messages for a specific Reseller Client. by:
+    /// date range, mms type, DID number, and contact
+    ///
     /// Call the `getResellerMMS` API method and deserialize into [`GetResellerMMSResponse`].
     pub async fn get_reseller_mms(
         &self,
@@ -13654,6 +17365,9 @@ impl Client {
         self.call_raw("getResellerMMS", params).await
     }
 
+    /// \- Retrieves a list of SMS messages for a specific Reseller Client. by:
+    /// date range, sms type, DID number, and contact
+    ///
     /// Call the `getResellerSMS` API method and deserialize into [`GetResellerSMSResponse`].
     pub async fn get_reseller_sms(
         &self,
@@ -13667,6 +17381,10 @@ impl Client {
         self.call_raw("getResellerSMS", params).await
     }
 
+    /// \- Retrieves a list of Ring Groups if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Ring Group if a ring group code is provided.
+    ///
     /// Call the `getRingGroups` API method and deserialize into [`GetRingGroupsResponse`].
     pub async fn get_ring_groups(
         &self,
@@ -13680,6 +17398,11 @@ impl Client {
         self.call_raw("getRingGroups", params).await
     }
 
+    /// \- Retrieves a list of Ring Strategies if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Ring Strategy if a ring strategy code is
+    /// provided.
+    ///
     /// Call the `getRingStrategies` API method and deserialize into [`GetRingStrategiesResponse`].
     pub async fn get_ring_strategies(
         &self,
@@ -13693,6 +17416,10 @@ impl Client {
         self.call_raw("getRingStrategies", params).await
     }
 
+    /// \- Retrieves a list of Route Options if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Route Option if a route code is provided.
+    ///
     /// Call the `getRoutes` API method and deserialize into [`GetRoutesResponse`].
     pub async fn get_routes(&self, params: &GetRoutesParams) -> Result<GetRoutesResponse> {
         self.call("getRoutes", params).await
@@ -13703,6 +17430,9 @@ impl Client {
         self.call_raw("getRoutes", params).await
     }
 
+    /// \- Retrieves a list of SIP URIs if no additional parameter is provided.
+    /// \- Retrieves a specific SIP URI if a SIP URI code is provided.
+    ///
     /// Call the `getSIPURIs` API method and deserialize into [`GetSIPURIsResponse`].
     pub async fn get_sip_uris(&self, params: &GetSIPURIsParams) -> Result<GetSIPURIsResponse> {
         self.call("getSIPURIs", params).await
@@ -13713,6 +17443,9 @@ impl Client {
         self.call_raw("getSIPURIs", params).await
     }
 
+    /// \- Retrieves a list of SMS messages by: date range, sms type, DID number,
+    /// and contact.
+    ///
     /// Call the `getSMS` API method and deserialize into [`GetSMSResponse`].
     pub async fn get_sms(&self, params: &GetSMSParams) -> Result<GetSMSResponse> {
         self.call("getSMS", params).await
@@ -13723,6 +17456,10 @@ impl Client {
         self.call_raw("getSMS", params).await
     }
 
+    /// \- Retrieves a list of Servers with their info if no additional parameter
+    /// is provided.
+    /// \- Retrieves a specific Server with its info if a Server POP is provided.
+    ///
     /// Call the `getServersInfo` API method and deserialize into [`GetServersInfoResponse`].
     pub async fn get_servers_info(
         &self,
@@ -13736,6 +17473,8 @@ impl Client {
         self.call_raw("getServersInfo", params).await
     }
 
+    /// \- Retrieves a list of USA States.
+    ///
     /// Call the `getStates` API method and deserialize into [`GetStatesResponse`].
     pub async fn get_states(&self, params: &GetStatesParams) -> Result<GetStatesResponse> {
         self.call("getStates", params).await
@@ -13746,6 +17485,11 @@ impl Client {
         self.call_raw("getStates", params).await
     }
 
+    /// \- Retrieves a list of Static Members from a queue if no additional
+    /// parameter is provided.
+    /// \- Retrieves a specific Static Member from a queue if Queue ID and Member
+    /// ID are provided
+    ///
     /// Call the `getStaticMembers` API method and deserialize into [`GetStaticMembersResponse`].
     pub async fn get_static_members(
         &self,
@@ -13759,6 +17503,10 @@ impl Client {
         self.call_raw("getStaticMembers", params).await
     }
 
+    /// \- Retrieves all Sub Accounts if no additional parameter is provided.
+    /// \- Retrieves Reseller Client Accounts if Reseller Client ID is provided.
+    /// \- Retrieves a specific Sub Account if a Sub Account is provided.
+    ///
     /// Call the `getSubAccounts` API method and deserialize into [`GetSubAccountsResponse`].
     pub async fn get_sub_accounts(
         &self,
@@ -13772,6 +17520,9 @@ impl Client {
         self.call_raw("getSubAccounts", params).await
     }
 
+    /// \- Retrieves the Rates for a specific Route (Premium, Value) and a Search
+    /// term.
+    ///
     /// Call the `getTerminationRates` API method and deserialize into [`GetTerminationRatesResponse`].
     pub async fn get_termination_rates(
         &self,
@@ -13788,6 +17539,11 @@ impl Client {
         self.call_raw("getTerminationRates", params).await
     }
 
+    /// \- Retrieves a list of Time Conditions if no additional parameter is
+    /// provided.
+    /// \- Retrieves a specific Time Condition if a time condition code is
+    /// provided.
+    ///
     /// Call the `getTimeConditions` API method and deserialize into [`GetTimeConditionsResponse`].
     pub async fn get_time_conditions(
         &self,
@@ -13801,6 +17557,9 @@ impl Client {
         self.call_raw("getTimeConditions", params).await
     }
 
+    /// \- Retrieves a list of Timezones if no additional parameter is provided.
+    /// \- Retrieves a specific Timezone if a timezone code is provided.
+    ///
     /// Call the `getTimezones` API method and deserialize into [`GetTimezonesResponse`].
     pub async fn get_timezones(&self, params: &GetTimezonesParams) -> Result<GetTimezonesResponse> {
         self.call("getTimezones", params).await
@@ -13811,6 +17570,8 @@ impl Client {
         self.call_raw("getTimezones", params).await
     }
 
+    /// \- Retrieves the Transaction History records between two dates.
+    ///
     /// Call the `getTransactionHistory` API method and deserialize into [`GetTransactionHistoryResponse`].
     pub async fn get_transaction_history(
         &self,
@@ -13827,6 +17588,8 @@ impl Client {
         self.call_raw("getTransactionHistory", params).await
     }
 
+    /// \- Retrieves a list of vpri.
+    ///
     /// Call the `getVPRIs` API method and deserialize into [`GetVPRIsResponse`].
     pub async fn get_vpris(&self, params: &GetVPRIsParams) -> Result<GetVPRIsResponse> {
         self.call("getVPRIs", params).await
@@ -13837,6 +17600,11 @@ impl Client {
         self.call_raw("getVPRIs", params).await
     }
 
+    /// \- Retrieves a list of Email Attachment Format Options if no additional
+    /// parameter is provided.
+    /// \- Retrieves a specific Email Attachment Format Option if a format value
+    /// is provided.
+    ///
     /// Call the `getVoicemailAttachmentFormats` API method and deserialize into [`GetVoicemailAttachmentFormatsResponse`].
     pub async fn get_voicemail_attachment_formats(
         &self,
@@ -13853,6 +17621,12 @@ impl Client {
         self.call_raw("getVoicemailAttachmentFormats", params).await
     }
 
+    /// \- Retrieves a list of default Voicemail Folders if no additional
+    /// parameter is provided.
+    /// \- Retrieves a list of Voicemail Folders within a mailbox if mailbox
+    /// parameter is provided.
+    /// \- Retrieves a specific Folder if a folder name is provided.
+    ///
     /// Call the `getVoicemailFolders` API method and deserialize into [`GetVoicemailFoldersResponse`].
     pub async fn get_voicemail_folders(
         &self,
@@ -13869,6 +17643,8 @@ impl Client {
         self.call_raw("getVoicemailFolders", params).await
     }
 
+    /// \- Retrieves a specific Voicemail Message File in Base64 format.
+    ///
     /// Call the `getVoicemailMessageFile` API method and deserialize into [`GetVoicemailMessageFileResponse`].
     pub async fn get_voicemail_message_file(
         &self,
@@ -13885,6 +17661,13 @@ impl Client {
         self.call_raw("getVoicemailMessageFile", params).await
     }
 
+    /// \- Retrieves a list of Voicemail Messages if mailbox parameter is
+    /// provided.
+    /// \- Retrieves a list of Voicemail Messages in a Folder if a folder is
+    /// provided.
+    /// \- Retrieves a list of Voicemail Messages in a date range if a from and
+    /// to are provided.
+    ///
     /// Call the `getVoicemailMessages` API method and deserialize into [`GetVoicemailMessagesResponse`].
     pub async fn get_voicemail_messages(
         &self,
@@ -13901,6 +17684,11 @@ impl Client {
         self.call_raw("getVoicemailMessages", params).await
     }
 
+    /// \- Retrieves a list of Voicemail Setup Options if no additional parameter
+    /// is provided.
+    /// \- Retrieves a specific Voicemail Setup Option if a voicemail setup code
+    /// is provided.
+    ///
     /// Call the `getVoicemailSetups` API method and deserialize into [`GetVoicemailSetupsResponse`].
     pub async fn get_voicemail_setups(
         &self,
@@ -13917,6 +17705,9 @@ impl Client {
         self.call_raw("getVoicemailSetups", params).await
     }
 
+    /// \- Retrieves all Voicemail Transcriptions if no additional parameter is
+    /// provided.
+    ///
     /// Call the `getVoicemailTranscriptions` API method and deserialize into [`GetVoicemailTranscriptionsResponse`].
     pub async fn get_voicemail_transcriptions(
         &self,
@@ -13933,6 +17724,9 @@ impl Client {
         self.call_raw("getVoicemailTranscriptions", params).await
     }
 
+    /// \- Retrieves a list of Voicemails if no additional parameter is provided.
+    /// \- Retrieves a specific Voicemail if a voicemail code is provided.
+    ///
     /// Call the `getVoicemails` API method and deserialize into [`GetVoicemailsResponse`].
     pub async fn get_voicemails(
         &self,
@@ -13946,6 +17740,8 @@ impl Client {
         self.call_raw("getVoicemails", params).await
     }
 
+    /// \- Send a Fax Message attached as a PDF file to an email destination.
+    ///
     /// Call the `mailFaxMessagePDF` API method and deserialize into [`MailFAXMessagePDFResponse`].
     pub async fn mail_fax_message_pdf(
         &self,
@@ -13962,6 +17758,12 @@ impl Client {
         self.call_raw("mailFaxMessagePDF", params).await
     }
 
+    /// \- Mark a Voicemail Message as Listened or Unlistened.
+    /// \- If value is 'yes', the voicemail message will be marked as listened
+    /// and will be moved to the Old Folder.
+    /// \- If value is 'no', the voicemail message will be marked as not-listened
+    /// and will be moved to the INBOX Folder.
+    ///
     /// Call the `markListenedVoicemailMessage` API method and deserialize into [`MarkListenedVoicemailMessageResponse`].
     pub async fn mark_listened_voicemail_message(
         &self,
@@ -13978,6 +17780,12 @@ impl Client {
         self.call_raw("markListenedVoicemailMessage", params).await
     }
 
+    /// \- Mark Voicemail Message as Urgent or not Urgent.
+    /// \- If value is 'yes', the voicemail message will be marked as urgent and
+    /// will be moved to the Urgent Folder.
+    /// \- If value is 'no', the voicemail message will be unmarked as urgent and
+    /// will be moved to the INBOX Folder.
+    ///
     /// Call the `markUrgentVoicemailMessage` API method and deserialize into [`MarkUrgentVoicemailMessageResponse`].
     pub async fn mark_urgent_voicemail_message(
         &self,
@@ -13994,6 +17802,8 @@ impl Client {
         self.call_raw("markUrgentVoicemailMessage", params).await
     }
 
+    /// \- Moves a Fax Message to a different folder.
+    ///
     /// Call the `moveFaxMessage` API method and deserialize into [`MoveFAXMessageResponse`].
     pub async fn move_fax_message(
         &self,
@@ -14007,6 +17817,8 @@ impl Client {
         self.call_raw("moveFaxMessage", params).await
     }
 
+    /// \- Move Voicemail Message to a Destination Folder.
+    ///
     /// Call the `moveFolderVoicemailMessage` API method and deserialize into [`MoveFolderVoicemailMessageResponse`].
     pub async fn move_folder_voicemail_message(
         &self,
@@ -14023,6 +17835,8 @@ impl Client {
         self.call_raw("moveFolderVoicemailMessage", params).await
     }
 
+    /// \- Orders and Adds a new DID Number to the Account.
+    ///
     /// Call the `orderDID` API method and deserialize into [`OrderDIDResponse`].
     pub async fn order_did(&self, params: &OrderDIDParams) -> Result<OrderDIDResponse> {
         self.call("orderDID", params).await
@@ -14033,6 +17847,9 @@ impl Client {
         self.call_raw("orderDID", params).await
     }
 
+    /// \- Orders and Adds new International Geographic DID Numbers to the
+    /// Account.
+    ///
     /// Call the `orderDIDInternationalGeographic` API method and deserialize into [`OrderDIDInternationalGeographicResponse`].
     pub async fn order_did_international_geographic(
         &self,
@@ -14050,6 +17867,8 @@ impl Client {
             .await
     }
 
+    /// \- Orders and Adds new International National DID Numbers to the Account.
+    ///
     /// Call the `orderDIDInternationalNational` API method and deserialize into [`OrderDIDInternationalNationalResponse`].
     pub async fn order_did_international_national(
         &self,
@@ -14066,6 +17885,8 @@ impl Client {
         self.call_raw("orderDIDInternationalNational", params).await
     }
 
+    /// \- Orders and Adds new International TollFree DID Numbers to the Account.
+    ///
     /// Call the `orderDIDInternationalTollFree` API method and deserialize into [`OrderDIDInternationalTollFreeResponse`].
     pub async fn order_did_international_toll_free(
         &self,
@@ -14082,6 +17903,8 @@ impl Client {
         self.call_raw("orderDIDInternationalTollFree", params).await
     }
 
+    /// \- Orders and Adds a new Virtual DID Number to the Account.
+    ///
     /// Call the `orderDIDVirtual` API method and deserialize into [`OrderDIDVirtualResponse`].
     pub async fn order_did_virtual(
         &self,
@@ -14095,6 +17918,8 @@ impl Client {
         self.call_raw("orderDIDVirtual", params).await
     }
 
+    /// \- Orders and Adds a new Fax Number to the Account.
+    ///
     /// Call the `orderFaxNumber` API method and deserialize into [`OrderFAXNumberResponse`].
     pub async fn order_fax_number(
         &self,
@@ -14108,6 +17933,8 @@ impl Client {
         self.call_raw("orderFaxNumber", params).await
     }
 
+    /// \- Orders and Adds a new Toll Free Number to the Account.
+    ///
     /// Call the `orderTollFree` API method and deserialize into [`OrderTollFreeResponse`].
     pub async fn order_toll_free(
         &self,
@@ -14121,6 +17948,8 @@ impl Client {
         self.call_raw("orderTollFree", params).await
     }
 
+    /// \- Orders and Adds a new Vanity Toll Free Number to the Account.
+    ///
     /// Call the `orderVanity` API method and deserialize into [`OrderVanityResponse`].
     pub async fn order_vanity(&self, params: &OrderVanityParams) -> Result<OrderVanityResponse> {
         self.call("orderVanity", params).await
@@ -14131,6 +17960,8 @@ impl Client {
         self.call_raw("orderVanity", params).await
     }
 
+    /// \- Removes a DID from a VPRI
+    ///
     /// Call the `removeDIDvPRI` API method and deserialize into [`RemoveDIDvPRIResponse`].
     pub async fn remove_did_vpri(
         &self,
@@ -14144,6 +17975,8 @@ impl Client {
         self.call_raw("removeDIDvPRI", params).await
     }
 
+    /// \- Searches for Canadian DIDs by Province using a Search Criteria.
+    ///
     /// Call the `searchDIDsCAN` API method and deserialize into [`SearchDIDsCANResponse`].
     pub async fn search_dids_can(
         &self,
@@ -14157,6 +17990,8 @@ impl Client {
         self.call_raw("searchDIDsCAN", params).await
     }
 
+    /// \- Searches for USA DIDs by State using a Search Criteria.
+    ///
     /// Call the `searchDIDsUSA` API method and deserialize into [`SearchDIDsUSAResponse`].
     pub async fn search_dids_usa(
         &self,
@@ -14170,6 +18005,8 @@ impl Client {
         self.call_raw("searchDIDsUSA", params).await
     }
 
+    /// \- Retrieves a list of Canadian Ratecenters searched by Area Code.
+    ///
     /// Call the `searchFaxAreaCodeCAN` API method and deserialize into [`SearchFAXAreaCodeCANResponse`].
     pub async fn search_fax_area_code_can(
         &self,
@@ -14186,6 +18023,8 @@ impl Client {
         self.call_raw("searchFaxAreaCodeCAN", params).await
     }
 
+    /// \- Retrieves a list of USA Ratecenters searched by Area Code.
+    ///
     /// Call the `searchFaxAreaCodeUSA` API method and deserialize into [`SearchFAXAreaCodeUSAResponse`].
     pub async fn search_fax_area_code_usa(
         &self,
@@ -14202,6 +18041,10 @@ impl Client {
         self.call_raw("searchFaxAreaCodeUSA", params).await
     }
 
+    /// \- Searches for USA/Canada Toll Free Numbers using a Search Criteria.
+    /// \- Shows all USA/Canada Toll Free Numbers available if no criteria is
+    /// provided.
+    ///
     /// Call the `searchTollFreeCanUS` API method and deserialize into [`SearchTollFreeCANUSResponse`].
     pub async fn search_toll_free_can_us(
         &self,
@@ -14218,6 +18061,9 @@ impl Client {
         self.call_raw("searchTollFreeCanUS", params).await
     }
 
+    /// \- Searches for USA Toll Free Numbers using a Search Criteria.
+    /// \- Shows all USA Toll Free Numbers available if no criteria is provided.
+    ///
     /// Call the `searchTollFreeUSA` API method and deserialize into [`SearchTollFreeUSAResponse`].
     pub async fn search_toll_free_usa(
         &self,
@@ -14234,6 +18080,8 @@ impl Client {
         self.call_raw("searchTollFreeUSA", params).await
     }
 
+    /// \- Searches for Vanity Toll Free Numbers using a Search Criteria.
+    ///
     /// Call the `searchVanity` API method and deserialize into [`SearchVanityResponse`].
     pub async fn search_vanity(&self, params: &SearchVanityParams) -> Result<SearchVanityResponse> {
         self.call("searchVanity", params).await
@@ -14244,6 +18092,8 @@ impl Client {
         self.call_raw("searchVanity", params).await
     }
 
+    /// \- Send information and audio file to email account.
+    ///
     /// Call the `sendCallRecordingEmail` API method and deserialize into [`SendCallRecordingEmailResponse`].
     pub async fn send_call_recording_email(
         &self,
@@ -14260,6 +18110,8 @@ impl Client {
         self.call_raw("sendCallRecordingEmail", params).await
     }
 
+    /// \- Send a Fax message to a Destination Number.
+    ///
     /// Call the `sendFaxMessage` API method and deserialize into [`SendFAXMessageResponse`].
     pub async fn send_fax_message(
         &self,
@@ -14273,6 +18125,8 @@ impl Client {
         self.call_raw("sendFaxMessage", params).await
     }
 
+    /// \- Send a MMS message to a Destination Number.
+    ///
     /// Call the `sendMMS` API method and deserialize into [`SendMMSResponse`].
     pub async fn send_mms(&self, params: &SendMMSParams) -> Result<SendMMSResponse> {
         self.call("sendMMS", params).await
@@ -14283,6 +18137,8 @@ impl Client {
         self.call_raw("sendMMS", params).await
     }
 
+    /// \- Send a SMS message to a Destination Number.
+    ///
     /// Call the `sendSMS` API method and deserialize into [`SendSMSResponse`].
     pub async fn send_sms(&self, params: &SendSMSParams) -> Result<SendSMSResponse> {
         self.call("sendSMS", params).await
@@ -14293,6 +18149,8 @@ impl Client {
         self.call_raw("sendSMS", params).await
     }
 
+    /// \- Send a Voicemail Message File to an Email Address.
+    ///
     /// Call the `sendVoicemailEmail` API method and deserialize into [`SendVoicemailEmailResponse`].
     pub async fn send_voicemail_email(
         &self,
@@ -14309,6 +18167,9 @@ impl Client {
         self.call_raw("sendVoicemailEmail", params).await
     }
 
+    /// \- Updates a specific Call Hunting if a Call Hunting code is provided.
+    /// \- Adds a new Call Hunting if no Call Hunting code is provided.
+    ///
     /// Call the `setCallHunting` API method and deserialize into [`SetCallHuntingResponse`].
     pub async fn set_call_hunting(
         &self,
@@ -14322,6 +18183,10 @@ impl Client {
         self.call_raw("setCallHunting", params).await
     }
 
+    /// \- Updates a specific Call Parking entry if a Call Parking ID is
+    /// provided.
+    /// \- Adds a new Call Parking entry if no Call Parking ID is provided.
+    ///
     /// Call the `setCallParking` API method and deserialize into [`SetCallParkingResponse`].
     pub async fn set_call_parking(
         &self,
@@ -14335,6 +18200,9 @@ impl Client {
         self.call_raw("setCallParking", params).await
     }
 
+    /// \- Updates a specific Callback if a callback code is provided.
+    /// \- Adds a new Callback entry if no callback code is provided.
+    ///
     /// Call the `setCallback` API method and deserialize into [`SetCallbackResponse`].
     pub async fn set_callback(&self, params: &SetCallbackParams) -> Result<SetCallbackResponse> {
         self.call("setCallback", params).await
@@ -14345,6 +18213,10 @@ impl Client {
         self.call_raw("setCallback", params).await
     }
 
+    /// \- Updates a specific Caller ID Filtering if a filtering code is
+    /// provided.
+    /// \- Adds a new Caller ID Filtering if no filtering code is provided.
+    ///
     /// Call the `setCallerIDFiltering` API method and deserialize into [`SetCallerIDFilteringResponse`].
     pub async fn set_caller_id_filtering(
         &self,
@@ -14361,6 +18233,8 @@ impl Client {
         self.call_raw("setCallerIDFiltering", params).await
     }
 
+    /// \- Updates Reseller Client information.
+    ///
     /// Call the `setClient` API method and deserialize into [`SetClientResponse`].
     pub async fn set_client(&self, params: &SetClientParams) -> Result<SetClientResponse> {
         self.call("setClient", params).await
@@ -14371,6 +18245,10 @@ impl Client {
         self.call_raw("setClient", params).await
     }
 
+    /// \- Update the Threshold Amount for a specific Reseller Client.- Update
+    /// the Threshold notification e-mail for a specific Reseller Client if the
+    /// e-mail address is provided.
+    ///
     /// Call the `setClientThreshold` API method and deserialize into [`SetClientThresholdResponse`].
     pub async fn set_client_threshold(
         &self,
@@ -14387,6 +18265,9 @@ impl Client {
         self.call_raw("setClientThreshold", params).await
     }
 
+    /// \- Updates a specific Conference if a conference code is provided.
+    /// \- Adds a new Conference entry if no conference code is provided.
+    ///
     /// Call the `setConference` API method and deserialize into [`SetConferenceResponse`].
     pub async fn set_conference(
         &self,
@@ -14400,6 +18281,9 @@ impl Client {
         self.call_raw("setConference", params).await
     }
 
+    /// \- Updates a specific Member profile if a member code is provided.
+    /// \- Adds a new Member profile entry if no member code is provided.
+    ///
     /// Call the `setConferenceMember` API method and deserialize into [`SetConferenceMemberResponse`].
     pub async fn set_conference_member(
         &self,
@@ -14416,6 +18300,8 @@ impl Client {
         self.call_raw("setConferenceMember", params).await
     }
 
+    /// \- Updates the Billing Plan from a specific DID.
+    ///
     /// Call the `setDIDBillingType` API method and deserialize into [`SetDIDBillingTypeResponse`].
     pub async fn set_did_billing_type(
         &self,
@@ -14432,6 +18318,8 @@ impl Client {
         self.call_raw("setDIDBillingType", params).await
     }
 
+    /// \- Updates the information from a specific DID.
+    ///
     /// Call the `setDIDInfo` API method and deserialize into [`SetDIDInfoResponse`].
     pub async fn set_did_info(&self, params: &SetDIDInfoParams) -> Result<SetDIDInfoResponse> {
         self.call("setDIDInfo", params).await
@@ -14442,6 +18330,8 @@ impl Client {
         self.call_raw("setDIDInfo", params).await
     }
 
+    /// \- Updates the POP from a specific DID.
+    ///
     /// Call the `setDIDPOP` API method and deserialize into [`SetDIDPOPResponse`].
     pub async fn set_did_pop(&self, params: &SetDIDPOPParams) -> Result<SetDIDPOPResponse> {
         self.call("setDIDPOP", params).await
@@ -14452,6 +18342,8 @@ impl Client {
         self.call_raw("setDIDPOP", params).await
     }
 
+    /// \- Updates the Routing from a specific DID.
+    ///
     /// Call the `setDIDRouting` API method and deserialize into [`SetDIDRoutingResponse`].
     pub async fn set_did_routing(
         &self,
@@ -14465,6 +18357,8 @@ impl Client {
         self.call_raw("setDIDRouting", params).await
     }
 
+    /// \- Updates the Voicemail from a specific DID.
+    ///
     /// Call the `setDIDVoicemail` API method and deserialize into [`SetDIDVoicemailResponse`].
     pub async fn set_did_voicemail(
         &self,
@@ -14478,6 +18372,9 @@ impl Client {
         self.call_raw("setDIDVoicemail", params).await
     }
 
+    /// \- Updates a specific DISA if a disa code is provided.
+    /// \- Adds a new DISA entry if no disa code is provided.
+    ///
     /// Call the `setDISA` API method and deserialize into [`SetDISAResponse`].
     pub async fn set_disa(&self, params: &SetDISAParams) -> Result<SetDISAResponse> {
         self.call("setDISA", params).await
@@ -14488,6 +18385,9 @@ impl Client {
         self.call_raw("setDISA", params).await
     }
 
+    /// \- Create or update the information of a specific "Email to Fax
+    /// configuration".
+    ///
     /// Call the `setEmailToFax` API method and deserialize into [`SetEmailToFAXResponse`].
     pub async fn set_email_to_fax(
         &self,
@@ -14501,6 +18401,8 @@ impl Client {
         self.call_raw("setEmailToFax", params).await
     }
 
+    /// \- Create or update the information of a specific Fax Folder.
+    ///
     /// Call the `setFaxFolder` API method and deserialize into [`SetFAXFolderResponse`].
     pub async fn set_fax_folder(
         &self,
@@ -14514,6 +18416,8 @@ impl Client {
         self.call_raw("setFaxFolder", params).await
     }
 
+    /// \- Updates the email configuration from a specific Fax Number.
+    ///
     /// Call the `setFaxNumberEmail` API method and deserialize into [`SetFAXNumberEmailResponse`].
     pub async fn set_fax_number_email(
         &self,
@@ -14530,6 +18434,8 @@ impl Client {
         self.call_raw("setFaxNumberEmail", params).await
     }
 
+    /// \- Updates the information from a specific Fax Number.
+    ///
     /// Call the `setFaxNumberInfo` API method and deserialize into [`SetFAXNumberInfoResponse`].
     pub async fn set_fax_number_info(
         &self,
@@ -14543,6 +18449,8 @@ impl Client {
         self.call_raw("setFaxNumberInfo", params).await
     }
 
+    /// \- Updates the url callback configuration from a specific Fax Number.
+    ///
     /// Call the `setFaxNumberURLCallback` API method and deserialize into [`SetFAXNumberURLCallbackResponse`].
     pub async fn set_fax_number_url_callback(
         &self,
@@ -14559,6 +18467,9 @@ impl Client {
         self.call_raw("setFaxNumberURLCallback", params).await
     }
 
+    /// \- Updates a specific Forwarding if a fwd code is provided.
+    /// \- Adds a new Forwarding entry if no fwd code is provided.
+    ///
     /// Call the `setForwarding` API method and deserialize into [`SetForwardingResponse`].
     pub async fn set_forwarding(
         &self,
@@ -14572,6 +18483,9 @@ impl Client {
         self.call_raw("setForwarding", params).await
     }
 
+    /// \- Updates a specific IVR if an IVR code is provided.
+    /// \- Adds a new IVR entry if no IVR code is provided.
+    ///
     /// Call the `setIVR` API method and deserialize into [`SetIVRResponse`].
     pub async fn set_ivr(&self, params: &SetIVRParams) -> Result<SetIVRResponse> {
         self.call("setIVR", params).await
@@ -14605,6 +18519,9 @@ impl Client {
         self.call_raw("setMusicOnHold", params).await
     }
 
+    /// \- Updates a specific Phonebook entry if a phonebook code is provided.
+    /// \- Adds a new Phonebook entry if no phonebook code is provided.
+    ///
     /// Call the `setPhonebook` API method and deserialize into [`SetPhonebookResponse`].
     pub async fn set_phonebook(&self, params: &SetPhonebookParams) -> Result<SetPhonebookResponse> {
         self.call("setPhonebook", params).await
@@ -14615,6 +18532,10 @@ impl Client {
         self.call_raw("setPhonebook", params).await
     }
 
+    /// \- Updates a specific Phonebook group if a phonebook code is provided.
+    /// \- Adds a new Phonebook group if no phonebook group code is provided.
+    /// \- Assigns or modifies group members if a member list is provided
+    ///
     /// Call the `setPhonebookGroup` API method and deserialize into [`SetPhonebookGroupResponse`].
     pub async fn set_phonebook_group(
         &self,
@@ -14628,6 +18549,9 @@ impl Client {
         self.call_raw("setPhonebookGroup", params).await
     }
 
+    /// \- Updates a specific Queue entry if a queue code is provided.
+    /// \- Adds a new Queue entry if no queue code is provided.
+    ///
     /// Call the `setQueue` API method and deserialize into [`SetQueueResponse`].
     pub async fn set_queue(&self, params: &SetQueueParams) -> Result<SetQueueResponse> {
         self.call("setQueue", params).await
@@ -14638,6 +18562,9 @@ impl Client {
         self.call_raw("setQueue", params).await
     }
 
+    /// \- Updates a specific Recording File if a Recording ID is provided.
+    /// \- Adds a new Recording file entry if no Recording ID is provided.
+    ///
     /// Call the `setRecording` API method and deserialize into [`SetRecordingResponse`].
     pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetRecordingResponse> {
         self.call("setRecording", params).await
@@ -14648,6 +18575,9 @@ impl Client {
         self.call_raw("setRecording", params).await
     }
 
+    /// \- Updates a specific Ring Group if a ring group code is provided.
+    /// \- Adds a new Ring Group entry if no ring group code is provided.
+    ///
     /// Call the `setRingGroup` API method and deserialize into [`SetRingGroupResponse`].
     pub async fn set_ring_group(
         &self,
@@ -14661,6 +18591,9 @@ impl Client {
         self.call_raw("setRingGroup", params).await
     }
 
+    /// \- Updates a specific SIP URI if a SIP URI code is provided.
+    /// \- Adds a new SIP URI entry if no SIP URI code is provided.
+    ///
     /// Call the `setSIPURI` API method and deserialize into [`SetSIPURIResponse`].
     pub async fn set_sip_uri(&self, params: &SetSIPURIParams) -> Result<SetSIPURIResponse> {
         self.call("setSIPURI", params).await
@@ -14671,6 +18604,9 @@ impl Client {
         self.call_raw("setSIPURI", params).await
     }
 
+    /// \- Enable/Disable the SMS Service for a DID
+    /// \- Change the SMS settings for a DID
+    ///
     /// Call the `setSMS` API method and deserialize into [`SetSMSResponse`].
     pub async fn set_sms(&self, params: &SetSMSParams) -> Result<SetSMSResponse> {
         self.call("setSMS", params).await
@@ -14681,6 +18617,9 @@ impl Client {
         self.call_raw("setSMS", params).await
     }
 
+    /// \- Updates a specific Member from queue if a Member code is provided.
+    /// \- Adds a new Member to Queue if no Member code is provided.
+    ///
     /// Call the `setStaticMember` API method and deserialize into [`SetStaticMemberResponse`].
     pub async fn set_static_member(
         &self,
@@ -14694,6 +18633,8 @@ impl Client {
         self.call_raw("setStaticMember", params).await
     }
 
+    /// \- Updates Sub Account information.
+    ///
     /// Call the `setSubAccount` API method and deserialize into [`SetSubAccountResponse`].
     pub async fn set_sub_account(
         &self,
@@ -14707,6 +18648,10 @@ impl Client {
         self.call_raw("setSubAccount", params).await
     }
 
+    /// \- Updates a specific Time Condition if a time condition code is
+    /// provided.
+    /// \- Adds a new Time Condition entry if no time condition code is provided.
+    ///
     /// Call the `setTimeCondition` API method and deserialize into [`SetTimeConditionResponse`].
     pub async fn set_time_condition(
         &self,
@@ -14720,6 +18665,8 @@ impl Client {
         self.call_raw("setTimeCondition", params).await
     }
 
+    /// \- Updates the information from a specific Voicemail.
+    ///
     /// Call the `setVoicemail` API method and deserialize into [`SetVoicemailResponse`].
     pub async fn set_voicemail(&self, params: &SetVoicemailParams) -> Result<SetVoicemailResponse> {
         self.call("setVoicemail", params).await
@@ -14730,6 +18677,8 @@ impl Client {
         self.call_raw("setVoicemail", params).await
     }
 
+    /// \- Signs a new Reseller Client to your Reseller Account.
+    ///
     /// Call the `signupClient` API method and deserialize into [`SignupClientResponse`].
     pub async fn signup_client(&self, params: &SignupClientParams) -> Result<SignupClientResponse> {
         self.call("signupClient", params).await
@@ -14740,6 +18689,8 @@ impl Client {
         self.call_raw("signupClient", params).await
     }
 
+    /// \- Unconnects specific DID from Reseller Client Sub Account.
+    ///
     /// Call the `unconnectDID` API method and deserialize into [`UnconnectDIDResponse`].
     pub async fn unconnect_did(&self, params: &UnconnectDIDParams) -> Result<UnconnectDIDResponse> {
         self.call("unconnectDID", params).await
@@ -14750,6 +18701,8 @@ impl Client {
         self.call_raw("unconnectDID", params).await
     }
 
+    /// \- Unconnects specific FAX DID from Reseller Client Sub Account.
+    ///
     /// Call the `unconnectFAX` API method and deserialize into [`UnconnectFAXResponse`].
     pub async fn unconnect_fax(&self, params: &UnconnectFAXParams) -> Result<UnconnectFAXResponse> {
         self.call("unconnectFAX", params).await
