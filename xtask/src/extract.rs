@@ -24,6 +24,12 @@ use crate::wsdl;
 pub struct Document {
     pub version: u32,
     pub methods: serde_json::Map<String, JsonValue>,
+    /// Per-method parameter descriptions mined from each method's
+    /// `Parameters` cell in the HTML docs. Keyed by wire method name,
+    /// then by wire parameter name. Optional so older extracts (and the
+    /// override flow, which only reads `methods`) keep parsing.
+    #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
+    pub param_docs: serde_json::Map<String, JsonValue>,
 }
 
 /// Inferred scalar primitive.
@@ -138,31 +144,59 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
 
     let blocks = scan_html(&html);
     let mut methods = serde_json::Map::new();
+    let mut param_docs = serde_json::Map::new();
     let mut covered: BTreeSet<String> = BTreeSet::new();
-    for (name, raw_output) in &blocks {
+    let mut params_covered: BTreeSet<String> = BTreeSet::new();
+    for block in &blocks {
+        let name = &block.name;
         if !known.contains(name.as_str()) {
             continue;
         }
-        if covered.contains(name) {
-            // Same method appears in multiple sections occasionally;
-            // first definition wins.
-            continue;
-        }
-        let decoded = html_decode(raw_output);
-        let shape = match parse_php_block(&decoded) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("warning: {name}: skipping output — parse error: {e}");
-                continue;
+        match block.kind {
+            BlockKind::Output => {
+                if covered.contains(name) {
+                    // Same method appears in multiple sections
+                    // occasionally; first definition wins.
+                    continue;
+                }
+                let decoded = html_decode(&block.body);
+                let shape = match parse_php_block(&decoded) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("warning: {name}: skipping output — parse error: {e}");
+                        continue;
+                    }
+                };
+                methods.insert(name.clone(), shape_to_json(&shape));
+                covered.insert(name.clone());
             }
-        };
-        methods.insert(name.clone(), shape_to_json(&shape));
-        covered.insert(name.clone());
+            BlockKind::Parameters => {
+                if params_covered.contains(name) {
+                    continue;
+                }
+                let docs = parse_param_docs(&block.body);
+                if !docs.is_empty() {
+                    let map: serde_json::Map<String, JsonValue> = docs
+                        .into_iter()
+                        .map(|(k, v)| (k, JsonValue::String(v)))
+                        .collect();
+                    param_docs.insert(name.clone(), JsonValue::Object(map));
+                    params_covered.insert(name.clone());
+                }
+            }
+        }
     }
+
+    let param_doc_count: usize = param_docs
+        .values()
+        .filter_map(|v| v.as_object())
+        .map(serde_json::Map::len)
+        .sum();
 
     let doc = Document {
         version: 1,
         methods,
+        param_docs,
     };
     let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
     fs::write(out_path, format!("{pretty}\n"))
@@ -170,10 +204,12 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
 
     let missing: Vec<&&str> = known.iter().filter(|op| !covered.contains(**op)).collect();
     println!(
-        "wrote {} ({} methods covered, {} missing)",
+        "wrote {} ({} methods covered, {} missing; {} param descriptions across {} methods)",
         out_path.display(),
         covered.len(),
         missing.len(),
+        param_doc_count,
+        params_covered.len(),
     );
     if !missing.is_empty() {
         let preview: Vec<&&&str> = missing.iter().take(10).collect();
@@ -189,8 +225,25 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
 // HTML scanning
 // ---------------------------------------------------------------------------
 
-/// Walks the HTML line-by-line collecting (method_name, raw_output_block)
-/// pairs. The HTML format is regular enough that we don't need a full
+/// Which labelled cell a captured `<pre>` block came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BlockKind {
+    Parameters,
+    Output,
+}
+
+/// A captured `<pre>` block: the method it belongs to, which cell it
+/// came from, and its raw (still HTML-encoded) text.
+#[derive(Debug)]
+struct Block {
+    name: String,
+    kind: BlockKind,
+    body: String,
+}
+
+/// Walks the HTML line-by-line collecting [`Block`]s — one per
+/// `Parameters`/`Output` `<pre>` cell. The HTML format is regular
+/// enough that we don't need a full
 /// parser: each method appears as
 ///
 /// ```text
@@ -205,12 +258,11 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
 /// </td>
 /// ```
 ///
-/// We capture every output `<pre><code>` block and associate it with
-/// the most recent `toptitlex normaltextbold` name. Outputs in the
-/// Parameters cell are discriminated by the preceding label cell — we
-/// only capture blocks whose previous label cell text is "Output".
-fn scan_html(html: &str) -> Vec<(String, String)> {
-    let mut out: Vec<(String, String)> = Vec::new();
+/// We capture every `<pre><code>` block and associate it with the most
+/// recent `toptitlex normaltextbold` name and the preceding label cell
+/// text ("Parameters" or "Output"), so the caller can route each block.
+fn scan_html(html: &str) -> Vec<Block> {
+    let mut out: Vec<Block> = Vec::new();
     let mut current_name: Option<String> = None;
     let mut last_label: Option<String> = None;
     let lines: Vec<&str> = html.lines().collect();
@@ -294,9 +346,16 @@ fn scan_html(html: &str) -> Vec<(String, String)> {
             i = j + 1;
             continue;
         }
-        if line.contains("<pre") && matches!(last_label.as_deref(), Some("Output")) {
-            // Some Output cells use `<pre><code>…</code></pre>`, others
-            // bare `<pre>…</pre>`. Detect which opener this line carries.
+        let label_kind = match last_label.as_deref() {
+            Some("Output") => Some(BlockKind::Output),
+            Some("Parameters") => Some(BlockKind::Parameters),
+            _ => None,
+        };
+        if line.contains("<pre")
+            && let Some(kind) = label_kind
+        {
+            // Some cells use `<pre><code>…</code></pre>`, others bare
+            // `<pre>…</pre>`. Detect which opener this line carries.
             let (open_tag, close_tag) = if line.contains("<pre><code>") {
                 ("<pre><code>", "</code></pre>")
             } else {
@@ -307,7 +366,7 @@ fn scan_html(html: &str) -> Vec<(String, String)> {
                 if let Some(end) = tail.find(close_tag) {
                     body.push_str(&tail[..end]);
                     if let Some(name) = current_name.clone() {
-                        out.push((name, body));
+                        out.push(Block { name, kind, body });
                     }
 
                     i += 1;
@@ -333,7 +392,7 @@ fn scan_html(html: &str) -> Vec<(String, String)> {
             }
 
             if let Some(name) = current_name.clone() {
-                out.push((name, body));
+                out.push(Block { name, kind, body });
             }
 
             last_label = None;
@@ -353,8 +412,142 @@ fn html_decode(s: &str) -> String {
         .replace("&quot;", "\"")
         .replace("&#039;", "'")
         .replace("&apos;", "'")
+        .replace("&#160;", " ")
         .replace("&nbsp;", " ")
         .replace("&amp;", "&")
+}
+
+// ---------------------------------------------------------------------------
+// Parameter-description parser
+// ---------------------------------------------------------------------------
+
+/// Parse a method's `Parameters` cell into `(param_name, description)`
+/// pairs, preserving the order they appear in the docs.
+///
+/// Each parameter starts a line `name => description`; the arrow is
+/// surrounded by arbitrary whitespace. Lines that don't start a new
+/// parameter are continuation text belonging to the previous one. The
+/// `api_username`/`api_password` rows (present on most methods) are
+/// dropped — they come from the `Client`, not the request struct.
+///
+/// `raw` is the still-HTML-encoded cell body. Inline tags (e.g. the
+/// Cloudflare email-obfuscation `<a>`) are stripped, entities decoded,
+/// and whitespace collapsed before light normalization.
+fn parse_param_docs(raw: &str) -> Vec<(String, String)> {
+    let mut out: Vec<(String, String)> = Vec::new();
+    for line in raw.lines() {
+        let cleaned = collapse_ws(&unescape_slashes(&html_decode(&strip_tags(line))));
+        if cleaned.is_empty() {
+            continue;
+        }
+
+        match split_param_line(&cleaned) {
+            Some((name, desc)) => out.push((name.to_string(), desc.to_string())),
+            None => {
+                // Continuation of the previous parameter's description.
+                if let Some(last) = out.last_mut() {
+                    if !last.1.is_empty() && !cleaned.is_empty() {
+                        last.1.push(' ');
+                    }
+                    last.1.push_str(&cleaned);
+                }
+            }
+        }
+    }
+
+    out.into_iter()
+        .filter(|(name, _)| !crate::CLIENT_FIELDS.contains(&name.as_str()))
+        .map(|(name, desc)| (name, normalize_desc(&desc)))
+        .filter(|(_, desc)| !desc.is_empty())
+        .collect()
+}
+
+/// If `line` begins a `name => description` parameter row, return the
+/// split. Only treats it as a new parameter when the text before the
+/// first `=>` is a single identifier-shaped token — so an arrow that
+/// appears inside prose continuation text isn't mistaken for a new row.
+fn split_param_line(line: &str) -> Option<(&str, &str)> {
+    let (lhs, rhs) = line.split_once("=>")?;
+    let name = lhs.trim();
+    if name.is_empty() || name.contains(char::is_whitespace) {
+        return None;
+    }
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        return None;
+    }
+    if !name.starts_with(|c: char| c.is_ascii_alphabetic()) {
+        return None;
+    }
+
+    Some((name, rhs.trim()))
+}
+
+/// Undo stray backslash escapes that leaked from the source's PHP/JS
+/// string literals into the docs text (`don\'t` → `don't`). Only the
+/// quote escapes are unwound; a backslash before anything else is kept.
+fn unescape_slashes(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' && matches!(chars.peek(), Some('\'') | Some('"')) {
+            continue;
+        }
+
+        out.push(c);
+    }
+
+    out
+}
+
+/// Drop inline HTML tags, keeping their text content.
+fn strip_tags(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut depth = 0usize;
+    for c in s.chars() {
+        match c {
+            '<' => depth += 1,
+            '>' if depth > 0 => depth -= 1,
+            _ if depth == 0 => out.push(c),
+            _ => {}
+        }
+    }
+
+    out
+}
+
+/// Collapse runs of whitespace to single spaces and trim the ends.
+fn collapse_ws(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Lightly normalize a raw description into prose suitable for a Rust
+/// doc comment, without editorializing the wording:
+///
+/// * a leading `[Required]`/`[Optional]` marker becomes a trailing
+///   `(required)` / `(optional)` note;
+/// * a `Values:` label gains a following space (`Values:1=Enable` →
+///   `Values: 1=Enable`) for readability.
+///
+/// Other punctuation — examples, `=`-laden value lists, URLs — is left
+/// untouched so the rendered text stays faithful to the source.
+fn normalize_desc(desc: &str) -> String {
+    let mut text = collapse_ws(desc.trim());
+
+    let mut suffix = "";
+    for (marker, note) in [("[Required]", " (required)"), ("[Optional]", " (optional)")] {
+        if let Some(rest) = text.strip_prefix(marker) {
+            text = collapse_ws(rest.trim_start());
+            suffix = note;
+            break;
+        }
+    }
+
+    // Tidy `Values:1=Enable` → `Values: 1=Enable`; leave the list itself
+    // alone.
+    let text = text.replace("Values:", "Values: ");
+    let mut text = collapse_ws(&text);
+    text.push_str(suffix);
+    text
 }
 
 // ---------------------------------------------------------------------------

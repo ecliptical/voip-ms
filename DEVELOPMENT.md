@@ -8,11 +8,34 @@ This document covers contributor and maintainer workflows for voip-ms.
 three committed inputs:
 
 * `tools/server.wsdl` — method list, parameter names, parameter types.
-* `tools/api-responses.json` — inferred response shape per method,
+* `tools/api-responses.json` — inferred response shape per method
+  (`methods`) plus mined parameter descriptions (`param_docs`), both
   extracted from the official HTML docs by `cargo xtask
-  extract-responses`.
+  extract-responses`. The `param_docs` map keys each wire method to a
+  `{ param_name: description }` table; `cargo xtask gen` renders those
+  descriptions as `///` doc comments on the matching `*Params` fields.
 * `tools/api-response-overrides.json` — hand-edited corrections to the
   above (per-path scalar retypes or full shape replacement).
+
+### Reference documents
+
+| File | Source | Versioned? |
+|------|--------|------------|
+| `tools/server.wsdl` | `https://voip.ms/api/v1/server.wsdl` (public) | Yes — committed |
+| `tools/scratch/VoIP.ms - Customer Portal_ API Documentation.html` | `https://voip.ms/m/apidocs.php` (requires login) | No — gitignored |
+| `tools/scratch/API.zip` | `https://voip.ms/api/v1/API.zip` (public) | No — gitignored |
+
+Only `server.wsdl` is committed. The scratch files are not version-controlled;
+download them locally as needed:
+
+```bash
+# Public files — fetch directly
+curl -o tools/server.wsdl https://voip.ms/api/v1/server.wsdl
+curl -o tools/scratch/API.zip https://voip.ms/api/v1/API.zip
+
+# HTML docs — Cloudflare-gated, must be saved manually from a browser session
+# (see "Refreshing response shapes" below)
+```
 
 ### Picking up new methods (WSDL change)
 
@@ -26,17 +49,18 @@ cargo test --workspace --all-targets
 
 ### Refreshing response shapes (HTML docs change)
 
-voip.ms's `apidocs.php` page is Cloudflare-gated, so the HTML has to be
-saved manually:
+voip.ms's `apidocs.php` page is behind Cloudflare and requires a logged-in
+session, so the HTML must be saved manually:
 
 1. Log into the voip.ms customer portal in a browser.
-2. Open `https://voip.ms/m/apidocs.php` and save the rendered HTML to
-   `target/apidocs.html` (or any path under `target/`, which is
-   gitignored).
+2. Open `https://voip.ms/m/apidocs.php` and save the complete rendered page
+   (HTML + supporting files) to `tools/scratch/` — e.g. save as
+   `tools/scratch/VoIP.ms - Customer Portal_ API Documentation.html`.
+   That directory is gitignored, so the file won't be committed.
 3. Re-run the extractor and inspect the diff:
 
    ```bash
-   cargo xtask extract-responses target/apidocs.html
+   cargo xtask extract-responses "tools/scratch/VoIP.ms - Customer Portal_ API Documentation.html"
    git diff tools/api-responses.json
    ```
 

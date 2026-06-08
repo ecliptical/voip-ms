@@ -196,9 +196,68 @@ fn rust_field_name(name: &str) -> String {
     }
 }
 
+/// Per-method parameter descriptions, keyed by wire method name then
+/// wire parameter name. Empty when no extract is present.
+type ParamDocs = BTreeMap<String, BTreeMap<String, String>>;
+
+/// Wrap a description as one or more `///` lines at the given indent,
+/// hard-wrapping long lines so rustfmt doesn't have to.
+fn render_doc(out: &mut String, indent: &str, text: &str) {
+    const WIDTH: usize = 80;
+    let mut line = String::new();
+    let mut flush = |line: &mut String| {
+        if !line.is_empty() {
+            out.push_str(&format!("{indent}/// {}\n", escape_doc_line(line)));
+            line.clear();
+        }
+    };
+    for word in text.split_whitespace() {
+        let prospective = if line.is_empty() {
+            word.len()
+        } else {
+            line.len() + 1 + word.len()
+        };
+
+        if !line.is_empty() && indent.len() + 4 + prospective > WIDTH {
+            flush(&mut line);
+        }
+
+        if !line.is_empty() {
+            line.push(' ');
+        }
+
+        line.push_str(word);
+    }
+
+    flush(&mut line);
+}
+
+/// Backslash-escape a leading Markdown list marker (`- `, `* `, `+ `, or
+/// `N. `) so a wrapped doc line isn't parsed as a lazy list continuation
+/// (clippy::doc_lazy_continuation). The voip.ms source uses these
+/// characters as plain prose punctuation, not Markdown.
+fn escape_doc_line(line: &str) -> String {
+    let bytes = line.as_bytes();
+    let starts_bullet =
+        matches!(bytes.first(), Some(b'-' | b'*' | b'+')) && matches!(bytes.get(1), Some(b' '));
+    let starts_ordered = {
+        let digits = bytes.iter().take_while(|b| b.is_ascii_digit()).count();
+        digits > 0
+            && matches!(bytes.get(digits), Some(b'.'))
+            && matches!(bytes.get(digits + 1), Some(b' '))
+    };
+
+    if starts_bullet || starts_ordered {
+        format!("\\{line}")
+    } else {
+        line.to_string()
+    }
+}
+
 fn emit(
     wsdl: &Wsdl,
     responses: &BTreeMap<String, Shape>,
+    param_docs: &ParamDocs,
     table: &field_overrides::Table,
     enum_decls: &str,
 ) -> String {
@@ -239,13 +298,20 @@ fn emit(
             out.push_str(&format!("pub struct {struct_name} {{}}\n"));
             continue;
         }
+
         out.push_str(&format!("pub struct {struct_name} {{\n"));
+        let docs = param_docs.get(op);
         for (fname, ftype) in body_fields {
             let rust_ty = match table.get(fname) {
                 Some(o) => o.rust_type.clone(),
                 None => xsd_to_rust(ftype).to_string(),
             };
+
             let ident = rust_field_name(fname);
+            if let Some(desc) = docs.and_then(|d| d.get(fname)) {
+                render_doc(&mut out, "    ", desc);
+            }
+
             out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\")]\n");
             out.push_str(&format!("    pub {ident}: Option<{rust_ty}>,\n"));
         }
@@ -274,6 +340,7 @@ fn emit(
              }}\n\n"
         ));
     }
+
     out.push_str("}\n");
     out
 }
@@ -311,6 +378,7 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
                  /// unrecognized wire string is preserved verbatim in [`{name}::Unknown`].\n",
             ));
         }
+
         out.push_str("#[derive(Debug, Clone, PartialEq, Eq)]\n");
         out.push_str(&format!("pub enum {name} {{\n"));
         for v in &def.variants {
@@ -321,6 +389,7 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
             }
             out.push_str(&format!("    {},\n", v.name));
         }
+
         out.push_str("    /// Any wire value this crate doesn't recognize.\n");
         out.push_str("    Unknown(String),\n");
         out.push_str("}\n\n");
@@ -336,6 +405,7 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
                 v.name, v.wire
             ));
         }
+
         out.push_str(&format!("            {name}::Unknown(s) => s.as_str(),\n"));
         out.push_str("        }\n    }\n\n");
         out.push_str("    /// Parse a wire string. Unknown values are preserved.\n");
@@ -347,6 +417,7 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
                 v.wire, v.name
             ));
         }
+
         out.push_str(&format!(
             "            other => {name}::Unknown(other.to_string()),\n"
         ));
@@ -442,6 +513,7 @@ fn cmd_gen() -> Result<(), String> {
     overrides_doc.check_version()?;
 
     let responses = load_response_shapes(&responses_path, &overrides_doc, &wsdl)?;
+    let param_docs = load_param_docs(&responses_path)?;
 
     // Build the field-name override table by combining the built-in
     // routing entries with anything declared in `field_types`.
@@ -463,7 +535,7 @@ fn cmd_gen() -> Result<(), String> {
     }
 
     let enum_decls = emit_enums(&overrides_doc.enums);
-    let rendered = emit(&wsdl, &responses, &table, &enum_decls);
+    let rendered = emit(&wsdl, &responses, &param_docs, &table, &enum_decls);
     fs::write(&out_path, &rendered).map_err(|e| format!("write {}: {e}", out_path.display()))?;
     println!(
         "wrote {} ({} methods, {} typed responses)",
@@ -519,6 +591,7 @@ fn load_response_shapes(
             eprintln!("warning: overrides reference unknown method `{name}`; skipping");
             continue;
         }
+
         let extracted = shapes.remove(name);
         if let Some(shape) = overrides::apply(extracted, mo)? {
             shapes.insert(name.clone(), shape);
@@ -526,6 +599,37 @@ fn load_response_shapes(
     }
 
     Ok(shapes)
+}
+
+/// Read the `param_docs` section of `tools/api-responses.json`. Missing
+/// file or missing section yields an empty map — doc comments are
+/// purely additive, so codegen proceeds without them.
+fn load_param_docs(responses_path: &Path) -> Result<ParamDocs, String> {
+    if !responses_path.exists() {
+        return Ok(ParamDocs::new());
+    }
+
+    let text = fs::read_to_string(responses_path)
+        .map_err(|e| format!("read {}: {e}", responses_path.display()))?;
+    let doc: extract::Document = serde_json::from_str(&text)
+        .map_err(|e| format!("parse {}: {e}", responses_path.display()))?;
+
+    let mut out = ParamDocs::new();
+    for (method, value) in &doc.param_docs {
+        let Some(obj) = value.as_object() else {
+            continue;
+        };
+
+        let inner: BTreeMap<String, String> = obj
+            .iter()
+            .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+            .collect();
+        if !inner.is_empty() {
+            out.insert(method.clone(), inner);
+        }
+    }
+
+    Ok(out)
 }
 
 fn cmd_extract(args: &[String]) -> Result<(), String> {

@@ -585,12 +585,17 @@ where
 /// Parameters for [`Client::add_charge`] (wire method `addCharge`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddChargeParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
+    /// Amount of money that will be Debited from the customer (Example: 4.99)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub charge: Option<f64>,
+    /// Charge Description
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Set to true if testing how adding charges works
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -598,8 +603,10 @@ pub struct AddChargeParams {
 /// Parameters for [`Client::add_lnp_file`] (wire method `addLNPFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddLNPFileParams {
+    /// ID of the port previously created. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portid: Option<i64>,
+    /// Base 64 code of the file to be attached (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<String>,
 }
@@ -607,46 +614,99 @@ pub struct AddLNPFileParams {
 /// Parameters for [`Client::add_lnp_port`] (wire method `addLNPPort`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddLNPPortParams {
+    /// Digits from 1 to 4: 1: United States Local numbers 2: Canadian Local
+    /// Numbers 3: US/CA Toll Free Numbers 4: United States Fax numbers 5:
+    /// Canadian Fax Numbers (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portType: Option<i64>,
+    /// DID(s) to port into VoIP.ms network (Example: 5552341234,5552341233). If
+    /// you are porting more than one number, please separate them with commas.
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub numbers: Option<String>,
+    /// If you have more then 1 number with your current carrier and not porting
+    /// them all, choose yes. If you are porting all the numbers, choose no.
+    /// Please note that you still need to include all numbers you want to port.
+    /// If you have 2 numbers and want to port both, you need to include both
+    /// numbers in the list of numbers to port. - (Values: 1 = true, 0 = false)
+    /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub isPartial: Option<i64>,
+    /// \- (Values: 1 = Business, 0 = Residential) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locationType: Option<i64>,
+    /// \- (Values: 1 = All the numbers are mobile numbers, 0 = false) - Default:
+    /// 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub isMobile: Option<i64>,
+    /// PIN Number
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<String>,
+    /// [Required If isMobile = 1] BTN: It is the phone number to which all the
+    /// other numbers of the customer are charged, in a consolidated telephone
+    /// bill (instead of showing separate charges for each number you own).
+    /// Please try to find the BTN on your invoice, and if you are unable to do
+    /// so please contact the current provider to obtain it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub btn: Option<String>,
+    /// [Required If isMobile = 1] Please be specific and describe ALL remaining
+    /// services with the current carrier. This includes DSL/Data services, Hunt
+    /// Group services, etc. Any services NOT listed below may be disconnected
+    /// upon completion of this port order.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub services: Option<String>,
+    /// [Required If portType = 3] Values: 1 - American Carrier, American
+    /// Callers Only, 2 - American Carrier, American and Canadian Callers
+    /// allowed, 3 - Canadian Carrier
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tfType: Option<i64>,
+    /// This is for Business numbers only. Please type your Company Name if
+    /// applicable, otherwise leave it blank. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub statementName: Option<String>,
+    /// This is the "Customer First Name" as it appears on the CSR (Customer
+    /// Service Record) of the losing carrier. Please Enter the first name of
+    /// the owner of the number or the autorized contact. No company name must
+    /// be entered in the field. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub firstName: Option<String>,
+    /// This is the "Customer Last Name" as it appears on the CSR (Customer
+    /// Service Record) of the losing carrier. Please Enter the last name of the
+    /// owner of the number or the autorized contact. No company name must be
+    /// entered in the field (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lastName: Option<String>,
+    /// This is the "Customer Address" as it appears on the CSR (Customer
+    /// Service Record) of the losing carrier. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address1: Option<String>,
+    /// Optional Address information (e.g: Suite 343)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address2: Option<String>,
+    /// This is the "City" as it appears on the CSR (Customer Service Record) of
+    /// the losing carrier. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+    /// This is the "ZIP or Postal Code" as it appears on the CSR (Customer
+    /// Service Record) of the losing carrier. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+    /// This is the "State or Province" as it appears on the CSR (Customer
+    /// Service Record) of the losing carrier. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// This is the "Country" as it appears on the CSR (Customer Service Record)
+    /// of the losing carrier. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// The name of your current service provider. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub providerName: Option<String>,
+    /// Your Account with your current service provider. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub providerAccount: Option<String>,
+    /// \- If you would like to include additional information regarding this
+    /// port, you can use this parameter.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
 }
@@ -654,8 +714,10 @@ pub struct AddLNPPortParams {
 /// Parameters for [`Client::add_member_to_conference`] (wire method `addMemberToConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddMemberToConferenceParams {
+    /// Specific Member ID (Example: 6547) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<i64>,
+    /// Specific Conference ID (Example: 234) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
 }
@@ -663,12 +725,17 @@ pub struct AddMemberToConferenceParams {
 /// Parameters for [`Client::add_payment`] (wire method `addPayment`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AddPaymentParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
+    /// Amount of money that will be Credited to the customer (Example: 4.99)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payment: Option<f64>,
+    /// Payment Description
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Set to true if testing how adding payments works
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -676,8 +743,10 @@ pub struct AddPaymentParams {
 /// Parameters for [`Client::assign_did_vpri`] (wire method `assignDIDvPRI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct AssignDIDvPRIParams {
+    /// Id for specific Vpri (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vpri: Option<i64>,
+    /// DID Number to be assign into our Vpri (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -685,34 +754,64 @@ pub struct AssignDIDvPRIParams {
 /// Parameters for [`Client::back_order_did_can`] (wire method `backOrderDIDCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct BackOrderDIDCANParams {
+    /// Number of DIDs to be Ordered (Example: 3) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
+    /// Canadian Province (values from getProvinces) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub province: Option<String>,
+    /// USA Ratecenter (Values from getRateCentersUSA) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ratecenter: Option<String>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<i64>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<i64>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -720,34 +819,64 @@ pub struct BackOrderDIDCANParams {
 /// Parameters for [`Client::back_order_did_usa`] (wire method `backOrderDIDUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct BackOrderDIDUSAParams {
+    /// Number of DIDs to be Ordered (Example: 3) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
+    /// USA State (values from getStates) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// USA Ratecenter (Values from getRateCentersUSA) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ratecenter: Option<String>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<i64>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<i64>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -755,12 +884,17 @@ pub struct BackOrderDIDUSAParams {
 /// Parameters for [`Client::cancel_did`] (wire method `cancelDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CancelDIDParams {
+    /// DID to be canceled and deleted (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Comment for DID cancellation
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cancelcomment: Option<String>,
+    /// Set to true if the DID is being ported out
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portout: Option<bool>,
+    /// Set to true if testing how cancellation works - Cancellation can not be
+    /// undone - When testing, no changes are made
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -768,8 +902,10 @@ pub struct CancelDIDParams {
 /// Parameters for [`Client::cancel_fax_number`] (wire method `cancelFaxNumber`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CancelFAXNumberParams {
+    /// ID for a specific Fax Number (Example: 923) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Set to true if testing how cancel a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -777,20 +913,29 @@ pub struct CancelFAXNumberParams {
 /// Parameters for [`Client::connect_did`] (wire method `connectDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct ConnectDIDParams {
+    /// DID to be Connected to Reseler Sub Account (Example: 5551234567)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Reseller Sub Account (Example: '100001_VoIP') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<f64>,
+    /// Setup Fee for Reseller Client (Example: 1.99) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<f64>,
+    /// Minute Rate for Reseller Client (Example: 0.03) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<f64>,
+    /// Next billing date (Example: '2014-03-30')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_billing: Option<String>,
+    /// If set to true, the setup value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dont_charge_setup: Option<f64>,
+    /// If set to true, the monthly value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dont_charge_monthly: Option<f64>,
 }
@@ -798,20 +943,29 @@ pub struct ConnectDIDParams {
 /// Parameters for [`Client::connect_fax`] (wire method `connectFAX`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct ConnectFAXParams {
+    /// FAX DID to be Connected to Reseller Sub Account (Example: 5551234567)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Reseller Sub Account (Example: '100001_VoIP') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<f64>,
+    /// Setup Fee for Reseller Client (Example: 1.99) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<f64>,
+    /// Minute Rate for Reseller Client (Example: 0.03) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<f64>,
+    /// Next billing date (Example: '2014-03-30')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_billing: Option<String>,
+    /// If set to true, the setup value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dont_charge_setup: Option<f64>,
+    /// If set to true, the monthly value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dont_charge_monthly: Option<f64>,
 }
@@ -819,88 +973,141 @@ pub struct ConnectFAXParams {
 /// Parameters for [`Client::create_sub_account`] (wire method `createSubAccount`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CreateSubAccountParams {
+    /// Username for the Sub Account (Example: 'VoIP') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
+    /// Protocol used for the Sub Account (Values from getProtocols) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<i64>,
+    /// Sub Account Description (Example: 'VoIP Account')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Authorization Type Code (Values from getAuthTypes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_type: Option<i64>,
+    /// Sub Account Password (For Password Authentication)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    /// Sub Account IP (For IP Authentication)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip: Option<String>,
+    /// Device Type Code (Values from getDeviceTypes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_type: Option<i64>,
+    /// Caller ID Override
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_number: Option<String>,
+    /// Route Code (Values from getRoutes)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canada_routing: Option<String>,
+    /// Lock International Code (Values from getLockInternational) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_international: Option<i64>,
+    /// Route Code (Values from getRoutes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub international_route: Option<i64>,
+    /// Music on Hold Code (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
+    /// Language for system messages, such as "Invalid Option" (Values from
+    /// getLanguages)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated
+    /// by semicolon (Example: ulaw;g729;gsm) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allowed_codecs: Option<String>,
+    /// DTMF Mode Code (Values from getDTMFModes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dtmf_mode: Option<DtmfMode>,
+    /// NAT Mode Code (Values from getNAT) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nat: Option<Nat>,
+    /// Encrypted SIP Traffic (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sip_traffic: Option<i64>,
+    /// Max Expiry between 60 and 3600 (Example: 3000)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_expiry: Option<i64>,
+    /// RTP Time Out between 1 and 3600 (Example: 60)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rtp_timeout: Option<i64>,
+    /// RTP Hold Time Out between 1 and 3600 (Example: 600)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rtp_hold_timeout: Option<i64>,
+    /// List of IP Addresses, IP Addresses/Netmask, or Fully Qualified Domain
+    /// Names to allow outgoing calls separated by commas (Example:
+    /// 123.45.3.21,10.255.12.0/22,device.mydomain.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_restriction: Option<String>,
+    /// Enable IP Restriction (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_ip_restriction: Option<i64>,
+    /// List of POP Servers to allow outgoing calls separated by commas (values
+    /// from getServersInfo. Example: 10,23,45)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop_restriction: Option<String>,
+    /// Enable POP Restriction (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_pop_restriction: Option<i64>,
+    /// Sub Account Internal Extension (Example: 1 -> Creates 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension: Option<String>,
+    /// Sub Account Internal Voicemail (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_voicemail: Option<String>,
+    /// Sub Account Internal Dialtime (Example: 60 -> seconds)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_dialtime: Option<String>,
+    /// Reseller Account ID (Example: 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_client: Option<String>,
+    /// Reseller Package (Example: 92364)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_package: Option<String>,
+    /// Reseller Next Billing Date (Example: '2012-12-31')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_nextbilling: Option<String>,
+    /// True if you want to charge Package Setup Fee after Save
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_chargesetup: Option<String>,
+    /// Send BYE on successful transfer (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub send_bye: Option<i64>,
+    /// Record Calls (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub record_calls: Option<i64>,
+    /// Enable Call Transcription (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcribe: Option<i64>,
+    /// Transcription locale code (values from getLocales, comma separated for
+    /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
+    /// Call Transcription Email
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_email: Option<String>,
+    /// Call Transcription Delay Seconds between 0 and 60, Increments of 5
+    /// (Example: 10 -> seconds)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_start_delay: Option<i64>,
+    /// Enable Internal CallerID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_internal_cnam: Option<i64>,
+    /// Internal CallerID Name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_cnam: Option<String>,
+    /// Allows you to dial outgoing calls using either the NANPA configuration
+    /// or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 =
+    /// E164, 2 = NANPA)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialing_mode: Option<i64>,
+    /// This allows you to select the carrier to be used for outgoing calls to
+    /// toll-free numbers. (Values: -1 = Use main account settings, 0 = Default
+    /// server setting, 1 = US carrier, 2 = Canadian carrier)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tfcarrier: Option<i64>,
+    /// Location group for the internal extension (Values from getLocations)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension_location: Option<i64>,
 }
@@ -908,44 +1115,69 @@ pub struct CreateSubAccountParams {
 /// Parameters for [`Client::create_voicemail`] (wire method `createVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CreateVoicemailParams {
+    /// Digits used to create the voicemail (Example: 01) Minimum 1 digit,
+    /// maximum 10 digits (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digits: Option<i64>,
+    /// Name for the Mailbox (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Password for the Mailbox (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    /// True if Skipping Password (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub skip_password: Option<String>,
+    /// Email address for receiving messages, multiple email addresses are
+    /// allowed if separated by a comma
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Yes for Attaching WAV files to Message (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attach_message: Option<String>,
+    /// Yes for Deleting Messages (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delete_message: Option<String>,
+    /// Yes for Saying Time Stamp (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub say_time: Option<String>,
+    /// Time Zone for Mailbox (Values from getTimeZones) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+    /// Yes for Saying the Caller ID (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub say_callerid: Option<String>,
+    /// Code for Play Instructions Setting (Values from getPlayInstructions)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub play_instructions: Option<PlayInstructions>,
+    /// Code for Language (Values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Code for Email Attachment format (Values from
+    /// getVoicemailAttachmentFormats)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_attachment_format: Option<EmailAttachmentFormat>,
+    /// Recording for the Unavailable Message (values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unavailable_message_recording: Option<String>,
+    /// 'yes' to enable Voicemail Transcription
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription: Option<String>,
+    /// Transcription locale code (values from getLocales, comma separated for
+    /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
+    /// Yes for Transcription redaction (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_redaction: Option<String>,
+    /// Yes for Transcription sentiment (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_sentiment: Option<String>,
+    /// Yes for Transcription summary (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_summary: Option<String>,
+    /// Transcription format ( Values: 'html'/'text')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_format: Option<TranscriptionFormat>,
 }
@@ -953,6 +1185,7 @@ pub struct CreateVoicemailParams {
 /// Parameters for [`Client::del_call_hunting`] (wire method `delCallHunting`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallHuntingParams {
+    /// ID for a specific Call Hunting (Example: 323) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callhunting: Option<i64>,
 }
@@ -960,6 +1193,7 @@ pub struct DelCallHuntingParams {
 /// Parameters for [`Client::del_call_parking`] (wire method `delCallParking`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallParkingParams {
+    /// ID for a specific Call Parking (Example: 323) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callparking: Option<i64>,
 }
@@ -967,8 +1201,11 @@ pub struct DelCallParkingParams {
 /// Parameters for [`Client::del_call_recording`] (wire method `delCallRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallRecordingParams {
+    /// Call Recording (Values from getCallRecordings) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callrecording: Option<String>,
+    /// Filter Call Recordings by Account (Values from getCallAccounts)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
@@ -976,6 +1213,7 @@ pub struct DelCallRecordingParams {
 /// Parameters for [`Client::del_callback`] (wire method `delCallback`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallbackParams {
+    /// ID for a specific Callback (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callback: Option<i64>,
 }
@@ -983,6 +1221,7 @@ pub struct DelCallbackParams {
 /// Parameters for [`Client::del_caller_id_filtering`] (wire method `delCallerIDFiltering`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelCallerIDFilteringParams {
+    /// ID for a specific CallerID Filtering (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filtering: Option<i64>,
 }
@@ -990,6 +1229,7 @@ pub struct DelCallerIDFilteringParams {
 /// Parameters for [`Client::del_client`] (wire method `delClient`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelClientParams {
+    /// ID for a specific Reseller Client (Example: 1998) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
 }
@@ -997,6 +1237,7 @@ pub struct DelClientParams {
 /// Parameters for [`Client::del_conference`] (wire method `delConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelConferenceParams {
+    /// ID for a specific Conference (Example: 737) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
 }
@@ -1004,6 +1245,7 @@ pub struct DelConferenceParams {
 /// Parameters for [`Client::del_conference_member`] (wire method `delConferenceMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelConferenceMemberParams {
+    /// ID for a specific Member Profile (Example: 737) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<i64>,
 }
@@ -1011,6 +1253,7 @@ pub struct DelConferenceMemberParams {
 /// Parameters for [`Client::del_disa`] (wire method `delDISA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelDISAParams {
+    /// ID for a specific DISA (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disa: Option<i64>,
 }
@@ -1018,8 +1261,10 @@ pub struct DelDISAParams {
 /// Parameters for [`Client::del_email_to_fax`] (wire method `delEmailToFax`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelEmailToFAXParams {
+    /// ID for a specific "Email To Fax Configuration" (Example: 923) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Set to true if testing how cancel a "Email To Fax Configuration"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -1027,8 +1272,10 @@ pub struct DelEmailToFAXParams {
 /// Parameters for [`Client::del_fax_folder`] (wire method `delFaxFolder`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelFAXFolderParams {
+    /// ID for a specific Fax Folder (Example: 923) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Set to true if testing how to delete a Fax Folder
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -1036,6 +1283,7 @@ pub struct DelFAXFolderParams {
 /// Parameters for [`Client::del_forwarding`] (wire method `delForwarding`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelForwardingParams {
+    /// ID for a specific Forwarding (Example: 19183)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub forwarding: Option<i64>,
 }
@@ -1043,6 +1291,7 @@ pub struct DelForwardingParams {
 /// Parameters for [`Client::del_ivr`] (wire method `delIVR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelIVRParams {
+    /// ID for a specific IVR (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ivr: Option<i64>,
 }
@@ -1050,8 +1299,10 @@ pub struct DelIVRParams {
 /// Parameters for [`Client::del_location`] (wire method `delLocation`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelLocationParams {
+    /// Internal Extension Location name (Value from getLocations) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Internal Extension Location id (Value from getLocations") (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
 }
@@ -1059,8 +1310,10 @@ pub struct DelLocationParams {
 /// Parameters for [`Client::del_member_from_conference`] (wire method `delMemberFromConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelMemberFromConferenceParams {
+    /// ID for a specific Member (Example: 101) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<i64>,
+    /// ID for a specific Conference (Example: 3829)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
 }
@@ -1068,10 +1321,15 @@ pub struct DelMemberFromConferenceParams {
 /// Parameters for [`Client::del_messages`] (wire method `delMessages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelMessagesParams {
+    /// ID for a specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<i64>,
+    /// Name for specific Folder (Required if message id is passed, Example:
+    /// 'INBOX', values from: getVoicemailFolders)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for specific Voicemail Message (Required if folder is passed,
+    /// Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
 }
@@ -1079,6 +1337,7 @@ pub struct DelMessagesParams {
 /// Parameters for [`Client::del_music_on_hold`] (wire method `delMusicOnHold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelMusicOnHoldParams {
+    /// Music on Hold Name (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
 }
@@ -1086,6 +1345,7 @@ pub struct DelMusicOnHoldParams {
 /// Parameters for [`Client::del_phonebook`] (wire method `delPhonebook`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelPhonebookParams {
+    /// ID for a specific Phonebook (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phonebook: Option<i64>,
 }
@@ -1093,6 +1353,7 @@ pub struct DelPhonebookParams {
 /// Parameters for [`Client::del_phonebook_group`] (wire method `delPhonebookGroup`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelPhonebookGroupParams {
+    /// ID for a specific Phonebook group (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
 }
@@ -1100,6 +1361,7 @@ pub struct DelPhonebookGroupParams {
 /// Parameters for [`Client::del_queue`] (wire method `delQueue`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelQueueParams {
+    /// ID for a specific Queue (Example: 13183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue: Option<i64>,
 }
@@ -1107,6 +1369,7 @@ pub struct DelQueueParams {
 /// Parameters for [`Client::del_recording`] (wire method `delRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelRecordingParams {
+    /// ID for a specific Recording (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<i64>,
 }
@@ -1114,6 +1377,7 @@ pub struct DelRecordingParams {
 /// Parameters for [`Client::del_ring_group`] (wire method `delRingGroup`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelRingGroupParams {
+    /// ID for a specific Ring Group (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ringgroup: Option<i64>,
 }
@@ -1121,6 +1385,7 @@ pub struct DelRingGroupParams {
 /// Parameters for [`Client::del_sip_uri`] (wire method `delSIPURI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelSIPURIParams {
+    /// ID for a specific SIP URI (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sipuri: Option<i64>,
 }
@@ -1128,8 +1393,10 @@ pub struct DelSIPURIParams {
 /// Parameters for [`Client::del_static_member`] (wire method `delStaticMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelStaticMemberParams {
+    /// ID for a specific Member Queue (Example: 1918) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<i64>,
+    /// ID for a specific Queue (Example: 27183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue: Option<i64>,
 }
@@ -1137,6 +1404,7 @@ pub struct DelStaticMemberParams {
 /// Parameters for [`Client::del_sub_account`] (wire method `delSubAccount`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelSubAccountParams {
+    /// ID for a specific Sub Account (Example: 99785)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
 }
@@ -1144,6 +1412,7 @@ pub struct DelSubAccountParams {
 /// Parameters for [`Client::del_time_condition`] (wire method `delTimeCondition`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelTimeConditionParams {
+    /// ID for a specific Time Condition (Example: 19183) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timecondition: Option<i64>,
 }
@@ -1151,6 +1420,7 @@ pub struct DelTimeConditionParams {
 /// Parameters for [`Client::del_voicemail`] (wire method `delVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelVoicemailParams {
+    /// ID for a specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<i64>,
 }
@@ -1158,8 +1428,10 @@ pub struct DelVoicemailParams {
 /// Parameters for [`Client::delete_fax_message`] (wire method `deleteFaxMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DeleteFAXMessageParams {
+    /// ID for a specific Fax Message (Example: 923) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Set to true if testing how cancel a Fax Message
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -1167,6 +1439,7 @@ pub struct DeleteFAXMessageParams {
 /// Parameters for [`Client::delete_mms`] (wire method `deleteMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DeleteMMSParams {
+    /// ID for a specific MMS (Example: 1918) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
 }
@@ -1174,6 +1447,7 @@ pub struct DeleteMMSParams {
 /// Parameters for [`Client::delete_sms`] (wire method `deleteSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DeleteSMSParams {
+    /// ID for a specific SMS (Example: 1918) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
 }
@@ -1181,6 +1455,7 @@ pub struct DeleteSMSParams {
 /// Parameters for [`Client::e911_address_types`] (wire method `e911AddressTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911AddressTypesParams {
+    /// Code for a specific Address Type (Example: Apartment)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
 }
@@ -1188,6 +1463,7 @@ pub struct E911AddressTypesParams {
 /// Parameters for [`Client::e911_cancel`] (wire method `e911Cancel`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911CancelParams {
+    /// DID to be canceled. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -1195,6 +1471,7 @@ pub struct E911CancelParams {
 /// Parameters for [`Client::e911_info`] (wire method `e911Info`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911InfoParams {
+    /// DID with e911 enabled / in process. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -1202,28 +1479,44 @@ pub struct E911InfoParams {
 /// Parameters for [`Client::e911_provision`] (wire method `e911Provision`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911ProvisionParams {
+    /// DID that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Full Name that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full_name: Option<String>,
+    /// Street Number that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_number: Option<i64>,
+    /// Street Name that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_name: Option<String>,
+    /// Address Type that will be sent to the e911 service (Values from
+    /// e911AddressTypes).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_type: Option<String>,
+    /// Address Number that will be sent to the e911 service.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_number: Option<i64>,
+    /// City that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+    /// State / Province that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// Country that will be sent to the e911 service. Value can be US (United
+    /// states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+    /// Language that will be sent to the e911 service. Only available for
+    /// addresses from Canada. Value can be EN (English) or FR (French).
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Additional Address Information that will be sent to the e911 service.
+    /// Only available for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub other_info: Option<String>,
 }
@@ -1231,28 +1524,44 @@ pub struct E911ProvisionParams {
 /// Parameters for [`Client::e911_provision_manually`] (wire method `e911ProvisionManually`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911ProvisionManuallyParams {
+    /// DID that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Full Name that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full_name: Option<String>,
+    /// Street Number that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_number: Option<i64>,
+    /// Street Name that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_name: Option<String>,
+    /// Address Type that will be sent to the e911 service (Values from
+    /// e911AddressTypes).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_type: Option<String>,
+    /// Address Number that will be sent to the e911 service.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_number: Option<i64>,
+    /// City that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+    /// State / Province that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// Country that will be sent to the e911 service. Value can be US (United
+    /// states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+    /// Language that will be sent to the e911 service. Only available for
+    /// addresses from Canada. Value can be EN (English) or FR (French).
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Additional Address Information that will be sent to the e911 service.
+    /// Only available for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub other_info: Option<String>,
 }
@@ -1260,28 +1569,44 @@ pub struct E911ProvisionManuallyParams {
 /// Parameters for [`Client::e911_update`] (wire method `e911Update`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911UpdateParams {
+    /// DID with e911 enabled / in process. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Full Name that will be updated to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full_name: Option<String>,
+    /// Street Number that will be updated to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_number: Option<i64>,
+    /// Street Name that will be updated to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_name: Option<String>,
+    /// Address Type that will be updated to the e911 service (Values from
+    /// e911AddressTypes).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_type: Option<String>,
+    /// Address Number that will be updated to the e911 service.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_number: Option<i64>,
+    /// City that will be updated to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+    /// State / Province that will be updated to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// Country that will be updated to the e911 service. Value can be US
+    /// (United states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+    /// Language that will be updated to the e911 service. Only available for
+    /// addresses from Canada. Value can be EN (English) or FR (French).
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Additional Address Information that will be updated to the e911 service.
+    /// Only available for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub other_info: Option<String>,
 }
@@ -1289,28 +1614,42 @@ pub struct E911UpdateParams {
 /// Parameters for [`Client::e911_validate`] (wire method `e911Validate`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct E911ValidateParams {
+    /// DID with e911 enabled / in process. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Full Name that will be validated. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full_name: Option<String>,
+    /// Street Number that will be validated. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_number: Option<i64>,
+    /// Street Name that will be validated. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street_name: Option<String>,
+    /// Address Type that will be validated (Values from e911AddressTypes).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_type: Option<String>,
+    /// Address Number that will be validated.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_number: Option<i64>,
+    /// City that will be validated. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+    /// State / Province that will be validated. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// Country that will be validated. Value can be US (United states) or CA
+    /// (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+    /// Language that will be validated. Only available for addresses from
+    /// Canada. Value can be EN (English) or FR (French).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Additional Address Information that will be validated. Only available
+    /// for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub other_info: Option<String>,
 }
@@ -1318,6 +1657,7 @@ pub struct E911ValidateParams {
 /// Parameters for [`Client::get_allowed_codecs`] (wire method `getAllowedCodecs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetAllowedCodecsParams {
+    /// Code for a specific Codec (Example: 'ulaw')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub codec: Option<String>,
 }
@@ -1325,6 +1665,7 @@ pub struct GetAllowedCodecsParams {
 /// Parameters for [`Client::get_auth_types`] (wire method `getAuthTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetAuthTypesParams {
+    /// Code for a specific Authorization Type (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
 }
@@ -1332,6 +1673,7 @@ pub struct GetAuthTypesParams {
 /// Parameters for [`Client::get_back_orders`] (wire method `getBackOrders`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetBackOrdersParams {
+    /// ID for a specific backorder DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
 }
@@ -1339,6 +1681,7 @@ pub struct GetBackOrdersParams {
 /// Parameters for [`Client::get_balance`] (wire method `getBalance`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetBalanceParams {
+    /// True for Calls Statistics
     #[serde(skip_serializing_if = "Option::is_none")]
     pub advanced: Option<bool>,
 }
@@ -1346,6 +1689,7 @@ pub struct GetBalanceParams {
 /// Parameters for [`Client::get_balance_management`] (wire method `getBalanceManagement`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetBalanceManagementParams {
+    /// Code for a specific Balance Management Setting (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub balance_management: Option<String>,
 }
@@ -1353,24 +1697,35 @@ pub struct GetBalanceManagementParams {
 /// Parameters for [`Client::get_cdr`] (wire method `getCDR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCDRParams {
+    /// Start Date for Filtering CDR (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// End Date for Filtering CDR (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
+    /// Include Answered Calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub answered: Option<bool>,
+    /// Include NoAnswered calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub noanswer: Option<bool>,
+    /// Include Busy Calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub busy: Option<bool>,
+    /// Include Failed Calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failed: Option<bool>,
+    /// Adjust time of calls according to Timezome (Numeric: -12 to 13)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<f64>,
+    /// Filters CDR by Call Type (Values from getCallTypes)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub calltype: Option<String>,
+    /// Filter CDR by Call Billing (Values from getCallBilling)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callbilling: Option<String>,
+    /// Filter CDR by Account (Values from getCallAccounts)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
@@ -1386,6 +1741,7 @@ pub struct GetCallBillingParams {}
 /// Parameters for [`Client::get_call_huntings`] (wire method `getCallHuntings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallHuntingsParams {
+    /// ID for a specific Call Hunting (Example: 323)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callhunting: Option<i64>,
 }
@@ -1393,6 +1749,7 @@ pub struct GetCallHuntingsParams {
 /// Parameters for [`Client::get_call_parking`] (wire method `getCallParking`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallParkingParams {
+    /// ID for a specific Call Parking (Example: 737)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callparking: Option<i64>,
 }
@@ -1400,8 +1757,11 @@ pub struct GetCallParkingParams {
 /// Parameters for [`Client::get_call_recording`] (wire method `getCallRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallRecordingParams {
+    /// Call Recording (Values from getCallRecordings) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callrecording: Option<String>,
+    /// Main Account or Sub Account related to the call recording (Values from
+    /// getCallRecordings) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
@@ -1409,14 +1769,21 @@ pub struct GetCallRecordingParams {
 /// Parameters for [`Client::get_call_recordings`] (wire method `getCallRecordings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallRecordingsParams {
+    /// Filter Call Recordings by Account (Values from getCallAccounts)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Number of records shown previously, used for pages
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start: Option<i64>,
+    /// Number of records to show
     #[serde(skip_serializing_if = "Option::is_none")]
     pub length: Option<i64>,
+    /// Start Date for Filtering Call Recording (Example:'2018-11-01')
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// End Date for Filtering Call Recording (Example:'2018-12-01') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
 }
@@ -1424,12 +1791,16 @@ pub struct GetCallRecordingsParams {
 /// Parameters for [`Client::get_call_transcriptions`] (wire method `getCallTranscriptions`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallTranscriptionsParams {
+    /// Specific Account (Example: '100001_VoIP') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// End Date for Filtering (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
+    /// Start Date for Filtering (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// Filters by Call Type (Values from getCallTypes)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub call_type: Option<String>,
 }
@@ -1437,6 +1808,7 @@ pub struct GetCallTranscriptionsParams {
 /// Parameters for [`Client::get_call_types`] (wire method `getCallTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallTypesParams {
+    /// ID for a specific Reseller Client (Example: 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
@@ -1444,6 +1816,7 @@ pub struct GetCallTypesParams {
 /// Parameters for [`Client::get_callbacks`] (wire method `getCallbacks`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallbacksParams {
+    /// ID for a specific Callback (Example: 2359)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callback: Option<String>,
 }
@@ -1451,8 +1824,10 @@ pub struct GetCallbacksParams {
 /// Parameters for [`Client::get_caller_id_filtering`] (wire method `getCallerIDFiltering`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCallerIDFilteringParams {
+    /// ID for a specific CallerID Filtering (Example: 18915)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filtering: Option<String>,
+    /// DID for a specific CallerID Filtering (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -1460,6 +1835,7 @@ pub struct GetCallerIDFilteringParams {
 /// Parameters for [`Client::get_carriers`] (wire method `getCarriers`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCarriersParams {
+    /// Code for a specific Carrier (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub carrier: Option<String>,
 }
@@ -1467,6 +1843,7 @@ pub struct GetCarriersParams {
 /// Parameters for [`Client::get_charges`] (wire method `getCharges`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetChargesParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
@@ -1474,6 +1851,7 @@ pub struct GetChargesParams {
 /// Parameters for [`Client::get_client_packages`] (wire method `getClientPackages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetClientPackagesParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
@@ -1481,6 +1859,7 @@ pub struct GetClientPackagesParams {
 /// Parameters for [`Client::get_client_threshold`] (wire method `getClientThreshold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetClientThresholdParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
@@ -1488,6 +1867,9 @@ pub struct GetClientThresholdParams {
 /// Parameters for [`Client::get_clients`] (wire method `getClients`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetClientsParams {
+    /// Parameter could have the following values: * Empty Value [Not Required]
+    /// \* Specific Reseller Client ID (Example: 561115) * Specific Reseller
+    /// Client e-mail (Example: '[email protected]')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
@@ -1495,6 +1877,7 @@ pub struct GetClientsParams {
 /// Parameters for [`Client::get_conference`] (wire method `getConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceParams {
+    /// Code for a specific Conference (Example: 1599)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
 }
@@ -1502,6 +1885,7 @@ pub struct GetConferenceParams {
 /// Parameters for [`Client::get_conference_members`] (wire method `getConferenceMembers`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceMembersParams {
+    /// Code for a specific Member profile (Example: 1599)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<i64>,
 }
@@ -1509,8 +1893,10 @@ pub struct GetConferenceMembersParams {
 /// Parameters for [`Client::get_conference_recording_file`] (wire method `getConferenceRecordingFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceRecordingFileParams {
+    /// ID for a specific Conference (Example: 5356) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
+    /// ID for a specific Conference Recording (Example: 1543338379) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<i64>,
 }
@@ -1518,10 +1904,13 @@ pub struct GetConferenceRecordingFileParams {
 /// Parameters for [`Client::get_conference_recordings`] (wire method `getConferenceRecordings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetConferenceRecordingsParams {
+    /// ID for a specific Conference (Example: 5356) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
+    /// Start Date for Filtering Transactions (Example: '2016-06-03')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// End Date for Filtering Transactions (Example: '2016-06-04')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
 }
@@ -1529,6 +1918,7 @@ pub struct GetConferenceRecordingsParams {
 /// Parameters for [`Client::get_countries`] (wire method `getCountries`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetCountriesParams {
+    /// Code for a specific Country (Example: 'CA')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
 }
@@ -1536,8 +1926,10 @@ pub struct GetCountriesParams {
 /// Parameters for [`Client::get_did_countries`] (wire method `getDIDCountries`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDCountriesParams {
+    /// ID for a specific country (Example: 205)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country_id: Option<String>,
+    /// Type of International DID (Values from getInternationalTypes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
 }
@@ -1545,8 +1937,10 @@ pub struct GetDIDCountriesParams {
 /// Parameters for [`Client::get_dids_can`] (wire method `getDIDsCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsCANParams {
+    /// Canadian Province (Values from getProvinces) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub province: Option<String>,
+    /// Canadian Ratecenter (Values from getRateCentersCAN)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ratecenter: Option<String>,
 }
@@ -1554,8 +1948,12 @@ pub struct GetDIDsCANParams {
 /// Parameters for [`Client::get_dids_info`] (wire method `getDIDsInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInfoParams {
+    /// Parameter could have the following values: * Empty Value [Not Required]
+    /// \* Specific Reseller Client ID (Example: 561115) * Specific Sub Account
+    /// (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
+    /// DID from Client or Sub Account (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -1563,6 +1961,7 @@ pub struct GetDIDsInfoParams {
 /// Parameters for [`Client::get_dids_international_geographic`] (wire method `getDIDsInternationalGeographic`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInternationalGeographicParams {
+    /// ID for a specific Country (Values from getDIDCountries) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country_id: Option<String>,
 }
@@ -1570,6 +1969,7 @@ pub struct GetDIDsInternationalGeographicParams {
 /// Parameters for [`Client::get_dids_international_national`] (wire method `getDIDsInternationalNational`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInternationalNationalParams {
+    /// ID for a specific Country (Values from getDIDCountries) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country_id: Option<String>,
 }
@@ -1577,6 +1977,7 @@ pub struct GetDIDsInternationalNationalParams {
 /// Parameters for [`Client::get_dids_international_toll_free`] (wire method `getDIDsInternationalTollFree`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsInternationalTollFreeParams {
+    /// ID for a specific Country (Values from getDIDCountries) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country_id: Option<String>,
 }
@@ -1584,8 +1985,10 @@ pub struct GetDIDsInternationalTollFreeParams {
 /// Parameters for [`Client::get_dids_usa`] (wire method `getDIDsUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDsUSAParams {
+    /// United States State (Values from getStates) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// United States Ratecenter (Values from getRateCentersUSA)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ratecenter: Option<String>,
 }
@@ -1593,6 +1996,7 @@ pub struct GetDIDsUSAParams {
 /// Parameters for [`Client::get_did_vpri`] (wire method `getDIDvPRI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDIDvPRIParams {
+    /// Id for specific Vpri (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vpri: Option<String>,
 }
@@ -1600,6 +2004,7 @@ pub struct GetDIDvPRIParams {
 /// Parameters for [`Client::get_disas`] (wire method `getDISAs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDISAsParams {
+    /// ID for a specific DISA (Example: 2114)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disa: Option<String>,
 }
@@ -1607,6 +2012,7 @@ pub struct GetDISAsParams {
 /// Parameters for [`Client::get_dtmf_modes`] (wire method `getDTMFModes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDTMFModesParams {
+    /// Code for a specific DTMF Mode (Example: 'inband')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dtmf_mode: Option<DtmfMode>,
 }
@@ -1614,6 +2020,7 @@ pub struct GetDTMFModesParams {
 /// Parameters for [`Client::get_deposits`] (wire method `getDeposits`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDepositsParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
@@ -1621,6 +2028,7 @@ pub struct GetDepositsParams {
 /// Parameters for [`Client::get_device_types`] (wire method `getDeviceTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetDeviceTypesParams {
+    /// Code for a specific Device Type (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_type: Option<String>,
 }
@@ -1642,6 +2050,7 @@ pub struct GetFAXFoldersParams {
 /// Parameters for [`Client::get_fax_message_pdf`] (wire method `getFaxMessagePDF`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXMessagePDFParams {
+    /// ID of the Fax Message requested (Values from getFaxMessages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
 }
@@ -1649,12 +2058,18 @@ pub struct GetFAXMessagePDFParams {
 /// Parameters for [`Client::get_fax_messages`] (wire method `getFaxMessages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXMessagesParams {
+    /// Start Date for Filtering Fax Messages (Example: '2014-03-30') - Default
+    /// value: Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
+    /// End Date for Filtering Fax Messages (Example: '2014-03-30') - Default
+    /// value: Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
+    /// Name of specific Fax Folder (Example: SENT) - Default value: ALL
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for a Specific Fax Message (Example: 23434)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
 }
@@ -1662,6 +2077,8 @@ pub struct GetFAXMessagesParams {
 /// Parameters for [`Client::get_fax_numbers_info`] (wire method `getFaxNumbersInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXNumbersInfoParams {
+    /// Fax Number to retrieves the information of a single number, or not send
+    /// if you want retrieves the information of all your Fax Numbers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<i64>,
 }
@@ -1669,6 +2086,8 @@ pub struct GetFAXNumbersInfoParams {
 /// Parameters for [`Client::get_fax_numbers_portability`] (wire method `getFaxNumbersPortability`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXNumbersPortabilityParams {
+    /// DID Number to be ported into our network (Example: 5552341234)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<i64>,
 }
@@ -1676,6 +2095,7 @@ pub struct GetFAXNumbersPortabilityParams {
 /// Parameters for [`Client::get_fax_provinces`] (wire method `getFaxProvinces`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXProvincesParams {
+    /// CODE for a specific Province (Example: AB)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub province: Option<String>,
 }
@@ -1683,6 +2103,7 @@ pub struct GetFAXProvincesParams {
 /// Parameters for [`Client::get_fax_rate_centers_can`] (wire method `getFaxRateCentersCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXRateCentersCANParams {
+    /// Province two letters code (Example: AB) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub province: Option<String>,
 }
@@ -1690,6 +2111,7 @@ pub struct GetFAXRateCentersCANParams {
 /// Parameters for [`Client::get_fax_rate_centers_usa`] (wire method `getFaxRateCentersUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXRateCentersUSAParams {
+    /// Province two letters code (Example: AL) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
 }
@@ -1697,6 +2119,7 @@ pub struct GetFAXRateCentersUSAParams {
 /// Parameters for [`Client::get_fax_states`] (wire method `getFaxStates`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetFAXStatesParams {
+    /// CODE for a specific State (Example: AL)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
 }
@@ -1704,6 +2127,7 @@ pub struct GetFAXStatesParams {
 /// Parameters for [`Client::get_forwardings`] (wire method `getForwardings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetForwardingsParams {
+    /// ID for a specific Forwarding (Example: 18635)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub forwarding: Option<String>,
 }
@@ -1715,6 +2139,7 @@ pub struct GetIPParams {}
 /// Parameters for [`Client::get_ivrs`] (wire method `getIVRs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetIVRsParams {
+    /// ID for a specific IVR (Example: 4636)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ivr: Option<String>,
 }
@@ -1722,6 +2147,7 @@ pub struct GetIVRsParams {
 /// Parameters for [`Client::get_international_types`] (wire method `getInternationalTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetInternationalTypesParams {
+    /// Code for a specific International Type (Example: 'NATIONAL')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
 }
@@ -1729,6 +2155,7 @@ pub struct GetInternationalTypesParams {
 /// Parameters for [`Client::get_join_when_empty_types`] (wire method `getJoinWhenEmptyTypes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetJoinWhenEmptyTypesParams {
+    /// Code for a specific 'JoinWhenEmpty' Type (Example: 'yes')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
 }
@@ -1736,6 +2163,7 @@ pub struct GetJoinWhenEmptyTypesParams {
 /// Parameters for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPAttachParams {
+    /// ID of the invoice (attachment) previously uploaded. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attachid: Option<i64>,
 }
@@ -1743,6 +2171,7 @@ pub struct GetLNPAttachParams {
 /// Parameters for [`Client::get_lnp_attach_list`] (wire method `getLNPAttachList`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPAttachListParams {
+    /// ID of the port previously created. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portid: Option<i64>,
 }
@@ -1750,6 +2179,7 @@ pub struct GetLNPAttachListParams {
 /// Parameters for [`Client::get_lnp_details`] (wire method `getLNPDetails`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPDetailsParams {
+    /// ID of the port previously created. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portid: Option<i64>,
 }
@@ -1757,12 +2187,17 @@ pub struct GetLNPDetailsParams {
 /// Parameters for [`Client::get_lnp_list`] (wire method `getLNPList`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPListParams {
+    /// ID of the port previously created. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portid: Option<i64>,
+    /// Status code to filtering Ports. Example: precessing. (You can use the
+    /// values returned by the method getLNPListStatus)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portStatus: Option<String>,
+    /// Start Date for filtering Ports. (Example: '2014-03-30')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub startDate: Option<String>,
+    /// End Date for filtering Ports. (Example: '2014-03-30')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endDate: Option<String>,
 }
@@ -1774,6 +2209,7 @@ pub struct GetLNPListStatusParams {}
 /// Parameters for [`Client::get_lnp_notes`] (wire method `getLNPNotes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPNotesParams {
+    /// ID of the port previously created. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portid: Option<i64>,
 }
@@ -1781,6 +2217,7 @@ pub struct GetLNPNotesParams {
 /// Parameters for [`Client::get_lnp_status`] (wire method `getLNPStatus`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLNPStatusParams {
+    /// ID of the port previously created. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub portid: Option<i64>,
 }
@@ -1788,6 +2225,7 @@ pub struct GetLNPStatusParams {
 /// Parameters for [`Client::get_languages`] (wire method `getLanguages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLanguagesParams {
+    /// Code for a specific Language (Example: 'en')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
 }
@@ -1795,6 +2233,7 @@ pub struct GetLanguagesParams {
 /// Parameters for [`Client::get_locales`] (wire method `getLocales`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLocalesParams {
+    /// Code for a specific Locale Code (Example: 'en-US')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locale: Option<String>,
 }
@@ -1806,6 +2245,7 @@ pub struct GetLocationsParams {}
 /// Parameters for [`Client::get_lock_international`] (wire method `getLockInternational`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetLockInternationalParams {
+    /// Code for a specific Lock International Mode (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_international: Option<String>,
 }
@@ -1813,22 +2253,34 @@ pub struct GetLockInternationalParams {
 /// Parameters for [`Client::get_mms`] (wire method `getMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetMMSParams {
+    /// ID for a specific MMS (Example: 1918)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mms: Option<i64>,
+    /// Start Date for Filtering MMSs (Example: '2014-03-30') - Default value:
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
+    /// End Date for Filtering MMSs (Example: '2014-03-30') - Default value:
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
+    /// Filter MMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// DID number for Filtering MMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Contact number for Filtering MMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contact: Option<String>,
+    /// Number of records to be displayed (Example: 20) - Default value: 50
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
+    /// Adjust time of MMSs according to Timezome (Numeric: -12 to 13)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+    /// Filter to recive all MMSs and SMSs, 1 recive all SMS and MMS, 0 if only
+    /// need MMS, important: the sms ID must be 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all_messages: Option<i64>,
 }
@@ -1836,8 +2288,11 @@ pub struct GetMMSParams {
 /// Parameters for [`Client::get_media_mms`] (wire method `getMediaMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetMediaMMSParams {
+    /// ID for a specific MMS (Example: 1918)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Return the list of media attachments as an Array if the value is 1 or as
+    /// a JSON Object if the value is 0 (Default: 0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media_as_array: Option<i64>,
 }
@@ -1845,6 +2300,7 @@ pub struct GetMediaMMSParams {
 /// Parameters for [`Client::get_music_on_hold`] (wire method `getMusicOnHold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetMusicOnHoldParams {
+    /// Code for a specific Music on Hold (Example: 'jazz')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
 }
@@ -1852,6 +2308,7 @@ pub struct GetMusicOnHoldParams {
 /// Parameters for [`Client::get_nat`] (wire method `getNAT`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetNATParams {
+    /// Code for a specific NAT Option (Example: 'route')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nat: Option<Nat>,
 }
@@ -1859,6 +2316,7 @@ pub struct GetNATParams {
 /// Parameters for [`Client::get_packages`] (wire method `getPackages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPackagesParams {
+    /// Code for a specific Package (Example: 8378)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,
 }
@@ -1866,12 +2324,16 @@ pub struct GetPackagesParams {
 /// Parameters for [`Client::get_phonebook`] (wire method `getPhonebook`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPhonebookParams {
+    /// ID for a specific Phonebook entry (Example: 32207)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phonebook: Option<String>,
+    /// Name to be searched in database (Example: 'jane')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// ID for a specific Phonebook group
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
+    /// Group Name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group_name: Option<String>,
 }
@@ -1879,8 +2341,10 @@ pub struct GetPhonebookParams {
 /// Parameters for [`Client::get_phonebook_groups`] (wire method `getPhonebookGroups`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPhonebookGroupsParams {
+    /// Group Name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// ID for a specific Phonebook group
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
 }
@@ -1888,6 +2352,7 @@ pub struct GetPhonebookGroupsParams {
 /// Parameters for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPlayInstructionsParams {
+    /// Code for a specific Play Instructions setting (Example: 'u')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub play_instructions: Option<PlayInstructions>,
 }
@@ -1895,6 +2360,8 @@ pub struct GetPlayInstructionsParams {
 /// Parameters for [`Client::get_portability`] (wire method `getPortability`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetPortabilityParams {
+    /// DID Number to be ported into our network (Example: 5552341234)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -1902,6 +2369,7 @@ pub struct GetPortabilityParams {
 /// Parameters for [`Client::get_protocols`] (wire method `getProtocols`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetProtocolsParams {
+    /// Code for a specific Protocol (Example: 3)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<String>,
 }
@@ -1913,6 +2381,7 @@ pub struct GetProvincesParams {}
 /// Parameters for [`Client::get_queues`] (wire method `getQueues`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetQueuesParams {
+    /// ID for a specific Queue (Example: 4764)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue: Option<String>,
 }
@@ -1920,6 +2389,7 @@ pub struct GetQueuesParams {
 /// Parameters for [`Client::get_rate_centers_can`] (wire method `getRateCentersCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRateCentersCANParams {
+    /// Canadian Province (Values from getProvinces) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub province: Option<String>,
 }
@@ -1927,6 +2397,7 @@ pub struct GetRateCentersCANParams {
 /// Parameters for [`Client::get_rate_centers_usa`] (wire method `getRateCentersUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRateCentersUSAParams {
+    /// United States State (Values from getStates) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
 }
@@ -1934,8 +2405,10 @@ pub struct GetRateCentersUSAParams {
 /// Parameters for [`Client::get_rates`] (wire method `getRates`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRatesParams {
+    /// ID for a specific Package (Example: 92364) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,
+    /// Query for searching rates (Example: 'Canada') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
 }
@@ -1943,6 +2416,7 @@ pub struct GetRatesParams {
 /// Parameters for [`Client::get_recording_file`] (wire method `getRecordingFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRecordingFileParams {
+    /// ID for a specific Recording (Example: 7567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<String>,
 }
@@ -1950,6 +2424,7 @@ pub struct GetRecordingFileParams {
 /// Parameters for [`Client::get_recordings`] (wire method `getRecordings`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRecordingsParams {
+    /// ID for a specific Recording (Example: 7567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<String>,
 }
@@ -1957,6 +2432,7 @@ pub struct GetRecordingsParams {
 /// Parameters for [`Client::get_registration_status`] (wire method `getRegistrationStatus`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRegistrationStatusParams {
+    /// Specific Account (Example: '100001_VoIP') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
@@ -1964,6 +2440,7 @@ pub struct GetRegistrationStatusParams {
 /// Parameters for [`Client::get_report_estimated_hold_time`] (wire method `getReportEstimatedHoldTime`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetReportEstimatedHoldTimeParams {
+    /// Code for a specific 'ReportEstimatedHoldTime' Type (Example: 'yes')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
 }
@@ -1971,6 +2448,7 @@ pub struct GetReportEstimatedHoldTimeParams {
 /// Parameters for [`Client::get_reseller_balance`] (wire method `getResellerBalance`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetResellerBalanceParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
 }
@@ -1978,26 +2456,38 @@ pub struct GetResellerBalanceParams {
 /// Parameters for [`Client::get_reseller_cdr`] (wire method `getResellerCDR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetResellerCDRParams {
+    /// Start Date for Filtering CDR (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// End Date for Filtering CDR (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
+    /// Include Answered Calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub answered: Option<bool>,
+    /// Include NoAnswered calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub noanswer: Option<bool>,
+    /// Include Busy Calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub busy: Option<bool>,
+    /// Include Failed Calls to CDR (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failed: Option<bool>,
+    /// Adjust time of calls according to Timezome (Numeric: -12 to 13)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<f64>,
+    /// Filters CDR by Call Type (Values from getCallTypes)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub calltype: Option<String>,
+    /// Filter CDR by Call Billing (Values from getCallBilling)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callbilling: Option<String>,
+    /// Filter CDR by Account (Values from getCallAccounts)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
@@ -2009,20 +2499,32 @@ pub struct GetResellerMMSParams {
     pub mms: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
+    /// Start Date for Filtering SMSs (Example: '2014-03-30') - Default value:
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
+    /// End Date for Filtering MMSs (Example: '2014-03-30') - Default value:
+    /// Todayclient => [Required] ID for a specific Reseller Client (Example:
+    /// 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
+    /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// DID number for Filtering MMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Contact number for Filtering MMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contact: Option<String>,
+    /// Number of records to be displayed (Example: 20) - Default value: 50
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
+    /// Adjust time of MMSs according to Timezome (Numeric: -12 to 13)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+    /// Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only
+    /// need SMS, important: the sms ID must be 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all_messages: Option<i64>,
 }
@@ -2030,24 +2532,37 @@ pub struct GetResellerMMSParams {
 /// Parameters for [`Client::get_reseller_sms`] (wire method `getResellerSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetResellerSMSParams {
+    /// ID for a specific SMS (Example: 5853)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
+    /// Start Date for Filtering SMSs (Example: '2014-03-30') - Default value:
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
+    /// End Date for Filtering SMSs (Example: '2014-03-30') - Default value:
+    /// Todayclient => [Required] ID for a specific Reseller Client (Example:
+    /// 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
+    /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// DID number for Filtering SMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Contact number for Filtering SMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contact: Option<String>,
+    /// Number of records to be displayed (Example: 20) - Default value: 50
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
+    /// Adjust time of SMSs according to Timezome (Numeric: -12 to 13)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+    /// Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only
+    /// need SMS, important: the sms ID must be 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all_messages: Option<i64>,
 }
@@ -2055,6 +2570,7 @@ pub struct GetResellerSMSParams {
 /// Parameters for [`Client::get_ring_groups`] (wire method `getRingGroups`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRingGroupsParams {
+    /// ID for a specific Ring Group (Example: 4768)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ring_group: Option<String>,
 }
@@ -2062,6 +2578,7 @@ pub struct GetRingGroupsParams {
 /// Parameters for [`Client::get_ring_strategies`] (wire method `getRingStrategies`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRingStrategiesParams {
+    /// ID for a specific Ring Strategy (Example: 'rrmemory')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub strategy: Option<String>,
 }
@@ -2069,6 +2586,7 @@ pub struct GetRingStrategiesParams {
 /// Parameters for [`Client::get_routes`] (wire method `getRoutes`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetRoutesParams {
+    /// Code for a specific Route (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub route: Option<String>,
 }
@@ -2076,6 +2594,7 @@ pub struct GetRoutesParams {
 /// Parameters for [`Client::get_sip_uris`] (wire method `getSIPURIs`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetSIPURIsParams {
+    /// ID for a specific SIP URI (Example: 6199)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sipuri: Option<String>,
 }
@@ -2083,22 +2602,34 @@ pub struct GetSIPURIsParams {
 /// Parameters for [`Client::get_sms`] (wire method `getSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetSMSParams {
+    /// ID for a specific SMS (Example: 5853)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms: Option<i64>,
+    /// Start Date for Filtering SMSs (Example: '2014-03-30') - Default value:
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
+    /// End Date for Filtering SMSs (Example: '2014-03-30') - Default value:
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
+    /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// DID number for Filtering SMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Contact number for Filtering SMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contact: Option<String>,
+    /// Number of records to be displayed (Example: 20) - Default value: 50
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
+    /// Adjust time of SMSs according to Timezome (Numeric: -12 to 13)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+    /// Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only
+    /// need SMS, important: the sms ID must be 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all_messages: Option<i64>,
 }
@@ -2106,6 +2637,7 @@ pub struct GetSMSParams {
 /// Parameters for [`Client::get_servers_info`] (wire method `getServersInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetServersInfoParams {
+    /// POP for a specific Server (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_pop: Option<String>,
 }
@@ -2117,8 +2649,11 @@ pub struct GetStatesParams {}
 /// Parameters for [`Client::get_static_members`] (wire method `getStaticMembers`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetStaticMembersParams {
+    /// ID for a specific Queue (Example: 4136) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue: Option<String>,
+    /// ID for a specific Static Member (Example: 163) - The Member must belong
+    /// to the queue provided
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<String>,
 }
@@ -2126,6 +2661,9 @@ pub struct GetStaticMembersParams {
 /// Parameters for [`Client::get_sub_accounts`] (wire method `getSubAccounts`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetSubAccountsParams {
+    /// Parameter could have the following values: * Empty Value [Not Required]
+    /// \* Specific Sub Account (Example: '100000_VoIP') * Specific Reseller
+    /// Client ID (Example: 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
 }
@@ -2133,8 +2671,10 @@ pub struct GetSubAccountsParams {
 /// Parameters for [`Client::get_termination_rates`] (wire method `getTerminationRates`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTerminationRatesParams {
+    /// Query for searching rates (Example: 'Canada') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
+    /// Route Code (Values from getRoutes)(Example: '2') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub route: Option<i64>,
 }
@@ -2142,6 +2682,7 @@ pub struct GetTerminationRatesParams {
 /// Parameters for [`Client::get_time_conditions`] (wire method `getTimeConditions`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTimeConditionsParams {
+    /// ID for a specific Time Condition (Example: 1830)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timecondition: Option<i64>,
 }
@@ -2149,6 +2690,7 @@ pub struct GetTimeConditionsParams {
 /// Parameters for [`Client::get_timezones`] (wire method `getTimezones`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTimezonesParams {
+    /// Code for a specific Time Zone (Example: 'America/Buenos_Aires')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
 }
@@ -2156,8 +2698,10 @@ pub struct GetTimezonesParams {
 /// Parameters for [`Client::get_transaction_history`] (wire method `getTransactionHistory`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetTransactionHistoryParams {
+    /// Start Date for Filtering Transactions (Example: '2016-06-03') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// End Date for Filtering Transactions (Example: '2016-06-04') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
 }
@@ -2169,6 +2713,7 @@ pub struct GetVPRIsParams {}
 /// Parameters for [`Client::get_voicemail_attachment_formats`] (wire method `getVoicemailAttachmentFormats`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailAttachmentFormatsParams {
+    /// ID for a specific attachment format (Example: wav49)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_attachment_format: Option<EmailAttachmentFormat>,
 }
@@ -2176,6 +2721,7 @@ pub struct GetVoicemailAttachmentFormatsParams {
 /// Parameters for [`Client::get_voicemail_folders`] (wire method `getVoicemailFolders`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailFoldersParams {
+    /// Folder Name (Example: 'INBOX')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
 }
@@ -2183,10 +2729,14 @@ pub struct GetVoicemailFoldersParams {
 /// Parameters for [`Client::get_voicemail_message_file`] (wire method `getVoicemailMessageFile`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailMessageFileParams {
+    /// ID for specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
+    /// Name for specific Folder (Example: 'INBOX', values from:
+    /// getVoicemailFolders) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
 }
@@ -2194,12 +2744,17 @@ pub struct GetVoicemailMessageFileParams {
 /// Parameters for [`Client::get_voicemail_messages`] (wire method `getVoicemailMessages`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailMessagesParams {
+    /// ID for specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
+    /// Name for specific Folder (Example: 'INBOX', values from:
+    /// getVoicemailFolders)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// Start Date for Filtering Voicemail Messages (Example: '2016-01-30')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// End Date for Filtering Voicemail Messages (Example: '2016-01-30')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
 }
@@ -2207,6 +2762,7 @@ pub struct GetVoicemailMessagesParams {
 /// Parameters for [`Client::get_voicemail_setups`] (wire method `getVoicemailSetups`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailSetupsParams {
+    /// ID for a specific Voicemail Setup (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemailsetup: Option<String>,
 }
@@ -2216,12 +2772,17 @@ pub struct GetVoicemailSetupsParams {
 pub struct GetVoicemailTranscriptionsParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// ID for specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
+    /// End Date for Filtering (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
+    /// Start Date for Filtering (Example: '2010-11-30') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<String>,
+    /// Name for specific Folder (Example: 'INBOX', values from:
+    /// getVoicemailFolders) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
 }
@@ -2229,6 +2790,7 @@ pub struct GetVoicemailTranscriptionsParams {
 /// Parameters for [`Client::get_voicemails`] (wire method `getVoicemails`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetVoicemailsParams {
+    /// ID for specific Mailbox (Example: 1001)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
 }
@@ -2236,8 +2798,10 @@ pub struct GetVoicemailsParams {
 /// Parameters for [`Client::mail_fax_message_pdf`] (wire method `mailFaxMessagePDF`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MailFAXMessagePDFParams {
+    /// ID of the Fax Message requested (Values from getFaxMessages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Destination email adreess (example: [email protected]) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
@@ -2245,12 +2809,18 @@ pub struct MailFAXMessagePDFParams {
 /// Parameters for [`Client::mark_listened_voicemail_message`] (wire method `markListenedVoicemailMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MarkListenedVoicemailMessageParams {
+    /// ID for specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
+    /// Name for specific Folder (Example: 'INBOX', values from:
+    /// getVoicemailFolders) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
+    /// Code for mark voicemail as listened or not-listened (Values: 'yes'/'no')
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub listened: Option<String>,
 }
@@ -2258,12 +2828,18 @@ pub struct MarkListenedVoicemailMessageParams {
 /// Parameters for [`Client::mark_urgent_voicemail_message`] (wire method `markUrgentVoicemailMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MarkUrgentVoicemailMessageParams {
+    /// ID for specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
+    /// Name for specific Folder (Example: 'INBOX', values from:
+    /// getVoicemailFolders) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
+    /// Code for mark voicemail as urgent or not-urgent (Values: 'yes'/'no')
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub urgent: Option<String>,
 }
@@ -2271,10 +2847,13 @@ pub struct MarkUrgentVoicemailMessageParams {
 /// Parameters for [`Client::move_fax_message`] (wire method `moveFaxMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MoveFAXMessageParams {
+    /// ID of the Fax Message requested (Values from getFaxMessages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fax_id: Option<i64>,
+    /// ID of the destination Fax Folder (Values from getFaxFolders) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder_id: Option<i64>,
+    /// Set to true if testing how to move a Fax Message
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -2282,12 +2861,18 @@ pub struct MoveFAXMessageParams {
 /// Parameters for [`Client::move_folder_voicemail_message`] (wire method `moveFolderVoicemailMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct MoveFolderVoicemailMessageParams {
+    /// ID for specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
+    /// Name for specific Folder (Example: 'INBOX', values from:
+    /// getVoicemailFolders) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
+    /// Destination Folder (Example: 'Urgent', values from: getVoicemailFolders)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub new_folder: Option<String>,
 }
@@ -2295,38 +2880,70 @@ pub struct MoveFolderVoicemailMessageParams {
 /// Parameters for [`Client::order_did`] (wire method `orderDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDParams {
+    /// DID to be Ordered (Example: 5552223333) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<i64>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<i64>,
+    /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<String>,
+    /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<String>,
+    /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -2334,40 +2951,74 @@ pub struct OrderDIDParams {
 /// Parameters for [`Client::order_did_international_geographic`] (wire method `orderDIDInternationalGeographic`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDInternationalGeographicParams {
+    /// ID for a specific International Location (Values from
+    /// getDIDsInternationalGeographic) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location_id: Option<String>,
+    /// Number of dids to be purchased (Example: 2) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<String>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<i64>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<String>,
+    /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<String>,
+    /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -2375,40 +3026,74 @@ pub struct OrderDIDInternationalGeographicParams {
 /// Parameters for [`Client::order_did_international_national`] (wire method `orderDIDInternationalNational`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDInternationalNationalParams {
+    /// ID for a specific International Location (Values from
+    /// getDIDsInternationalNational) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location_id: Option<String>,
+    /// Number of dids to be purchased (Example: 2) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<String>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<i64>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<String>,
+    /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<String>,
+    /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -2416,38 +3101,71 @@ pub struct OrderDIDInternationalNationalParams {
 /// Parameters for [`Client::order_did_international_toll_free`] (wire method `orderDIDInternationalTollFree`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDInternationalTollFreeParams {
+    /// ID for a specific International Location (Values from
+    /// getDIDsInternationalTollFree) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location_id: Option<String>,
+    /// Number of dids to be purchased (Example: 2) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<String>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<String>,
+    /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<String>,
+    /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -2455,36 +3173,67 @@ pub struct OrderDIDInternationalTollFreeParams {
 /// Parameters for [`Client::order_did_virtual`] (wire method `orderDIDVirtual`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderDIDVirtualParams {
+    /// Three Digits for the new Virtual DID (Example: 001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digits: Option<i64>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<String>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<String>,
+    /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<String>,
+    /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -2492,22 +3241,37 @@ pub struct OrderDIDVirtualParams {
 /// Parameters for [`Client::order_fax_number`] (wire method `orderFaxNumber`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderFAXNumberParams {
+    /// Location ID of the Fax Number (Values from
+    /// getFaxRateCentersCAN/getFaxRateCentersUSA) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<i64>,
+    /// Quantity of Fax Numbers to order (Example: 3) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<i64>,
+    /// Email address where send notifications when receive Fax Messages -
+    /// (Example: [email protected])
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
+    /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_enable: Option<String>,
+    /// Flag to enable attach the Fax Message as a PDF file in the
+    /// notifications. - (Values: 1 = true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_attach_file: Option<String>,
+    /// URL where make a POST when you receive a Fax Message.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
+    /// Flag to enable the URL Callback functionality. - (Values: 1 = true, 0 =
+    /// false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_enable: Option<String>,
+    /// Flag to enable retry the POST action in case we don't receive "ok".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_retry: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -2515,36 +3279,67 @@ pub struct OrderFAXNumberParams {
 /// Parameters for [`Client::order_toll_free`] (wire method `orderTollFree`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderTollFreeParams {
+    /// DID to be Ordered (Example: 8772223333) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<i64>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<String>,
+    /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<String>,
+    /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -2552,38 +3347,70 @@ pub struct OrderTollFreeParams {
 /// Parameters for [`Client::order_vanity`] (wire method `orderVanity`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct OrderVanityParams {
+    /// DID to be Ordered (Example: 8772223333) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID (Example: 5) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<i64>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Carrier for the DID (Values from getCarriers) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub carrier: Option<i64>,
+    /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<String>,
+    /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup: Option<String>,
+    /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minute: Option<String>,
+    /// Set to true if testing how Orders work - Orders can not be undone - When
+    /// testing, no Orders are made routing, failover_busy, failover_unreachable
+    /// and failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<bool>,
 }
@@ -2591,8 +3418,10 @@ pub struct OrderVanityParams {
 /// Parameters for [`Client::remove_did_vpri`] (wire method `removeDIDvPRI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct RemoveDIDvPRIParams {
+    /// Id for specific Vpri
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vpri: Option<i64>,
+    /// DID Number to be remove from our Vpri (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -2600,10 +3429,13 @@ pub struct RemoveDIDvPRIParams {
 /// Parameters for [`Client::search_dids_can`] (wire method `searchDIDsCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchDIDsCANParams {
+    /// Canadian Province (Values from getProvinces)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub province: Option<String>,
+    /// Type of search (Values: 'starts', 'contains', 'ends') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// Query for searching (Examples: 'JOHN', '555', '123ABC') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
 }
@@ -2611,10 +3443,13 @@ pub struct SearchDIDsCANParams {
 /// Parameters for [`Client::search_dids_usa`] (wire method `searchDIDsUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchDIDsUSAParams {
+    /// United States State (Values from getStates)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// Type of search (Values: 'starts', 'contains', 'ends') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// Query for searching (Examples: 'JOHN', '555', '123ABC') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
 }
@@ -2622,6 +3457,8 @@ pub struct SearchDIDsUSAParams {
 /// Parameters for [`Client::search_fax_area_code_can`] (wire method `searchFaxAreaCodeCAN`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchFAXAreaCodeCANParams {
+    /// Area code number, as the initial of the Fax Number you looking for.
+    /// (values from getFaxRateCentersCAN) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub area_code: Option<i64>,
 }
@@ -2629,6 +3466,8 @@ pub struct SearchFAXAreaCodeCANParams {
 /// Parameters for [`Client::search_fax_area_code_usa`] (wire method `searchFaxAreaCodeUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchFAXAreaCodeUSAParams {
+    /// Area code number, as the initial of the Fax Number you looking for.
+    /// (values from getFaxRateCentersUSA) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub area_code: Option<i64>,
 }
@@ -2636,8 +3475,10 @@ pub struct SearchFAXAreaCodeUSAParams {
 /// Parameters for [`Client::search_toll_free_can_us`] (wire method `searchTollFreeCanUS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchTollFreeCANUSParams {
+    /// Type of search (Values: 'starts', 'contains', 'ends')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// Query for searching (Examples: 'JOHN', '555', '123ABC')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
 }
@@ -2645,8 +3486,10 @@ pub struct SearchTollFreeCANUSParams {
 /// Parameters for [`Client::search_toll_free_usa`] (wire method `searchTollFreeUSA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchTollFreeUSAParams {
+    /// Type of search (Values: 'starts', 'contains', 'ends')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// Query for searching (Examples: 'JOHN', '555', '123ABC')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
 }
@@ -2654,8 +3497,12 @@ pub struct SearchTollFreeUSAParams {
 /// Parameters for [`Client::search_vanity`] (wire method `searchVanity`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SearchVanityParams {
+    /// Type of Vanity Number Values: '8**', '800', '833', '844', '855', '866',
+    /// '877', '888' (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
+    /// Query for searching : 7 Chars Examples: '***JHON', '**555**', '**HELLO'
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
 }
@@ -2663,10 +3510,14 @@ pub struct SearchVanityParams {
 /// Parameters for [`Client::send_call_recording_email`] (wire method `sendCallRecordingEmail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendCallRecordingEmailParams {
+    /// Call Recording (Values from getCallRecordings) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callrecording: Option<String>,
+    /// Filter Call Recordings by Account (Values from getCallAccounts)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Email to send call recording (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
@@ -2674,20 +3525,30 @@ pub struct SendCallRecordingEmailParams {
 /// Parameters for [`Client::send_fax_message`] (wire method `sendFaxMessage`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendFAXMessageParams {
+    /// Destination DID Number (Example: 5552341234) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to_number: Option<String>,
+    /// Name of the sender (Example: 5552341234) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from_name: Option<String>,
+    /// DID number of the Fax sender (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from_number: Option<String>,
+    /// Flag to enable the send of a copy of your Fax via email. - (Values: 1 =
+    /// true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub send_email_enabled: Option<i64>,
+    /// Email address where you want send a copy of your Fax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub send_email: Option<String>,
+    /// An word to identify a equipment or department sending the Fax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub station_id: Option<String>,
+    /// The file must be encoded in Base64, and in one of the following formats:
+    /// pdf, txt, jpg, gif, png, tif (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<String>,
+    /// Set to true if testing how to send a Fax Message
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -2695,16 +3556,26 @@ pub struct SendFAXMessageParams {
 /// Parameters for [`Client::send_mms`] (wire method `sendMMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendMMSParams {
+    /// DID Numbers which is sending the message (Example: 5551234567)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Destination Number (Example: 5551234568) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dst: Option<String>,
+    /// Message to be sent (Example: 'hello John Smith' max chars: 2048)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
+    /// Url to media file (Example:
+    /// 'https://voip.ms/themes/voipms/assets/img/talent.jpg?v=2' (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media1: Option<String>,
+    /// Base 64 image encode (Example:
+    /// data:image/png;base64,iVBORw0KGgoAAAANSUh...) (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media2: Option<String>,
+    /// Empty value (Example: '' ) (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media3: Option<String>,
 }
@@ -2712,10 +3583,15 @@ pub struct SendMMSParams {
 /// Parameters for [`Client::send_sms`] (wire method `sendSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendSMSParams {
+    /// DID Numbers which is sending the message (Example: 5551234567)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Destination Number (Example: 5551234568) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dst: Option<String>,
+    /// Message to be sent (Example: 'hello John Smith' max chars: 160)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
@@ -2723,12 +3599,17 @@ pub struct SendSMSParams {
 /// Parameters for [`Client::send_voicemail_email`] (wire method `sendVoicemailEmail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SendVoicemailEmailParams {
+    /// ID for specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<String>,
+    /// Name for specific Folder (Example: 'INBOX', values from:
+    /// getVoicemailFolders) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<i64>,
+    /// Destination Email address (Example: [email protected]) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
 }
@@ -2736,22 +3617,35 @@ pub struct SendVoicemailEmailParams {
 /// Parameters for [`Client::set_call_hunting`] (wire method `setCallHunting`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallHuntingParams {
+    /// ID for a specific Call Hunting (Example: 235 / Leave empty to create a
+    /// new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callhunting: Option<i64>,
+    /// Description for the Call Hunting (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Music on Hold Code (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music: Option<String>,
+    /// Recording for the Call Hunting (values from getRecordings) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<String>,
+    /// Language for the Call Hunting (values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// The members will be called in follow or random order (values follow or
+    /// random) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub order: Option<RingGroupOrder>,
+    /// The list of members assigned to the call hunting (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<String>,
+    /// The Maximum amount of time the call will ring the member (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ring_time: Option<String>,
+    /// This option confirm if the member will take the call by pressing 1 *
+    /// ring_time and press parameters need to have the same amount of items as
+    /// the members parameter, one for each member. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub press: Option<String>,
 }
@@ -2759,20 +3653,35 @@ pub struct SetCallHuntingParams {
 /// Parameters for [`Client::set_call_parking`] (wire method `setCallParking`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallParkingParams {
+    /// ID for a specific Call Parking (Example: 235 / Leave empty to create a
+    /// new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callparking: Option<i64>,
+    /// Name for the Call Parking (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// The number of seconds a call will stay parked before it is forwarded to
+    /// the Failover Destination (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout: Option<i64>,
+    /// Music on Hold Code (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music: Option<String>,
+    /// Final destination where the call will be forwarded if it isn&rsquo;t
+    /// answered. (Values: callback, system:hangup, vm:mailbox) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover: Option<String>,
+    /// Language for the Call Parking (values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// The system will make an automatic call to this destination to announce
+    /// the extension of the parked call. (Values: parker, main account or
+    /// sub-accounts) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub destination: Option<String>,
+    /// The number of seconds before the Announce Destination receives an
+    /// automatic call from the system to announce the extension of the parked
+    /// call (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delay: Option<i64>,
 }
@@ -2780,18 +3689,26 @@ pub struct SetCallParkingParams {
 /// Parameters for [`Client::set_callback`] (wire method `setCallback`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallbackParams {
+    /// ID for a specific Callback (Example: 2359 / Leave empty to create a new
+    /// one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callback: Option<String>,
+    /// Description for the Callback (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Number that will be called back (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<i64>,
+    /// Delay befor calling back (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delay_before: Option<i64>,
+    /// Time before hanging up for incomplete input (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_timeout: Option<i64>,
+    /// Time between digits input (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digit_timeout: Option<i64>,
+    /// Caller ID Override for the callback
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_number: Option<String>,
 }
@@ -2799,20 +3716,31 @@ pub struct SetCallbackParams {
 /// Parameters for [`Client::set_caller_id_filtering`] (wire method `setCallerIDFiltering`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetCallerIDFilteringParams {
+    /// ID for a specific Caller ID Filtering (Example: 18915 / Leave empty to
+    /// create a new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<String>,
+    /// Caller ID that triggers the Filter (i = Not North American format, 0 =
+    /// Anonymous, NPANXXXXXX, s or sb or sc = STIR/SHAKEN Attestation Level, p
+    /// = All Phone Book, p:XXXX = Specific Phone Book Group) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid: Option<String>,
+    /// DIDs affected by the filter (all, NPANXXXXXX) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Route the call follows when filter is triggered (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Route the call follows when unreachable
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// Route the call follows when busy
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Route the call follows when noanswer
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Note for the Caller ID Filtering
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
 }
@@ -2820,30 +3748,43 @@ pub struct SetCallerIDFilteringParams {
 /// Parameters for [`Client::set_client`] (wire method `setClient`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetClientParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
+    /// Client's e-mail (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Client's Password (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    /// Client's Company
     #[serde(skip_serializing_if = "Option::is_none")]
     pub company: Option<String>,
+    /// Client's Firstname (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub firstname: Option<String>,
+    /// Client's Lastname (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lastname: Option<String>,
+    /// Client's Address
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address: Option<String>,
+    /// Client's City
     #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+    /// Client's State
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// Client's Country (Values from getCountries)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Client's Zip Code
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+    /// Client's Phone Number (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phone_number: Option<String>,
+    /// Balance Management for Client (Values from getBalanceManagement)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub balance_management: Option<i64>,
 }
@@ -2851,10 +3792,13 @@ pub struct SetClientParams {
 /// Parameters for [`Client::set_client_threshold`] (wire method `setClientThreshold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetClientThresholdParams {
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
+    /// Client's e-mail for balance threshold notification
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Threshold amount between 1 and 250 (Example: 10) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub threshold: Option<i64>,
 }
@@ -2862,56 +3806,102 @@ pub struct SetClientThresholdParams {
 /// Parameters for [`Client::set_conference`] (wire method `setConference`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetConferenceParams {
+    /// ID for a specific Conference (Example: 5356) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
+    /// Conference name (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Conference description (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Conference Members
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<String>,
+    /// Members Max Value (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_members: Option<String>,
+    /// The recording played when a user joins, typically some kind of beep
+    /// sound (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_join: Option<String>,
+    /// The recording played when a user leaves, typically some kind of beep
+    /// sound (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_leave: Option<String>,
+    /// The recording played as a user intro (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_has_joined: Option<String>,
+    /// The recording played as a user leaves the conference (Values from
+    /// getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_has_left: Option<String>,
+    /// The recording played to a user who has been kicked from the conference
+    /// (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_kicked: Option<String>,
+    /// The recording played to a user when the mute option is toggled on
+    /// (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_muted: Option<String>,
+    /// The recording played to a user when the mute option is toggled off
+    /// (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_unmuted: Option<String>,
+    /// The recording played when a user is the only person in the conference
+    /// (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_only_person: Option<String>,
+    /// The recording played to a user when there is only one other person in
+    /// the conference. (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_only_one: Option<String>,
+    /// The recording played when announcing how many users there are in a
+    /// conference. (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_there_are: Option<String>,
+    /// The recording used in conjunction with the There are option, used like
+    /// There are (number of participants) Other in party (Values from
+    /// getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_other_in_party: Option<String>,
+    /// The recording played when a user is placed into a conference that cannot
+    /// start until a marked user enters (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_place_into_conference: Option<String>,
+    /// The recording played when prompting for a conference PIN (Values from
+    /// getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_get_pin: Option<String>,
+    /// The recording played when an invalid PIN is entered too many (3) times
+    /// (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_invalid_pin: Option<String>,
+    /// The recording played to a user trying to join a locked conference
+    /// (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_locked: Option<String>,
+    /// The recording played to an Admin-level user after toggling the
+    /// conference to locked mode (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_locked_now: Option<String>,
+    /// The recording played to an Admin-level user after toggling the
+    /// conference to unlocked mode (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_unlocked_now: Option<String>,
+    /// The recording played when there is an error on the menu. (Values from
+    /// getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_error_menu: Option<String>,
+    /// The recording played when all non-admin participants are muted. (Values
+    /// from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_participants_muted: Option<String>,
+    /// The recording played when all non-admin participants are unmuted.
+    /// (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sound_participants_unmuted: Option<String>,
+    /// Conference Language (Values from getLanguages)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
 }
@@ -2919,40 +3909,73 @@ pub struct SetConferenceParams {
 /// Parameters for [`Client::set_conference_member`] (wire method `setConferenceMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetConferenceMemberParams {
+    /// ID for a specific Member profile (Example: 5356) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<i64>,
+    /// ID for a specific Conference (Example: 5356) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conference: Option<i64>,
+    /// Member name. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Member description.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Assigned PIN.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<i64>,
+    /// Sets if the conference recording when a member joins or leaves will be
+    /// played (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub announce_join_leave: Option<String>,
+    /// Sets if the member is an admin or not (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub admin: Option<String>,
+    /// Sets if the member should start out muted after entering the conference
+    /// (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start_muted: Option<String>,
+    /// Sets if the number of members in the conference should be announced to
+    /// the caller as he joins (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub announce_user_count: Option<String>,
+    /// Sets if the "only user" announcement should be played when a caller
+    /// enters an empty conference (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub announce_only_user: Option<String>,
+    /// Sets whether music on hold (MOH) should be played when only one person
+    /// is in the conference (Values from getMusicOnHold).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub moh_when_empty: Option<String>,
+    /// When set to "yes", enter/leave prompts and user introductions are not
+    /// played (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quiet: Option<String>,
+    /// If set, this recording will be heard only by the user as he joins the
+    /// conference (Values from getRecordings).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub announcement: Option<i64>,
+    /// The system will drop what is detected as silence from entering into the
+    /// conference (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub drop_silence: Option<String>,
+    /// The time, in milliseconds, that a users needs to be sending sound or
+    /// voice before the system can consider them to be talking (allowed values
+    /// are 100, 120, 140, 160, 180, 200, 220, 240 or 250).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub talking_threshold: Option<i64>,
+    /// The time, in milliseconds, that silence needs to be present in the
+    /// user&rsquo;s sound stream before the system can consider it to be in
+    /// fact silent and close the audio (allowed values are 2000, 2100, 2200,
+    /// 2300, 2400, 2500, 2600, 2700, 2800, 2900 or 3000).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub silence_threshold: Option<i64>,
+    /// If set to YES, the conference dashboard will display a notification when
+    /// a participant starts and stops talking (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub talk_detection: Option<String>,
+    /// When set to YES, the system will place a jitter buffer on the caller's
+    /// audio stream before any audio mixing is performed (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub jitter_buffer: Option<String>,
 }
@@ -2960,8 +3983,10 @@ pub struct SetConferenceMemberParams {
 /// Parameters for [`Client::set_did_billing_type`] (wire method `setDIDBillingType`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDBillingTypeParams {
+    /// DID affected by the new billing plan (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<i64>,
 }
@@ -2969,42 +3994,80 @@ pub struct SetDIDBillingTypeParams {
 /// Parameters for [`Client::set_did_info`] (wire method `setDIDInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDInfoParams {
+    /// DID to be Updated (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Main Routing for the DID (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
+    /// Busy Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_busy: Option<crate::Routing>,
+    /// Unreachable Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_unreachable: Option<crate::Routing>,
+    /// NoAnswer Routing for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover_noanswer: Option<crate::Routing>,
+    /// Voicemail for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Point of Presence for the DID ("server_pop" values from getServersInfo.
+    /// Example: 3) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
+    /// Dial Time Out for the DID (Example: 60 -> in seconds) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialtime: Option<i64>,
+    /// CNAM for the DID (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cnam: Option<i64>,
+    /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<String>,
+    /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Port Out PIN protection is used as a means of authorizing outgoing
+    /// portability (only for selected US numbers with the lock icon)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub port_out_pin: Option<i64>,
+    /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<i64>,
+    /// Record Calls (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub record_calls: Option<i64>,
+    /// Enable Call Transcription (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcribe: Option<i64>,
+    /// Transcription locale code (values from getLocales, comma separated for
+    /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
+    /// Call Transcription Email
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_email: Option<String>,
+    /// Call Transcription Delay Seconds between 0 and 60, Increments of 5
+    /// (Example: 10 -> seconds)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_start_delay: Option<i64>,
+    /// Voicemail Threshold Seconds between 0 and 60, Increments of 5 (Example:
+    /// 10 -> seconds) routing, failover_busy, failover_unreachable and
+    /// failover_noanswer can receive values in the following format =>
+    /// header:record_id Where header could be: account, fwd, vm, sip, grp, ivr,
+    /// sys, recording, queue, cb, tc, disa, none. Examples: account Used for
+    /// routing calls to Sub Accounts You can get all sub accounts using the
+    /// getSubAccounts function fwd Used for routing calls to Forwarding
+    /// entries. You can get the ID right after creating a Forwarding with
+    /// setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function sys System
+    /// Options: hangup = Hangup the Call busy = Busy tone noservice = System
+    /// Recording: Number not in service disconnected = System Recording: Number
+    /// has been disconnected dtmf = DTMF Test echo = Sound Quality Test none
+    /// Used to route calls to no action Examples: 'account:100001_VoIP'
+    /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail_threshold: Option<i64>,
 }
@@ -3012,8 +4075,11 @@ pub struct SetDIDInfoParams {
 /// Parameters for [`Client::set_did_pop`] (wire method `setDIDPOP`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDPOPParams {
+    /// DID to be Updated (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Point of Presence for the DID ("server_pop" values from getServersInfo.
+    /// Example: 3) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop: Option<i64>,
 }
@@ -3021,8 +4087,19 @@ pub struct SetDIDPOPParams {
 /// Parameters for [`Client::set_did_routing`] (wire method `setDIDRouting`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDRoutingParams {
+    /// DID to be Updated (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Main Routing for the DID routing can receive values in the following
+    /// format => header:record_id Where header could be: account, fwd, vm, sip,
+    /// grp, ivr, sys, recording, queue, cb, tc, disa, none. Examples: account
+    /// Used for routing calls to Sub Accounts You can get all sub accounts
+    /// using the getSubAccounts function fwd Used for routing calls to
+    /// Forwarding entries. You can get the ID right after creating a Forwarding
+    /// with setForwarding or by requesting all forwardings entries with
+    /// getForwardings. vm Used for routing calls to a Voicemail. You can get
+    /// all voicemails and their IDs using the getVoicemails function Examples:
+    /// 'account:100001_VoIP' 'fwd:1026' 'vm:101' (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
 }
@@ -3030,8 +4107,10 @@ pub struct SetDIDRoutingParams {
 /// Parameters for [`Client::set_did_voicemail`] (wire method `setDIDVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDIDVoicemailParams {
+    /// DID to be Updated (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Mailbox for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
 }
@@ -3039,16 +4118,22 @@ pub struct SetDIDVoicemailParams {
 /// Parameters for [`Client::set_disa`] (wire method `setDISA`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetDISAParams {
+    /// ID for a specific DISA (Example: 2114 / Leave empty to create a new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disa: Option<String>,
+    /// Name for the DISA (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Password for the DISA (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<i64>,
+    /// Time between digits (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digit_timeout: Option<i64>,
+    /// Caller ID Override for the DISA
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_override: Option<String>,
+    /// Language for the DISA (en, fr, es)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
 }
@@ -3056,18 +4141,30 @@ pub struct SetDISAParams {
 /// Parameters for [`Client::set_email_to_fax`] (wire method `setEmailToFax`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetEmailToFAXParams {
+    /// [Only for updates] ID of the "Email to Fax" to edit (Values from
+    /// getEmailToFax)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// If Enable, we will send Fax Message when we receive an email from the
+    /// provided address. (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<i64>,
+    /// Email address from you will sent Fax Messages (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_email: Option<String>,
+    /// Fax number that will appear as fax sender. (values from
+    /// getFaxNumbersInfo) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from_number_id: Option<String>,
+    /// If Enable, we will check the mail subject if this include a Security
+    /// Code before send the Fax. (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub security_code_enabled: Option<i64>,
+    /// An alphanumeric code to identify your emails before send as Fax.
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub security_code: Option<String>,
+    /// Set to true if testing.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -3075,10 +4172,14 @@ pub struct SetEmailToFAXParams {
 /// Parameters for [`Client::set_fax_folder`] (wire method `setFaxFolder`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXFolderParams {
+    /// [Only for updates] ID of the Fax Folder to edit (Values from
+    /// getFaxFolders)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Name of the Fax Folder to create or update (Example: FAMILY) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Set to true if testing how to create/update a Fax Folder
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -3086,14 +4187,23 @@ pub struct SetFAXFolderParams {
 /// Parameters for [`Client::set_fax_number_email`] (wire method `setFaxNumberEmail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXNumberEmailParams {
+    /// DID Number to be ported into our network (Example: 5552341234)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<i64>,
+    /// Email address where send notifications when receive Fax Messages -
+    /// (Example: [email protected])
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
+    /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_enable: Option<String>,
+    /// Flag to enable attach the Fax Message as a PDF file in the
+    /// notifications. - (Values: 1 = true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_attach_file: Option<String>,
+    /// Set to true if testing how to set the email of a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -3101,20 +4211,33 @@ pub struct SetFAXNumberEmailParams {
 /// Parameters for [`Client::set_fax_number_info`] (wire method `setFaxNumberInfo`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXNumberInfoParams {
+    /// DID Number to be ported into our network (Example: 5552341234)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<i64>,
+    /// Email address where send notifications when receive Fax Messages -
+    /// (Example: [email protected])
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
+    /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_enable: Option<String>,
+    /// Flag to enable attach the Fax Message as a PDF file in the
+    /// notifications. - (Values: 1 = true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_attach_file: Option<String>,
+    /// URL where make a POST when you receive a Fax Message.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
+    /// Flag to enable the URL Callback functionality. - (Values: 1 = true, 0 =
+    /// false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_enable: Option<String>,
+    /// Flag to enable retry the POST action in case we don't receive "ok".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_retry: Option<String>,
+    /// Set to true if testing how to update the information of a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -3122,14 +4245,21 @@ pub struct SetFAXNumberInfoParams {
 /// Parameters for [`Client::set_fax_number_url_callback`] (wire method `setFaxNumberURLCallback`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetFAXNumberURLCallbackParams {
+    /// DID Number to be ported into our network (Example: 5552341234)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<i64>,
+    /// URL where make a POST when you receive a Fax Message.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
+    /// Flag to enable the URL Callback functionality. - (Values: 1 = true, 0 =
+    /// false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_enable: Option<String>,
+    /// Flag to enable retry the POST action in case we don't receive "ok".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_retry: Option<String>,
+    /// Set to true if testing how to set the URL callback of a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<i64>,
 }
@@ -3137,18 +4267,27 @@ pub struct SetFAXNumberURLCallbackParams {
 /// Parameters for [`Client::set_forwarding`] (wire method `setForwarding`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetForwardingParams {
+    /// ID for a specific Forwarding (Example: 19183 / Leave empty to create a
+    /// new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub forwarding: Option<String>,
+    /// Phone Number for the Forwarding (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phone_number: Option<String>,
+    /// Caller ID Override for the Forwarding
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_override: Option<String>,
+    /// Description for the Forwarding
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Send DTMF digits when call is answered
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dtmf_digits: Option<String>,
+    /// Pause (seconds) when call is answered before sending digits (Example:
+    /// 1.5 / Values: 0 to 10 in increments of 0.5)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pause: Option<String>,
+    /// If enabled, we will add a Diversion Header to your forwarded call
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diversion_header: Option<i64>,
 }
@@ -3156,18 +4295,25 @@ pub struct SetForwardingParams {
 /// Parameters for [`Client::set_ivr`] (wire method `setIVR`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetIVRParams {
+    /// ID for a specific IVR (Example: 4636 / Leave empty to create a new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ivr: Option<String>,
+    /// Name for the IVR (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Recording for the IVR (values from getRecordings) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<i64>,
+    /// Maximum time for type in a choice after recording (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout: Option<i64>,
+    /// Language for the IVR (values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Voicemail Setup for the IVR (values from getVoicemailSetups) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemailsetup: Option<i64>,
+    /// Choices for the IVR (Example: '1=sip:5096 ; 2=fwd:20222') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub choices: Option<String>,
 }
@@ -3175,6 +4321,7 @@ pub struct SetIVRParams {
 /// Parameters for [`Client::set_location`] (wire method `setLocation`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetLocationParams {
+    /// Internal Extension Location name (Example: "Location1") (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
@@ -3182,14 +4329,20 @@ pub struct SetLocationParams {
 /// Parameters for [`Client::set_music_on_hold`] (wire method `setMusicOnHold`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetMusicOnHoldParams {
+    /// Music on Hold Name (Values from getMusicOnHold)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Music on Hold Description (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Music on Hold Quiet Volume (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume: Option<String>,
+    /// Selected recordings sort mode (Example: "alpha", "random")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort: Option<String>,
+    /// Selected recordings separated by commas (Values from getRecordings,
+    /// example: (1234,1235,1236) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recordings: Option<String>,
 }
@@ -3197,18 +4350,27 @@ pub struct SetMusicOnHoldParams {
 /// Parameters for [`Client::set_phonebook`] (wire method `setPhonebook`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetPhonebookParams {
+    /// ID for a specific Phonebook entry (Example: 32207 / Leave empty to
+    /// create a new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phonebook: Option<String>,
+    /// Speed Dial for the Phonebook entry
     #[serde(skip_serializing_if = "Option::is_none")]
     pub speed_dial: Option<String>,
+    /// Name for the Phonebook Entry (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Number or SIP for the Phonebook entry (Example: 'sip:2563' or
+    /// '5552223333') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<i64>,
+    /// Caller ID Override when dialing via Speed Dial
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid: Option<String>,
+    /// Note for the phonebook entry
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// ID for a specific Phonebook group
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<i64>,
 }
@@ -3218,10 +4380,14 @@ pub struct SetPhonebookParams {
 pub struct SetPhonebookGroupParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phonebook: Option<String>,
+    /// ID for a specific Phonebook group (Example: 32207 / Leave empty to
+    /// create a new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
+    /// Name for the Phonebook group (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Phonebook entry codes associated to this group separated by a semicolon
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<String>,
 }
@@ -3229,70 +4395,136 @@ pub struct SetPhonebookGroupParams {
 /// Parameters for [`Client::set_queue`] (wire method `setQueue`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetQueueParams {
+    /// ID for a specific Queue entry (Example: 32208 / Leave empty to create a
+    /// new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue: Option<String>,
+    /// Queue entry name (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue_name: Option<String>,
+    /// Queue entry number (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue_number: Option<i64>,
+    /// Language Code (Values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue_language: Option<String>,
+    /// Queue Password
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue_password: Option<String>,
+    /// Caller ID Prefix for queue
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_prefix: Option<i64>,
+    /// Recording Code (Values from getRecordings or 'none')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub join_announcement: Option<String>,
+    /// weight/priority of queue (Values 1 to 60) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub priority_weight: Option<String>,
+    /// Recording Code (Values from getRecordings or 'none')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_announcement: Option<String>,
+    /// Report hold time to agent (Values from getReportEstimatedHoldTime)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub report_hold_time_agent: Option<String>,
+    /// Member delay when the agent is connected to the caller (Values 1 to 15
+    /// in seconds or 'none')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member_delay: Option<String>,
+    /// Ammount of time a caller can wait in queue (Values in seconds: multiples
+    /// of 30, max value: 1200 or 'unlimited')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maximum_wait_time: Option<String>,
+    /// Maximum callers (Values: 1 to 60 or 'unlimited')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maximum_callers: Option<String>,
+    /// How caller join to the queue (Values from getJoinWhenEmptyTypes)
+    /// Examples: yes Callers can join a queue with no members or only
+    /// unavailable members no Callers cannot join a queue with no members
+    /// strict Callers cannot join a queue with no members or only unavailable
+    /// members (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub join_when_empty: Option<String>,
+    /// How caller leave the queue (Values 'yes'/'no'/'strict') Examples: yes
+    /// Callers are sent to failover when there are no members no Callers will
+    /// remain in the queue even if there are no members strict Callers are sent
+    /// to failover if there are members but none of them is available.
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub leave_when_empty: Option<String>,
+    /// Ring strategy (Values from getRingStrategies) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ring_strategy: Option<RingStrategy>,
+    /// If you want the queue to avoid sending calls to members (Values
+    /// 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ring_inuse: Option<String>,
+    /// Number of seconds to ring an agent (Values 5 to 60)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_ring_timeout: Option<i64>,
+    /// How long do we wait before trying all the members again (Values 5 to 60
+    /// seconds or 'none'= No Delay)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retry_timer: Option<String>,
+    /// After a successful call, the number of seconds to wait before sending a
+    /// free agent another call (Values 1 to 60 seconds or 'none'= No Delay)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrapup_time: Option<String>,
+    /// Code for Recording (Values from getRecordings or 'none')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voice_announcement: Option<String>,
+    /// Periodic interval to play voice announce recording (Values in seconds:
+    /// multiples of 15, max value: 1200 or 'none' = No announcement)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub frequency_announcement: Option<String>,
+    /// How often to make any periodic announcement (Values in seconds:
+    /// multiples of 15, max value: 1200 or 'none' = No announcement)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub announce_position_frecuency: Option<String>,
+    /// Announce seconds (Values in seconds: 1 to 60 or 'none' = Do not
+    /// announce)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub announce_round_seconds: Option<String>,
+    /// Include estimated hold time in position announcements (Values
+    /// 'yes'/'no'/'once')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub if_announce_position_enabled_report_estimated_hold_time: Option<String>,
+    /// Yes to say "Thank you for your patience" immediatly after announcing
+    /// Queue Position and Estimated hold time left (Values 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thankyou_for_your_patience: Option<String>,
+    /// Music on Hold Code (Values from getMusicOnHold)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
+    /// Failover routing to Maximum wait time reached
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fail_over_routing_timeout: Option<crate::Routing>,
+    /// Failover routing to Maximum callers reached
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fail_over_routing_full: Option<crate::Routing>,
+    /// A call was sent to the queue but the queue had no members (Only works
+    /// when Join when Empty is set to no)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fail_over_routing_join_empty: Option<crate::Routing>,
+    /// The last agent was removed form the queue before alls calls were handled
+    /// (Only works when Leave when Empty is set to yes)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fail_over_routing_leave_empty: Option<crate::Routing>,
+    /// Same as routingjoinempty, except that there were still queue members,
+    /// but all were status unavailable
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fail_over_routing_join_unavail: Option<crate::Routing>,
+    /// Same as routingleaveempty, except that there were still queue members,
+    /// but all were status unavailable routings can receive values in the
+    /// following format => header:record_id Where header could be: account,
+    /// fwd, vm, sip, grp, ivr, sys, recording, queue, cb, tc, disa, none.
+    /// Examples: account Used for routing calls to Sub Accounts You can get all
+    /// sub accounts using the getSubAccounts function fwd Used for routing
+    /// calls to Forwarding entries. You can get the ID right after creating a
+    /// Forwarding with setForwarding or by requesting all forwardings entries
+    /// with getForwardings. vm Used for routing calls to a Voicemail. You can
+    /// get all voicemails and their IDs using the getVoicemails function
+    /// Examples: 'account:100001_VoIP' 'fwd:1026' 'vm:101'
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fail_over_routing_leave_unavail: Option<crate::Routing>,
 }
@@ -3300,10 +4532,18 @@ pub struct SetQueueParams {
 /// Parameters for [`Client::set_recording`] (wire method `setRecording`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetRecordingParams {
+    /// ID for a specific Phonebook entry (Example: 33221 / Leave empty to
+    /// create a new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<String>,
+    /// Base64 encoded file (Provide Recording ID and file if you want update
+    /// the file only) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<String>,
+    /// Name for the Recording Entry (Example: 'recording1') (Provide Recording
+    /// ID and name if you want update the name only) (Provide Recording ID,
+    /// file and name if you want update both parameters at the same time)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
@@ -3311,18 +4551,34 @@ pub struct SetRecordingParams {
 /// Parameters for [`Client::set_ring_group`] (wire method `setRingGroup`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetRingGroupParams {
+    /// ID for a specific Ring Group (Example: 4768 / Leave empty to create a
+    /// new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ring_group: Option<String>,
+    /// Name for the Ring Group (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Members for the Ring Group (Example: 'account:100001;fwd:16006')
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<String>,
+    /// Voicemail for the Ring Group (Values from getVoicemails) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voicemail: Option<String>,
+    /// Recording Code (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub caller_announcement: Option<String>,
+    /// Music on Hold Code (Values from getMusicOnHold)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
+    /// Code for Language (Values from getLanguages) "members" can receive the
+    /// following routing headers: account Used to route the call to an Account
+    /// or a Sub Account fwd Used to route the call to a Forwarding entry sip
+    /// Used to route the call to a SIP URI Each member can a specific ring time
+    /// and press1 values, you can add those to the routing header as follow:
+    /// Example: 'account:100001,25,0;fwd:16006,10,1' 25 = Default ring time
+    /// value (Values from 1 to 60 sec) 0 = Default press1 value (Values allowed
+    /// 0 and 1)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
 }
@@ -3330,14 +4586,22 @@ pub struct SetRingGroupParams {
 /// Parameters for [`Client::set_sip_uri`] (wire method `setSIPURI`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetSIPURIParams {
+    /// ID for a specific SIP URI (Example: 6199 / Leave empty to create a new
+    /// one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sipuri: Option<String>,
+    /// SIP URI (Example: '[email protected]') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uri: Option<String>,
+    /// Description for the SIP URI
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// This setting is optional. You can configure a 'CallerID Number
+    /// Override'. Your default CallerID number will be changed to the override
+    /// you have configured here when using this SIP URI.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_override: Option<String>,
+    /// If this option is Enabled, then your CallerID will be E164 compliant.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_e164: Option<i64>,
 }
@@ -3345,26 +4609,52 @@ pub struct SetSIPURIParams {
 /// Parameters for [`Client::set_sms`] (wire method `setSMS`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetSMSParams {
+    /// DID to be Updated (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
+    /// Enable/Disable the DID to receive SMS Messages (Values: 1=Enable /
+    /// 0=Disable) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable: Option<String>,
+    /// If Enable, SMS Messages received by your DID will be sent to the email
+    /// address provided (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_enabled: Option<String>,
+    /// SMS Messages received by your DID will be sent to the email address
+    /// provided
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
+    /// If Enable, SMS Messages received by your DID will be forwarded to the
+    /// phone number provided (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms_forward_enable: Option<String>,
+    /// SMS Messages received by your DID will be forwarded to the phone number
+    /// provided (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms_forward: Option<String>,
+    /// If Enable, SMS Messages received by your DID will be send a GET request
+    /// to the URL callback provided (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_enable: Option<String>,
+    /// SMS Messages received by your DID will be send a GET request to the URL
+    /// callback provided Available Variables for your URL {FROM} The phone
+    /// number that sent you the message. {TO} The DID number that received the
+    /// message. {MESSAGE} The content of the message. Example:
+    /// http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
+    /// Enable URL callback Retry (Values: 1=Enable / 0=Disable) we will be
+    /// expecting an 'ok' output (without quotes) from your URL callback page as
+    /// an indicator that you have received the message correctly. If we don't
+    /// receive the 'ok' letters (wihtout quotes) from your callback page, we
+    /// will keep sending you the same message every 30 minutes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback_retry: Option<String>,
+    /// SIP account or sub-account that will receive the SMS Messages
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms_sipaccount: Option<String>,
+    /// If Enable, SMS Messages received by your DID will be sent to the
+    /// specified SIP account or sub-account (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms_sipaccount_enabled: Option<String>,
 }
@@ -3372,14 +4662,21 @@ pub struct SetSMSParams {
 /// Parameters for [`Client::set_static_member`] (wire method `setStaticMember`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetStaticMemberParams {
+    /// ID for a specific Member (Example: 619 / Leave empty to create a new
+    /// one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member: Option<String>,
+    /// ID for a specific Queue (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue: Option<i64>,
+    /// Member Description (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub member_name: Option<String>,
+    /// Static Member Routing to receive calls - You can get all sub accounts
+    /// using the getSubAccounts function
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
+    /// Values for get calls first (Example: 0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<i64>,
 }
@@ -3387,68 +4684,104 @@ pub struct SetStaticMemberParams {
 /// Parameters for [`Client::set_sub_account`] (wire method `setSubAccount`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetSubAccountParams {
+    /// Sub Account ID (Example: 10236) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    /// Sub Account Description (Example: 'VoIP Account')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Authorization Type Code (Values from getAuthTypes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_type: Option<i64>,
+    /// Sub Account Password (For Password Authentication)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    /// Sub Account IP (For IP Authentication)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip: Option<String>,
+    /// Device Type Code (Values from getDeviceTypes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_type: Option<i64>,
+    /// Caller ID Override
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid_number: Option<String>,
+    /// Route Code (Values from getRoutes)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canada_routing: Option<String>,
+    /// Lock International Code (Values from getLockInternational) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_international: Option<i64>,
+    /// Route Code (Values from getRoutes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub international_route: Option<i64>,
+    /// Music on Hold Code (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
+    /// Language for system messages, such as "Invalid Option" (Values from
+    /// getLanguages)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated
+    /// by semicolon (Example: ulaw;g729;gsm) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allowed_codecs: Option<String>,
+    /// DTMF Mode Code (Values from getDTMFModes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dtmf_mode: Option<DtmfMode>,
+    /// NAT Mode Code (Values from getNAT) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nat: Option<Nat>,
+    /// Encrypted SIP Traffic (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sip_traffic: Option<i64>,
+    /// Max Expiry between 60 and 3600 (Example: 3000)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_expiry: Option<i64>,
+    /// RTP Time Out between 1 and 3600 (Example: 60)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rtp_timeout: Option<i64>,
+    /// RTP Hold Time Out between 1 and 3600 (Example: 600)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rtp_hold_timeout: Option<i64>,
+    /// List of IP/Netmask to allow outgoing calls separated by commas (Example:
+    /// 123.45.3.21,10.255.12.0/22,device.mydomain.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_restriction: Option<String>,
+    /// Enable IP Restriction (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_ip_restriction: Option<i64>,
+    /// List of POP Servers to allow outgoing calls separated by commas (values
+    /// from getServersInfo. Example: 10,23,45)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pop_restriction: Option<String>,
+    /// Enable POP Restriction (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_pop_restriction: Option<i64>,
+    /// Sub Account Internal Extension (Example: 1 -> Creates 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension: Option<String>,
+    /// Sub Account Internal Voicemail (Example: 101)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_voicemail: Option<String>,
+    /// Sub Account Internal Dialtime (Example: 60 -> seconds)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_dialtime: Option<String>,
+    /// Reseller Account ID (Example: 561115)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_client: Option<String>,
+    /// Reseller Package (Example: 92364)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_package: Option<String>,
+    /// Reseller Next Billing Date (Example: '2012-12-31')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_nextbilling: Option<String>,
+    /// True if you want to charge Package Setup Fee after Save
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_chargesetup: Option<String>,
+    /// Send BYE on successful transfer (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub send_bye: Option<i64>,
+    /// Record Calls (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub record_calls: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -3457,14 +4790,24 @@ pub struct SetSubAccountParams {
     pub transcription_locale: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_email: Option<String>,
+    /// Call Transcription Delay Seconds between 0 and 60, Increments of 5
+    /// (Example: 10 -> seconds)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_start_delay: Option<i64>,
+    /// Allows you to dial outgoing calls using either the NANPA configuration
+    /// or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 =
+    /// E164, 2 = NANPA)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dialing_mode: Option<i64>,
+    /// This allows you to select the carrier to be used for outgoing calls to
+    /// toll-free numbers. (Values: -1 = Use main account settings, 0 = Default
+    /// server setting, 1 = US carrier, 2 = Canadian carrier)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tfcarrier: Option<i64>,
+    /// Location group for the internal extension (Values from getLocations)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension_location: Option<i64>,
+    /// e911 Default CallerID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_e911: Option<String>,
 }
@@ -3472,24 +4815,35 @@ pub struct SetSubAccountParams {
 /// Parameters for [`Client::set_time_condition`] (wire method `setTimeCondition`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetTimeConditionParams {
+    /// ID for a specific Time Condition (Example: 1830 / Leave empty to create
+    /// a new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timecondition: Option<String>,
+    /// Name for the Time Condition (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Routing for the Call when condition matches (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing_match: Option<crate::Routing>,
+    /// Routing for the Call when condition does not matche (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing_nomatch: Option<crate::Routing>,
+    /// All the Start Hour Conditions (Example: '8;8') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub starthour: Option<String>,
+    /// All the Start Minute Conditions (Example: '0;0') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub startminute: Option<String>,
+    /// All the End Hour Conditions (Example: '16;12') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endhour: Option<String>,
+    /// All the End Minute Conditions (Example: '0;0') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endminute: Option<String>,
+    /// All the Week Day Start Conditions (Example: 'mon;sat') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weekdaystart: Option<String>,
+    /// All the Week Day End Conditions (Example: 'fri;sat') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weekdayend: Option<String>,
 }
@@ -3497,44 +4851,68 @@ pub struct SetTimeConditionParams {
 /// Parameters for [`Client::set_voicemail`] (wire method `setVoicemail`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SetVoicemailParams {
+    /// ID for a specific Mailbox (Example: 1001) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<i64>,
+    /// Name for the Mailbox (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Password for the Mailbox (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    /// True if Skipping Password (Boolean: 1/0) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub skip_password: Option<String>,
+    /// Email address for receiving messages, multiple email addresses are
+    /// allowed if separated by a comma
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Yes for Attaching WAV files to Message (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attach_message: Option<String>,
+    /// Yes for Deleting Messages (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delete_message: Option<String>,
+    /// Yes for Saying Time Stamp (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub say_time: Option<String>,
+    /// Time Zone for Mailbox (Values from getTimeZones) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+    /// Yes for Saying the Caller ID (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub say_callerid: Option<String>,
+    /// Code for Play Instructions Setting (Values from getPlayInstructions)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub play_instructions: Option<PlayInstructions>,
+    /// Code for Language (Values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Code for Email Attachment format (Values from
+    /// getVoicemailAttachmentFormats)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_attachment_format: Option<EmailAttachmentFormat>,
+    /// Recording for the Unavailable Message (values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unavailable_message_recording: Option<String>,
+    /// 'yes' to enable Voicemail Transcription
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription: Option<String>,
+    /// Transcription locale code (values from getLocales, comma separated for
+    /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
+    /// Yes for Transcription redaction (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_redaction: Option<String>,
+    /// Yes for Transcription sentiment (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_sentiment: Option<String>,
+    /// Yes for Transcription summary (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_summary: Option<String>,
+    /// Transcription format ( Values: 'html'/'text')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_format: Option<TranscriptionFormat>,
 }
@@ -3542,34 +4920,49 @@ pub struct SetVoicemailParams {
 /// Parameters for [`Client::signup_client`] (wire method `signupClient`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SignupClientParams {
+    /// Client's Firstname (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub firstname: Option<String>,
+    /// Client's Lastname (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lastname: Option<String>,
+    /// Client's Company
     #[serde(skip_serializing_if = "Option::is_none")]
     pub company: Option<String>,
+    /// Client's Address (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address: Option<String>,
+    /// Client's City (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+    /// Client's State (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
+    /// Client's Country (Values from getCountries) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Client's Zip Code (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+    /// Client's Phone Number (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phone_number: Option<String>,
+    /// Client's e-mail (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Client's Confirmation e-mail (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub confirm_email: Option<String>,
+    /// Client's Password (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    /// Client's Confirmation Password (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub confirm_password: Option<String>,
+    /// Activates Client (Boolean: 1/0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub activate: Option<bool>,
+    /// Balance Management for Client (Values from getBalanceManagement)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub balance_management: Option<i64>,
 }
@@ -3577,6 +4970,8 @@ pub struct SignupClientParams {
 /// Parameters for [`Client::unconnect_did`] (wire method `unconnectDID`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct UnconnectDIDParams {
+    /// DID to be Unconnected from Reseller Sub Account(Example: 5551234567)
+    /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -3584,6 +4979,8 @@ pub struct UnconnectDIDParams {
 /// Parameters for [`Client::unconnect_fax`] (wire method `unconnectFAX`).
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct UnconnectFAXParams {
+    /// FAX DID to be Unconnected from Reseller Sub Account (Example:
+    /// 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -8909,9 +10306,14 @@ pub struct GetSubAccountsResponseAccount {
     pub tfcarrier: Option<u64>,
     #[serde(
         default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub default_e911: Option<u64>,
+    #[serde(
+        default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub default_e911: Option<String>,
+    pub call_pickup_behavior: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -9448,9 +10850,9 @@ pub struct GetVoicemailsResponseVoicemail {
     pub urgent: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
-    pub transcribe: Option<u64>,
+    pub transcription: Option<bool>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -9473,6 +10875,11 @@ pub struct GetVoicemailsResponseVoicemail {
     pub transcription_summary: Option<bool>,
     #[serde(default, deserialize_with = "deserialize_opt_transcription_format")]
     pub transcription_format: Option<TranscriptionFormat>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub transcription_delay: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
