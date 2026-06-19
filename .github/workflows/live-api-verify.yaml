@@ -101,7 +101,7 @@ jobs:
       LIVE_VERIFY_DIDS_USA_STATE: ${{ github.event_name == 'workflow_dispatch' && inputs.dids_usa_state || '' }}
     steps:
       - name: Check out source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
