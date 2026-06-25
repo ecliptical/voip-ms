@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-25
+
+### Fixed
+
+- Boolean flag parameters `answered`, `noanswer`, `busy`, and `failed`
+  (`getCDR` / `getResellerCDR`), `activate` (`signupClient`), `portout`
+  (`cancelDID`), and `advanced` (`getBalance`) serialized as bare
+  `true`/`false`. They are documented as `1`/`0` flags but were left out of the
+  `FLAG_01_FIELDS` override, so they missed the `1`/`0` param `serialize_with`.
+  They now serialize as `1`/`0` like every other flag.
+
 ## [0.3.0] - 2026-06-25
 
 ### Changed
@@ -247,7 +258,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.3.1
 [0.3.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.3.0
 [0.1.3]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.3
 [0.1.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.2

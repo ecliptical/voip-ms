@@ -26,7 +26,7 @@ async fn call_success_returns_full_envelope() {
         .and(query_param("api_username", "user@example.com"))
         .and(query_param("api_password", "secret"))
         .and(query_param("method", "getBalance"))
-        .and(query_param("advanced", "true"))
+        .and(query_param("advanced", "1"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "status": "success",
             "balance": {

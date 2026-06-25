@@ -4417,7 +4417,10 @@ pub struct CancelDIDParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cancelcomment: Option<String>,
     /// Set to true if the DID is being ported out
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub portout: Option<bool>,
     /// Set to true if testing how cancellation works - Cancellation can not be
     /// undone - When testing, no changes are made
@@ -5381,7 +5384,10 @@ pub struct GetBackOrdersParams {
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct GetBalanceParams {
     /// True for Calls Statistics
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub advanced: Option<bool>,
 }
 
@@ -5409,16 +5415,28 @@ pub struct GetCDRParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<String>,
     /// Include Answered Calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub answered: Option<bool>,
     /// Include NoAnswered calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub noanswer: Option<bool>,
     /// Include Busy Calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub busy: Option<bool>,
     /// Include Failed Calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub failed: Option<bool>,
     /// Adjust time of calls according to Timezome (Numeric: -12 to 13)
     /// (required)
@@ -6409,16 +6427,28 @@ pub struct GetResellerCDRParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<i64>,
     /// Include Answered Calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub answered: Option<bool>,
     /// Include NoAnswered calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub noanswer: Option<bool>,
     /// Include Busy Calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub busy: Option<bool>,
     /// Include Failed Calls to CDR (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub failed: Option<bool>,
     /// Adjust time of calls according to Timezome (Numeric: -12 to 13)
     /// (required)
@@ -9333,7 +9363,10 @@ pub struct SignupClientParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub confirm_password: Option<String>,
     /// Activates Client (Boolean: 1/0)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
     pub activate: Option<bool>,
     /// Balance Management for Client (Values from getBalanceManagement)
     #[serde(skip_serializing_if = "Option::is_none")]

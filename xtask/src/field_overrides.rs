@@ -91,7 +91,11 @@ const ROUTING_FIELDS: &[&str] = &[
 /// as `true`/`false`, which these parameters reject. Documented as
 /// `1 = true, 0 = false` (or `1=Enable / 0=Disable`).
 const FLAG_01_FIELDS: &[&str] = &[
+    "activate",
+    "advanced",
+    "answered",
     "burst_enabled",
+    "busy",
     "diversion_header",
     "dont_charge_monthly",
     "dont_charge_setup",
@@ -103,9 +107,12 @@ const FLAG_01_FIELDS: &[&str] = &[
     "enable_ip_restriction",
     "enable_pop_restriction",
     "enabled",
+    "failed",
     "fax_to_sip_enabled",
     "isMobile",
     "isPartial",
+    "noanswer",
+    "portout",
     "record_calls",
     "security_code_enabled",
     "send_bye",
