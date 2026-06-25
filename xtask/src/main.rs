@@ -449,12 +449,14 @@ fn emit_statuses(statuses: &[(String, String)]) -> String {
     out
 }
 
+#[allow(clippy::too_many_arguments)]
 fn emit(
     wsdl: &Wsdl,
     responses: &BTreeMap<String, Shape>,
     param_docs: &ParamDocs,
     method_docs: &MethodDocs,
     table: &field_overrides::Table,
+    field_type_skip: &BTreeSet<String>,
     enum_decls: &str,
     statuses: &[(String, String)],
 ) -> String {
@@ -525,6 +527,7 @@ fn emit(
         &wsdl.operations,
         responses,
         table,
+        field_type_skip,
     ));
 
     out.push_str("\nimpl Client {\n");
@@ -742,6 +745,22 @@ fn cmd_gen() -> Result<(), String> {
         );
     }
 
+    // `"StructName.field"` paths where the name-based override table is
+    // suppressed for one struct (a same-named-but-unrelated field).
+    let field_type_skip: BTreeSet<String> = overrides_doc.field_type_skip.iter().cloned().collect();
+    for entry in &field_type_skip {
+        let field = entry
+            .rsplit_once('.')
+            .map(|(_, f)| f)
+            .filter(|f| !f.is_empty())
+            .ok_or_else(|| format!("field_type_skip entry `{entry}` must be `StructName.field`"))?;
+        if table.get(field).is_none() {
+            return Err(format!(
+                "field_type_skip entry `{entry}` names field `{field}`, which has no override to skip"
+            ));
+        }
+    }
+
     let statuses = load_statuses(&root.join("tools").join("api-statuses.json"))?;
 
     let enum_decls = emit_enums(&overrides_doc.enums);
@@ -751,6 +770,7 @@ fn cmd_gen() -> Result<(), String> {
         &param_docs,
         &method_docs,
         &table,
+        &field_type_skip,
         &enum_decls,
         &statuses,
     );

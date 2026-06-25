@@ -74,13 +74,78 @@ const ROUTING_FIELDS: &[&str] = &[
     "fail_over_routing_leave_unavail",
 ];
 
+/// Boolean flags voip.ms encodes on the wire as `1` / `0`. Typed as
+/// [`crate::Flag01`] instead of the `i64` / `String` / `f64` the WSDL declares.
+/// Documented as `1 = true, 0 = false` (or `1=Enable / 0=Disable`).
+const FLAG_01_FIELDS: &[&str] = &[
+    "diversion_header",
+    "dont_charge_monthly",
+    "dont_charge_setup",
+    "email_attach_file",
+    "email_enable",
+    "email_enabled",
+    "enable",
+    "enabled",
+    "isMobile",
+    "isPartial",
+    "security_code_enabled",
+    "send_email_enabled",
+    "sms_forward_enable",
+    "sms_sipaccount_enabled",
+    "test",
+    "url_callback_enable",
+    "url_callback_retry",
+];
+
+/// Boolean flags voip.ms encodes on the wire as `yes` / `no`. Typed as
+/// [`crate::FlagYesNo`] instead of `String`. These are the conference, queue,
+/// and voicemail toggles documented as `(yes/no)`.
+const FLAG_YES_NO_FIELDS: &[&str] = &[
+    "admin",
+    "announce_join_leave",
+    "announce_only_user",
+    "announce_user_count",
+    "attach_message",
+    "delete_message",
+    "drop_silence",
+    "jitter_buffer",
+    "listened",
+    "quiet",
+    "ring_inuse",
+    "say_callerid",
+    "say_time",
+    "start_muted",
+    "talk_detection",
+    "thankyou_for_your_patience",
+    "transcription",
+    "transcription_redaction",
+    "transcription_sentiment",
+    "transcription_summary",
+    "urgent",
+];
+
 fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let routing = FieldOverride {
         rust_type: "crate::Routing".into(),
         response_deserializer: Some("crate::responses::deserialize_opt_routing".into()),
     };
+    let flag_01 = FieldOverride {
+        rust_type: "crate::Flag01".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_flag01".into()),
+    };
+    let flag_yes_no = FieldOverride {
+        rust_type: "crate::FlagYesNo".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_flag_yes_no".into()),
+    };
+
     ROUTING_FIELDS
         .iter()
         .map(|name| (*name, routing.clone()))
+        .chain(FLAG_01_FIELDS.iter().map(|name| (*name, flag_01.clone())))
+        .chain(
+            FLAG_YES_NO_FIELDS
+                .iter()
+                .map(|name| (*name, flag_yes_no.clone())),
+        )
         .collect()
 }

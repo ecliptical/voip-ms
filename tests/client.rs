@@ -400,6 +400,55 @@ async fn routing_param_serializes_as_tagged_string() {
 }
 
 #[tokio::test]
+async fn flag_params_serialize_to_wire_form() {
+    // A `Flag01` rides on the wire as `1`/`0` -- not the `true`/`false` a bare
+    // `bool` would produce, which voip.ms rejects for these parameters.
+    use voip_ms::{Flag01, SetSMSParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setSMS"))
+        .and(query_param("enable", "1"))
+        .and(query_param("email_enabled", "0"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = SetSMSParams {
+        did: Some("5551234567".into()),
+        enable: Some(Flag01(true)),
+        email_enabled: Some(Flag01(false)),
+        ..Default::default()
+    };
+    client.set_sms_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn yes_no_flag_param_serializes_to_word() {
+    use voip_ms::{FlagYesNo, SetConferenceMemberParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setConferenceMember"))
+        .and(query_param("admin", "yes"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = SetConferenceMemberParams {
+        admin: Some(FlagYesNo(true)),
+        ..Default::default()
+    };
+    client.set_conference_member_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
 async fn unknown_enum_value_is_preserved_verbatim() {
     use voip_ms::DtmfMode;
 

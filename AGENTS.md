@@ -159,6 +159,16 @@ in `xtask/src/field_overrides.rs`:
   `fwd:5551234567`, `sip:user@host:port`, `none:`, …). Routing
   changes shape rarely and benefits from a custom `FromStr` (e.g.
   SIP URIs may contain `:`, so only the first `:` is the separator).
+* **Boolean flags** map to [`crate::Flag01`] or [`crate::FlagYesNo`],
+  newtypes over `bool` hand-written in `src/types.rs` and registered in
+  the `FLAG_01_FIELDS` / `FLAG_YES_NO_FIELDS` consts of
+  `xtask/src/field_overrides.rs`. Many parameters voip.ms documents as
+  `1 = true, 0 = false` (or `yes`/`no`) are under-typed by the WSDL as
+  `xsd:integer` / `xsd:string`, so the extractor would emit `i64` / `String`
+  and leak the wire encoding. A bare `bool` can't be used directly: it
+  serializes to `true`/`false`, which these parameters reject -- `Flag01`
+  serializes `1`/`0`, `FlagYesNo` serializes `yes`/`no`. Deserialization is
+  tolerant of `1`/`0`/`yes`/`no`/`true`/`false` as string, number, or bool.
 * **Declarative enum overrides** in
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
@@ -175,6 +185,12 @@ Both kinds of substituted enum carry an `Unknown(String)` (or
 a new variant or shipping an unexpected value never breaks
 deserialization.
 
+Field-name substitution is global, so where one response reuses a flag
+name for an unrelated value (`getVoicemails` returns `urgent` as a
+*count* of urgent messages, not the per-message flag), list that
+struct's field in `field_type_skip` (`"StructName.field"`) to keep its
+inferred/patched type.
+
 **Rationale**: Field names like `routing`, `dtmf_mode`, and `nat` mean
 the same thing across every method they appear on. Substituting by
 field name keeps the override table tiny and avoids per-method
@@ -185,10 +201,13 @@ in JSON to keep the generator the source of truth.
 **How to apply**: For a new closed-set scalar (e.g. a `priority` field
 with documented values `low`/`normal`/`high`), add an entry to `enums`
 and a `field_types` mapping in `tools/api-response-overrides.json` and
-regenerate. For a scalar that needs structured parsing (multi-part
-value, custom validation), hand-write it in `src/types.rs`, register
-the field names in `xtask/src/field_overrides.rs::ROUTING_FIELDS`-style
-const, and add the deserializer to `src/responses.rs`.
+regenerate. For a new boolean flag, add its field name to
+`FLAG_01_FIELDS` or `FLAG_YES_NO_FIELDS` in
+`xtask/src/field_overrides.rs` (no JSON or new type needed). For a scalar
+that needs structured parsing (multi-part value, custom validation),
+hand-write it in `src/types.rs`, register the field names in
+`xtask/src/field_overrides.rs::ROUTING_FIELDS`-style const, and add the
+deserializer to `src/responses.rs`.
 
 ### 6. No HTTP-level retry, no auth caching, no rate limiting
 

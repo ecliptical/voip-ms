@@ -3324,7 +3324,7 @@ pub struct AddChargeParams {
     pub description: Option<String>,
     /// Set to true if testing how adding charges works
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Add an invoice file to a portability process.
@@ -3362,14 +3362,14 @@ pub struct AddLNPPortParams {
     /// numbers in the list of numbers to port. - (Values: 1 = true, 0 = false)
     /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub isPartial: Option<i64>,
+    pub isPartial: Option<crate::Flag01>,
     /// \- (Values: 1 = Business, 0 = Residential) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locationType: Option<i64>,
     /// \- (Values: 1 = All the numbers are mobile numbers, 0 = false) - Default:
     /// 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub isMobile: Option<i64>,
+    pub isMobile: Option<crate::Flag01>,
     /// PIN Number
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<String>,
@@ -3472,7 +3472,7 @@ pub struct AddPaymentParams {
     pub description: Option<String>,
     /// Set to true if testing how adding payments works
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Assigns a Per Minute DID to a VPRI (Flat Rate DIDs can&rsquo;t be
@@ -3553,7 +3553,7 @@ pub struct BackOrderDIDCANParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Backorder DID (USA) from a specific ratecenter and state.
@@ -3620,7 +3620,7 @@ pub struct BackOrderDIDUSAParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Deletes a specific DID from your Account.
@@ -3640,7 +3640,7 @@ pub struct CancelDIDParams {
     /// Set to true if testing how cancellation works - Cancellation can not be
     /// undone - When testing, no changes are made
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Deletes a specific Fax Number from your Account.
@@ -3653,7 +3653,7 @@ pub struct CancelFAXNumberParams {
     pub id: Option<i64>,
     /// Set to true if testing how cancel a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Connects a specific DID to a specific Reseller Client Sub Account
@@ -3682,10 +3682,10 @@ pub struct ConnectDIDParams {
     pub next_billing: Option<String>,
     /// If set to true, the setup value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dont_charge_setup: Option<f64>,
+    pub dont_charge_setup: Option<crate::Flag01>,
     /// If set to true, the monthly value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dont_charge_monthly: Option<f64>,
+    pub dont_charge_monthly: Option<crate::Flag01>,
 }
 
 /// \- Connects a specific FAX DID to a specific Reseller Client Sub Account
@@ -3714,10 +3714,10 @@ pub struct ConnectFAXParams {
     pub next_billing: Option<String>,
     /// If set to true, the setup value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dont_charge_setup: Option<f64>,
+    pub dont_charge_setup: Option<crate::Flag01>,
     /// If set to true, the monthly value will not be charged after Connect
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dont_charge_monthly: Option<f64>,
+    pub dont_charge_monthly: Option<crate::Flag01>,
 }
 
 /// \- Adds a new Sub Account entry to your Account
@@ -3888,19 +3888,19 @@ pub struct CreateVoicemailParams {
     pub email: Option<String>,
     /// Yes for Attaching WAV files to Message (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub attach_message: Option<String>,
+    pub attach_message: Option<crate::FlagYesNo>,
     /// Yes for Deleting Messages (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub delete_message: Option<String>,
+    pub delete_message: Option<crate::FlagYesNo>,
     /// Yes for Saying Time Stamp (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub say_time: Option<String>,
+    pub say_time: Option<crate::FlagYesNo>,
     /// Time Zone for Mailbox (Values from getTimeZones) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
     /// Yes for Saying the Caller ID (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub say_callerid: Option<String>,
+    pub say_callerid: Option<crate::FlagYesNo>,
     /// Code for Play Instructions Setting (Values from getPlayInstructions)
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -3917,20 +3917,20 @@ pub struct CreateVoicemailParams {
     pub unavailable_message_recording: Option<String>,
     /// 'yes' to enable Voicemail Transcription
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription: Option<String>,
+    pub transcription: Option<crate::FlagYesNo>,
     /// Transcription locale code (values from getLocales, comma separated for
     /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
     /// Yes for Transcription redaction (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_redaction: Option<String>,
+    pub transcription_redaction: Option<crate::FlagYesNo>,
     /// Yes for Transcription sentiment (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_sentiment: Option<String>,
+    pub transcription_sentiment: Option<crate::FlagYesNo>,
     /// Yes for Transcription summary (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_summary: Option<String>,
+    pub transcription_summary: Option<crate::FlagYesNo>,
     /// Transcription format ( Values: 'html'/'text')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_format: Option<TranscriptionFormat>,
@@ -4040,7 +4040,7 @@ pub struct DelEmailToFAXParams {
     pub id: Option<i64>,
     /// Set to true if testing how cancel a "Email To Fax Configuration"
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Deletes a specific Fax Folder from your Account.
@@ -4053,7 +4053,7 @@ pub struct DelFAXFolderParams {
     pub id: Option<i64>,
     /// Set to true if testing how to delete a Fax Folder
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Deletes a specific Forwarding from your Account.
@@ -4242,7 +4242,7 @@ pub struct DeleteFAXMessageParams {
     pub id: Option<i64>,
     /// Set to true if testing how cancel a Fax Message
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Deletes a specific MMS from your Account.
@@ -6000,7 +6000,7 @@ pub struct MarkListenedVoicemailMessageParams {
     /// Code for mark voicemail as listened or not-listened (Values: 'yes'/'no')
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub listened: Option<String>,
+    pub listened: Option<crate::FlagYesNo>,
 }
 
 /// \- Mark Voicemail Message as Urgent or not Urgent.
@@ -6025,7 +6025,7 @@ pub struct MarkUrgentVoicemailMessageParams {
     /// Code for mark voicemail as urgent or not-urgent (Values: 'yes'/'no')
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub urgent: Option<String>,
+    pub urgent: Option<crate::FlagYesNo>,
 }
 
 /// \- Moves a Fax Message to a different folder.
@@ -6041,7 +6041,7 @@ pub struct MoveFAXMessageParams {
     pub folder_id: Option<i64>,
     /// Set to true if testing how to move a Fax Message
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Move Voicemail Message to a Destination Folder.
@@ -6135,7 +6135,7 @@ pub struct OrderDIDParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Orders and Adds new International Geographic DID Numbers to the Account.
@@ -6212,7 +6212,7 @@ pub struct OrderDIDInternationalGeographicParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Orders and Adds new International National DID Numbers to the Account.
@@ -6289,7 +6289,7 @@ pub struct OrderDIDInternationalNationalParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Orders and Adds new International TollFree DID Numbers to the Account.
@@ -6363,7 +6363,7 @@ pub struct OrderDIDInternationalTollFreeParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Orders and Adds a new Virtual DID Number to the Account.
@@ -6433,7 +6433,7 @@ pub struct OrderDIDVirtualParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Orders and Adds a new Fax Number to the Account.
@@ -6455,25 +6455,25 @@ pub struct OrderFAXNumberParams {
     /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
     /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_enable: Option<String>,
+    pub email_enable: Option<crate::Flag01>,
     /// Flag to enable attach the Fax Message as a PDF file in the
     /// notifications. - (Values: 1 = true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_attach_file: Option<String>,
+    pub email_attach_file: Option<crate::Flag01>,
     /// URL where make a POST when you receive a Fax Message.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
     /// Flag to enable the URL Callback functionality. - (Values: 1 = true, 0 =
     /// false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_enable: Option<String>,
+    pub url_callback_enable: Option<crate::Flag01>,
     /// Flag to enable retry the POST action in case we don't receive "ok".
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_retry: Option<String>,
+    pub url_callback_retry: Option<crate::Flag01>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Orders and Adds a new Toll Free Number to the Account.
@@ -6543,7 +6543,7 @@ pub struct OrderTollFreeParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Orders and Adds a new Vanity Toll Free Number to the Account.
@@ -6616,7 +6616,7 @@ pub struct OrderVanityParams {
     /// Used to route calls to no action Examples: 'account:100001_VoIP'
     /// 'fwd:1026' 'vm:101' 'none:' 'sys:echo'
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<bool>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Removes a DID from a VPRI
@@ -6764,7 +6764,7 @@ pub struct SendFAXMessageParams {
     /// Flag to enable the send of a copy of your Fax via email. - (Values: 1 =
     /// true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub send_email_enabled: Option<i64>,
+    pub send_email_enabled: Option<crate::Flag01>,
     /// Email address where you want send a copy of your Fax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub send_email: Option<String>,
@@ -6777,7 +6777,7 @@ pub struct SendFAXMessageParams {
     pub file: Option<String>,
     /// Set to true if testing how to send a Fax Message
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Send a MMS message to a Destination Number.
@@ -7184,22 +7184,22 @@ pub struct SetConferenceMemberParams {
     /// Sets if the conference recording when a member joins or leaves will be
     /// played (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub announce_join_leave: Option<String>,
+    pub announce_join_leave: Option<crate::FlagYesNo>,
     /// Sets if the member is an admin or not (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub admin: Option<String>,
+    pub admin: Option<crate::FlagYesNo>,
     /// Sets if the member should start out muted after entering the conference
     /// (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_muted: Option<String>,
+    pub start_muted: Option<crate::FlagYesNo>,
     /// Sets if the number of members in the conference should be announced to
     /// the caller as he joins (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub announce_user_count: Option<String>,
+    pub announce_user_count: Option<crate::FlagYesNo>,
     /// Sets if the "only user" announcement should be played when a caller
     /// enters an empty conference (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub announce_only_user: Option<String>,
+    pub announce_only_user: Option<crate::FlagYesNo>,
     /// Sets whether music on hold (MOH) should be played when only one person
     /// is in the conference (Values from getMusicOnHold).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -7207,7 +7207,7 @@ pub struct SetConferenceMemberParams {
     /// When set to "yes", enter/leave prompts and user introductions are not
     /// played (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub quiet: Option<String>,
+    pub quiet: Option<crate::FlagYesNo>,
     /// If set, this recording will be heard only by the user as he joins the
     /// conference (Values from getRecordings).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -7215,7 +7215,7 @@ pub struct SetConferenceMemberParams {
     /// The system will drop what is detected as silence from entering into the
     /// conference (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub drop_silence: Option<String>,
+    pub drop_silence: Option<crate::FlagYesNo>,
     /// The time, in milliseconds, that a users needs to be sending sound or
     /// voice before the system can consider them to be talking (allowed values
     /// are 100, 120, 140, 160, 180, 200, 220, 240 or 250).
@@ -7230,11 +7230,11 @@ pub struct SetConferenceMemberParams {
     /// If set to YES, the conference dashboard will display a notification when
     /// a participant starts and stops talking (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub talk_detection: Option<String>,
+    pub talk_detection: Option<crate::FlagYesNo>,
     /// When set to YES, the system will place a jitter buffer on the caller's
     /// audio stream before any audio mixing is performed (yes/no).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub jitter_buffer: Option<String>,
+    pub jitter_buffer: Option<crate::FlagYesNo>,
 }
 
 /// \- Updates the Billing Plan from a specific DID.
@@ -7421,7 +7421,7 @@ pub struct SetEmailToFAXParams {
     /// If Enable, we will send Fax Message when we receive an email from the
     /// provided address. (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<i64>,
+    pub enabled: Option<crate::Flag01>,
     /// Email address from you will sent Fax Messages (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_email: Option<String>,
@@ -7432,14 +7432,14 @@ pub struct SetEmailToFAXParams {
     /// If Enable, we will check the mail subject if this include a Security
     /// Code before send the Fax. (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub security_code_enabled: Option<i64>,
+    pub security_code_enabled: Option<crate::Flag01>,
     /// An alphanumeric code to identify your emails before send as Fax.
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub security_code: Option<String>,
     /// Set to true if testing.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Create or update the information of a specific Fax Folder.
@@ -7456,7 +7456,7 @@ pub struct SetFAXFolderParams {
     pub name: Option<String>,
     /// Set to true if testing how to create/update a Fax Folder
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Updates the email configuration from a specific Fax Number.
@@ -7475,14 +7475,14 @@ pub struct SetFAXNumberEmailParams {
     /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
     /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_enable: Option<String>,
+    pub email_enable: Option<crate::Flag01>,
     /// Flag to enable attach the Fax Message as a PDF file in the
     /// notifications. - (Values: 1 = true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_attach_file: Option<String>,
+    pub email_attach_file: Option<crate::Flag01>,
     /// Set to true if testing how to set the email of a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Updates the information from a specific Fax Number.
@@ -7501,24 +7501,24 @@ pub struct SetFAXNumberInfoParams {
     /// Flag to enable the email notifications. - (Values: 1 = true, 0 = false)
     /// \- Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_enable: Option<String>,
+    pub email_enable: Option<crate::Flag01>,
     /// Flag to enable attach the Fax Message as a PDF file in the
     /// notifications. - (Values: 1 = true, 0 = false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_attach_file: Option<String>,
+    pub email_attach_file: Option<crate::Flag01>,
     /// URL where make a POST when you receive a Fax Message.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
     /// Flag to enable the URL Callback functionality. - (Values: 1 = true, 0 =
     /// false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_enable: Option<String>,
+    pub url_callback_enable: Option<crate::Flag01>,
     /// Flag to enable retry the POST action in case we don't receive "ok".
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_retry: Option<String>,
+    pub url_callback_retry: Option<crate::Flag01>,
     /// Set to true if testing how to update the information of a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Updates the url callback configuration from a specific Fax Number.
@@ -7536,13 +7536,13 @@ pub struct SetFAXNumberURLCallbackParams {
     /// Flag to enable the URL Callback functionality. - (Values: 1 = true, 0 =
     /// false) - Default: 0
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_enable: Option<String>,
+    pub url_callback_enable: Option<crate::Flag01>,
     /// Flag to enable retry the POST action in case we don't receive "ok".
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_retry: Option<String>,
+    pub url_callback_retry: Option<crate::Flag01>,
     /// Set to true if testing how to set the URL callback of a Fax Number
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<i64>,
+    pub test: Option<crate::Flag01>,
 }
 
 /// \- Updates a specific Forwarding if a fwd code is provided.
@@ -7573,7 +7573,7 @@ pub struct SetForwardingParams {
     pub pause: Option<String>,
     /// If enabled, we will add a Diversion Header to your forwarded call
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub diversion_header: Option<i64>,
+    pub diversion_header: Option<crate::Flag01>,
 }
 
 /// \- Updates a specific IVR if an IVR code is provided.
@@ -7755,7 +7755,7 @@ pub struct SetQueueParams {
     /// If you want the queue to avoid sending calls to members (Values
     /// 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ring_inuse: Option<String>,
+    pub ring_inuse: Option<crate::FlagYesNo>,
     /// Number of seconds to ring an agent (Values 5 to 60)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_ring_timeout: Option<i64>,
@@ -7789,7 +7789,7 @@ pub struct SetQueueParams {
     /// Yes to say "Thank you for your patience" immediatly after announcing
     /// Queue Position and Estimated hold time left (Values 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub thankyou_for_your_patience: Option<String>,
+    pub thankyou_for_your_patience: Option<crate::FlagYesNo>,
     /// Music on Hold Code (Values from getMusicOnHold)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music_on_hold: Option<String>,
@@ -7924,11 +7924,11 @@ pub struct SetSMSParams {
     /// Enable/Disable the DID to receive SMS Messages (Values: 1=Enable /
     /// 0=Disable) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub enable: Option<String>,
+    pub enable: Option<crate::Flag01>,
     /// If Enable, SMS Messages received by your DID will be sent to the email
     /// address provided (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_enabled: Option<String>,
+    pub email_enabled: Option<crate::Flag01>,
     /// SMS Messages received by your DID will be sent to the email address
     /// provided
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -7936,7 +7936,7 @@ pub struct SetSMSParams {
     /// If Enable, SMS Messages received by your DID will be forwarded to the
     /// phone number provided (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sms_forward_enable: Option<String>,
+    pub sms_forward_enable: Option<crate::Flag01>,
     /// SMS Messages received by your DID will be forwarded to the phone number
     /// provided (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -7944,7 +7944,7 @@ pub struct SetSMSParams {
     /// If Enable, SMS Messages received by your DID will be send a GET request
     /// to the URL callback provided (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_enable: Option<String>,
+    pub url_callback_enable: Option<crate::Flag01>,
     /// SMS Messages received by your DID will be send a GET request to the URL
     /// callback provided Available Variables for your URL {FROM} The phone
     /// number that sent you the message. {TO} The DID number that received the
@@ -7958,14 +7958,14 @@ pub struct SetSMSParams {
     /// receive the 'ok' letters (wihtout quotes) from your callback page, we
     /// will keep sending you the same message every 30 minutes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_callback_retry: Option<String>,
+    pub url_callback_retry: Option<crate::Flag01>,
     /// SIP account or sub-account that will receive the SMS Messages
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms_sipaccount: Option<String>,
     /// If Enable, SMS Messages received by your DID will be sent to the
     /// specified SIP account or sub-account (Values: 1=Enable / 0=Disable)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sms_sipaccount_enabled: Option<String>,
+    pub sms_sipaccount_enabled: Option<crate::Flag01>,
 }
 
 /// \- Updates a specific Member from queue if a Member code is provided.
@@ -8188,19 +8188,19 @@ pub struct SetVoicemailParams {
     pub email: Option<String>,
     /// Yes for Attaching WAV files to Message (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub attach_message: Option<String>,
+    pub attach_message: Option<crate::FlagYesNo>,
     /// Yes for Deleting Messages (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub delete_message: Option<String>,
+    pub delete_message: Option<crate::FlagYesNo>,
     /// Yes for Saying Time Stamp (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub say_time: Option<String>,
+    pub say_time: Option<crate::FlagYesNo>,
     /// Time Zone for Mailbox (Values from getTimeZones) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
     /// Yes for Saying the Caller ID (Values: 'yes'/'no') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub say_callerid: Option<String>,
+    pub say_callerid: Option<crate::FlagYesNo>,
     /// Code for Play Instructions Setting (Values from getPlayInstructions)
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -8217,20 +8217,20 @@ pub struct SetVoicemailParams {
     pub unavailable_message_recording: Option<String>,
     /// 'yes' to enable Voicemail Transcription
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription: Option<String>,
+    pub transcription: Option<crate::FlagYesNo>,
     /// Transcription locale code (values from getLocales, comma separated for
     /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
     /// Yes for Transcription redaction (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_redaction: Option<String>,
+    pub transcription_redaction: Option<crate::FlagYesNo>,
     /// Yes for Transcription sentiment (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_sentiment: Option<String>,
+    pub transcription_sentiment: Option<crate::FlagYesNo>,
     /// Yes for Transcription summary (Values: 'yes'/'no')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transcription_summary: Option<String>,
+    pub transcription_summary: Option<crate::FlagYesNo>,
     /// Transcription format ( Values: 'html'/'text')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_format: Option<TranscriptionFormat>,
@@ -10065,29 +10065,29 @@ pub struct GetConferenceMembersResponseMember {
     pub pin: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub announce_join_leave: Option<bool>,
+    pub announce_join_leave: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub admin: Option<bool>,
+    pub admin: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub start_muted: Option<bool>,
+    pub start_muted: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub announce_user_count: Option<bool>,
+    pub announce_user_count: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub announce_only_user: Option<bool>,
+    pub announce_only_user: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -10095,9 +10095,9 @@ pub struct GetConferenceMembersResponseMember {
     pub moh_when_empty: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub quiet: Option<bool>,
+    pub quiet: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -10105,9 +10105,9 @@ pub struct GetConferenceMembersResponseMember {
     pub announcement: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub drop_silence: Option<bool>,
+    pub drop_silence: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -10120,14 +10120,14 @@ pub struct GetConferenceMembersResponseMember {
     pub silence_threshold: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub talk_detection: Option<bool>,
+    pub talk_detection: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub jitter_buffer: Option<bool>,
+    pub jitter_buffer: Option<crate::FlagYesNo>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -10515,19 +10515,19 @@ pub struct GetDIDsInfoResponseDID {
     pub transcription_locale: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_redaction: Option<bool>,
+    pub transcription_redaction: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_summary: Option<bool>,
+    pub transcription_summary: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_sentiment: Option<bool>,
+    pub transcription_sentiment: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -10966,11 +10966,8 @@ pub struct GetEmailToFAXResponseEmailToFAX {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub id: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
-    )]
-    pub enabled: Option<u64>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_flag01")]
+    pub enabled: Option<crate::Flag01>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -10981,11 +10978,8 @@ pub struct GetEmailToFAXResponseEmailToFAX {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub security_code: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
-    )]
-    pub security_code_enabled: Option<u64>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_flag01")]
+    pub security_code_enabled: Option<crate::Flag01>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -11156,11 +11150,8 @@ pub struct GetFAXNumbersInfoResponseNumber {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub country: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
-    )]
-    pub email_enabled: Option<u64>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_flag01")]
+    pub email_enabled: Option<crate::Flag01>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -11428,11 +11419,8 @@ pub struct GetForwardingsResponseForwarding {
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
     pub pause: Option<rust_decimal::Decimal>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
-    )]
-    pub diversion_header: Option<u64>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_flag01")]
+    pub diversion_header: Option<crate::Flag01>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -11696,21 +11684,15 @@ pub struct GetLNPDetailsResponse {
     pub id: Option<u64>,
     #[serde(default)]
     pub numbers: Option<Vec<GetLNPDetailsResponseNumber>>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub isPartial: Option<bool>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_flag01")]
+    pub isPartial: Option<crate::Flag01>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub locationType: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub isMobile: Option<bool>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_flag01")]
+    pub isMobile: Option<crate::Flag01>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -12527,9 +12509,9 @@ pub struct GetQueuesResponseQueue {
     pub ring_strategy: Option<RingStrategy>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub ring_inuse: Option<bool>,
+    pub ring_inuse: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -12572,9 +12554,9 @@ pub struct GetQueuesResponseQueue {
     pub if_announce_position_enabled_report_estimated_hold_time: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub thankyou_for_your_patience: Option<bool>,
+    pub thankyou_for_your_patience: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_routing"
@@ -13591,19 +13573,19 @@ pub struct GetSubAccountsResponseAccount {
     pub transcription_locale: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_redaction: Option<bool>,
+    pub transcription_redaction: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_summary: Option<bool>,
+    pub transcription_summary: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_sentiment: Option<bool>,
+    pub transcription_sentiment: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14011,14 +13993,14 @@ pub struct GetVoicemailMessagesResponseMessage {
     pub duration: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub urgent: Option<bool>,
+    pub urgent: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub listened: Option<bool>,
+    pub listened: Option<crate::FlagYesNo>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -14126,19 +14108,19 @@ pub struct GetVoicemailsResponseVoicemail {
     pub email: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub attach_message: Option<bool>,
+    pub attach_message: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub delete_message: Option<bool>,
+    pub delete_message: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub say_time: Option<bool>,
+    pub say_time: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14146,9 +14128,9 @@ pub struct GetVoicemailsResponseVoicemail {
     pub timezone: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub say_callerid: Option<bool>,
+    pub say_callerid: Option<crate::FlagYesNo>,
     #[serde(default, deserialize_with = "deserialize_opt_play_instructions")]
     pub play_instructions: Option<PlayInstructions>,
     #[serde(
@@ -14175,9 +14157,9 @@ pub struct GetVoicemailsResponseVoicemail {
     pub urgent: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription: Option<bool>,
+    pub transcription: Option<crate::FlagYesNo>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14185,19 +14167,19 @@ pub struct GetVoicemailsResponseVoicemail {
     pub transcription_locale: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_redaction: Option<bool>,
+    pub transcription_redaction: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_sentiment: Option<bool>,
+    pub transcription_sentiment: Option<crate::FlagYesNo>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_flag_yes_no"
     )]
-    pub transcription_summary: Option<bool>,
+    pub transcription_summary: Option<crate::FlagYesNo>,
     #[serde(default, deserialize_with = "deserialize_opt_transcription_format")]
     pub transcription_format: Option<TranscriptionFormat>,
     #[serde(

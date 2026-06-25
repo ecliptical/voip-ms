@@ -44,6 +44,18 @@ pub struct OverridesDoc {
     /// `Option<EnumName>` instead of `Option<String>`.
     #[serde(default)]
     pub field_types: HashMap<String, String>,
+    /// Per-struct field paths the field-name override table must not
+    /// touch. The substitution in `field_types` (and the built-in
+    /// routing/flag tables) keys on field *name* and applies to every
+    /// `*Params`/`*Response` struct that has it -- correct when the name
+    /// means the same thing everywhere, but a few response structs reuse
+    /// a flag name for an unrelated value (e.g. `GetVoicemailsResponse
+    /// Voicemail.urgent` is a *count* of urgent messages, not the
+    /// per-message urgent flag). Each entry is an emitted-struct name and
+    /// field, `"StructName.field"`, where the field keeps its inferred /
+    /// patched type instead of the name-based override.
+    #[serde(default)]
+    pub field_type_skip: Vec<String>,
 }
 
 /// A user-defined enum to emit into the generated module.
@@ -105,6 +117,7 @@ pub fn load(path: &Path) -> Result<OverridesDoc, String> {
             methods: HashMap::new(),
             enums: HashMap::new(),
             field_types: HashMap::new(),
+            field_type_skip: Vec::new(),
         });
     }
 

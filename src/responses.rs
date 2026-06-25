@@ -21,7 +21,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use std::str::FromStr;
 
-use crate::types::Routing;
+use crate::types::{Flag01, FlagYesNo, Routing};
 
 pub(crate) fn deserialize_opt_string_from_string_number_or_bool<'de, D>(
     deserializer: D,
@@ -204,4 +204,32 @@ where
             "expected routing string, got {other}"
         ))),
     }
+}
+
+pub(crate) fn deserialize_opt_flag01<'de, D>(deserializer: D) -> Result<Option<Flag01>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_flag(deserializer).map(|o| o.map(Flag01))
+}
+
+pub(crate) fn deserialize_opt_flag_yes_no<'de, D>(
+    deserializer: D,
+) -> Result<Option<FlagYesNo>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_flag(deserializer).map(|o| o.map(FlagYesNo))
+}
+
+/// Shared optional-flag deserializer: both [`Flag01`] and [`FlagYesNo`] accept
+/// the same wire forms (`1`/`0`, `yes`/`no`, `true`/`false`, JSON bool/number),
+/// differing only in how they serialize, so an empty string or absent value
+/// reads as `None` and everything else delegates to the tolerant
+/// [`deserialize_opt_bool_from_string_number_or_yn`].
+fn deserialize_opt_flag<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_bool_from_string_number_or_yn(deserializer)
 }
