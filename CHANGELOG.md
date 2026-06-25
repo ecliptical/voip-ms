@@ -55,8 +55,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   by `cargo xtask gen` from the new committed `tools/api-statuses.json`,
   extracted from the docs' global error-code table via the new
   `cargo xtask extract-statuses` subcommand.
+- **Breaking:** The typed list methods no longer error when the collection is
+  empty. voip.ms returns a distinct `no_*` status per list method when there
+  are no entries (`no_sms`, `no_cdr`, `no_messages`, …); the typed `Client`
+  methods now fold any such status (`ApiStatus::is_empty()`) into a successful
+  response with the collection field `None`, instead of `Err(Error::Api(...))`.
+  Code that matched `Err(Error::Api(ApiStatus::NoSMS))` (or the other empty
+  codes) on a typed call must instead handle an `Ok` whose collection field is
+  `None`/empty. The `*_raw` methods are unchanged and still surface the empty
+  status as `Error::Api`. Codes that look like `no_*` but signal a real failure
+  (`no_base64file`, `no_callstatus`, `no_change_billingtype`, `no_provision`,
+  `no_provision_update`, `no_sequences`) still error. The classification lives
+  in the new `empty_statuses` array of `tools/api-response-overrides.json`.
 
 ### Added
+
+- `ApiStatus::is_empty()`, reporting whether a status means "the requested
+  collection is empty" rather than a failure. Generated from the
+  `empty_statuses` array in `tools/api-response-overrides.json`.
 
 - `field_type_skip` section in `tools/api-response-overrides.json` to suppress
   the global field-name override for one struct -- on both the `*Params` and

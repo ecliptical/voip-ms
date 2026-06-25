@@ -234,6 +234,14 @@ All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voi
   verbatim wire string, and `is_documented()` reports whether it's a known
   variant.
 
+  One exception: voip.ms returns a distinct `no_*` status per list method when
+  the collection is empty (`no_sms`, `no_cdr`, `no_messages`, …). The typed
+  methods treat such a status (`ApiStatus::is_empty()`) as a successful empty
+  response -- the collection field comes back `None` rather than `Err` -- so you
+  don't pattern-match a "no SMS" code where an empty list is the natural answer.
+  The `*_raw` methods keep the verbatim contract and still surface it as
+  `Error::Api`.
+
   ```rust
   match client.get_balance(&params).await {
       Ok(balance) => { /* … */ }

@@ -3996,6 +3996,48 @@ impl ApiStatus {
     pub fn is_documented(&self) -> bool {
         !matches!(self, ApiStatus::Unknown(_))
     }
+
+    /// Whether this status means "the requested collection is empty,"
+    /// rather than a failure. voip.ms returns a distinct `no_*` status
+    /// for each list method when the list has no entries; the typed
+    /// `Client` methods treat such a status as a successful empty
+    /// response (collection fields deserialize to `None`) instead of an
+    /// [`crate::Error::Api`], while the `*_raw` methods still surface it
+    /// verbatim. Codes that look like `no_*` but signal a real failure
+    /// (`no_base64file`, `no_callstatus`, `no_provision`, ...) are not
+    /// included.
+    pub fn is_empty(&self) -> bool {
+        matches!(
+            self,
+            ApiStatus::NoAccount
+                | ApiStatus::NoAttachments
+                | ApiStatus::NoCallback
+                | ApiStatus::NoCallhunting
+                | ApiStatus::NoCallparking
+                | ApiStatus::NoCDR
+                | ApiStatus::NoClient
+                | ApiStatus::NoConference
+                | ApiStatus::NoDID
+                | ApiStatus::NoDISA
+                | ApiStatus::NoFilter
+                | ApiStatus::NoForwarding
+                | ApiStatus::NoIVR
+                | ApiStatus::NoMailbox
+                | ApiStatus::NoMember
+                | ApiStatus::NoMessage
+                | ApiStatus::NoMessages
+                | ApiStatus::NoNumbers
+                | ApiStatus::NoPackage
+                | ApiStatus::NoPhonebook
+                | ApiStatus::NoQueue
+                | ApiStatus::NoRate
+                | ApiStatus::NoRecording
+                | ApiStatus::NoRinggroup
+                | ApiStatus::NoSIPURI
+                | ApiStatus::NoSMS
+                | ApiStatus::NoTimecondition
+        )
+    }
 }
 
 impl std::fmt::Display for ApiStatus {

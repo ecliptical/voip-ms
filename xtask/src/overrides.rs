@@ -67,6 +67,17 @@ pub struct OverridesDoc {
     /// any name-based `field_types` entry.
     #[serde(default)]
     pub field_type_override: HashMap<String, String>,
+    /// Wire status codes that mean "the requested collection is empty,"
+    /// not a failure. voip.ms returns a distinct `no_*` status for each
+    /// list method when the list has no entries (`no_sms`, `no_cdr`,
+    /// `no_messages`, ...). The generator emits these into
+    /// [`ApiStatus::is_empty`]; the client treats an empty status as a
+    /// successful empty response (all collection fields deserialize to
+    /// `None`) instead of an [`Error::Api`]. Codes that look like `no_*`
+    /// but signal a real failure (`no_base64file`, `no_callstatus`,
+    /// `no_provision`, ...) are deliberately omitted.
+    #[serde(default)]
+    pub empty_statuses: Vec<String>,
 }
 
 /// A user-defined enum to emit into the generated module.
@@ -130,6 +141,7 @@ pub fn load(path: &Path) -> Result<OverridesDoc, String> {
             field_types: HashMap::new(),
             field_type_skip: Vec::new(),
             field_type_override: HashMap::new(),
+            empty_statuses: Vec::new(),
         });
     }
 

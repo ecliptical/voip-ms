@@ -47,17 +47,10 @@ impl Client {
         }
     }
 
-    /// Issue a request for `method` with the given typed parameters and
-    /// return the full JSON response body as a [`serde_json::Value`].
-    ///
-    /// The `status` field is inspected: any value other than `success`
-    /// causes an [`Error::Api`].
-    ///
-    /// This is the low-level raw call used by every generated `*_raw`
-    /// method on [`Client`]. Reach for it directly when voip.ms adds a
-    /// method this crate hasn't been regenerated for; otherwise prefer
-    /// the typed [`Client::call`] or one of the per-method wrappers.
-    pub async fn call_raw<P>(&self, method: &str, params: &P) -> Result<Value>
+    /// Issue the GET request for `method` and return the parsed JSON body
+    /// together with its classified status, without rejecting empty-collection
+    /// statuses. The two callers differ only in how they treat that case.
+    async fn fetch<P>(&self, method: &str, params: &P) -> Result<(Value, Option<ApiStatus>)>
     where
         P: Serialize + ?Sized,
     {
@@ -75,20 +68,46 @@ impl Client {
             .error_for_status()?;
 
         let body: Value = response.json().await?;
-        check_status(&body)?;
+        let empty = check_status(&body)?;
+        Ok((body, empty))
+    }
+
+    /// Issue a request for `method` with the given typed parameters and
+    /// return the full JSON response body as a [`serde_json::Value`].
+    ///
+    /// The `status` field is inspected: any value other than `success`
+    /// causes an [`Error::Api`] -- including the empty-collection statuses
+    /// ([`ApiStatus::is_empty`], e.g. `no_sms`). This is the verbatim escape
+    /// hatch: it surfaces exactly what voip.ms returned. The typed
+    /// [`Client::call`] instead folds those into an empty response.
+    ///
+    /// This is the low-level raw call used by every generated `*_raw`
+    /// method on [`Client`]. Reach for it directly when voip.ms adds a
+    /// method this crate hasn't been regenerated for; otherwise prefer
+    /// the typed [`Client::call`] or one of the per-method wrappers.
+    pub async fn call_raw<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        let (body, empty) = self.fetch(method, params).await?;
+        if let Some(status) = empty {
+            return Err(Error::Api(status));
+        }
         Ok(body)
     }
 
     /// Issue a request and deserialize the full JSON response body into `T`.
     ///
-    /// This applies the same status validation as [`Client::call_raw`]:
-    /// any non-`success` status is returned as [`Error::Api`].
+    /// Like [`Client::call_raw`], a non-`success` status is returned as
+    /// [`Error::Api`] -- except an empty-collection status
+    /// ([`ApiStatus::is_empty`]), which deserializes into `T` with its
+    /// collection fields defaulting to `None` rather than erroring.
     pub async fn call<P, T>(&self, method: &str, params: &P) -> Result<T>
     where
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let body = self.call_raw(method, params).await?;
+        let (body, _empty) = self.fetch(method, params).await?;
         serde_json::from_value(body)
             .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
     }
@@ -97,17 +116,26 @@ impl Client {
     ///
     /// Use this when the API wraps the interesting data under a known key
     /// (e.g. `/balance` or `/dids`).
+    ///
+    /// As with [`Client::call`], an empty-collection status
+    /// ([`ApiStatus::is_empty`]) is not an error; it carries no data subtree,
+    /// so the pointer resolves to JSON `null` and `T`'s fields default to
+    /// `None`.
     pub async fn call_at<P, T>(&self, method: &str, params: &P, pointer: &str) -> Result<T>
     where
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let body = self.call_raw(method, params).await?;
-        let subtree = body.pointer(pointer).cloned().ok_or_else(|| {
-            Error::InvalidResponse(format!(
-                "response missing JSON pointer `{pointer}` for method `{method}`"
-            ))
-        })?;
+        let (body, empty) = self.fetch(method, params).await?;
+        let subtree = match body.pointer(pointer) {
+            Some(v) => v.clone(),
+            None if empty.is_some() => Value::Null,
+            None => {
+                return Err(Error::InvalidResponse(format!(
+                    "response missing JSON pointer `{pointer}` for method `{method}`"
+                )));
+            }
+        };
 
         serde_json::from_value(subtree).map_err(|e| {
             Error::InvalidResponse(format!(
@@ -163,14 +191,26 @@ impl ClientBuilder {
     }
 }
 
-fn check_status(body: &Value) -> Result<()> {
+/// Classify a response's `status` field.
+///
+/// Returns `Ok(None)` for `success`, `Err(Error::Api)` for a genuine failure,
+/// and `Ok(Some(status))` for an empty-collection status
+/// ([`ApiStatus::is_empty`], e.g. `no_sms`) -- voip.ms's per-method "the list
+/// is empty" code. Whether that case is an error is left to the caller:
+/// [`Client::call_raw`] surfaces it verbatim, while the typed
+/// [`Client::call`] folds it into an empty response.
+fn check_status(body: &Value) -> Result<Option<ApiStatus>> {
     let status = body
         .get("status")
         .and_then(Value::as_str)
         .ok_or_else(|| Error::InvalidResponse("response missing `status` field".into()))?;
     if status == "success" {
-        Ok(())
+        return Ok(None);
+    }
+    let status = ApiStatus::from_wire(status);
+    if status.is_empty() {
+        Ok(Some(status))
     } else {
-        Err(Error::Api(ApiStatus::from_wire(status)))
+        Err(Error::Api(status))
     }
 }

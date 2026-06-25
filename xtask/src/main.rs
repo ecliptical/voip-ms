@@ -312,7 +312,7 @@ fn status_variant_name(code: &str, acronyms: &[&'static str]) -> String {
 /// `Display`/`Serialize`/`Deserialize`/`From<String>` impls. The wire strings
 /// are preserved verbatim (including the rare capitalized codes); only the
 /// variant *identifiers* are normalized.
-fn emit_statuses(statuses: &[(String, String)]) -> String {
+fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> String {
     if statuses.is_empty() {
         return String::new();
     }
@@ -401,6 +401,35 @@ fn emit_statuses(statuses: &[(String, String)]) -> String {
     out.push_str("    /// [`ApiStatus::Unknown`]).\n");
     out.push_str("    pub fn is_documented(&self) -> bool {\n");
     out.push_str("        !matches!(self, ApiStatus::Unknown(_))\n");
+    out.push_str("    }\n\n");
+
+    // is_empty
+    let empty_variants: Vec<&String> = variants
+        .iter()
+        .filter(|(_, code, _)| empty.contains(*code))
+        .map(|(variant, _, _)| variant)
+        .collect();
+    out.push_str("    /// Whether this status means \"the requested collection is empty,\"\n");
+    out.push_str("    /// rather than a failure. voip.ms returns a distinct `no_*` status\n");
+    out.push_str("    /// for each list method when the list has no entries; the typed\n");
+    out.push_str("    /// `Client` methods treat such a status as a successful empty\n");
+    out.push_str("    /// response (collection fields deserialize to `None`) instead of an\n");
+    out.push_str("    /// [`crate::Error::Api`], while the `*_raw` methods still surface it\n");
+    out.push_str("    /// verbatim. Codes that look like `no_*` but signal a real failure\n");
+    out.push_str("    /// (`no_base64file`, `no_callstatus`, `no_provision`, ...) are not\n");
+    out.push_str("    /// included.\n");
+    out.push_str("    pub fn is_empty(&self) -> bool {\n");
+    if empty_variants.is_empty() {
+        out.push_str("        false\n");
+    } else {
+        out.push_str("        matches!(\n            self,\n");
+        let arms: Vec<String> = empty_variants
+            .iter()
+            .map(|v| format!("            ApiStatus::{v}"))
+            .collect();
+        out.push_str(&arms.join("\n                | "));
+        out.push_str("\n        )\n");
+    }
     out.push_str("    }\n}\n\n");
 
     // Display
@@ -460,6 +489,7 @@ fn emit(
     field_type_override: &BTreeMap<String, field_overrides::FieldOverride>,
     enum_decls: &str,
     statuses: &[(String, String)],
+    empty_statuses: &BTreeSet<String>,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -478,7 +508,7 @@ fn emit(
     );
 
     out.push_str(enum_decls);
-    out.push_str(&emit_statuses(statuses));
+    out.push_str(&emit_statuses(statuses, empty_statuses));
 
     for op in &wsdl.operations {
         let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
@@ -829,6 +859,19 @@ fn cmd_gen() -> Result<(), String> {
 
     let statuses = load_statuses(&root.join("tools").join("api-statuses.json"))?;
 
+    // An empty-status code that no longer appears in the status table (a
+    // typo, or a code the docs dropped) would silently never match, so fail
+    // loudly instead.
+    let empty_statuses: BTreeSet<String> = overrides_doc.empty_statuses.iter().cloned().collect();
+    let known: BTreeSet<&str> = statuses.iter().map(|(code, _)| code.as_str()).collect();
+    for code in &empty_statuses {
+        if !known.contains(code.as_str()) {
+            return Err(format!(
+                "empty_statuses references unknown status code `{code}`"
+            ));
+        }
+    }
+
     let enum_decls = emit_enums(&overrides_doc.enums);
     let rendered = emit(
         &wsdl,
@@ -840,6 +883,7 @@ fn cmd_gen() -> Result<(), String> {
         &field_type_override,
         &enum_decls,
         &statuses,
+        &empty_statuses,
     );
     fs::write(&out_path, &rendered).map_err(|e| format!("write {}: {e}", out_path.display()))?;
     println!(

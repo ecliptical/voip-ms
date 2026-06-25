@@ -197,6 +197,35 @@
     "GetResellerSMSResponseSMS.type": "MessageType",
     "GetResellerMMSResponseSMS.type": "MessageType"
   },
+  "empty_statuses": [
+    "no_account",
+    "no_attachments",
+    "no_callback",
+    "no_callhunting",
+    "no_callparking",
+    "no_cdr",
+    "no_client",
+    "no_conference",
+    "no_did",
+    "no_disa",
+    "no_filter",
+    "no_forwarding",
+    "no_ivr",
+    "no_mailbox",
+    "no_member",
+    "no_message",
+    "no_messages",
+    "no_numbers",
+    "no_package",
+    "no_phonebook",
+    "no_queue",
+    "no_rate",
+    "no_recording",
+    "no_ringgroup",
+    "no_sipuri",
+    "no_sms",
+    "no_timecondition"
+  ],
   "methods": {
     "getDIDsInfo": {
       "patches": [

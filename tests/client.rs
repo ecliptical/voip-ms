@@ -117,6 +117,17 @@ fn api_status_variants_and_descriptions() {
         ApiStatus::from("invalid_credentials"),
         ApiStatus::InvalidCredentials
     );
+
+    // Empty-collection statuses are flagged; `no_*` codes that signal a
+    // real failure are not.
+    assert!(ApiStatus::NoSMS.is_empty());
+    assert!(ApiStatus::NoCDR.is_empty());
+    assert!(ApiStatus::NoMessages.is_empty());
+    assert!(!ApiStatus::NoProvision.is_empty());
+    assert!(!ApiStatus::NoBase64file.is_empty());
+    assert!(!ApiStatus::NoCallstatus.is_empty());
+    assert!(!ApiStatus::InvalidCredentials.is_empty());
+    assert!(!ApiStatus::Unknown("whatever".to_string()).is_empty());
 }
 
 #[tokio::test]
@@ -640,6 +651,57 @@ async fn message_type_response_deserializes_numeric_wire() {
     let msgs = envelope.sms.unwrap();
     assert_eq!(msgs[0].r#type, Some(MessageType::Received));
     assert_eq!(msgs[1].r#type, Some(MessageType::Sent));
+}
+
+#[tokio::test]
+async fn empty_collection_status_yields_empty_response() {
+    // voip.ms answers an empty SMS list with `{"status": "no_sms"}` and no
+    // `sms` field. For the typed call that is an empty list, not an error:
+    // it succeeds with `sms == None`. The `*_raw` escape hatch keeps the
+    // verbatim contract and still surfaces it as `Error::Api`.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSMS"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "no_sms" })))
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_sms(&voip_ms::GetSMSParams::default())
+        .await
+        .unwrap();
+    assert_eq!(envelope.status.as_deref(), Some("no_sms"));
+    assert!(envelope.sms.is_none());
+
+    let err = client
+        .get_sms_raw(&voip_ms::GetSMSParams::default())
+        .await
+        .unwrap_err();
+    assert!(matches!(err, Error::Api(ApiStatus::NoSMS)), "got {err:?}");
+}
+
+#[tokio::test]
+async fn real_error_no_status_still_errors() {
+    // `no_*` codes that signal a genuine failure (rather than an empty list)
+    // are still surfaced as `Error::Api`.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "no_provision" })))
+        .mount(&server)
+        .await;
+
+    let err = client
+        .e911_provision_raw(&voip_ms::E911ProvisionParams::default())
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err, Error::Api(ApiStatus::NoProvision)),
+        "got {err:?}"
+    );
 }
 
 #[tokio::test]

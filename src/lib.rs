@@ -47,9 +47,12 @@
 //! All calls are HTTP `GET` against the REST endpoint ([`DEFAULT_BASE_URL`],
 //! `…/api/v1/rest.php`) with parameters in the query string. That endpoint
 //! returns the `{ "status": ... }` JSON envelope directly, which this crate
-//! deserializes — any status other than `success` surfaces as [`Error::Api`].
-//! (The generic `…/api/v1/` endpoint instead defaults to `text/html` and
-//! needs an explicit `content_type=json`; this crate does not use it.)
+//! deserializes -- a status other than `success` surfaces as [`Error::Api`],
+//! except an empty-collection status ([`ApiStatus::is_empty`], e.g. `no_sms`),
+//! which the typed methods return as an empty response (the `*_raw` methods
+//! still surface it verbatim). (The generic `…/api/v1/` endpoint instead
+//! defaults to `text/html` and needs an explicit `content_type=json`; this
+//! crate does not use it.)
 
 mod client;
 mod error;

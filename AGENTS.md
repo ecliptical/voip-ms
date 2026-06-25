@@ -302,6 +302,25 @@ Three variants, no more:
   variant's `as_str` preserves the wire casing while the variant
   *identifier* normalizes through the same acronym-aware PascalCase as
   method/type names (`no_did` → `NoDID`).
+
+  **Empty-collection statuses are not errors for typed calls.** voip.ms
+  returns a distinct `no_*` status per list method when the list is empty
+  (`no_sms`, `no_cdr`, `no_messages`, …). The typed `Client::call` /
+  `call_at` (and so every unsuffixed generated method) fold any status for
+  which `ApiStatus::is_empty()` is true into a successful data-less response
+  -- collection fields deserialize to `None` -- instead of `Error::Api`. The
+  `*_raw` methods (and `call_raw`) deliberately keep the strict verbatim
+  contract: they still surface an empty status as `Error::Api`, so the raw
+  escape hatch reflects exactly what voip.ms returned. `check_status` in
+  `src/client.rs` classifies the status; the two paths diverge in
+  `call_raw` vs `call`/`call_at`. The classification is hand-curated in the
+  `empty_statuses` array of `tools/api-response-overrides.json` and emitted
+  into `ApiStatus::is_empty()` by `cargo xtask gen`; codes that look like
+  `no_*` but signal a real failure (`no_base64file`, `no_callstatus`,
+  `no_change_billingtype`, `no_provision`, `no_provision_update`,
+  `no_sequences`) are deliberately excluded. To reclassify, edit that array
+  and regenerate -- an entry naming a status code absent from
+  `tools/api-statuses.json` fails the codegen.
 * `Error::InvalidResponse(String)` — the response was 2xx and JSON but
   didn't contain a `status` field. Should be rare; if it happens
   systematically for a method, that's a voip.ms-side break.
