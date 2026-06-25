@@ -507,7 +507,8 @@ fn emit(
         out.push_str(&format!("pub struct {struct_name} {{\n"));
         let docs = param_docs.get(op);
         for (fname, ftype) in body_fields {
-            let rust_ty = match table.get(fname) {
+            let override_ = table.get(fname);
+            let rust_ty = match override_ {
                 Some(o) => o.rust_type.clone(),
                 None => xsd_to_rust(ftype).to_string(),
             };
@@ -517,8 +518,29 @@ fn emit(
                 render_doc(&mut out, "    ", desc);
             }
 
-            out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\")]\n");
-            out.push_str(&format!("    pub {ident}: Option<{rust_ty}>,\n"));
+            // A `param_skip_if` override emits the field unwrapped (plain `T`,
+            // skipped at its default); otherwise it's `Option<T>` skipped when
+            // `None`. A `param_serializer` supplies the wire form for a type
+            // whose own `Serialize` is wrong (a `bool` flag wanting `1`/`0`).
+            let param_serializer = override_.and_then(|o| o.param_serializer.as_deref());
+            match override_.and_then(|o| o.param_skip_if.as_deref()) {
+                Some(skip_if) => {
+                    out.push_str(&format!("    #[serde(skip_serializing_if = \"{skip_if}\""));
+                    if let Some(ser) = param_serializer {
+                        out.push_str(&format!(", serialize_with = \"{ser}\""));
+                    }
+                    out.push_str(")]\n");
+                    out.push_str(&format!("    pub {ident}: {rust_ty},\n"));
+                }
+                None => {
+                    out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\"");
+                    if let Some(ser) = param_serializer {
+                        out.push_str(&format!(", serialize_with = \"{ser}\""));
+                    }
+                    out.push_str(")]\n");
+                    out.push_str(&format!("    pub {ident}: Option<{rust_ty}>,\n"));
+                }
+            }
         }
         out.push_str("}\n");
     }
@@ -741,6 +763,7 @@ fn cmd_gen() -> Result<(), String> {
             field_overrides::FieldOverride {
                 rust_type: enum_name.clone(),
                 response_deserializer: Some(deser),
+                ..Default::default()
             },
         );
     }

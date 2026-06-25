@@ -9,18 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking:** Boolean-flag parameters and fields are now typed `Flag01` or
-  `FlagYesNo` (newtypes over `bool`) instead of `i64` / `String` / `f64`. Many
-  voip.ms parameters documented as `1 = true, 0 = false` (or `yes`/`no`) were
-  under-typed by the WSDL; they now take a `bool`-like value while still
-  serializing the `1`/`0` or `yes`/`no` the API requires (a bare `bool` would
-  serialize `true`/`false`, which these reject). `Flag01`/`FlagYesNo` are
-  re-exported from the crate root, `impl From<bool>` (so `Some(true.into())`),
-  and deserialize tolerantly from `1`/`0`/`yes`/`no`/`true`/`false` as string,
-  number, or JSON bool. Affected fields are listed in `FLAG_01_FIELDS` /
-  `FLAG_YES_NO_FIELDS` in `xtask/src/field_overrides.rs`. Callers passing a
-  string (e.g. `enable: Some("1".to_string())`) must migrate to
-  `enable: Some(Flag01(true))` / `Some(true.into())`.
+- **Breaking:** Boolean-flag parameters and fields are now typed `bool` instead
+  of `i64` / `String` / `f64`. Many voip.ms parameters documented as
+  `1 = true, 0 = false` (or `yes`/`no`) were under-typed by the WSDL; they now
+  take a plain `bool`. The `1`/`0` or `yes`/`no` the API requires (a bare `bool`
+  serializes `true`/`false`, which these reject) is produced by a param
+  `serialize_with`, and tolerant deserialization accepts
+  `1`/`0`/`yes`/`no`/`true`/`false` as string, number, or JSON bool. Affected
+  fields are listed in `FLAG_01_FIELDS` / `FLAG_YES_NO_FIELDS` in
+  `xtask/src/field_overrides.rs`. Validate-only flags whose `false` is
+  equivalent to absent (the `test` param) are plain `bool` (default `false`,
+  omitted from the request when `false`); the rest are `Option<bool>` so an
+  explicit `Some(false)` ("turn it off") stays distinct from `None` ("leave
+  unchanged"). Callers passing a string (e.g. `enable: Some("1".to_string())`)
+  must migrate to `enable: Some(true)`, and `test` to `test: true`.
 - **Breaking:** `ApiStatus` is now an enum instead of a `String` newtype. It
   has one variant per documented voip.ms `status` code (~475, e.g.
   `ApiStatus::InvalidCredentials`, `ApiStatus::APINotEnabled`,
@@ -38,8 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `Flag01` and `FlagYesNo` boolean-flag newtypes (see the breaking change
-  above), re-exported from the crate root.
 - `field_type_skip` section in `tools/api-response-overrides.json` to suppress
   the global field-name override for one struct where a flag/enum name is reused
   for an unrelated value (used for `getVoicemails`' `urgent` message count).

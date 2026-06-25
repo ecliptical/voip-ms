@@ -159,16 +159,20 @@ in `xtask/src/field_overrides.rs`:
   `fwd:5551234567`, `sip:user@host:port`, `none:`, …). Routing
   changes shape rarely and benefits from a custom `FromStr` (e.g.
   SIP URIs may contain `:`, so only the first `:` is the separator).
-* **Boolean flags** map to [`crate::Flag01`] or [`crate::FlagYesNo`],
-  newtypes over `bool` hand-written in `src/types.rs` and registered in
-  the `FLAG_01_FIELDS` / `FLAG_YES_NO_FIELDS` consts of
-  `xtask/src/field_overrides.rs`. Many parameters voip.ms documents as
-  `1 = true, 0 = false` (or `yes`/`no`) are under-typed by the WSDL as
-  `xsd:integer` / `xsd:string`, so the extractor would emit `i64` / `String`
-  and leak the wire encoding. A bare `bool` can't be used directly: it
-  serializes to `true`/`false`, which these parameters reject -- `Flag01`
-  serializes `1`/`0`, `FlagYesNo` serializes `yes`/`no`. Deserialization is
-  tolerant of `1`/`0`/`yes`/`no`/`true`/`false` as string, number, or bool.
+* **Boolean flags** map to `bool`, registered in the `FLAG_01_FIELDS` /
+  `FLAG_YES_NO_FIELDS` consts of `xtask/src/field_overrides.rs`. Many
+  parameters voip.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are
+  under-typed by the WSDL as `xsd:integer` / `xsd:string`, so the extractor
+  would emit `i64` / `String` and leak the wire encoding. The wire form lives
+  in a serializer, not the type: the override carries a `param_serializer`
+  (`serialize_opt_flag_01` / `serialize_opt_flag_yes_no` in `src/responses.rs`)
+  emitted as `serialize_with` on the param, since a bare `bool` serializes to
+  `true`/`false`, which these parameters reject. Responses use the existing
+  tolerant `deserialize_opt_bool_from_string_number_or_yn`, accepting
+  `1`/`0`/`yes`/`no`/`true`/`false` as string, number, or bool. A validate-only
+  flag whose `false` means the same as absent (the `test` param) sets
+  `param_skip_if` so it's emitted as plain `bool` (default `false`, omitted from
+  the request when `false`) rather than `Option<bool>`.
 * **Declarative enum overrides** in
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)

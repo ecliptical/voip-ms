@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 vm.name.as_deref().unwrap_or("(none)"),
                 vm.email.as_deref().unwrap_or("(none)"),
                 vm.skip_password
-                    .map(|v| if v != 0 { "yes" } else { "no" })
+                    .map(|v| if v { "yes" } else { "no" })
                     .unwrap_or("(unknown)"),
             );
         }

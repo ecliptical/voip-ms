@@ -1,10 +1,15 @@
-//! Custom serde deserializers used by generated `*Response` structs.
+//! Custom serde (de)serializers used by generated `*Params` and
+//! `*Response` structs.
 //!
 //! The voip.ms API frequently returns numbers, booleans, dates, and
 //! decimals as JSON strings (and occasionally as JSON numbers for the
 //! same field across different methods). These helpers normalize both
 //! forms — and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
 //! placeholders as `None` — into Rust types.
+//!
+//! A few `bool` params also need a serializer: voip.ms rejects the
+//! `true`/`false` a bare `bool` would emit, expecting `1`/`0` or
+//! `yes`/`no`. The `serialize_*_flag_*` helpers supply that wire form.
 //!
 //! Some endpoints also emit `-1` as a sentinel for "not configured" in
 //! fields that are otherwise unsigned identifiers. For optional unsigned
@@ -17,11 +22,11 @@
 use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::de::Error as DeError;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::str::FromStr;
 
-use crate::types::{Flag01, FlagYesNo, Routing};
+use crate::types::Routing;
 
 pub(crate) fn deserialize_opt_string_from_string_number_or_bool<'de, D>(
     deserializer: D,
@@ -206,30 +211,42 @@ where
     }
 }
 
-pub(crate) fn deserialize_opt_flag01<'de, D>(deserializer: D) -> Result<Option<Flag01>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    deserialize_opt_flag(deserializer).map(|o| o.map(Flag01))
+/// `skip_serializing_if` predicate for true-only flag params (`test`): a
+/// `false` value is equivalent to absent and is left off the wire.
+pub(crate) fn is_false(b: &bool) -> bool {
+    !*b
 }
 
-pub(crate) fn deserialize_opt_flag_yes_no<'de, D>(
-    deserializer: D,
-) -> Result<Option<FlagYesNo>, D::Error>
+/// Serialize an optional `1`/`0` flag param: `Some(true)` → `"1"`,
+/// `Some(false)` → `"0"`. `None` would be skipped before reaching here, so it
+/// serializes nothing.
+pub(crate) fn serialize_opt_flag_01<S>(v: &Option<bool>, s: S) -> Result<S::Ok, S::Error>
 where
-    D: Deserializer<'de>,
+    S: Serializer,
 {
-    deserialize_opt_flag(deserializer).map(|o| o.map(FlagYesNo))
+    match v {
+        Some(b) => serialize_flag_01(b, s),
+        None => s.serialize_none(),
+    }
 }
 
-/// Shared optional-flag deserializer: both [`Flag01`] and [`FlagYesNo`] accept
-/// the same wire forms (`1`/`0`, `yes`/`no`, `true`/`false`, JSON bool/number),
-/// differing only in how they serialize, so an empty string or absent value
-/// reads as `None` and everything else delegates to the tolerant
-/// [`deserialize_opt_bool_from_string_number_or_yn`].
-fn deserialize_opt_flag<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+/// Serialize an optional `yes`/`no` flag param: `Some(true)` → `"yes"`,
+/// `Some(false)` → `"no"`. `None` would be skipped before reaching here.
+pub(crate) fn serialize_opt_flag_yes_no<S>(v: &Option<bool>, s: S) -> Result<S::Ok, S::Error>
 where
-    D: Deserializer<'de>,
+    S: Serializer,
 {
-    deserialize_opt_bool_from_string_number_or_yn(deserializer)
+    match v {
+        Some(true) => s.serialize_str("yes"),
+        Some(false) => s.serialize_str("no"),
+        None => s.serialize_none(),
+    }
+}
+
+/// Serialize a `1`/`0` flag param: `true` → `"1"`, `false` → `"0"`.
+pub(crate) fn serialize_flag_01<S>(v: &bool, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_str(if *v { "1" } else { "0" })
 }

@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use voip_ms::{
     ApiStatus, Client, Error, GetBalanceParams, GetSubAccountsParams, GetSubAccountsResponse,
 };
-use wiremock::matchers::{method, path, query_param};
+use wiremock::matchers::{method, path, query_param, query_param_is_missing};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 /// Build a `Client` pointed at a mock server's REST endpoint.
@@ -401,9 +401,10 @@ async fn routing_param_serializes_as_tagged_string() {
 
 #[tokio::test]
 async fn flag_params_serialize_to_wire_form() {
-    // A `Flag01` rides on the wire as `1`/`0` -- not the `true`/`false` a bare
-    // `bool` would produce, which voip.ms rejects for these parameters.
-    use voip_ms::{Flag01, SetSMSParams};
+    // A `1`/`0` flag param is a plain `Option<bool>`; its `serialize_with`
+    // emits `1`/`0`, not the `true`/`false` a bare `bool` would produce, which
+    // voip.ms rejects for these parameters.
+    use voip_ms::SetSMSParams;
 
     let (server, client) = fixture().await;
 
@@ -419,8 +420,8 @@ async fn flag_params_serialize_to_wire_form() {
 
     let params = SetSMSParams {
         did: Some("5551234567".into()),
-        enable: Some(Flag01(true)),
-        email_enabled: Some(Flag01(false)),
+        enable: Some(true),
+        email_enabled: Some(false),
         ..Default::default()
     };
     client.set_sms_raw(&params).await.unwrap();
@@ -428,7 +429,7 @@ async fn flag_params_serialize_to_wire_form() {
 
 #[tokio::test]
 async fn yes_no_flag_param_serializes_to_word() {
-    use voip_ms::{FlagYesNo, SetConferenceMemberParams};
+    use voip_ms::SetConferenceMemberParams;
 
     let (server, client) = fixture().await;
 
@@ -442,10 +443,53 @@ async fn yes_no_flag_param_serializes_to_word() {
         .await;
 
     let params = SetConferenceMemberParams {
-        admin: Some(FlagYesNo(true)),
+        admin: Some(true),
         ..Default::default()
     };
     client.set_conference_member_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn true_only_flag_present_when_true() {
+    // `test` is a plain `bool`: `true` serializes `1`, and `false` (the
+    // default) is left off the wire entirely.
+    use voip_ms::OrderDIDParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "orderDID"))
+        .and(query_param("test", "1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = OrderDIDParams {
+        test: true,
+        ..Default::default()
+    };
+    client.order_did_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn true_only_flag_absent_when_false() {
+    use voip_ms::OrderDIDParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "orderDID"))
+        .and(query_param_is_missing("test"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = OrderDIDParams::default();
+    client.order_did_raw(&params).await.unwrap();
 }
 
 #[tokio::test]

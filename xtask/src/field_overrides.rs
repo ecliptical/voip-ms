@@ -19,10 +19,21 @@
 use std::collections::HashMap;
 
 /// How a particular field name should be typed.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct FieldOverride {
     /// Fully-qualified Rust type to substitute for `String`.
     pub rust_type: String,
+    /// Optional `serialize_with` path for param use. Needed when the
+    /// substituted type doesn't itself serialize to the wire form
+    /// voip.ms expects -- e.g. a plain `bool` whose flag must travel as
+    /// `1`/`0` rather than `true`/`false`. Types that carry their own
+    /// `Serialize` (like [`crate::Routing`]) leave this `None`.
+    pub param_serializer: Option<String>,
+    /// When set, the param field is emitted as plain `T` (not
+    /// `Option<T>`) and skipped on the wire when equal to its default
+    /// via this `skip_serializing_if` path. Used for true-only flags
+    /// (`test`) where `false` carries no meaning distinct from absent.
+    pub param_skip_if: Option<String>,
     /// Optional `deserialize_with` path for response use. The
     /// referenced function must accept `Option<T>` and treat empty /
     /// absent inputs as `None`.
@@ -74,10 +85,13 @@ const ROUTING_FIELDS: &[&str] = &[
     "fail_over_routing_leave_unavail",
 ];
 
-/// Boolean flags voip.ms encodes on the wire as `1` / `0`. Typed as
-/// [`crate::Flag01`] instead of the `i64` / `String` / `f64` the WSDL declares.
-/// Documented as `1 = true, 0 = false` (or `1=Enable / 0=Disable`).
+/// Boolean flags voip.ms encodes on the wire as `1` / `0`. Typed as `bool`
+/// instead of the `i64` / `String` / `f64` the WSDL declares; the `1`/`0` wire
+/// form comes from a param `serialize_with`, since a bare `bool` would serialize
+/// as `true`/`false`, which these parameters reject. Documented as
+/// `1 = true, 0 = false` (or `1=Enable / 0=Disable`).
 const FLAG_01_FIELDS: &[&str] = &[
+    "burst_enabled",
     "diversion_header",
     "dont_charge_monthly",
     "dont_charge_setup",
@@ -85,21 +99,35 @@ const FLAG_01_FIELDS: &[&str] = &[
     "email_enable",
     "email_enabled",
     "enable",
+    "enable_internal_cnam",
+    "enable_ip_restriction",
+    "enable_pop_restriction",
     "enabled",
+    "fax_to_sip_enabled",
     "isMobile",
     "isPartial",
+    "record_calls",
     "security_code_enabled",
+    "send_bye",
     "send_email_enabled",
+    "skip_password",
+    "smpp_enabled",
+    "sms_email_enabled",
     "sms_forward_enable",
+    "sms_forward_enabled",
     "sms_sipaccount_enabled",
-    "test",
+    "sms_url_callback_enabled",
+    "sms_url_callback_retry",
+    "transcribe",
     "url_callback_enable",
     "url_callback_retry",
+    "url_enabled",
 ];
 
-/// Boolean flags voip.ms encodes on the wire as `yes` / `no`. Typed as
-/// [`crate::FlagYesNo`] instead of `String`. These are the conference, queue,
-/// and voicemail toggles documented as `(yes/no)`.
+/// Boolean flags voip.ms encodes on the wire as `yes` / `no`. Typed as `bool`
+/// instead of `String`, with the `yes`/`no` wire form from a param
+/// `serialize_with`. These are the conference, queue, and voicemail toggles
+/// documented as `(yes/no)`.
 const FLAG_YES_NO_FIELDS: &[&str] = &[
     "admin",
     "announce_join_leave",
@@ -128,14 +156,29 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let routing = FieldOverride {
         rust_type: "crate::Routing".into(),
         response_deserializer: Some("crate::responses::deserialize_opt_routing".into()),
+        ..Default::default()
     };
+    let tolerant_bool = "crate::responses::deserialize_opt_bool_from_string_number_or_yn";
     let flag_01 = FieldOverride {
-        rust_type: "crate::Flag01".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_flag01".into()),
+        rust_type: "bool".into(),
+        param_serializer: Some("crate::responses::serialize_opt_flag_01".into()),
+        response_deserializer: Some(tolerant_bool.into()),
+        ..Default::default()
     };
     let flag_yes_no = FieldOverride {
-        rust_type: "crate::FlagYesNo".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_flag_yes_no".into()),
+        rust_type: "bool".into(),
+        param_serializer: Some("crate::responses::serialize_opt_flag_yes_no".into()),
+        response_deserializer: Some(tolerant_bool.into()),
+        ..Default::default()
+    };
+    // `test` is a request-only validate-only flag: its docs uniformly say
+    // "set to true if testing... no changes are made", so `false` carries no
+    // meaning distinct from absent. Emitted as plain `bool`, skipped when false.
+    let flag_test = FieldOverride {
+        rust_type: "bool".into(),
+        param_serializer: Some("crate::responses::serialize_flag_01".into()),
+        param_skip_if: Some("crate::responses::is_false".into()),
+        ..Default::default()
     };
 
     ROUTING_FIELDS
@@ -147,5 +190,6 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
                 .iter()
                 .map(|name| (*name, flag_yes_no.clone())),
         )
+        .chain(std::iter::once(("test", flag_test)))
         .collect()
 }

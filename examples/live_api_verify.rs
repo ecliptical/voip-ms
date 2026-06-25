@@ -426,7 +426,7 @@ async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), 
     let response: SetSMSResponse = client
         .set_sms(&SetSMSParams {
             did: Some(did.to_string()),
-            enable: Some(did_info.sms_enabled.unwrap_or(false).into()),
+            enable: did_info.sms_enabled,
             ..Default::default()
         })
         .await?;

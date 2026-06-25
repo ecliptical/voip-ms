@@ -60,4 +60,4 @@ mod types;
 pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL};
 pub use error::{Error, Result};
 pub use generated::*;
-pub use types::{Flag01, FlagYesNo, Routing, RoutingParseError};
+pub use types::{Routing, RoutingParseError};

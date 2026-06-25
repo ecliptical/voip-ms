@@ -40,9 +40,9 @@ committed inputs:
   and regenerate. The overrides schema lives in
   [xtask/src/overrides.rs](xtask/src/overrides.rs); see its module docs for
   the path grammar and the `enums` / `field_types` / `field_type_skip`
-  sections. Boolean-flag field names (typed `Flag01` / `FlagYesNo`) are
-  registered in [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs),
-  not the JSON.
+  sections. Boolean-flag field names (typed `bool`, serialized to `1`/`0` or
+  `yes`/`no`) are registered in
+  [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs), not the JSON.
 
 ### Reference documents
 
