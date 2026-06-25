@@ -10,6 +10,81 @@ use serde_json::Value;
 use crate::client::Client;
 use crate::error::Result;
 
+/// Sub-account call-pickup permissions.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CallPickupBehavior {
+    /// Can pick up and be picked up.
+    PickUpAndBePickedUp,
+    /// Can pick up; cannot be picked up.
+    PickUpOnly,
+    /// Can be picked up; cannot pick up.
+    BePickedUpOnly,
+    /// Cannot pick up nor be picked up.
+    Disabled,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl CallPickupBehavior {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            CallPickupBehavior::PickUpAndBePickedUp => "1",
+            CallPickupBehavior::PickUpOnly => "2",
+            CallPickupBehavior::BePickedUpOnly => "3",
+            CallPickupBehavior::Disabled => "4",
+            CallPickupBehavior::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "1" => CallPickupBehavior::PickUpAndBePickedUp,
+            "2" => CallPickupBehavior::PickUpOnly,
+            "3" => CallPickupBehavior::BePickedUpOnly,
+            "4" => CallPickupBehavior::Disabled,
+            other => CallPickupBehavior::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for CallPickupBehavior {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for CallPickupBehavior {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for CallPickupBehavior {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(CallPickupBehavior::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_call_pickup_behavior<'de, D>(
+    d: D,
+) -> std::result::Result<Option<CallPickupBehavior>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(CallPickupBehavior::from_wire(t))
+        }
+    }))
+}
+
 /// DTMF transport mode for SIP sub-accounts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DtmfMode {
@@ -154,6 +229,75 @@ where
     }))
 }
 
+/// When to include estimated hold time in queue position announcements.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EstimatedHoldTimeAnnounce {
+    Yes,
+    No,
+    /// Announce only the first time.
+    Once,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl EstimatedHoldTimeAnnounce {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            EstimatedHoldTimeAnnounce::Yes => "yes",
+            EstimatedHoldTimeAnnounce::No => "no",
+            EstimatedHoldTimeAnnounce::Once => "once",
+            EstimatedHoldTimeAnnounce::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "yes" => EstimatedHoldTimeAnnounce::Yes,
+            "no" => EstimatedHoldTimeAnnounce::No,
+            "once" => EstimatedHoldTimeAnnounce::Once,
+            other => EstimatedHoldTimeAnnounce::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for EstimatedHoldTimeAnnounce {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for EstimatedHoldTimeAnnounce {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for EstimatedHoldTimeAnnounce {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(EstimatedHoldTimeAnnounce::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_estimated_hold_time_announce<'de, D>(
+    d: D,
+) -> std::result::Result<Option<EstimatedHoldTimeAnnounce>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(EstimatedHoldTimeAnnounce::from_wire(t))
+        }
+    }))
+}
+
 /// Asterisk NAT handling mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Nat {
@@ -290,6 +434,142 @@ where
             None
         } else {
             Some(PlayInstructions::from_wire(t))
+        }
+    }))
+}
+
+/// Whether callers may join, or are kept in, a queue with no available members. Used by both `join_when_empty` and `leave_when_empty`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum QueueEmptyBehavior {
+    /// Callers may join / remain with no members.
+    Yes,
+    /// Callers may not join / are sent to failover.
+    No,
+    /// Like `No`, but also applies when members are present yet all unavailable.
+    Strict,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl QueueEmptyBehavior {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            QueueEmptyBehavior::Yes => "yes",
+            QueueEmptyBehavior::No => "no",
+            QueueEmptyBehavior::Strict => "strict",
+            QueueEmptyBehavior::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "yes" => QueueEmptyBehavior::Yes,
+            "no" => QueueEmptyBehavior::No,
+            "strict" => QueueEmptyBehavior::Strict,
+            other => QueueEmptyBehavior::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for QueueEmptyBehavior {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for QueueEmptyBehavior {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for QueueEmptyBehavior {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(QueueEmptyBehavior::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_queue_empty_behavior<'de, D>(
+    d: D,
+) -> std::result::Result<Option<QueueEmptyBehavior>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(QueueEmptyBehavior::from_wire(t))
+        }
+    }))
+}
+
+/// Sort order for selected recordings.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RecordingSort {
+    Alpha,
+    Random,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl RecordingSort {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            RecordingSort::Alpha => "alpha",
+            RecordingSort::Random => "random",
+            RecordingSort::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "alpha" => RecordingSort::Alpha,
+            "random" => RecordingSort::Random,
+            other => RecordingSort::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for RecordingSort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for RecordingSort {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for RecordingSort {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(RecordingSort::from_wire(&s))
+    }
+}
+
+pub(crate) fn deserialize_opt_recording_sort<'de, D>(
+    d: D,
+) -> std::result::Result<Option<RecordingSort>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(RecordingSort::from_wire(t))
         }
     }))
 }
@@ -7849,7 +8129,7 @@ pub struct SetMusicOnHoldParams {
     pub volume: Option<String>,
     /// Selected recordings sort mode (Example: "alpha", "random")
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sort: Option<String>,
+    pub sort: Option<RecordingSort>,
     /// Selected recordings separated by commas (Values from getRecordings,
     /// example: (1234,1235,1236) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -7963,14 +8243,14 @@ pub struct SetQueueParams {
     /// strict Callers cannot join a queue with no members or only unavailable
     /// members (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub join_when_empty: Option<String>,
+    pub join_when_empty: Option<QueueEmptyBehavior>,
     /// How caller leave the queue (Values 'yes'/'no'/'strict') Examples: yes
     /// Callers are sent to failover when there are no members no Callers will
     /// remain in the queue even if there are no members strict Callers are sent
     /// to failover if there are members but none of them is available.
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub leave_when_empty: Option<String>,
+    pub leave_when_empty: Option<QueueEmptyBehavior>,
     /// Ring strategy (Values from getRingStrategies) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ring_strategy: Option<RingStrategy>,
@@ -8010,7 +8290,7 @@ pub struct SetQueueParams {
     /// Include estimated hold time in position announcements (Values
     /// 'yes'/'no'/'once')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub if_announce_position_enabled_report_estimated_hold_time: Option<String>,
+    pub if_announce_position_enabled_report_estimated_hold_time: Option<EstimatedHoldTimeAnnounce>,
     /// Yes to say "Thank you for your patience" immediatly after announcing
     /// Queue Position and Estimated hold time left (Values 'yes'/'no')
     #[serde(
@@ -12435,11 +12715,8 @@ pub struct GetMusicOnHoldResponseMusicOnHold {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub volume: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub sort: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_recording_sort")]
+    pub sort: Option<RecordingSort>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -12801,16 +13078,10 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub maximum_callers: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub join_when_empty: Option<bool>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
-    )]
-    pub leave_when_empty: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_opt_queue_empty_behavior")]
+    pub join_when_empty: Option<QueueEmptyBehavior>,
+    #[serde(default, deserialize_with = "deserialize_opt_queue_empty_behavior")]
+    pub leave_when_empty: Option<QueueEmptyBehavior>,
     #[serde(default, deserialize_with = "deserialize_opt_ring_strategy")]
     pub ring_strategy: Option<RingStrategy>,
     #[serde(
@@ -12855,9 +13126,9 @@ pub struct GetQueuesResponseQueue {
     pub announce_round_seconds: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "deserialize_opt_estimated_hold_time_announce"
     )]
-    pub if_announce_position_enabled_report_estimated_hold_time: Option<bool>,
+    pub if_announce_position_enabled_report_estimated_hold_time: Option<EstimatedHoldTimeAnnounce>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
@@ -13922,11 +14193,8 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub default_e911: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub call_pickup_behavior: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_call_pickup_behavior")]
+    pub call_pickup_behavior: Option<CallPickupBehavior>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]

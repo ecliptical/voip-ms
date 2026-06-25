@@ -182,7 +182,8 @@ in `xtask/src/field_overrides.rs`:
   every `*Params` and `*Response` struct that has that field. Used
   for `DtmfMode`, `Nat`, `EmailAttachmentFormat`,
   `TranscriptionFormat`, `PlayInstructions`, `RingStrategy`,
-  `RingGroupOrder`, `VoicemailFolder`.
+  `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`,
+  `EstimatedHoldTimeAnnounce`, `CallPickupBehavior`, and `RecordingSort`.
 
 Both kinds of substituted enum carry an `Unknown(String)` (or
 `Unknown { tag, value }` for `Routing`) catch-all so voip.ms adding

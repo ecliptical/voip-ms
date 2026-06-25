@@ -73,6 +73,38 @@
         { "name": "Friends", "wire": "Friends" },
         { "name": "Work",    "wire": "Work" }
       ]
+    },
+    "QueueEmptyBehavior": {
+      "doc": "Whether callers may join, or are kept in, a queue with no available members. Used by both `join_when_empty` and `leave_when_empty`.",
+      "variants": [
+        { "name": "Yes",    "wire": "yes",    "doc": "Callers may join / remain with no members." },
+        { "name": "No",     "wire": "no",     "doc": "Callers may not join / are sent to failover." },
+        { "name": "Strict", "wire": "strict", "doc": "Like `No`, but also applies when members are present yet all unavailable." }
+      ]
+    },
+    "EstimatedHoldTimeAnnounce": {
+      "doc": "When to include estimated hold time in queue position announcements.",
+      "variants": [
+        { "name": "Yes",  "wire": "yes" },
+        { "name": "No",   "wire": "no" },
+        { "name": "Once", "wire": "once", "doc": "Announce only the first time." }
+      ]
+    },
+    "CallPickupBehavior": {
+      "doc": "Sub-account call-pickup permissions.",
+      "variants": [
+        { "name": "PickUpAndBePickedUp", "wire": "1", "doc": "Can pick up and be picked up." },
+        { "name": "PickUpOnly",          "wire": "2", "doc": "Can pick up; cannot be picked up." },
+        { "name": "BePickedUpOnly",      "wire": "3", "doc": "Can be picked up; cannot pick up." },
+        { "name": "Disabled",            "wire": "4", "doc": "Cannot pick up nor be picked up." }
+      ]
+    },
+    "RecordingSort": {
+      "doc": "Sort order for selected recordings.",
+      "variants": [
+        { "name": "Alpha",  "wire": "alpha" },
+        { "name": "Random", "wire": "random" }
+      ]
     }
   },
   "field_types": {
@@ -83,7 +115,12 @@
     "play_instructions":       "PlayInstructions",
     "ring_strategy":           "RingStrategy",
     "order":                   "RingGroupOrder",
-    "folder":                  "VoicemailFolder"
+    "folder":                  "VoicemailFolder",
+    "join_when_empty":         "QueueEmptyBehavior",
+    "leave_when_empty":        "QueueEmptyBehavior",
+    "if_announce_position_enabled_report_estimated_hold_time": "EstimatedHoldTimeAnnounce",
+    "call_pickup_behavior":    "CallPickupBehavior",
+    "sort":                    "RecordingSort"
   },
   "field_type_skip": [
     "GetVoicemailsResponseVoicemail.urgent"

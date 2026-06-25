@@ -97,9 +97,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   forward compatibility is preserved.
 - New public enums for documented voip.ms scalars: `DtmfMode`, `Nat`,
   `EmailAttachmentFormat`, `TranscriptionFormat`, `PlayInstructions`,
-  `RingStrategy`, `RingGroupOrder`, `VoicemailFolder`. Each carries an
+  `RingStrategy`, `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`
+  (`join_when_empty` / `leave_when_empty`), `EstimatedHoldTimeAnnounce`,
+  `CallPickupBehavior`, and `RecordingSort`. Each carries an
   `Unknown(String)` variant for values not in the documented set, so
   voip.ms adding new options never breaks deserialization.
+  `QueueEmptyBehavior` and `EstimatedHoldTimeAnnounce` also correct a
+  latent bug: the queue response fields were inferred as `bool` from a
+  `yes`/`no` sample and would have dropped the third value (`strict` /
+  `once`).
 - Codegen overrides schema extended with top-level `enums` and
   `field_types` sections in `tools/api-response-overrides.json`. New
   enums can be added declaratively (name, variants, wire strings) and

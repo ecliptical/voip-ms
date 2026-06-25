@@ -520,3 +520,53 @@ async fn unknown_enum_value_is_preserved_verbatim() {
         Some(DtmfMode::Unknown("future_mode".into())),
     );
 }
+
+#[tokio::test]
+async fn queue_empty_behavior_param_serializes_to_wire() {
+    // The third value (`strict`) is why this is an enum, not a bool: a bool
+    // would lose it. The param serializes to its bare wire string.
+    use voip_ms::{QueueEmptyBehavior, SetQueueParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setQueue"))
+        .and(query_param("leave_when_empty", "strict"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = SetQueueParams {
+        leave_when_empty: Some(QueueEmptyBehavior::Strict),
+        ..Default::default()
+    };
+    client.set_queue_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn queue_empty_behavior_response_deserializes_third_value() {
+    use voip_ms::QueueEmptyBehavior;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getQueues"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "queues": [
+                { "queue_name": "support", "leave_when_empty": "strict" }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_queues(&voip_ms::GetQueuesParams::default())
+        .await
+        .unwrap();
+    let queue = envelope.queues.unwrap().into_iter().next().unwrap();
+    assert_eq!(queue.leave_when_empty, Some(QueueEmptyBehavior::Strict));
+}
