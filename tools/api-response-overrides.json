@@ -178,7 +178,9 @@
     "billing_type":            "DidBillingType"
   },
   "field_type_skip": [
-    "GetVoicemailsResponseVoicemail.urgent"
+    "GetVoicemailsResponseVoicemail.urgent",
+    "GetFAXMessagesParams.folder",
+    "GetFAXMessagesResponseFAX.folder"
   ],
   "field_type_override": {
     "SearchDIDsCANParams.type":      "SearchType",

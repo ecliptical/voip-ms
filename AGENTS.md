@@ -183,8 +183,10 @@ in `xtask/src/field_overrides.rs`:
 * **Declarative enum overrides** in
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
-  sections. The generator emits the enum type, `as_wire` / `from_wire`,
-  `Display`, `Serialize`, `Deserialize`, plus a per-enum
+  sections. The generator emits the enum type (deriving `Debug`, `Clone`,
+  `PartialEq`, `Eq`, `Hash` -- not `Copy`, since the `Unknown(String)`
+  catch-all holds a `String`), `as_wire` / `from_wire`, `Display`,
+  `Serialize`, `Deserialize`, plus a per-enum
   `deserialize_opt_*` helper, and substitutes the field's type in
   every `*Params` and `*Response` struct that has that field. Used
   for `DtmfMode`, `Nat`, `EmailAttachmentFormat`,
@@ -204,8 +206,12 @@ Field-name substitution is global, so two JSON sections handle fields
 whose name means different things in different structs:
 
 * `field_type_skip` (`["StructName.field"]`) suppresses the name-based
-  override for one struct, keeping its inferred/patched type --
-  `getVoicemails` returns `urgent` as a *count*, not the per-message flag.
+  override for one struct -- on both the `*Params` and `*Response` side --
+  keeping its WSDL/inferred/patched type. Two cases use it:
+  `GetVoicemailsResponseVoicemail.urgent` is a *count*, not the per-message
+  flag; and `getFaxMessages`'s `folder` is a free-text fax-folder name
+  (`SENT` / `ALL` / user-created via `setFaxFolder`), not one of the fixed
+  [`VoicemailFolder`] variants the global `folder` mapping would impose.
 * `field_type_override` (`{"StructName.field": "EnumName"}`) is the
   assigning complement: it types one struct's field as a specific enum,
   overriding both the inferred type and any `field_types` entry. The `type`

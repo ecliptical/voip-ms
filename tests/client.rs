@@ -739,3 +739,32 @@ async fn seconds_response_deserializes_number_and_sentinel() {
     assert_eq!(queue.retry_timer, Some(Seconds::Value(30)));
     assert_eq!(queue.maximum_wait_time, Some(WaitTime::Unlimited));
 }
+
+#[tokio::test]
+async fn fax_message_folder_is_free_text_not_voicemail_enum() {
+    // `folder` is a `VoicemailFolder` enum on voicemail methods, but a fax
+    // folder is a free-text name (`SENT`/`ALL`/user-created) outside that
+    // variant set; `getFaxMessages.folder` must stay a `String` so it
+    // serializes verbatim. (Regression: the global `folder` override once
+    // mistyped this as `VoicemailFolder`.)
+    use voip_ms::GetFAXMessagesParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getFaxMessages"))
+        .and(query_param("folder", "SENT"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    client
+        .get_fax_messages_raw(&GetFAXMessagesParams {
+            folder: Some("SENT".into()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+}

@@ -59,8 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `field_type_skip` section in `tools/api-response-overrides.json` to suppress
-  the global field-name override for one struct where a flag/enum name is reused
-  for an unrelated value (used for `getVoicemails`' `urgent` message count).
+  the global field-name override for one struct -- on both the `*Params` and
+  `*Response` side -- where a flag/enum name is reused for an unrelated value
+  (used for `getVoicemails`' `urgent` message count and `getFaxMessages`'
+  free-text `folder` name).
 - `field_type_override` section in `tools/api-response-overrides.json` to assign
   one struct's field a specific enum, overriding the global field-name table
   (used for the `type` field, which means different things per method).
@@ -74,6 +76,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the crate root. Their types appear in the public API, so callers can now
   name those types (and `match` on `Error::Http`) without declaring a separate,
   independently-versioned dependency.
+- The substituted enum types (`DtmfMode`, `MessageType`, …) and the
+  hand-written `Routing` / `Seconds` / `WaitTime` now derive `Hash`, so they can
+  be used as `HashMap` / `HashSet` keys. (`Copy` is not derived: the
+  `Unknown(String)` catch-all holds a `String`.)
+
+### Fixed
+
+- `getFaxMessages`' `folder` parameter and response field were mistyped as the
+  `VoicemailFolder` enum by the global `folder` override. A fax folder is a
+  free-text name (`SENT` / `ALL` / user-created via `setFaxFolder`) outside that
+  variant set; both are now `String`.
 
 ## [0.1.3] - 2026-05-25
 

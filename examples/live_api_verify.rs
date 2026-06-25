@@ -25,6 +25,7 @@
 
 use std::env;
 use std::error::Error;
+use std::future::Future;
 use std::time::{SystemTime, UNIX_EPOCH};
 use voip_ms::{
     Client, CreateSubAccountParams, CreateSubAccountResponse, DelSubAccountParams,
@@ -122,6 +123,45 @@ impl Config {
     }
 }
 
+/// Accumulates per-check outcomes so a single failure never stops the rest of
+/// the harness from running. Holds the names of every check that failed.
+#[derive(Default)]
+struct Checks {
+    failures: Vec<String>,
+}
+
+impl Checks {
+    /// Runs one check, printing its outcome and recording the name on failure.
+    /// Always returns so the caller proceeds to the next check.
+    async fn run<F>(&mut self, name: &str, check: F)
+    where
+        F: Future<Output = Result<(), Box<dyn Error>>>,
+    {
+        match check.await {
+            Ok(()) => println!("[pass] {name}"),
+            Err(error) => {
+                eprintln!("[fail] {name}: {error}");
+                self.failures.push(name.to_string());
+            }
+        }
+    }
+
+    /// `Ok` if every recorded check passed, otherwise an error naming all
+    /// failures so the process exits non-zero.
+    fn into_result(self) -> Result<(), Box<dyn Error>> {
+        if self.failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!(
+                "{} check(s) failed: {}",
+                self.failures.len(),
+                self.failures.join(", ")
+            )
+            .into())
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::from_env()?;
@@ -136,12 +176,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let client = Client::new(config.username.clone(), config.password.clone());
 
-    run_smoke_checks(&client, &config).await?;
+    let mut checks = Checks::default();
+    run_smoke_checks(&client, &config, &mut checks).await;
 
     if config.mode == Mode::Extended {
-        run_extended_checks(&client, &config).await?;
+        run_extended_checks(&client, &config, &mut checks).await;
     }
 
+    checks.into_result()?;
     println!("live verification completed successfully");
     Ok(())
 }
@@ -221,185 +263,252 @@ fn run_dry_run_checks(config: &Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn run_smoke_checks(client: &Client, config: &Config) -> Result<(), Box<dyn Error>> {
-    println!("[check] get_balance");
-    client
-        .get_balance(&GetBalanceParams {
-            advanced: Some(true),
+async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks) {
+    checks
+        .run("get_balance", async {
+            client
+                .get_balance(&GetBalanceParams {
+                    advanced: Some(true),
+                })
+                .await?;
+            Ok(())
         })
-        .await?;
+        .await;
 
-    println!("[check] get_servers_info");
-    let servers: GetServersInfoResponse = client
-        .get_servers_info(&GetServersInfoParams::default())
-        .await?;
-    println!(
-        "[info] server count: {}",
-        servers.servers.as_ref().map_or(0, std::vec::Vec::len)
-    );
+    checks
+        .run("get_servers_info", async {
+            let servers: GetServersInfoResponse = client
+                .get_servers_info(&GetServersInfoParams::default())
+                .await?;
+            println!(
+                "[info] server count: {}",
+                servers.servers.as_ref().map_or(0, std::vec::Vec::len)
+            );
+            Ok(())
+        })
+        .await;
 
-    println!("[check] get_dids_info");
-    let dids: GetDIDsInfoResponse = client.get_dids_info(&GetDIDsInfoParams::default()).await?;
-    println!(
-        "[info] DID count: {}",
-        dids.dids.as_ref().map_or(0, std::vec::Vec::len)
-    );
+    checks
+        .run("get_dids_info", async {
+            let dids: GetDIDsInfoResponse =
+                client.get_dids_info(&GetDIDsInfoParams::default()).await?;
+            println!(
+                "[info] DID count: {}",
+                dids.dids.as_ref().map_or(0, std::vec::Vec::len)
+            );
+            Ok(())
+        })
+        .await;
 
-    println!("[check] get_sub_accounts");
-    let sub_accounts: GetSubAccountsResponse = client
-        .get_sub_accounts(&GetSubAccountsParams::default())
-        .await?;
-    println!(
-        "[info] sub-account count: {}",
-        sub_accounts.accounts.as_ref().map_or(0, std::vec::Vec::len)
-    );
+    checks
+        .run("get_sub_accounts", async {
+            let sub_accounts: GetSubAccountsResponse = client
+                .get_sub_accounts(&GetSubAccountsParams::default())
+                .await?;
+            println!(
+                "[info] sub-account count: {}",
+                sub_accounts.accounts.as_ref().map_or(0, std::vec::Vec::len)
+            );
+            Ok(())
+        })
+        .await;
 
-    println!("[check] get_sms");
-    let sms: GetSMSResponse = client.get_sms(&GetSMSParams::default()).await?;
-    println!(
-        "[info] sms count: {}",
-        sms.sms.as_ref().map_or(0, std::vec::Vec::len)
-    );
+    checks
+        .run("get_sms", async {
+            let sms: GetSMSResponse = client.get_sms(&GetSMSParams::default()).await?;
+            println!(
+                "[info] sms count: {}",
+                sms.sms.as_ref().map_or(0, std::vec::Vec::len)
+            );
+            Ok(())
+        })
+        .await;
 
-    run_typed_reference_checks(client).await?;
+    run_typed_reference_checks(client, checks).await;
 
     if config.enable_location_typed_checks {
-        run_typed_location_checks(client, config).await?;
+        run_typed_location_checks(client, config, checks).await;
     } else {
         println!("[skip] location-dependent typed checks disabled");
     }
-
-    Ok(())
 }
 
-async fn run_typed_reference_checks(client: &Client) -> Result<(), Box<dyn Error>> {
-    println!("[check] typed reference endpoints");
-
-    println!("[check] get_allowed_codecs");
-    let _: GetAllowedCodecsResponse = client
-        .get_allowed_codecs(&GetAllowedCodecsParams::default())
-        .await?;
-    println!("[check] get_auth_types");
-    let _: GetAuthTypesResponse = client
-        .get_auth_types(&GetAuthTypesParams::default())
-        .await?;
-    println!("[check] get_countries");
-    let _: GetCountriesResponse = client.get_countries(&GetCountriesParams::default()).await?;
-    println!("[check] get_did_countries");
-    let _: GetDIDCountriesResponse = client
-        .get_did_countries(&GetDIDCountriesParams {
-            r#type: Some("geographic".to_string()),
-            ..Default::default()
+async fn run_typed_reference_checks(client: &Client, checks: &mut Checks) {
+    checks
+        .run("get_allowed_codecs", async {
+            let _: GetAllowedCodecsResponse = client
+                .get_allowed_codecs(&GetAllowedCodecsParams::default())
+                .await?;
+            Ok(())
         })
-        .await?;
-    println!("[check] get_device_types");
-    let _: GetDeviceTypesResponse = client
-        .get_device_types(&GetDeviceTypesParams::default())
-        .await?;
-    println!("[check] get_dtmf_modes");
-    let _: GetDTMFModesResponse = client
-        .get_dtmf_modes(&GetDTMFModesParams::default())
-        .await?;
-    println!("[check] get_languages");
-    let _: GetLanguagesResponse = client.get_languages(&GetLanguagesParams::default()).await?;
-    println!("[check] get_locales");
-    let _: GetLocalesResponse = client.get_locales(&GetLocalesParams::default()).await?;
-    println!("[check] get_protocols");
-    let _: GetProtocolsResponse = client.get_protocols(&GetProtocolsParams::default()).await?;
-    println!("[check] get_states");
-    let _: GetStatesResponse = client.get_states(&GetStatesParams::default()).await?;
-
-    println!("[info] typed reference endpoint sweep succeeded");
-    Ok(())
+        .await;
+    checks
+        .run("get_auth_types", async {
+            let _: GetAuthTypesResponse = client
+                .get_auth_types(&GetAuthTypesParams::default())
+                .await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_countries", async {
+            let _: GetCountriesResponse =
+                client.get_countries(&GetCountriesParams::default()).await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_did_countries", async {
+            let _: GetDIDCountriesResponse = client
+                .get_did_countries(&GetDIDCountriesParams {
+                    r#type: Some("geographic".to_string()),
+                    ..Default::default()
+                })
+                .await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_device_types", async {
+            let _: GetDeviceTypesResponse = client
+                .get_device_types(&GetDeviceTypesParams::default())
+                .await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_dtmf_modes", async {
+            let _: GetDTMFModesResponse = client
+                .get_dtmf_modes(&GetDTMFModesParams::default())
+                .await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_languages", async {
+            let _: GetLanguagesResponse =
+                client.get_languages(&GetLanguagesParams::default()).await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_locales", async {
+            let _: GetLocalesResponse = client.get_locales(&GetLocalesParams::default()).await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_protocols", async {
+            let _: GetProtocolsResponse =
+                client.get_protocols(&GetProtocolsParams::default()).await?;
+            Ok(())
+        })
+        .await;
+    checks
+        .run("get_states", async {
+            let _: GetStatesResponse = client.get_states(&GetStatesParams::default()).await?;
+            Ok(())
+        })
+        .await;
 }
 
-async fn run_typed_location_checks(client: &Client, config: &Config) -> Result<(), Box<dyn Error>> {
-    println!("[check] typed location-dependent endpoints");
-
-    let dids_can_province = config
-        .dids_can_province
-        .as_deref()
-        .ok_or("LIVE_VERIFY_DIDS_CAN_PROVINCE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true")?;
-    let dids_usa_state = config.dids_usa_state.as_deref().ok_or(
-        "LIVE_VERIFY_DIDS_USA_STATE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true",
-    )?;
-
-    println!("[check] get_dids_can");
-    let _: GetDIDsCANResponse = client
-        .get_dids_can(&GetDIDsCANParams {
-            province: Some(dids_can_province.to_string()),
-            ..Default::default()
+async fn run_typed_location_checks(client: &Client, config: &Config, checks: &mut Checks) {
+    checks
+        .run("get_dids_can", async {
+            let dids_can_province = config
+                .dids_can_province
+                .as_deref()
+                .ok_or("LIVE_VERIFY_DIDS_CAN_PROVINCE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true")?;
+            let _: GetDIDsCANResponse = client
+                .get_dids_can(&GetDIDsCANParams {
+                    province: Some(dids_can_province.to_string()),
+                    ..Default::default()
+                })
+                .await?;
+            Ok(())
         })
-        .await?;
+        .await;
 
-    println!("[check] get_dids_usa");
-    let _: GetDIDsUSAResponse = client
-        .get_dids_usa(&GetDIDsUSAParams {
-            state: Some(dids_usa_state.to_string()),
-            ..Default::default()
+    checks
+        .run("get_dids_usa", async {
+            let dids_usa_state = config.dids_usa_state.as_deref().ok_or(
+                "LIVE_VERIFY_DIDS_USA_STATE is required when LIVE_VERIFY_ENABLE_LOCATION_TYPED_CHECKS=true",
+            )?;
+            let _: GetDIDsUSAResponse = client
+                .get_dids_usa(&GetDIDsUSAParams {
+                    state: Some(dids_usa_state.to_string()),
+                    ..Default::default()
+                })
+                .await?;
+            Ok(())
         })
-        .await?;
-
-    println!("[info] location-dependent typed checks succeeded");
-    Ok(())
+        .await;
 }
 
-async fn run_extended_checks(client: &Client, config: &Config) -> Result<(), Box<dyn Error>> {
+async fn run_extended_checks(client: &Client, config: &Config, checks: &mut Checks) {
     if config.enable_sms_settings_check {
-        if !config.allow_state_changes {
-            return Err(
-                "LIVE_VERIFY_ENABLE_SMS_SETTINGS_CHECK=true requires LIVE_VERIFY_ALLOW_STATE_CHANGES=true"
-                    .into(),
-            );
-        }
-
-        let did = config
-            .test_did
-            .as_deref()
-            .ok_or("VOIP_MS_TEST_DID is required for SMS settings check")?;
-        verify_sms_settings_endpoint(client, did).await?;
+        checks
+            .run("set_sms settings", async {
+                if !config.allow_state_changes {
+                    return Err(
+                        "LIVE_VERIFY_ENABLE_SMS_SETTINGS_CHECK=true requires LIVE_VERIFY_ALLOW_STATE_CHANGES=true"
+                            .into(),
+                    );
+                }
+                let did = config
+                    .test_did
+                    .as_deref()
+                    .ok_or("VOIP_MS_TEST_DID is required for SMS settings check")?;
+                verify_sms_settings_endpoint(client, did).await
+            })
+            .await;
     } else {
         println!("[skip] SMS settings check disabled");
     }
 
     if config.enable_subaccount_check {
-        if !config.allow_state_changes {
-            return Err(
-                "LIVE_VERIFY_ENABLE_SUBACCOUNT_CHECK=true requires LIVE_VERIFY_ALLOW_STATE_CHANGES=true"
-                    .into(),
-            );
-        }
-        verify_subaccount_lifecycle(client).await?;
+        checks
+            .run("sub-account lifecycle", async {
+                if !config.allow_state_changes {
+                    return Err(
+                        "LIVE_VERIFY_ENABLE_SUBACCOUNT_CHECK=true requires LIVE_VERIFY_ALLOW_STATE_CHANGES=true"
+                            .into(),
+                    );
+                }
+                verify_subaccount_lifecycle(client).await
+            })
+            .await;
     } else {
         println!("[skip] sub-account lifecycle check disabled");
     }
 
     if config.enable_sms_send_check {
-        if !config.allow_costly {
-            return Err(
-                "LIVE_VERIFY_ENABLE_SMS_SEND_CHECK=true requires LIVE_VERIFY_ALLOW_COSTLY=true"
-                    .into(),
-            );
-        }
-
-        let did = config
-            .test_did
-            .as_deref()
-            .ok_or("VOIP_MS_TEST_DID is required for SMS send check")?;
-        let dst = config
-            .sms_dst
-            .as_deref()
-            .ok_or("VOIP_MS_SMS_DST is required for SMS send check")?;
-        let message = config
-            .sms_message
-            .as_deref()
-            .ok_or("VOIP_MS_SMS_MESSAGE is required for SMS send check")?;
-        verify_send_sms(client, did, dst, message).await?;
+        checks
+            .run("send_sms", async {
+                if !config.allow_costly {
+                    return Err(
+                        "LIVE_VERIFY_ENABLE_SMS_SEND_CHECK=true requires LIVE_VERIFY_ALLOW_COSTLY=true"
+                            .into(),
+                    );
+                }
+                let did = config
+                    .test_did
+                    .as_deref()
+                    .ok_or("VOIP_MS_TEST_DID is required for SMS send check")?;
+                let dst = config
+                    .sms_dst
+                    .as_deref()
+                    .ok_or("VOIP_MS_SMS_DST is required for SMS send check")?;
+                let message = config
+                    .sms_message
+                    .as_deref()
+                    .ok_or("VOIP_MS_SMS_MESSAGE is required for SMS send check")?;
+                verify_send_sms(client, did, dst, message).await
+            })
+            .await;
     } else {
         println!("[skip] SMS send check disabled");
     }
-
-    Ok(())
 }
 
 async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), Box<dyn Error>> {

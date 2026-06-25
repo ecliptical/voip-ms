@@ -7,6 +7,12 @@
 
 Async Rust client for the [voip.ms](https://voip.ms) REST API.
 
+The goal is an idiomatic, ergonomic Rust surface over an API that is itself
+inconsistent: fields that are really booleans, durations, enums, or routing
+targets arrive on the wire as strings (`1`/`0`, `yes`/`no`, `none`,
+`account:100001_VoIP`, …), and this crate evens that out into real Rust types
+so callers don't have to decode the wire encoding by hand.
+
 Every API method has a typed `*Params` request struct and a method on
 [`Client`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html) that
 deserializes the response into a typed `*Response` struct. A `*_raw` variant
@@ -17,7 +23,7 @@ hatch.
 
 ```toml
 [dependencies]
-voip-ms = "0.1"
+voip-ms = "0.2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -25,7 +31,7 @@ By default the crate enables `rustls` verifying against the OS trust store. To
 use the platform's native TLS stack instead:
 
 ```toml
-voip-ms = { version = "0.1", default-features = false, features = ["native-tls"] }
+voip-ms = { version = "0.2", default-features = false, features = ["native-tls"] }
 ```
 
 ## Authentication

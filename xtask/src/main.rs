@@ -508,11 +508,17 @@ fn emit(
         out.push_str(&format!("pub struct {struct_name} {{\n"));
         let docs = param_docs.get(op);
         for (fname, ftype) in body_fields {
-            // A per-struct `field_type_override` wins over the global
-            // name-based table for this one struct's field.
-            let override_ = field_type_override
-                .get(&format!("{struct_name}.{fname}"))
-                .or_else(|| table.get(fname));
+            // A per-struct `field_type_override` wins outright; otherwise the
+            // name-based table applies, unless `field_type_skip` suppresses it
+            // for this same-named-but-unrelated field (keeping the WSDL type).
+            let path = format!("{struct_name}.{fname}");
+            let override_ = if let Some(o) = field_type_override.get(&path) {
+                Some(o)
+            } else if field_type_skip.contains(&path) {
+                None
+            } else {
+                table.get(fname)
+            };
             let rust_ty = match override_ {
                 Some(o) => o.rust_type.clone(),
                 None => xsd_to_rust(ftype).to_string(),
@@ -617,7 +623,7 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
             ));
         }
 
-        out.push_str("#[derive(Debug, Clone, PartialEq, Eq)]\n");
+        out.push_str("#[derive(Debug, Clone, PartialEq, Eq, Hash)]\n");
         out.push_str(&format!("pub enum {name} {{\n"));
         for v in &def.variants {
             if let Some(doc) = &v.doc {

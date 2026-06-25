@@ -11,7 +11,7 @@ use crate::client::Client;
 use crate::error::Result;
 
 /// Sub-account call-pickup permissions.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CallPickupBehavior {
     /// Can pick up and be picked up.
     PickUpAndBePickedUp,
@@ -87,7 +87,7 @@ where
 }
 
 /// Outgoing-call dialing mode for a sub-account.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DialingMode {
     /// Use the main account setting.
     MainAccount,
@@ -157,7 +157,7 @@ where
 }
 
 /// DID billing model.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DidBillingType {
     PerMinute,
     Flat,
@@ -223,7 +223,7 @@ where
 }
 
 /// DTMF transport mode for SIP sub-accounts.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DtmfMode {
     Auto,
     Rfc2833,
@@ -295,7 +295,7 @@ where
 }
 
 /// Voicemail email attachment format.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum EmailAttachmentFormat {
     /// GSM-compressed WAV.
     Wav49,
@@ -369,7 +369,7 @@ where
 }
 
 /// When to include estimated hold time in queue position announcements.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum EstimatedHoldTimeAnnounce {
     Yes,
     No,
@@ -439,7 +439,7 @@ where
 }
 
 /// Direction of an SMS / MMS message: a filter on requests, the direction on results.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MessageType {
     Received,
     Sent,
@@ -505,7 +505,7 @@ where
 }
 
 /// Asterisk NAT handling mode.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Nat {
     Yes,
     No,
@@ -575,7 +575,7 @@ where
 }
 
 /// Voicemail playback instruction mode.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PlayInstructions {
     /// Skip instructions on unread messages.
     SkipUnread,
@@ -647,7 +647,7 @@ where
 }
 
 /// Whether callers may join, or are kept in, a queue with no available members. Used by both `join_when_empty` and `leave_when_empty`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum QueueEmptyBehavior {
     /// Callers may join / remain with no members.
     Yes,
@@ -719,7 +719,7 @@ where
 }
 
 /// Sort order for selected recordings.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RecordingSort {
     Alpha,
     Random,
@@ -785,7 +785,7 @@ where
 }
 
 /// Order in which ring-group members are attempted.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RingGroupOrder {
     /// Try members in declared order.
     Follow,
@@ -852,7 +852,7 @@ where
 }
 
 /// Queue ring strategy. Mirrors Asterisk's queue strategy options.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RingStrategy {
     RingAll,
     LeastRecent,
@@ -933,7 +933,7 @@ where
 }
 
 /// How a DID / toll-free search string is matched.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SearchType {
     Starts,
     Contains,
@@ -1002,7 +1002,7 @@ where
 }
 
 /// Carrier for outgoing calls to toll-free numbers.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TollFreeCarrier {
     /// Use the main account setting.
     MainAccount,
@@ -1076,7 +1076,7 @@ where
 }
 
 /// Voicemail transcription output format.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TranscriptionFormat {
     Text,
     Html,
@@ -1142,7 +1142,7 @@ where
 }
 
 /// Toll-free prefix to search for a vanity number.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum VanityType {
     /// Any toll-free prefix.
     Any,
@@ -1227,7 +1227,7 @@ where
 }
 
 /// Voicemail message folder.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum VoicemailFolder {
     Inbox,
     Old,
@@ -5840,7 +5840,7 @@ pub struct GetFAXMessagesParams {
     pub to: Option<String>,
     /// Name of specific Fax Folder (Example: SENT) - Default value: ALL
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder: Option<VoicemailFolder>,
+    pub folder: Option<String>,
     /// ID for a Specific Fax Message (Example: 23434)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
@@ -12057,8 +12057,11 @@ pub struct GetFAXMessagesResponseFAX {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub id: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
-    pub folder: Option<VoicemailFolder>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub folder: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime"

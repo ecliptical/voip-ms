@@ -36,7 +36,7 @@ use std::str::FromStr;
 /// * `did:5551234567` → [`Routing::Did`]
 /// * `phone:5551234567` → [`Routing::Phone`]
 /// * `none:` → [`Routing::None`]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Routing {
     /// No routing (wire: `none:`).
     None,
@@ -225,7 +225,7 @@ impl<'de> Deserialize<'de> for Routing {
 /// sentinel. [`Seconds`] serializes the sentinel as `none`; [`WaitTime`] as
 /// `unlimited` (the word `maximum_wait_time` documents). Both deserialize
 /// tolerantly: a number, a numeric string, or either sentinel word.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Seconds {
     /// A concrete number of seconds.
     Value(u64),
@@ -237,7 +237,7 @@ pub enum Seconds {
 ///
 /// Like [`Seconds`] but serializes the unbounded case as `unlimited`, the word
 /// `maximum_wait_time` documents.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WaitTime {
     /// A concrete number of seconds.
     Value(u64),
