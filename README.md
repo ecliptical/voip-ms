@@ -23,7 +23,7 @@ hatch.
 
 ```toml
 [dependencies]
-voip-ms = "0.2"
+voip-ms = "0.3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -31,7 +31,7 @@ By default the crate enables `rustls` verifying against the OS trust store. To
 use the platform's native TLS stack instead:
 
 ```toml
-voip-ms = { version = "0.2", default-features = false, features = ["native-tls"] }
+voip-ms = { version = "0.3", default-features = false, features = ["native-tls"] }
 ```
 
 ## Authentication
