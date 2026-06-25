@@ -68,7 +68,7 @@ pub struct OverridesDoc {
     #[serde(default)]
     pub field_type_override: HashMap<String, String>,
     /// Wire status codes that mean "the requested collection is empty,"
-    /// not a failure. voip.ms returns a distinct `no_*` status for each
+    /// not a failure. VoIP.ms returns a distinct `no_*` status for each
     /// list method when the list has no entries (`no_sms`, `no_cdr`,
     /// `no_messages`, ...). The generator emits these into
     /// [`ApiStatus::is_empty`]; the client treats an empty status as a

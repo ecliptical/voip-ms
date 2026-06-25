@@ -276,7 +276,7 @@ fn sanitize_doc_word(word: &str) -> String {
 
 /// Backslash-escape a leading Markdown list marker (`- `, `* `, `+ `, or
 /// `N. `) so a wrapped doc line isn't parsed as a lazy list continuation
-/// (clippy::doc_lazy_continuation). The voip.ms source uses these
+/// (clippy::doc_lazy_continuation). The VoIP.ms source uses these
 /// characters as plain prose punctuation, not Markdown.
 fn escape_doc_line(line: &str) -> String {
     let bytes = line.as_bytes();
@@ -327,12 +327,12 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
 
     // Enum declaration.
     out.push_str(
-        "\n/// A non-success `status` returned by the voip.ms API.\n\
+        "\n/// A non-success `status` returned by the VoIP.ms API.\n\
          ///\n\
          /// Every documented error code from the official API docs' global\n\
          /// error-code table is a variant; [`ApiStatus::description`] returns its\n\
          /// documented meaning. The set of codes is documentation, not a stable\n\
-         /// contract — a code voip.ms returns but hasn't documented is preserved\n\
+         /// contract — a code VoIP.ms returns but hasn't documented is preserved\n\
          /// verbatim in [`ApiStatus::Unknown`] rather than lost.\n\
          ///\n\
          /// ```\n\
@@ -385,7 +385,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
 
     // description
     out.push_str("    /// The human-readable description of this status from the\n");
-    out.push_str("    /// voip.ms docs, or `None` for [`ApiStatus::Unknown`].\n");
+    out.push_str("    /// VoIP.ms docs, or `None` for [`ApiStatus::Unknown`].\n");
     out.push_str("    pub fn description(&self) -> Option<&'static str> {\n");
     out.push_str("        match self {\n");
     for (variant, _, desc) in &variants {
@@ -410,7 +410,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
         .map(|(variant, _, _)| variant)
         .collect();
     out.push_str("    /// Whether this status means \"the requested collection is empty,\"\n");
-    out.push_str("    /// rather than a failure. voip.ms returns a distinct `no_*` status\n");
+    out.push_str("    /// rather than a failure. VoIP.ms returns a distinct `no_*` status\n");
     out.push_str("    /// for each list method when the list has no entries; the typed\n");
     out.push_str("    /// `Client` methods treat such a status as a successful empty\n");
     out.push_str("    /// response (collection fields deserialize to `None`) instead of an\n");

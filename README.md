@@ -5,7 +5,7 @@
 [![CI](https://github.com/ecliptical/voip-ms/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ecliptical/voip-ms/actions/workflows/rust-ci.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Async Rust client for the [voip.ms](https://voip.ms) REST API.
+Async Rust client for the [VoIP.ms](https://voip.ms) REST API.
 
 The goal is an idiomatic, ergonomic Rust surface over an API that is itself
 inconsistent: fields that are really booleans, durations, enums, or routing
@@ -36,11 +36,11 @@ voip-ms = { version = "0.2", default-features = false, features = ["native-tls"]
 
 ## Authentication
 
-voip.ms uses two pieces of credential, both of which you control entirely:
+VoIP.ms uses two pieces of credential, both of which you control entirely:
 
 * `api_username` — your account email.
 * `api_password` — a **distinct** password generated on the
-  *SOAP and REST/JSON API* page in the voip.ms customer portal.
+  *SOAP and REST/JSON API* page in the VoIP.ms customer portal.
 
 You must also allow-list the source IP address(es) you'll be calling from on
 that same page. This crate does not load credentials from the environment,
@@ -74,7 +74,7 @@ call either:
 All fields on both `*Params` and `*Response` structs are `Option<T>`, so
 you only fill in what you need and unknown omissions never fail
 deserialization. Consult the
-[voip.ms API documentation](https://voip.ms/m/apidocs.php) for which
+[VoIP.ms API documentation](https://voip.ms/m/apidocs.php) for which
 parameters each method actually requires.
 
 ```rust
@@ -199,7 +199,7 @@ either through `VOIP_MS_MESSAGE` or as the first argument after `--`.
 
 ### Calling a method that isn't in this crate yet
 
-If voip.ms adds an API method that isn't yet exposed as a typed call, use
+If VoIP.ms adds an API method that isn't yet exposed as a typed call, use
 [`Client::call_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw)
 directly with any `serde`-serializable parameter set:
 
@@ -228,13 +228,13 @@ All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voi
   the `status` field was something other than `success`. `ApiStatus` is an
   enum with a variant per documented code (`ApiStatus::InvalidCredentials`,
   `ApiStatus::APINotEnabled`, …) for ergonomic match arms, plus an
-  `ApiStatus::Unknown(String)` catch-all that preserves any code voip.ms
+  `ApiStatus::Unknown(String)` catch-all that preserves any code VoIP.ms
   hasn't documented. `ApiStatus::description()` returns the documented
   human-readable meaning (or `None` for `Unknown`), `as_str()` gives the
   verbatim wire string, and `is_documented()` reports whether it's a known
   variant.
 
-  One exception: voip.ms returns a distinct `no_*` status per list method when
+  One exception: VoIP.ms returns a distinct `no_*` status per list method when
   the collection is empty (`no_sms`, `no_cdr`, `no_messages`, …). The typed
   methods treat such a status (`ApiStatus::is_empty()`) as a successful empty
   response -- the collection field comes back `None` rather than `Err` -- so you

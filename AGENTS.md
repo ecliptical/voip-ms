@@ -6,9 +6,9 @@ order to make consistent changes.
 
 ## Project Overview
 
-**Purpose**: Async Rust client for the [voip.ms](https://voip.ms) REST API.
+**Purpose**: Async Rust client for the [VoIP.ms](https://voip.ms) REST API.
 
-**Scope**: Every method the voip.ms REST endpoint exposes (222 as of the
+**Scope**: Every method the VoIP.ms REST endpoint exposes (222 as of the
 committed WSDL) gets a typed request struct and a `Client` method. Nothing
 more — no retry layer, no credential discovery, no configuration loading.
 
@@ -24,16 +24,16 @@ and the WSDL snapshot are committed.
 **Rationale**:
 
 * The WSDL is the only machine-readable description of every method the
-  voip.ms backend exposes. The public HTML docs at
+  VoIP.ms backend exposes. The public HTML docs at
   `https://voip.ms/m/apidocs.php` are gated by Cloudflare and not
   parseable programmatically.
 * Code-generating is the only practical way to keep ~5 kLOC of mechanical
-  Rust honest as voip.ms adds methods.
+  Rust honest as VoIP.ms adds methods.
 * The generator is an `xtask` (not a `build.rs`) so end-users don't pay
   codegen cost on `cargo build`. It's a pure-Rust workspace member, not
   a Python script, so contributors don't need a separate toolchain.
 
-**How to apply**: When voip.ms adds an API method, replace
+**How to apply**: When VoIP.ms adds an API method, replace
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
 `src/generated.rs` — the `@generated` banner reflects reality.
 
@@ -67,7 +67,7 @@ the `*Params` fields and on the `*Params` struct + `Client` method,
 respectively.
 
 All response fields are `Option<T>` with `#[serde(default)]` so that
-voip.ms adding, removing, or omitting a field never breaks
+VoIP.ms adding, removing, or omitting a field never breaks
 deserialization. Numbers, booleans (`0/1`, `Y/N`), dates, and decimals
 arrive as JSON strings from the API; the deserializers in
 `src/responses.rs` (`deserialize_opt_*`) normalize both string and
@@ -79,9 +79,9 @@ The HTML docs do have sample outputs in a parseable `print_r` form,
 which is enough to infer shapes for ~99 % of methods automatically; the
 overrides file covers the rest without polluting the generator.
 `*_raw` methods remain available for callers who want full forward
-compatibility with voip.ms drift on unknown fields.
+compatibility with VoIP.ms drift on unknown fields.
 
-**How to apply**: When voip.ms updates the docs, re-run the full refresh
+**How to apply**: When VoIP.ms updates the docs, re-run the full refresh
 procedure (re-extract `api-responses.json` *and* `api-statuses.json` from
 a freshly saved HTML page, review the diffs, correct only
 `api-response-overrides.json`, then `cargo xtask gen`). The exact
@@ -96,11 +96,11 @@ inputs or steps change.
 is `Option<T>` with `#[serde(skip_serializing_if = "Option::is_none")]`.
 
 **Rationale**: The WSDL declares every input as nominally required
-(`minOccurs="1"`), but the real voip.ms API treats most fields as
+(`minOccurs="1"`), but the real VoIP.ms API treats most fields as
 optional, with server-side defaults — especially the large `set*` and
 `create*` methods (`createSubAccount` has 44 fields). Mirroring WSDL's
 required-ness would force users to fill in fields they don't care about
-and would break with every voip.ms default tweak. `Option` + `Default` +
+and would break with every VoIP.ms default tweak. `Option` + `Default` +
 struct-update-syntax gives the cleanest call sites:
 
 ```rust
@@ -112,7 +112,7 @@ SetSubAccountParams {
 ```
 
 The trade-off: the type system does not enforce required fields. Users
-must consult the official voip.ms docs to know what each method actually
+must consult the official VoIP.ms docs to know what each method actually
 needs. This is called out in the README.
 
 ### 4. Credentials live on the `Client`, not in the request structs
@@ -132,14 +132,14 @@ encourages copy-paste of secrets through code paths. One `Client::new` /
 acronym list (`DID`, `SMS`, `IVR`, `LNP`, `CDR`, `URI`, `PDF`, `ID`, …)
 sorted longest-first.
 
-**Rationale**: The naïve `[a-z][A-Z]` split mangles voip.ms's
+**Rationale**: The naïve `[a-z][A-Z]` split mangles VoIP.ms's
 acronym-heavy names (`getDIDsInfo` → `get_di_ds_info`,
 `getFaxMessagePDF` → `get_fax_message_p_d_f`). The acronym list yields
 `get_dids_info` and `get_fax_message_pdf` instead — names a Rust
 developer would have chosen by hand. New acronyms get added to the
 `ACRONYMS` set in the generator.
 
-**How to apply**: When a new voip.ms method introduces an acronym that
+**How to apply**: When a new VoIP.ms method introduces an acronym that
 produces a single-letter token in `tokenize()`, add it to the `ACRONYMS`
 constant in `xtask/src/main.rs` and regenerate.
 
@@ -155,20 +155,20 @@ in `xtask/src/field_overrides.rs`:
   `failover_noanswer`, `failover_unreachable`, plus the
   `fail_over_routing_*` variants used by queues) map to
   [`crate::Routing`], a tagged enum hand-written in `src/types.rs`
-  that parses voip.ms's `kind:value` strings (`account:100001_VoIP`,
+  that parses VoIP.ms's `kind:value` strings (`account:100001_VoIP`,
   `fwd:5551234567`, `sip:user@host:port`, `none:`, …). Routing
   changes shape rarely and benefits from a custom `FromStr` (e.g.
   SIP URIs may contain `:`, so only the first `:` is the separator).
 * **Seconds-or-sentinel durations** map to [`crate::Seconds`] (six queue /
   announcement fields in `SECONDS_FIELDS`) or [`crate::WaitTime`]
   (`maximum_wait_time`), hand-written enums that hold a `u64` count *or* an
-  unbounded sentinel -- voip.ms documents these as a number of seconds or a
+  unbounded sentinel -- VoIP.ms documents these as a number of seconds or a
   word (`none` / `unlimited`), which a bare `u64` can't represent. They carry
   their own (de)serialization (tolerant of a number, a numeric string, or
   either sentinel word).
 * **Boolean flags** map to `bool`, registered in the `FLAG_01_FIELDS` /
   `FLAG_YES_NO_FIELDS` consts of `xtask/src/field_overrides.rs`. Many
-  parameters voip.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are
+  parameters VoIP.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are
   under-typed by the WSDL as `xsd:integer` / `xsd:string`, so the extractor
   would emit `i64` / `String` and leak the wire encoding. The wire form lives
   in a serializer, not the type: the override carries a `param_serializer`
@@ -198,7 +198,7 @@ in `xtask/src/field_overrides.rs`:
   accepts the wire value as a JSON string, number, or bool.
 
 Both kinds of substituted enum carry an `Unknown(String)` (or
-`Unknown { tag, value }` for `Routing`) catch-all so voip.ms adding
+`Unknown { tag, value }` for `Routing`) catch-all so VoIP.ms adding
 a new variant or shipping an unexpected value never breaks
 deserialization.
 
@@ -243,7 +243,7 @@ deserializer to `src/responses.rs`.
 **Decision**: `Client::call_raw` is one GET request, one JSON parse, one
 status check. There is no built-in retry, backoff, or rate limiter.
 
-**Rationale**: voip.ms's retry semantics depend heavily on which method
+**Rationale**: VoIP.ms's retry semantics depend heavily on which method
 you're calling (`addCharge` is not safely retryable; `getBalance` is).
 Baking in a retry policy would force the wrong default on someone. Users
 who want one can wrap their `Client` in `tower::retry` or compose any
@@ -253,7 +253,7 @@ middleware via a custom `reqwest::Client` passed to `Client::builder`.
 
 **Decision**: All calls are GET with query parameters.
 
-**Rationale**: voip.ms documents and accepts both, but every documented
+**Rationale**: VoIP.ms documents and accepts both, but every documented
 example is GET. GET also keeps the request observable in logs/proxies
 during development. The only risk is URL length on the few methods with
 40+ parameters (`createSubAccount`, `setSubAccount`, `setQueue`); none
@@ -289,7 +289,7 @@ Three variants, no more:
 * `Error::Api(ApiStatus)` — the response parsed as `{ "status": "..." }`
   with something other than `"success"`. `ApiStatus` is a generated enum
   with one PascalCase variant per documented code (~475 of them) plus an
-  `Unknown(String)` catch-all, so a code voip.ms returns but hasn't
+  `Unknown(String)` catch-all, so a code VoIP.ms returns but hasn't
   documented is preserved verbatim rather than lost — the variant set is
   documentation, not a closed contract. `ApiStatus::from_wire` /
   `as_str` round-trip the wire string, `description()` returns the
@@ -303,7 +303,7 @@ Three variants, no more:
   *identifier* normalizes through the same acronym-aware PascalCase as
   method/type names (`no_did` → `NoDID`).
 
-  **Empty-collection statuses are not errors for typed calls.** voip.ms
+  **Empty-collection statuses are not errors for typed calls.** VoIP.ms
   returns a distinct `no_*` status per list method when the list is empty
   (`no_sms`, `no_cdr`, `no_messages`, …). The typed `Client::call` /
   `call_at` (and so every unsuffixed generated method) fold any status for
@@ -311,7 +311,7 @@ Three variants, no more:
   -- collection fields deserialize to `None` -- instead of `Error::Api`. The
   `*_raw` methods (and `call_raw`) deliberately keep the strict verbatim
   contract: they still surface an empty status as `Error::Api`, so the raw
-  escape hatch reflects exactly what voip.ms returned. `check_status` in
+  escape hatch reflects exactly what VoIP.ms returned. `check_status` in
   `src/client.rs` classifies the status; the two paths diverge in
   `call_raw` vs `call`/`call_at`. The classification is hand-curated in the
   `empty_statuses` array of `tools/api-response-overrides.json` and emitted
@@ -323,7 +323,7 @@ Three variants, no more:
   `tools/api-statuses.json` fails the codegen.
 * `Error::InvalidResponse(String)` — the response was 2xx and JSON but
   didn't contain a `status` field. Should be rare; if it happens
-  systematically for a method, that's a voip.ms-side break.
+  systematically for a method, that's a VoIP.ms-side break.
 
 ## Project Structure
 
@@ -419,7 +419,7 @@ turned out load-bearing:
 2. **Response shape**: Per-method typed responses are generated from
    the docs' sample-output blocks plus a small hand-edited overrides
   file. The `*_raw` methods stay available for callers that want
-  forward compatibility with voip.ms drift on unknown fields, while
+  forward compatibility with VoIP.ms drift on unknown fields, while
   unsuffixed calls deserialize into a known struct without callers
   writing their own.
 3. **Optionality**: All-`Option` was chosen over WSDL's nominal

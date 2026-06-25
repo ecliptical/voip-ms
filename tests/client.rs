@@ -414,7 +414,7 @@ async fn routing_param_serializes_as_tagged_string() {
 async fn flag_params_serialize_to_wire_form() {
     // A `1`/`0` flag param is a plain `Option<bool>`; its `serialize_with`
     // emits `1`/`0`, not the `true`/`false` a bare `bool` would produce, which
-    // voip.ms rejects for these parameters.
+    // VoIP.ms rejects for these parameters.
     use voip_ms::SetSMSParams;
 
     let (server, client) = fixture().await;
@@ -625,7 +625,7 @@ async fn per_struct_type_enum_serializes() {
 
 #[tokio::test]
 async fn message_type_response_deserializes_numeric_wire() {
-    // voip.ms returns the SMS `type` as a bare JSON number (1 = received,
+    // VoIP.ms returns the SMS `type` as a bare JSON number (1 = received,
     // 0 = sent), not a string -- the enum deserializer must tolerate that.
     use voip_ms::MessageType;
 
@@ -655,7 +655,7 @@ async fn message_type_response_deserializes_numeric_wire() {
 
 #[tokio::test]
 async fn empty_collection_status_yields_empty_response() {
-    // voip.ms answers an empty SMS list with `{"status": "no_sms"}` and no
+    // VoIP.ms answers an empty SMS list with `{"status": "no_sms"}` and no
     // `sms` field. For the typed call that is an empty list, not an error:
     // it succeeds with `sms == None`. The `*_raw` escape hatch keeps the
     // verbatim contract and still surfaces it as `Error::Api`.

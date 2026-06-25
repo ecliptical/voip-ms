@@ -1,13 +1,13 @@
 //! Custom serde (de)serializers used by generated `*Params` and
 //! `*Response` structs.
 //!
-//! The voip.ms API frequently returns numbers, booleans, dates, and
+//! The VoIP.ms API frequently returns numbers, booleans, dates, and
 //! decimals as JSON strings (and occasionally as JSON numbers for the
 //! same field across different methods). These helpers normalize both
 //! forms — and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
 //! placeholders as `None` — into Rust types.
 //!
-//! A few `bool` params also need a serializer: voip.ms rejects the
+//! A few `bool` params also need a serializer: VoIP.ms rejects the
 //! `true`/`false` a bare `bool` would emit, expecting `1`/`0` or
 //! `yes`/`no`. The `serialize_*_flag_*` helpers supply that wire form.
 //!
@@ -30,7 +30,7 @@ use crate::types::{Routing, Seconds, WaitTime};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
-/// voip.ms returns enum-typed fields inconsistently as a JSON string (`"1"`,
+/// VoIP.ms returns enum-typed fields inconsistently as a JSON string (`"1"`,
 /// `"yes"`) or a bare number / bool (`1`, `true`); generated enum
 /// `Deserialize` impls route through this so `from_wire` always gets a string.
 pub(crate) fn deserialize_enum_wire_string<'de, D>(deserializer: D) -> Result<String, D::Error>

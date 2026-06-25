@@ -1,4 +1,4 @@
-//! Async client for the [voip.ms](https://voip.ms) REST API.
+//! Async client for the [VoIP.ms](https://voip.ms) REST API.
 //!
 //! # Quick start
 //!
@@ -16,7 +16,7 @@
 //!
 //! # Design
 //!
-//! Every voip.ms API method gets a typed `*Params` request struct (with all
+//! Every VoIP.ms API method gets a typed `*Params` request struct (with all
 //! fields wrapped in [`Option`] and skipped when `None`) and a method on
 //! [`Client`]. The default method deserializes into a generated `*Response`
 //! struct; each generated method also has a `*_raw` variant that returns
@@ -28,14 +28,14 @@
 //!
 //! # Authentication
 //!
-//! voip.ms uses an `api_username` (your account email) and an `api_password`
+//! VoIP.ms uses an `api_username` (your account email) and an `api_password`
 //! that is **distinct** from your portal password — generate it under the
 //! "SOAP and REST/JSON API" page in the customer portal and enable API access
 //! there.
 //!
 //! ## IP allow-listing
 //!
-//! By default **no IP address** may consume the voip.ms API. Under
+//! By default **no IP address** may consume the VoIP.ms API. Under
 //! "Main Menu" → "SOAP & REST/JSON API" in the portal, add the IP address(es)
 //! you'll call from and save. The portal accepts individual addresses, CIDR
 //! ranges, wildcard forms (`192.168.1.*`), and DNS names. The sole exception

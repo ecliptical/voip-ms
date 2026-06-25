@@ -1,6 +1,6 @@
 //! Field-name → Rust type substitutions applied by the generator.
 //!
-//! Some voip.ms fields are documented as `String` in the WSDL but
+//! Some VoIP.ms fields are documented as `String` in the WSDL but
 //! actually carry a small structured value (e.g. a `tag:value` routing
 //! string, or a low-cardinality enum). When the wire encoding is stable
 //! across methods, we type the field as a richer Rust type instead of
@@ -25,7 +25,7 @@ pub struct FieldOverride {
     pub rust_type: String,
     /// Optional `serialize_with` path for param use. Needed when the
     /// substituted type doesn't itself serialize to the wire form
-    /// voip.ms expects -- e.g. a plain `bool` whose flag must travel as
+    /// VoIP.ms expects -- e.g. a plain `bool` whose flag must travel as
     /// `1`/`0` rather than `true`/`false`. Types that carry their own
     /// `Serialize` (like [`crate::Routing`]) leave this `None`.
     pub param_serializer: Option<String>,
@@ -85,7 +85,7 @@ const ROUTING_FIELDS: &[&str] = &[
     "fail_over_routing_leave_unavail",
 ];
 
-/// Boolean flags voip.ms encodes on the wire as `1` / `0`. Typed as `bool`
+/// Boolean flags VoIP.ms encodes on the wire as `1` / `0`. Typed as `bool`
 /// instead of the `i64` / `String` / `f64` the WSDL declares; the `1`/`0` wire
 /// form comes from a param `serialize_with`, since a bare `bool` would serialize
 /// as `true`/`false`, which these parameters reject. Documented as
@@ -124,7 +124,7 @@ const FLAG_01_FIELDS: &[&str] = &[
     "url_enabled",
 ];
 
-/// Boolean flags voip.ms encodes on the wire as `yes` / `no`. Typed as `bool`
+/// Boolean flags VoIP.ms encodes on the wire as `yes` / `no`. Typed as `bool`
 /// instead of `String`, with the `yes`/`no` wire form from a param
 /// `serialize_with`. These are the conference, queue, and voicemail toggles
 /// documented as `(yes/no)`.

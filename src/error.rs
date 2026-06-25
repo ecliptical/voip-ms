@@ -5,7 +5,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// docs' error-code table; see [`crate::generated`].
 pub use crate::generated::ApiStatus;
 
-/// Errors returned by the voip.ms client.
+/// Errors returned by the VoIP.ms client.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Transport or HTTP-level failure.

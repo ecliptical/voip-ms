@@ -1304,12 +1304,12 @@ where
     }))
 }
 
-/// A non-success `status` returned by the voip.ms API.
+/// A non-success `status` returned by the VoIP.ms API.
 ///
 /// Every documented error code from the official API docs' global
 /// error-code table is a variant; [`ApiStatus::description`] returns its
 /// documented meaning. The set of codes is documentation, not a stable
-/// contract — a code voip.ms returns but hasn't documented is preserved
+/// contract — a code VoIP.ms returns but hasn't documented is preserved
 /// verbatim in [`ApiStatus::Unknown`] rather than lost.
 ///
 /// ```
@@ -3281,7 +3281,7 @@ impl ApiStatus {
     }
 
     /// The human-readable description of this status from the
-    /// voip.ms docs, or `None` for [`ApiStatus::Unknown`].
+    /// VoIP.ms docs, or `None` for [`ApiStatus::Unknown`].
     pub fn description(&self) -> Option<&'static str> {
         match self {
             ApiStatus::AccountWithDIDs => Some("The Account has DIDs assigned to it."),
@@ -3998,7 +3998,7 @@ impl ApiStatus {
     }
 
     /// Whether this status means "the requested collection is empty,"
-    /// rather than a failure. voip.ms returns a distinct `no_*` status
+    /// rather than a failure. VoIP.ms returns a distinct `no_*` status
     /// for each list method when the list has no entries; the typed
     /// `Client` methods treat such a status as a successful empty
     /// response (collection fields deserialize to `None`) instead of an

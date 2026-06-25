@@ -10,12 +10,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-/// A voip.ms routing target encoded on the wire as `tag:payload`.
+/// A VoIP.ms routing target encoded on the wire as `tag:payload`.
 ///
-/// Voip.ms uses this `tag:payload` scheme across all routing-like fields
+/// VoIP.ms uses this `tag:payload` scheme across all routing-like fields
 /// (`routing`, `failover_busy`, `routing_match`, the `fail_over_routing_*`
 /// family, …). Documented tags are mapped to named variants; anything else
-/// is preserved verbatim in [`Routing::Unknown`] so that voip.ms adding a
+/// is preserved verbatim in [`Routing::Unknown`] so that VoIP.ms adding a
 /// new tag does not break deserialization or round-tripping.
 ///
 /// `none:` (no routing) is represented by [`Routing::None`].
@@ -196,7 +196,7 @@ impl<'de> Deserialize<'de> for Routing {
             type Value = Routing;
 
             fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                f.write_str("a voip.ms routing string of the form `tag:value`")
+                f.write_str("a VoIP.ms routing string of the form `tag:value`")
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Routing, E>
@@ -220,7 +220,7 @@ impl<'de> Deserialize<'de> for Routing {
 
 /// A duration in seconds, or an "unbounded" sentinel.
 ///
-/// Several voip.ms queue/announcement fields take a number of seconds *or* a
+/// Several VoIP.ms queue/announcement fields take a number of seconds *or* a
 /// word meaning no limit (`none` / `unlimited`), so a bare `u64` can't hold the
 /// sentinel. [`Seconds`] serializes the sentinel as `none`; [`WaitTime`] as
 /// `unlimited` (the word `maximum_wait_time` documents). Both deserialize

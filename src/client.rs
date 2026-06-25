@@ -5,10 +5,10 @@ use serde_json::Value;
 
 use crate::error::{ApiStatus, Error, Result};
 
-/// Default base URL for the voip.ms REST API.
+/// Default base URL for the VoIP.ms REST API.
 pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
 
-/// Async client for the voip.ms REST API.
+/// Async client for the VoIP.ms REST API.
 ///
 /// Clients are cheap to clone; the underlying [`reqwest::Client`] uses an
 /// internal connection pool that is shared across clones.
@@ -31,7 +31,7 @@ impl Client {
     pub fn new(api_username: impl Into<String>, api_password: impl Into<String>) -> Self {
         Self::builder(api_username, api_password)
             .build()
-            .expect("default voip.ms base URL must parse")
+            .expect("default VoIP.ms base URL must parse")
     }
 
     /// Start building a client with custom HTTP client or base URL.
@@ -78,11 +78,11 @@ impl Client {
     /// The `status` field is inspected: any value other than `success`
     /// causes an [`Error::Api`] -- including the empty-collection statuses
     /// ([`ApiStatus::is_empty`], e.g. `no_sms`). This is the verbatim escape
-    /// hatch: it surfaces exactly what voip.ms returned. The typed
+    /// hatch: it surfaces exactly what VoIP.ms returned. The typed
     /// [`Client::call`] instead folds those into an empty response.
     ///
     /// This is the low-level raw call used by every generated `*_raw`
-    /// method on [`Client`]. Reach for it directly when voip.ms adds a
+    /// method on [`Client`]. Reach for it directly when VoIP.ms adds a
     /// method this crate hasn't been regenerated for; otherwise prefer
     /// the typed [`Client::call`] or one of the per-method wrappers.
     pub async fn call_raw<P>(&self, method: &str, params: &P) -> Result<Value>
@@ -195,7 +195,7 @@ impl ClientBuilder {
 ///
 /// Returns `Ok(None)` for `success`, `Err(Error::Api)` for a genuine failure,
 /// and `Ok(Some(status))` for an empty-collection status
-/// ([`ApiStatus::is_empty`], e.g. `no_sms`) -- voip.ms's per-method "the list
+/// ([`ApiStatus::is_empty`], e.g. `no_sms`) -- VoIP.ms's per-method "the list
 /// is empty" code. Whether that case is an error is left to the caller:
 /// [`Client::call_raw`] surfaces it verbatim, while the typed
 /// [`Client::call`] folds it into an empty response.

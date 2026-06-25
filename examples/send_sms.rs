@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !did.sms_enabled.unwrap_or(false) {
         return Err(Error::other(format!(
-            "SMS is not enabled for DID {from}; enable SMS in voip.ms before running this example"
+            "SMS is not enabled for DID {from}; enable SMS in VoIP.ms before running this example"
         ))
         .into());
     }

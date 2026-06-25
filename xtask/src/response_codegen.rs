@@ -271,7 +271,7 @@ fn element_type_name(parent: &str, fname: &str) -> String {
     format!("{parent}{}", camel_to_pascal(&singular, &acronyms))
 }
 
-/// Naive English singularizer good enough for the field names voip.ms
+/// Naive English singularizer good enough for the field names VoIP.ms
 /// uses (`dids` → `did`, `members` → `member`, `entries` → `entry`).
 ///
 /// Preserves words whose lowercase form is itself an acronym chain

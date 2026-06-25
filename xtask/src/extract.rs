@@ -1,6 +1,6 @@
 //! HTML → `tools/api-responses.json` extractor.
 //!
-//! Parses the saved voip.ms API documentation HTML (which is gated by
+//! Parses the saved VoIP.ms API documentation HTML (which is gated by
 //! Cloudflare and requires a logged-in browser to obtain), finds every
 //! method's `Output` example block, decodes the PHP `print_r` notation
 //! into a typed shape tree, and writes a machine-readable summary that
@@ -145,7 +145,7 @@ pub struct StatusDocument {
 /// One row of the global "Error Codes" table.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StatusEntry {
-    /// Verbatim wire `status` string (e.g. `invalid_credentials`). voip.ms
+    /// Verbatim wire `status` string (e.g. `invalid_credentials`). VoIP.ms
     /// ships a couple of these capitalized (`Invalid_threshold`), so the
     /// case is preserved exactly as documented.
     pub code: String,

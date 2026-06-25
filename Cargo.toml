@@ -1,7 +1,7 @@
 
 [package]
 name = "voip-ms"
-description = "Async client for the voip.ms REST API"
+description = "Async client for the VoIP.ms REST API"
 version = "0.2.0"
 repository = "https://github.com/ecliptical/voip-ms"
 authors = ["Peter Nehrer <pnehrer@eclipticalsoftware.com>"]

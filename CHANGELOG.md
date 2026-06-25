@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reqwest re-exports it.
 
 - **Breaking:** Boolean-flag parameters and fields are now typed `bool` instead
-  of `i64` / `String` / `f64`. Many voip.ms parameters documented as
+  of `i64` / `String` / `f64`. Many VoIP.ms parameters documented as
   `1 = true, 0 = false` (or `yes`/`no`) were under-typed by the WSDL; they now
   take a plain `bool`. The `1`/`0` or `yes`/`no` the API requires (a bare `bool`
   serializes `true`/`false`, which these reject) is produced by a param
@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-exported from the crate root and deserialize tolerantly (number, numeric
   string, or sentinel word).
 - **Breaking:** `ApiStatus` is now an enum instead of a `String` newtype. It
-  has one variant per documented voip.ms `status` code (~475, e.g.
+  has one variant per documented VoIP.ms `status` code (~475, e.g.
   `ApiStatus::InvalidCredentials`, `ApiStatus::APINotEnabled`,
   `ApiStatus::NoDID`) for ergonomic `match` arms, plus an
   `ApiStatus::Unknown(String)` catch-all that preserves any undocumented code
@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   extracted from the docs' global error-code table via the new
   `cargo xtask extract-statuses` subcommand.
 - **Breaking:** The typed list methods no longer error when the collection is
-  empty. voip.ms returns a distinct `no_*` status per list method when there
+  empty. VoIP.ms returns a distinct `no_*` status per list method when there
   are no entries (`no_sms`, `no_cdr`, `no_messages`, …); the typed `Client`
   methods now fold any such status (`ApiStatus::is_empty()`) into a successful
   response with the collection field `None`, instead of `Err(Error::Api(...))`.
@@ -136,12 +136,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on crates.io and GitHub instead of relying on rustdoc intra-doc
   resolution.
 - Improved typed response deserialization robustness for string-like fields
-  that voip.ms sometimes emits as numbers or booleans.
+  that VoIP.ms sometimes emits as numbers or booleans.
 
 ### Added
 
 - New public type [`Routing`] (and `RoutingParseError`) modeling the
-  tagged `kind:value` strings voip.ms uses for call-routing fields
+  tagged `kind:value` strings VoIP.ms uses for call-routing fields
   (`account:`, `fwd:`, `vm:`, `sip:`, `sys:`, `grp:`, `queue:`, `ivr:`,
   `cb:`, `tc:`, `disa:`, `did:`, `phone:`, `none:`). Generated
   `*Params` and `*Response` structs now type 12 routing-related fields
@@ -149,14 +149,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Option<Routing>` instead of `Option<String>`. Unknown tags
   round-trip via a `Routing::Unknown { tag, value }` catch-all so
   forward compatibility is preserved.
-- New public enums for documented voip.ms scalars: `DtmfMode`, `Nat`,
+- New public enums for documented VoIP.ms scalars: `DtmfMode`, `Nat`,
   `EmailAttachmentFormat`, `TranscriptionFormat`, `PlayInstructions`,
   `RingStrategy`, `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`
   (`join_when_empty` / `leave_when_empty`), `EstimatedHoldTimeAnnounce`,
   `CallPickupBehavior`, `RecordingSort`, `SearchType`, `VanityType`,
   `MessageType` (SMS/MMS direction), `DialingMode`, `TollFreeCarrier`, and
   `DidBillingType` (integer-coded). Each carries an `Unknown(String)`
-  variant for values not in the documented set, so voip.ms adding new
+  variant for values not in the documented set, so VoIP.ms adding new
   options never breaks deserialization. `QueueEmptyBehavior` and
   `EstimatedHoldTimeAnnounce` also correct a latent bug: the queue response
   fields were inferred as `bool` from a `yes`/`no` sample and would have
@@ -167,7 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the SMS/MMS params and responses. Reference-data `type` lookups whose
   valid set comes from another endpoint stay `String`.
 - Generated enum deserializers now accept the wire value as a JSON string,
-  number, or bool (voip.ms returns the SMS `type` as a bare number), not
+  number, or bool (VoIP.ms returns the SMS `type` as a bare number), not
   only a string.
 - Codegen overrides schema extended with top-level `enums` and
   `field_types` sections in `tools/api-response-overrides.json`. New
@@ -185,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced the small set of hand-written starter response types
   (`StatusResponse`, `GetBalanceResponse`, `GetDidsInfoResponse`) with a
   full generated `*Response` struct per method (222 in total). Shapes are
-  inferred from the official voip.ms HTML docs by a new
+  inferred from the official VoIP.ms HTML docs by a new
   `cargo xtask extract-responses` extractor, with hand-edited corrections
   in `tools/api-response-overrides.json`. All response fields are
   `Option<T>` and tolerate string-or-number, `0/1`, `Y/N`, and
@@ -230,7 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial release skeleton: async `Client` over `reqwest`, typed
-  `*Params` request structs and `Client` methods for all 222 voip.ms
+  `*Params` request structs and `Client` methods for all 222 VoIP.ms
   REST operations, generated from `tools/server.wsdl` by the
   `xtask` workspace member (`cargo xtask gen`).
 - `Client::call` for invoking methods not yet covered by the

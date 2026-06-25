@@ -4,7 +4,7 @@ This document covers contributor and maintainer workflows for voip-ms.
 
 ## Regenerating the API surface
 
-voip.ms periodically adds methods (WSDL) and revises its user-facing
+VoIP.ms periodically adds methods (WSDL) and revises its user-facing
 documentation (response shapes, parameter notes, status codes). Re-run the
 full refresh below whenever either changes — and proactively every few
 months even absent a known change, since the docs drift silently. The whole
@@ -57,7 +57,7 @@ Only `server.wsdl` is committed. The scratch files are not version-controlled.
 The HTML doc is the one input you can't script: `apidocs.php` is behind
 Cloudflare and requires a logged-in browser session.
 
-1. Log into the voip.ms customer portal in a browser.
+1. Log into the VoIP.ms customer portal in a browser.
 2. Open `https://voip.ms/m/apidocs.php` and use the browser's "Save Page As →
    Web Page, Complete" to write
    `tools/scratch/VoIP.ms - Customer Portal_ API Documentation.html` (plus its
@@ -152,7 +152,7 @@ strings:
   the next section title; method descriptions are filtered to known WSDL
   operation names so section headers and the error table are excluded.
 
-Update the class-string constants if voip.ms reskins the docs.
+Update the class-string constants if VoIP.ms reskins the docs.
 
 ## Releasing
 
@@ -183,7 +183,7 @@ using CRATES_IO_TOKEN, and creates a GitHub release.
 2. Coverage target is around 80% for hand-written code paths (`client.rs`
 	 and `error.rs`). `generated.rs` is mechanical and validated transitively
 	 through representative integration tests.
-3. Live calls to voip.ms are intentionally excluded from CI because they
+3. Live calls to VoIP.ms are intentionally excluded from CI because they
 	 require real credentials and account state.
 
 ## Live API verification workflow
@@ -194,16 +194,16 @@ The repository includes a dedicated workflow for optional live verification:
 Use this workflow for on-demand execution via `workflow_dispatch`. It is
 intentionally separate from `rust-ci.yaml` so pull requests remain
 deterministic and credential-free, and it deliberately does **not** run on
-tag pushes: GitHub-hosted runners use ephemeral egress IPs that voip.ms's
+tag pushes: GitHub-hosted runners use ephemeral egress IPs that VoIP.ms's
 per-account API IP allow-list rejects with `ip_not_enabled`. Trigger it
 manually from an allow-listed host (or wire it to a self-hosted runner with
 a known static egress IP) when you want a live check.
 
 ### Required account configuration
 
-1. Create a dedicated voip.ms sandbox account (or isolated reseller test scope).
+1. Create a dedicated VoIP.ms sandbox account (or isolated reseller test scope).
 2. Enable API access and generate API credentials.
-3. Allow-list the GitHub runner egress IP(s) on the voip.ms API page.
+3. Allow-list the GitHub runner egress IP(s) on the VoIP.ms API page.
 4. For SMS checks, provide at least one DID with SMS available and enabled.
 5. For sub-account lifecycle checks, ensure the sandbox has permission to
    create and delete sub-accounts.
@@ -254,8 +254,8 @@ release verification safe by default.
 * `live-api-verify.yaml` supports optional live verification:
 	* `workflow_dispatch` only — operator-invokable smoke or extended checks
 	* not wired to any push or tag event, because GitHub-hosted runners
-		use ephemeral egress IPs that voip.ms's per-account API IP
+		use ephemeral egress IPs that VoIP.ms's per-account API IP
 		allow-list will reject (`ip_not_enabled`). Trigger manually from
-		a host whose IP is on the voip.ms API allow-list, or from a
+		a host whose IP is on the VoIP.ms API allow-list, or from a
 		self-hosted runner with a known static egress IP.
 	* explicit safety gates for state-changing or costly operations
