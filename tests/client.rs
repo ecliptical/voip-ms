@@ -641,3 +641,44 @@ async fn message_type_response_deserializes_numeric_wire() {
     assert_eq!(msgs[0].r#type, Some(MessageType::Received));
     assert_eq!(msgs[1].r#type, Some(MessageType::Sent));
 }
+
+#[tokio::test]
+async fn integer_coded_enum_round_trips() {
+    // billing_type is a numeric coded enum on the wire (1 = per minute,
+    // 2 = flat); it serializes to the digit and parses back from a number.
+    use voip_ms::{DidBillingType, GetDIDsInfoParams, SetDIDBillingTypeParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setDIDBillingType"))
+        .and(query_param("billing_type", "2"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    client
+        .set_did_billing_type_raw(&SetDIDBillingTypeParams {
+            billing_type: Some(DidBillingType::Flat),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getDIDsInfo"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "dids": [ { "did": "5551234567", "billing_type": 1 } ]
+        })))
+        .mount(&server)
+        .await;
+    let envelope = client
+        .get_dids_info(&GetDIDsInfoParams::default())
+        .await
+        .unwrap();
+    let did = envelope.dids.unwrap().into_iter().next().unwrap();
+    assert_eq!(did.billing_type, Some(DidBillingType::PerMinute));
+}

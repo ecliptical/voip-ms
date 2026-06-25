@@ -133,6 +133,30 @@
         { "name": "Received", "wire": "1" },
         { "name": "Sent",     "wire": "0" }
       ]
+    },
+    "DialingMode": {
+      "doc": "Outgoing-call dialing mode for a sub-account.",
+      "variants": [
+        { "name": "MainAccount", "wire": "0", "doc": "Use the main account setting." },
+        { "name": "E164",        "wire": "1" },
+        { "name": "Nanpa",       "wire": "2" }
+      ]
+    },
+    "TollFreeCarrier": {
+      "doc": "Carrier for outgoing calls to toll-free numbers.",
+      "variants": [
+        { "name": "MainAccount", "wire": "-1", "doc": "Use the main account setting." },
+        { "name": "Default",     "wire": "0",  "doc": "Default server setting." },
+        { "name": "Us",          "wire": "1" },
+        { "name": "Canadian",    "wire": "2" }
+      ]
+    },
+    "DidBillingType": {
+      "doc": "DID billing model.",
+      "variants": [
+        { "name": "PerMinute", "wire": "1" },
+        { "name": "Flat",      "wire": "2" }
+      ]
     }
   },
   "field_types": {
@@ -148,7 +172,10 @@
     "leave_when_empty":        "QueueEmptyBehavior",
     "if_announce_position_enabled_report_estimated_hold_time": "EstimatedHoldTimeAnnounce",
     "call_pickup_behavior":    "CallPickupBehavior",
-    "sort":                    "RecordingSort"
+    "sort":                    "RecordingSort",
+    "dialing_mode":            "DialingMode",
+    "tfcarrier":               "TollFreeCarrier",
+    "billing_type":            "DidBillingType"
   },
   "field_type_skip": [
     "GetVoicemailsResponseVoicemail.urgent"

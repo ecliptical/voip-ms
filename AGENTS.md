@@ -183,7 +183,10 @@ in `xtask/src/field_overrides.rs`:
   for `DtmfMode`, `Nat`, `EmailAttachmentFormat`,
   `TranscriptionFormat`, `PlayInstructions`, `RingStrategy`,
   `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`,
-  `EstimatedHoldTimeAnnounce`, `CallPickupBehavior`, and `RecordingSort`.
+  `EstimatedHoldTimeAnnounce`, `CallPickupBehavior`, `RecordingSort`,
+  `DialingMode`, `TollFreeCarrier`, and `DidBillingType`. Integer-coded
+  enums (`1`/`2`, `-1`) work the same way -- the generated deserializer
+  accepts the wire value as a JSON string, number, or bool.
 
 Both kinds of substituted enum carry an `Unknown(String)` (or
 `Unknown { tag, value }` for `Routing`) catch-all so voip.ms adding

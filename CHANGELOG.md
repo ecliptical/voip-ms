@@ -102,8 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `EmailAttachmentFormat`, `TranscriptionFormat`, `PlayInstructions`,
   `RingStrategy`, `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`
   (`join_when_empty` / `leave_when_empty`), `EstimatedHoldTimeAnnounce`,
-  `CallPickupBehavior`, `RecordingSort`, `SearchType`, `VanityType`, and
-  `MessageType` (SMS/MMS direction). Each carries an `Unknown(String)`
+  `CallPickupBehavior`, `RecordingSort`, `SearchType`, `VanityType`,
+  `MessageType` (SMS/MMS direction), `DialingMode`, `TollFreeCarrier`, and
+  `DidBillingType` (integer-coded). Each carries an `Unknown(String)`
   variant for values not in the documented set, so voip.ms adding new
   options never breaks deserialization. `QueueEmptyBehavior` and
   `EstimatedHoldTimeAnnounce` also correct a latent bug: the queue response

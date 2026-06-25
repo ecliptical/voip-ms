@@ -86,6 +86,142 @@ where
     }))
 }
 
+/// Outgoing-call dialing mode for a sub-account.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DialingMode {
+    /// Use the main account setting.
+    MainAccount,
+    E164,
+    Nanpa,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl DialingMode {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            DialingMode::MainAccount => "0",
+            DialingMode::E164 => "1",
+            DialingMode::Nanpa => "2",
+            DialingMode::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "0" => DialingMode::MainAccount,
+            "1" => DialingMode::E164,
+            "2" => DialingMode::Nanpa,
+            other => DialingMode::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for DialingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for DialingMode {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DialingMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(DialingMode::from_wire(&s))
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn deserialize_opt_dialing_mode<'de, D>(
+    d: D,
+) -> std::result::Result<Option<DialingMode>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(DialingMode::from_wire(t))
+        }
+    }))
+}
+
+/// DID billing model.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DidBillingType {
+    PerMinute,
+    Flat,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl DidBillingType {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            DidBillingType::PerMinute => "1",
+            DidBillingType::Flat => "2",
+            DidBillingType::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "1" => DidBillingType::PerMinute,
+            "2" => DidBillingType::Flat,
+            other => DidBillingType::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for DidBillingType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for DidBillingType {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DidBillingType {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(DidBillingType::from_wire(&s))
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn deserialize_opt_did_billing_type<'de, D>(
+    d: D,
+) -> std::result::Result<Option<DidBillingType>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(DidBillingType::from_wire(t))
+        }
+    }))
+}
+
 /// DTMF transport mode for SIP sub-accounts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DtmfMode {
@@ -861,6 +997,80 @@ where
             None
         } else {
             Some(SearchType::from_wire(t))
+        }
+    }))
+}
+
+/// Carrier for outgoing calls to toll-free numbers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TollFreeCarrier {
+    /// Use the main account setting.
+    MainAccount,
+    /// Default server setting.
+    Default,
+    Us,
+    Canadian,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl TollFreeCarrier {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            TollFreeCarrier::MainAccount => "-1",
+            TollFreeCarrier::Default => "0",
+            TollFreeCarrier::Us => "1",
+            TollFreeCarrier::Canadian => "2",
+            TollFreeCarrier::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "-1" => TollFreeCarrier::MainAccount,
+            "0" => TollFreeCarrier::Default,
+            "1" => TollFreeCarrier::Us,
+            "2" => TollFreeCarrier::Canadian,
+            other => TollFreeCarrier::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for TollFreeCarrier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for TollFreeCarrier {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for TollFreeCarrier {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(TollFreeCarrier::from_wire(&s))
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn deserialize_opt_toll_free_carrier<'de, D>(
+    d: D,
+) -> std::result::Result<Option<TollFreeCarrier>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(TollFreeCarrier::from_wire(t))
         }
     }))
 }
@@ -4059,7 +4269,7 @@ pub struct BackOrderDIDCANParams {
     pub note: Option<String>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_type: Option<i64>,
+    pub billing_type: Option<DidBillingType>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made routing, failover_busy, failover_unreachable
     /// and failover_noanswer can receive values in the following format =>
@@ -4129,7 +4339,7 @@ pub struct BackOrderDIDUSAParams {
     pub note: Option<String>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_type: Option<i64>,
+    pub billing_type: Option<DidBillingType>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made routing, failover_busy, failover_unreachable
     /// and failover_noanswer can receive values in the following format =>
@@ -4419,12 +4629,12 @@ pub struct CreateSubAccountParams {
     /// or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 =
     /// E164, 2 = NANPA)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dialing_mode: Option<i64>,
+    pub dialing_mode: Option<DialingMode>,
     /// This allows you to select the carrier to be used for outgoing calls to
     /// toll-free numbers. (Values: -1 = Use main account settings, 0 = Default
     /// server setting, 1 = US carrier, 2 = Canadian carrier)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tfcarrier: Option<i64>,
+    pub tfcarrier: Option<TollFreeCarrier>,
     /// Location group for the internal extension (Values from getLocations)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension_location: Option<i64>,
@@ -6716,7 +6926,7 @@ pub struct OrderDIDParams {
     pub note: Option<String>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_type: Option<i64>,
+    pub billing_type: Option<DidBillingType>,
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
@@ -6793,7 +7003,7 @@ pub struct OrderDIDInternationalGeographicParams {
     pub callerid_prefix: Option<String>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_type: Option<i64>,
+    pub billing_type: Option<DidBillingType>,
     /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
@@ -6873,7 +7083,7 @@ pub struct OrderDIDInternationalNationalParams {
     pub callerid_prefix: Option<String>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_type: Option<i64>,
+    pub billing_type: Option<DidBillingType>,
     /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
@@ -7927,7 +8137,7 @@ pub struct SetDIDBillingTypeParams {
     pub did: Option<String>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_type: Option<i64>,
+    pub billing_type: Option<DidBillingType>,
 }
 
 /// \- Updates the information from a specific DID.
@@ -7975,7 +8185,7 @@ pub struct SetDIDInfoParams {
     pub port_out_pin: Option<i64>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_type: Option<i64>,
+    pub billing_type: Option<DidBillingType>,
     /// Record Calls (Boolean: 1/0)
     #[serde(
         skip_serializing_if = "Option::is_none",
@@ -8885,12 +9095,12 @@ pub struct SetSubAccountParams {
     /// or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 =
     /// E164, 2 = NANPA)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dialing_mode: Option<i64>,
+    pub dialing_mode: Option<DialingMode>,
     /// This allows you to select the carrier to be used for outgoing calls to
     /// toll-free numbers. (Values: -1 = Use main account settings, 0 = Default
     /// server setting, 1 = US carrier, 2 = Canadian carrier)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tfcarrier: Option<i64>,
+    pub tfcarrier: Option<TollFreeCarrier>,
     /// Location group for the internal extension (Values from getLocations)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension_location: Option<i64>,
@@ -9855,11 +10065,8 @@ pub struct GetBackOrdersResponseBackOrder {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub cnam: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
-    )]
-    pub billing_type: Option<u64>,
+    #[serde(default, deserialize_with = "deserialize_opt_did_billing_type")]
+    pub billing_type: Option<DidBillingType>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime"
@@ -11204,11 +11411,8 @@ pub struct GetDIDsInfoResponseDID {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub port_out_pin: Option<u64>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
-    )]
-    pub billing_type: Option<u64>,
+    #[serde(default, deserialize_with = "deserialize_opt_did_billing_type")]
+    pub billing_type: Option<DidBillingType>,
     #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
     pub next_billing: Option<chrono::NaiveDate>,
     #[serde(
@@ -14415,11 +14619,8 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub internal_cnam: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
-    )]
-    pub tfcarrier: Option<u64>,
+    #[serde(default, deserialize_with = "deserialize_opt_toll_free_carrier")]
+    pub tfcarrier: Option<TollFreeCarrier>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
