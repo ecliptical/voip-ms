@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle. The `enums` + `field_types` sections declare low-cardinality enum types substituted for `Option<String>` in both *Params and *Response structs (see xtask/src/field_overrides.rs).",
+  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle. The `enums` + `field_types` sections declare low-cardinality enum types substituted for `Option<String>` in both *Params and *Response structs (see xtask/src/field_overrides.rs). Boolean flags (1/0 and yes/no) are typed via the built-in tables in field_overrides.rs, not here. `field_type_skip` suppresses a name-based override for one struct where the name is reused for an unrelated value.",
   "enums": {
     "DtmfMode": {
       "doc": "DTMF transport mode for SIP sub-accounts.",
@@ -85,6 +85,9 @@
     "order":                   "RingGroupOrder",
     "folder":                  "VoicemailFolder"
   },
+  "field_type_skip": [
+    "GetVoicemailsResponseVoicemail.urgent"
+  ],
   "methods": {
     "getDIDsInfo": {
       "patches": [

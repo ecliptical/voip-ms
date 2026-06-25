@@ -35,6 +35,7 @@ pub fn emit_response_structs(
     method_names: &[String],
     responses: &BTreeMap<String, Shape>,
     table: &Table,
+    field_type_skip: &std::collections::BTreeSet<String>,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -45,7 +46,7 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new(table);
+        let mut emitter = Emitter::new(table, field_type_skip);
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -64,13 +65,17 @@ struct Emitter<'a> {
     /// before any later sibling that references them).
     structs: Vec<String>,
     table: &'a Table,
+    /// `"StructName.field"` paths where the field-name override table is
+    /// suppressed (the field keeps its inferred/patched type).
+    field_type_skip: &'a std::collections::BTreeSet<String>,
 }
 
 impl<'a> Emitter<'a> {
-    fn new(table: &'a Table) -> Self {
+    fn new(table: &'a Table, field_type_skip: &'a std::collections::BTreeSet<String>) -> Self {
         Self {
             structs: Vec::new(),
             table,
+            field_type_skip,
         }
     }
 
@@ -133,7 +138,14 @@ impl<'a> Emitter<'a> {
         body.push_str(&format!("pub struct {name} {{\n"));
         for (fname, sub) in deduped {
             let rust_ident = rust_field_ident(fname);
-            let override_ = self.table.get(fname).cloned();
+            // The override table keys on field name and applies everywhere;
+            // skip it where this struct's field is a same-named-but-unrelated
+            // value (declared in `field_type_skip`).
+            let override_ = if self.field_type_skip.contains(&format!("{name}.{fname}")) {
+                None
+            } else {
+                self.table.get(fname).cloned()
+            };
             let rust_ty = match &override_ {
                 Some(o) => o.rust_type.clone(),
                 None => self.field_type(name, fname, sub),

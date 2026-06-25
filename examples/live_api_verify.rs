@@ -423,16 +423,10 @@ async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), 
         return Err(format!("DID {did} does not have SMS available").into());
     }
 
-    let enable = if did_info.sms_enabled.unwrap_or(false) {
-        "1"
-    } else {
-        "0"
-    };
-
     let response: SetSMSResponse = client
         .set_sms(&SetSMSParams {
             did: Some(did.to_string()),
-            enable: Some(enable.to_string()),
+            enable: Some(did_info.sms_enabled.unwrap_or(false).into()),
             ..Default::default()
         })
         .await?;
