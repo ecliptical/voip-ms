@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle. The `enums` + `field_types` sections declare low-cardinality enum types substituted for `Option<String>` in both *Params and *Response structs (see xtask/src/field_overrides.rs). Boolean flags (1/0 and yes/no) are typed via the built-in tables in field_overrides.rs, not here. `field_type_skip` suppresses a name-based override for one struct where the name is reused for an unrelated value.",
+  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle. The `enums` + `field_types` sections declare low-cardinality enum types substituted for `Option<String>` in both *Params and *Response structs (see xtask/src/field_overrides.rs). Boolean flags (1/0 and yes/no) are typed via the built-in tables in field_overrides.rs, not here. `field_type_skip` suppresses a name-based override for one struct where the name is reused for an unrelated value; `field_type_override` assigns one struct's field a specific enum (used for `type`, which means different things per method).",
   "enums": {
     "DtmfMode": {
       "doc": "DTMF transport mode for SIP sub-accounts.",
@@ -105,6 +105,34 @@
         { "name": "Alpha",  "wire": "alpha" },
         { "name": "Random", "wire": "random" }
       ]
+    },
+    "SearchType": {
+      "doc": "How a DID / toll-free search string is matched.",
+      "variants": [
+        { "name": "Starts",   "wire": "starts" },
+        { "name": "Contains", "wire": "contains" },
+        { "name": "Ends",     "wire": "ends" }
+      ]
+    },
+    "VanityType": {
+      "doc": "Toll-free prefix to search for a vanity number.",
+      "variants": [
+        { "name": "Any", "wire": "8**", "doc": "Any toll-free prefix." },
+        { "name": "N800", "wire": "800" },
+        { "name": "N833", "wire": "833" },
+        { "name": "N844", "wire": "844" },
+        { "name": "N855", "wire": "855" },
+        { "name": "N866", "wire": "866" },
+        { "name": "N877", "wire": "877" },
+        { "name": "N888", "wire": "888" }
+      ]
+    },
+    "MessageType": {
+      "doc": "Direction of an SMS / MMS message: a filter on requests, the direction on results.",
+      "variants": [
+        { "name": "Received", "wire": "1" },
+        { "name": "Sent",     "wire": "0" }
+      ]
     }
   },
   "field_types": {
@@ -125,6 +153,21 @@
   "field_type_skip": [
     "GetVoicemailsResponseVoicemail.urgent"
   ],
+  "field_type_override": {
+    "SearchDIDsCANParams.type":      "SearchType",
+    "SearchDIDsUSAParams.type":      "SearchType",
+    "SearchTollFreeCANUSParams.type": "SearchType",
+    "SearchTollFreeUSAParams.type":  "SearchType",
+    "SearchVanityParams.type":       "VanityType",
+    "GetSMSParams.type":             "MessageType",
+    "GetMMSParams.type":             "MessageType",
+    "GetResellerSMSParams.type":     "MessageType",
+    "GetResellerMMSParams.type":     "MessageType",
+    "GetSMSResponseSMS.type":        "MessageType",
+    "GetMMSResponseSMS.type":        "MessageType",
+    "GetResellerSMSResponseSMS.type": "MessageType",
+    "GetResellerMMSResponseSMS.type": "MessageType"
+  },
   "methods": {
     "getDIDsInfo": {
       "patches": [

@@ -63,18 +63,19 @@ impl serde::Serialize for CallPickupBehavior {
 
 impl<'de> serde::Deserialize<'de> for CallPickupBehavior {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(CallPickupBehavior::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_call_pickup_behavior<'de, D>(
     d: D,
 ) -> std::result::Result<Option<CallPickupBehavior>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -134,18 +135,19 @@ impl serde::Serialize for DtmfMode {
 
 impl<'de> serde::Deserialize<'de> for DtmfMode {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(DtmfMode::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_dtmf_mode<'de, D>(
     d: D,
 ) -> std::result::Result<Option<DtmfMode>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -207,18 +209,19 @@ impl serde::Serialize for EmailAttachmentFormat {
 
 impl<'de> serde::Deserialize<'de> for EmailAttachmentFormat {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(EmailAttachmentFormat::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_email_attachment_format<'de, D>(
     d: D,
 ) -> std::result::Result<Option<EmailAttachmentFormat>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -276,24 +279,91 @@ impl serde::Serialize for EstimatedHoldTimeAnnounce {
 
 impl<'de> serde::Deserialize<'de> for EstimatedHoldTimeAnnounce {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(EstimatedHoldTimeAnnounce::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_estimated_hold_time_announce<'de, D>(
     d: D,
 ) -> std::result::Result<Option<EstimatedHoldTimeAnnounce>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
             None
         } else {
             Some(EstimatedHoldTimeAnnounce::from_wire(t))
+        }
+    }))
+}
+
+/// Direction of an SMS / MMS message: a filter on requests, the direction on results.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MessageType {
+    Received,
+    Sent,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl MessageType {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            MessageType::Received => "1",
+            MessageType::Sent => "0",
+            MessageType::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "1" => MessageType::Received,
+            "0" => MessageType::Sent,
+            other => MessageType::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for MessageType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for MessageType {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for MessageType {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(MessageType::from_wire(&s))
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn deserialize_opt_message_type<'de, D>(
+    d: D,
+) -> std::result::Result<Option<MessageType>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(MessageType::from_wire(t))
         }
     }))
 }
@@ -347,16 +417,17 @@ impl serde::Serialize for Nat {
 
 impl<'de> serde::Deserialize<'de> for Nat {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(Nat::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_nat<'de, D>(d: D) -> std::result::Result<Option<Nat>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -416,18 +487,19 @@ impl serde::Serialize for PlayInstructions {
 
 impl<'de> serde::Deserialize<'de> for PlayInstructions {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(PlayInstructions::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_play_instructions<'de, D>(
     d: D,
 ) -> std::result::Result<Option<PlayInstructions>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -487,18 +559,19 @@ impl serde::Serialize for QueueEmptyBehavior {
 
 impl<'de> serde::Deserialize<'de> for QueueEmptyBehavior {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(QueueEmptyBehavior::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_queue_empty_behavior<'de, D>(
     d: D,
 ) -> std::result::Result<Option<QueueEmptyBehavior>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -552,18 +625,19 @@ impl serde::Serialize for RecordingSort {
 
 impl<'de> serde::Deserialize<'de> for RecordingSort {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(RecordingSort::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_recording_sort<'de, D>(
     d: D,
 ) -> std::result::Result<Option<RecordingSort>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -618,18 +692,19 @@ impl serde::Serialize for RingGroupOrder {
 
 impl<'de> serde::Deserialize<'de> for RingGroupOrder {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(RingGroupOrder::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_ring_group_order<'de, D>(
     d: D,
 ) -> std::result::Result<Option<RingGroupOrder>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -698,24 +773,94 @@ impl serde::Serialize for RingStrategy {
 
 impl<'de> serde::Deserialize<'de> for RingStrategy {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(RingStrategy::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_ring_strategy<'de, D>(
     d: D,
 ) -> std::result::Result<Option<RingStrategy>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
             None
         } else {
             Some(RingStrategy::from_wire(t))
+        }
+    }))
+}
+
+/// How a DID / toll-free search string is matched.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SearchType {
+    Starts,
+    Contains,
+    Ends,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl SearchType {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            SearchType::Starts => "starts",
+            SearchType::Contains => "contains",
+            SearchType::Ends => "ends",
+            SearchType::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "starts" => SearchType::Starts,
+            "contains" => SearchType::Contains,
+            "ends" => SearchType::Ends,
+            other => SearchType::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for SearchType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for SearchType {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for SearchType {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(SearchType::from_wire(&s))
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn deserialize_opt_search_type<'de, D>(
+    d: D,
+) -> std::result::Result<Option<SearchType>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(SearchType::from_wire(t))
         }
     }))
 }
@@ -763,24 +908,110 @@ impl serde::Serialize for TranscriptionFormat {
 
 impl<'de> serde::Deserialize<'de> for TranscriptionFormat {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(TranscriptionFormat::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_transcription_format<'de, D>(
     d: D,
 ) -> std::result::Result<Option<TranscriptionFormat>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
             None
         } else {
             Some(TranscriptionFormat::from_wire(t))
+        }
+    }))
+}
+
+/// Toll-free prefix to search for a vanity number.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VanityType {
+    /// Any toll-free prefix.
+    Any,
+    N800,
+    N833,
+    N844,
+    N855,
+    N866,
+    N877,
+    N888,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl VanityType {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            VanityType::Any => "8**",
+            VanityType::N800 => "800",
+            VanityType::N833 => "833",
+            VanityType::N844 => "844",
+            VanityType::N855 => "855",
+            VanityType::N866 => "866",
+            VanityType::N877 => "877",
+            VanityType::N888 => "888",
+            VanityType::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "8**" => VanityType::Any,
+            "800" => VanityType::N800,
+            "833" => VanityType::N833,
+            "844" => VanityType::N844,
+            "855" => VanityType::N855,
+            "866" => VanityType::N866,
+            "877" => VanityType::N877,
+            "888" => VanityType::N888,
+            other => VanityType::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for VanityType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl serde::Serialize for VanityType {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for VanityType {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(VanityType::from_wire(&s))
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn deserialize_opt_vanity_type<'de, D>(
+    d: D,
+) -> std::result::Result<Option<VanityType>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
+    Ok(opt.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(VanityType::from_wire(t))
         }
     }))
 }
@@ -840,18 +1071,19 @@ impl serde::Serialize for VoicemailFolder {
 
 impl<'de> serde::Deserialize<'de> for VoicemailFolder {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = <String as serde::Deserialize>::deserialize(d)?;
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(VoicemailFolder::from_wire(&s))
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn deserialize_opt_voicemail_folder<'de, D>(
     d: D,
 ) -> std::result::Result<Option<VoicemailFolder>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
     Ok(opt.and_then(|s| {
         let t = s.trim();
         if t.is_empty() {
@@ -5659,7 +5891,7 @@ pub struct GetMMSParams {
     pub to: Option<String>,
     /// Filter MMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<MessageType>,
     /// DID number for Filtering MMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
@@ -5972,7 +6204,7 @@ pub struct GetResellerMMSParams {
     pub to: Option<String>,
     /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<MessageType>,
     /// DID number for Filtering MMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
@@ -6013,7 +6245,7 @@ pub struct GetResellerSMSParams {
     pub to: Option<String>,
     /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<MessageType>,
     /// DID number for Filtering SMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
@@ -6096,7 +6328,7 @@ pub struct GetSMSParams {
     pub to: Option<String>,
     /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<MessageType>,
     /// DID number for Filtering SMSs (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
@@ -7057,7 +7289,7 @@ pub struct SearchDIDsCANParams {
     pub province: Option<String>,
     /// Type of search (Values: 'starts', 'contains', 'ends') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<SearchType>,
     /// Query for searching (Examples: 'JOHN', '555', '123ABC') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
@@ -7073,7 +7305,7 @@ pub struct SearchDIDsUSAParams {
     pub state: Option<String>,
     /// Type of search (Values: 'starts', 'contains', 'ends') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<SearchType>,
     /// Query for searching (Examples: 'JOHN', '555', '123ABC') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
@@ -7110,7 +7342,7 @@ pub struct SearchFAXAreaCodeUSAParams {
 pub struct SearchTollFreeCANUSParams {
     /// Type of search (Values: 'starts', 'contains', 'ends')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<SearchType>,
     /// Query for searching (Examples: 'JOHN', '555', '123ABC')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
@@ -7124,7 +7356,7 @@ pub struct SearchTollFreeCANUSParams {
 pub struct SearchTollFreeUSAParams {
     /// Type of search (Values: 'starts', 'contains', 'ends')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<SearchType>,
     /// Query for searching (Examples: 'JOHN', '555', '123ABC')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
@@ -7138,7 +7370,7 @@ pub struct SearchVanityParams {
     /// Type of Vanity Number Values: '8**', '800', '833', '844', '855', '866',
     /// '877', '888' (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
+    pub r#type: Option<VanityType>,
     /// Query for searching : 7 Chars Examples: '***JHON', '**555**', '**HELLO'
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -12590,10 +12822,10 @@ pub struct GetMMSResponseSMS {
     pub date: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number",
+        deserialize_with = "deserialize_opt_message_type",
         rename = "type"
     )]
-    pub r#type: Option<u64>,
+    pub r#type: Option<MessageType>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -13581,10 +13813,10 @@ pub struct GetResellerMMSResponseSMS {
     pub date: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number",
+        deserialize_with = "deserialize_opt_message_type",
         rename = "type"
     )]
-    pub r#type: Option<u64>,
+    pub r#type: Option<MessageType>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -13628,10 +13860,10 @@ pub struct GetResellerSMSResponseSMS {
     pub date: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number",
+        deserialize_with = "deserialize_opt_message_type",
         rename = "type"
     )]
-    pub r#type: Option<u64>,
+    pub r#type: Option<MessageType>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -13819,10 +14051,10 @@ pub struct GetSMSResponseSMS {
     pub date: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number",
+        deserialize_with = "deserialize_opt_message_type",
         rename = "type"
     )]
-    pub r#type: Option<u64>,
+    pub r#type: Option<MessageType>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"

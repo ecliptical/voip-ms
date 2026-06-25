@@ -24,7 +24,7 @@
 use std::collections::BTreeMap;
 
 use crate::extract::{ScalarTy, Shape};
-use crate::field_overrides::Table;
+use crate::field_overrides::{FieldOverride, Table};
 use crate::{acronyms_sorted, camel_to_pascal};
 
 /// Render all `*Response` structs for the methods in `responses`.
@@ -36,6 +36,7 @@ pub fn emit_response_structs(
     responses: &BTreeMap<String, Shape>,
     table: &Table,
     field_type_skip: &std::collections::BTreeSet<String>,
+    field_type_override: &BTreeMap<String, FieldOverride>,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -46,7 +47,7 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new(table, field_type_skip);
+        let mut emitter = Emitter::new(table, field_type_skip, field_type_override);
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -68,14 +69,22 @@ struct Emitter<'a> {
     /// `"StructName.field"` paths where the field-name override table is
     /// suppressed (the field keeps its inferred/patched type).
     field_type_skip: &'a std::collections::BTreeSet<String>,
+    /// `"StructName.field"` paths assigned a specific enum type, overriding
+    /// the inferred type and any name-based override.
+    field_type_override: &'a BTreeMap<String, FieldOverride>,
 }
 
 impl<'a> Emitter<'a> {
-    fn new(table: &'a Table, field_type_skip: &'a std::collections::BTreeSet<String>) -> Self {
+    fn new(
+        table: &'a Table,
+        field_type_skip: &'a std::collections::BTreeSet<String>,
+        field_type_override: &'a BTreeMap<String, FieldOverride>,
+    ) -> Self {
         Self {
             structs: Vec::new(),
             table,
             field_type_skip,
+            field_type_override,
         }
     }
 
@@ -138,10 +147,13 @@ impl<'a> Emitter<'a> {
         body.push_str(&format!("pub struct {name} {{\n"));
         for (fname, sub) in deduped {
             let rust_ident = rust_field_ident(fname);
-            // The override table keys on field name and applies everywhere;
-            // skip it where this struct's field is a same-named-but-unrelated
-            // value (declared in `field_type_skip`).
-            let override_ = if self.field_type_skip.contains(&format!("{name}.{fname}")) {
+            // A per-struct `field_type_override` wins outright; otherwise the
+            // name-based table applies, unless `field_type_skip` suppresses it
+            // for this same-named-but-unrelated field.
+            let path = format!("{name}.{fname}");
+            let override_ = if let Some(o) = self.field_type_override.get(&path) {
+                Some(o.clone())
+            } else if self.field_type_skip.contains(&path) {
                 None
             } else {
                 self.table.get(fname).cloned()

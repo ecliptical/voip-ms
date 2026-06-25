@@ -457,6 +457,7 @@ fn emit(
     method_docs: &MethodDocs,
     table: &field_overrides::Table,
     field_type_skip: &BTreeSet<String>,
+    field_type_override: &BTreeMap<String, field_overrides::FieldOverride>,
     enum_decls: &str,
     statuses: &[(String, String)],
 ) -> String {
@@ -507,7 +508,11 @@ fn emit(
         out.push_str(&format!("pub struct {struct_name} {{\n"));
         let docs = param_docs.get(op);
         for (fname, ftype) in body_fields {
-            let override_ = table.get(fname);
+            // A per-struct `field_type_override` wins over the global
+            // name-based table for this one struct's field.
+            let override_ = field_type_override
+                .get(&format!("{struct_name}.{fname}"))
+                .or_else(|| table.get(fname));
             let rust_ty = match override_ {
                 Some(o) => o.rust_type.clone(),
                 None => xsd_to_rust(ftype).to_string(),
@@ -550,6 +555,7 @@ fn emit(
         responses,
         table,
         field_type_skip,
+        field_type_override,
     ));
 
     out.push_str("\nimpl Client {\n");
@@ -673,22 +679,25 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
              }}\n\n"
         ));
 
-        // Deserialize
+        // Deserialize -- tolerant of string / number / bool wire forms.
         out.push_str(&format!(
             "impl<'de> serde::Deserialize<'de> for {name} {{\n    \
                  fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {{\n        \
-                     let s = <String as serde::Deserialize>::deserialize(d)?;\n        \
+                     let s = crate::responses::deserialize_enum_wire_string(d)?;\n        \
                      Ok({name}::from_wire(&s))\n    \
                  }}\n\
              }}\n\n"
         ));
 
-        // deserialize_opt helper
+        // deserialize_opt helper -- same tolerance, empty / absent -> None.
+        // `allow(dead_code)`: emitted for every enum, but a param-only enum
+        // (used only via `Serialize`) never references its response helper.
         let helper = enum_deserializer_path(name);
         out.push_str(&format!(
-            "pub(crate) fn {helper}<'de, D>(d: D) -> std::result::Result<Option<{name}>, D::Error>\n\
+            "#[allow(dead_code)]\n\
+             pub(crate) fn {helper}<'de, D>(d: D) -> std::result::Result<Option<{name}>, D::Error>\n\
              where D: serde::Deserializer<'de> {{\n    \
-                 let opt = <Option<String> as serde::Deserialize>::deserialize(d)?;\n    \
+                 let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;\n    \
                  Ok(opt.and_then(|s| {{\n        \
                      let t = s.trim();\n        \
                      if t.is_empty() {{ None }} else {{ Some({name}::from_wire(t)) }}\n    \
@@ -784,6 +793,34 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
+    // `"StructName.field" -> EnumName`: assign one struct's field a specific
+    // enum type, overriding the inferred type and any name-based `field_types`.
+    let mut field_type_override: BTreeMap<String, field_overrides::FieldOverride> = BTreeMap::new();
+    for (path, enum_name) in &overrides_doc.field_type_override {
+        if path
+            .rsplit_once('.')
+            .filter(|(_, f)| !f.is_empty())
+            .is_none()
+        {
+            return Err(format!(
+                "field_type_override key `{path}` must be `StructName.field`"
+            ));
+        }
+        if !overrides_doc.enums.contains_key(enum_name) {
+            return Err(format!(
+                "field_type_override `{path}` maps to unknown enum `{enum_name}`"
+            ));
+        }
+        field_type_override.insert(
+            path.clone(),
+            field_overrides::FieldOverride {
+                rust_type: enum_name.clone(),
+                response_deserializer: Some(enum_deserializer_path(enum_name)),
+                ..Default::default()
+            },
+        );
+    }
+
     let statuses = load_statuses(&root.join("tools").join("api-statuses.json"))?;
 
     let enum_decls = emit_enums(&overrides_doc.enums);
@@ -794,6 +831,7 @@ fn cmd_gen() -> Result<(), String> {
         &method_docs,
         &table,
         &field_type_skip,
+        &field_type_override,
         &enum_decls,
         &statuses,
     );

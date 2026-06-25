@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `field_type_skip` section in `tools/api-response-overrides.json` to suppress
   the global field-name override for one struct where a flag/enum name is reused
   for an unrelated value (used for `getVoicemails`' `urgent` message count).
+- `field_type_override` section in `tools/api-response-overrides.json` to assign
+  one struct's field a specific enum, overriding the global field-name table
+  (used for the `type` field, which means different things per method).
 - Generated `Client` methods and `*Params` structs now carry the official
   per-method description as a doc comment (mined from the docs into the new
   `method_docs` section of `tools/api-responses.json`; ~218 of 222 methods
@@ -99,13 +102,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `EmailAttachmentFormat`, `TranscriptionFormat`, `PlayInstructions`,
   `RingStrategy`, `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`
   (`join_when_empty` / `leave_when_empty`), `EstimatedHoldTimeAnnounce`,
-  `CallPickupBehavior`, and `RecordingSort`. Each carries an
-  `Unknown(String)` variant for values not in the documented set, so
-  voip.ms adding new options never breaks deserialization.
-  `QueueEmptyBehavior` and `EstimatedHoldTimeAnnounce` also correct a
-  latent bug: the queue response fields were inferred as `bool` from a
-  `yes`/`no` sample and would have dropped the third value (`strict` /
-  `once`).
+  `CallPickupBehavior`, `RecordingSort`, `SearchType`, `VanityType`, and
+  `MessageType` (SMS/MMS direction). Each carries an `Unknown(String)`
+  variant for values not in the documented set, so voip.ms adding new
+  options never breaks deserialization. `QueueEmptyBehavior` and
+  `EstimatedHoldTimeAnnounce` also correct a latent bug: the queue response
+  fields were inferred as `bool` from a `yes`/`no` sample and would have
+  dropped the third value (`strict` / `once`).
+- The `type` field is now typed per struct: a search mode (`SearchType`) in
+  the DID/toll-free search params, a vanity prefix (`VanityType`) in
+  `searchVanity`, and a message direction (`MessageType`, wire `1`/`0`) in
+  the SMS/MMS params and responses. Reference-data `type` lookups whose
+  valid set comes from another endpoint stay `String`.
+- Generated enum deserializers now accept the wire value as a JSON string,
+  number, or bool (voip.ms returns the SMS `type` as a bare number), not
+  only a string.
 - Codegen overrides schema extended with top-level `enums` and
   `field_types` sections in `tools/api-response-overrides.json`. New
   enums can be added declaratively (name, variants, wire strings) and

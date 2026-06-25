@@ -190,11 +190,19 @@ Both kinds of substituted enum carry an `Unknown(String)` (or
 a new variant or shipping an unexpected value never breaks
 deserialization.
 
-Field-name substitution is global, so where one response reuses a flag
-name for an unrelated value (`getVoicemails` returns `urgent` as a
-*count* of urgent messages, not the per-message flag), list that
-struct's field in `field_type_skip` (`"StructName.field"`) to keep its
-inferred/patched type.
+Field-name substitution is global, so two JSON sections handle fields
+whose name means different things in different structs:
+
+* `field_type_skip` (`["StructName.field"]`) suppresses the name-based
+  override for one struct, keeping its inferred/patched type --
+  `getVoicemails` returns `urgent` as a *count*, not the per-message flag.
+* `field_type_override` (`{"StructName.field": "EnumName"}`) is the
+  assigning complement: it types one struct's field as a specific enum,
+  overriding both the inferred type and any `field_types` entry. The `type`
+  field needs this -- it's a search mode in `SearchVanityParams`, a message
+  direction in `GetSMSResponseSMS`, and a reference-data code elsewhere, so
+  no single global mapping fits. A per-struct entry wins over the global
+  table on both the param and response side.
 
 **Rationale**: Field names like `routing`, `dtmf_mode`, and `nat` mean
 the same thing across every method they appear on. Substituting by

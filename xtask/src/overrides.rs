@@ -56,6 +56,17 @@ pub struct OverridesDoc {
     /// patched type instead of the name-based override.
     #[serde(default)]
     pub field_type_skip: Vec<String>,
+    /// Per-struct field → enum-name table: the assigning complement to
+    /// [`Self::field_type_skip`]. Where one field name means different
+    /// things in different structs (the `type` field is a search mode in
+    /// `SearchVanityParams`, a message direction in `GetSMSResponseSMS`, a
+    /// reference-data code elsewhere), a global `field_types` entry can't
+    /// apply. Each key is an emitted-struct name and field,
+    /// `"StructName.field"`, mapped to a declared enum; that one struct's
+    /// field is typed as the enum, overriding both the inferred type and
+    /// any name-based `field_types` entry.
+    #[serde(default)]
+    pub field_type_override: HashMap<String, String>,
 }
 
 /// A user-defined enum to emit into the generated module.
@@ -118,6 +129,7 @@ pub fn load(path: &Path) -> Result<OverridesDoc, String> {
             enums: HashMap::new(),
             field_types: HashMap::new(),
             field_type_skip: Vec::new(),
+            field_type_override: HashMap::new(),
         });
     }
 

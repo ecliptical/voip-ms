@@ -28,6 +28,25 @@ use std::str::FromStr;
 
 use crate::types::Routing;
 
+/// Deserialize a wire value (string, number, or bool) into its string form.
+///
+/// voip.ms returns enum-typed fields inconsistently as a JSON string (`"1"`,
+/// `"yes"`) or a bare number / bool (`1`, `true`); generated enum
+/// `Deserialize` impls route through this so `from_wire` always gets a string.
+pub(crate) fn deserialize_enum_wire_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match Value::deserialize(deserializer)? {
+        Value::String(s) => Ok(s),
+        Value::Number(n) => Ok(n.to_string()),
+        Value::Bool(b) => Ok(b.to_string()),
+        other => Err(D::Error::custom(format!(
+            "expected string, number, or bool, got {other}"
+        ))),
+    }
+}
+
 pub(crate) fn deserialize_opt_string_from_string_number_or_bool<'de, D>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error>

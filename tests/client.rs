@@ -570,3 +570,74 @@ async fn queue_empty_behavior_response_deserializes_third_value() {
     let queue = envelope.queues.unwrap().into_iter().next().unwrap();
     assert_eq!(queue.leave_when_empty, Some(QueueEmptyBehavior::Strict));
 }
+
+#[tokio::test]
+async fn per_struct_type_enum_serializes() {
+    // The same field name (`type`) is a search mode here and a message
+    // direction elsewhere; the per-struct override picks the right enum.
+    use voip_ms::{GetSMSParams, MessageType, SearchDIDsUSAParams, SearchType};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "searchDIDsUSA"))
+        .and(query_param("type", "starts"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    client
+        .search_dids_usa_raw(&SearchDIDsUSAParams {
+            r#type: Some(SearchType::Starts),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSMS"))
+        .and(query_param("type", "1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    client
+        .get_sms_raw(&GetSMSParams {
+            r#type: Some(MessageType::Received),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn message_type_response_deserializes_numeric_wire() {
+    // voip.ms returns the SMS `type` as a bare JSON number (1 = received,
+    // 0 = sent), not a string -- the enum deserializer must tolerate that.
+    use voip_ms::MessageType;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSMS"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "sms": [
+                { "id": 1, "type": 1 },
+                { "id": 2, "type": 0 }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_sms(&voip_ms::GetSMSParams::default())
+        .await
+        .unwrap();
+    let msgs = envelope.sms.unwrap();
+    assert_eq!(msgs[0].r#type, Some(MessageType::Received));
+    assert_eq!(msgs[1].r#type, Some(MessageType::Sent));
+}
