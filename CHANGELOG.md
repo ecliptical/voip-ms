@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** Removed the `rustls-tls-webpki-roots` feature. reqwest 0.13.4's
+  `rustls` feature verifies against the OS trust store via
+  `rustls-platform-verifier` and no longer exposes an embedded-Mozilla-roots
+  toggle. `rustls-tls-native-roots` (default) and `native-tls` remain; an image
+  with no OS trust store now needs `rustls-no-provider` plus a hand-built
+  `ClientConfig`. The minimum reqwest is raised to 0.13.4 accordingly.
+- Dropped the direct `url` dependency; the crate uses `reqwest::Url`, and
+  reqwest re-exports it.
+
 - **Breaking:** Boolean-flag parameters and fields are now typed `bool` instead
   of `i64` / `String` / `f64`. Many voip.ms parameters documented as
   `1 = true, 0 = false` (or `yes`/`no`) were under-typed by the WSDL; they now
@@ -61,6 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   have one).
 - Crate-level docs now cover IP allow-listing (and the `getIP` exemption) and
   the REST wire format.
+- Re-exported `chrono`, `reqwest`, `rust_decimal`, `serde_json`, and `serde`
+  from the crate root. Their types appear in the public API, so callers can now
+  name those types (and `match` on `Error::Http`) without declaring a separate,
+  independently-versioned dependency.
 
 ## [0.1.3] - 2026-05-25
 

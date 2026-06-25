@@ -21,14 +21,10 @@ voip-ms = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-By default the crate enables `rustls` with system root certificates. To use a
-different TLS backend:
+By default the crate enables `rustls` verifying against the OS trust store. To
+use the platform's native TLS stack instead:
 
 ```toml
-# Embed Mozilla's roots (good for scratch/distroless images):
-voip-ms = { version = "0.1", default-features = false, features = ["rustls-tls-webpki-roots"] }
-
-# Use the platform's native TLS stack:
 voip-ms = { version = "0.1", default-features = false, features = ["native-tls"] }
 ```
 

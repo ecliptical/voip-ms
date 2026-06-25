@@ -17,22 +17,19 @@ members = [".", "xtask"]
 [features]
 default = ["rustls-tls-native-roots"]
 
-# TLS backend selection — pick one that matches your deployment.
-# `rustls-tls-native-roots` (default): rustls + system CA roots.
-# `rustls-tls-webpki-roots`: rustls + embedded Mozilla roots (good for scratch/distroless).
+# TLS backend selection -- pick one that matches your deployment.
+# `rustls-tls-native-roots` (default): rustls verifying against the OS trust store.
 # `native-tls`: use the platform's native TLS stack.
-rustls-tls-native-roots = ["reqwest/rustls", "reqwest/rustls-native-certs"]
-rustls-tls-webpki-roots = ["reqwest/rustls", "reqwest/webpki-roots"]
+rustls-tls-native-roots = ["reqwest/rustls"]
 native-tls = ["reqwest/native-tls"]
 
 [dependencies]
 chrono = "0.4"
-reqwest = { version = "0.13", default-features = false, features = ["json", "query"] }
-rust_decimal = "1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "query"] }
+rust_decimal = "1.42"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 thiserror = "2"
-url = "2"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

@@ -344,14 +344,18 @@ voip-ms/
 
 ## Dependencies
 
-* **chrono 0.4**: Date/time helpers for starter typed response structs.
-* **reqwest 0.13** (`json`, `query`, no default features): HTTP client + JSON
-  deserialization. TLS backend is feature-gated.
-* **rust_decimal 1**: Decimal parsing for money-like response fields.
-* **serde 1** + **serde_json 1**: Request serialization, response
-  deserialization.
-* **thiserror 2**: Error derive.
-* **url 2**: Base URL handling.
+Deps whose types appear in the public API (`chrono`, `reqwest`, `rust_decimal`,
+`serde_json`, `serde`) are pinned to a minor and re-exported from the crate root
+so callers name the exact compatible version without a separate dependency.
+
+* **chrono 0.4**: `NaiveDate`/`NaiveDateTime` in typed response fields.
+* **reqwest 0.13.4** (`json`, `query`, no default features): HTTP client + JSON
+  deserialization. TLS backend is feature-gated. Floored at 0.13.4 -- the
+  earlier 0.13.x rustls features the TLS flags reference were renamed there.
+* **rust_decimal 1.42**: Decimal parsing for money-like response fields.
+* **serde 1.0** + **serde_json 1.0**: Request serialization, response
+  deserialization (`serde_json::Value` is the `call_raw` return type).
+* **thiserror 2**: Error derive (internal; no `thiserror` type is public).
 
 Dev-dependencies:
 
@@ -364,12 +368,14 @@ Dev-dependencies:
 
 | Feature | TLS stack | Root certs | Use case |
 |---|---|---|---|
-| `rustls-tls-native-roots` *(default)* | rustls | system | most servers, containers with CA bundle |
-| `rustls-tls-webpki-roots` | rustls | embedded Mozilla | scratch/distroless images |
+| `rustls-tls-native-roots` *(default)* | rustls | OS trust store | most servers, containers with a CA bundle |
 | `native-tls` | OS native | OS native | platforms where rustls is undesirable |
 
-Pick one; they are not mutually exclusive at the type level, but enabling
-both rustls feature sets is wasteful.
+reqwest 0.13.4's `rustls` feature verifies via `rustls-platform-verifier` (the
+OS trust store), which subsumes the former native-certs path. There is no
+embedded-Mozilla-roots feature; an image with no OS trust store needs
+`rustls-no-provider` plus a hand-built `ClientConfig` via
+`use_preconfigured_tls`.
 
 ## Contributor Workflows
 
