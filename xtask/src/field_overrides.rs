@@ -152,6 +152,19 @@ const FLAG_YES_NO_FIELDS: &[&str] = &[
     "urgent",
 ];
 
+/// Queue/announcement durations documented as a number of seconds *or* the
+/// word `none` (no limit / no delay). Typed as [`crate::Seconds`], which holds
+/// the count or an unbounded sentinel; `maximum_wait_time` uses the word
+/// `unlimited` instead and is typed [`crate::WaitTime`] separately.
+const SECONDS_FIELDS: &[&str] = &[
+    "announce_position_frecuency",
+    "announce_round_seconds",
+    "frequency_announcement",
+    "member_delay",
+    "retry_timer",
+    "wrapup_time",
+];
+
 fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let routing = FieldOverride {
         rust_type: "crate::Routing".into(),
@@ -180,6 +193,18 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         param_skip_if: Some("crate::responses::is_false".into()),
         ..Default::default()
     };
+    // Seconds / WaitTime carry their own Serialize, like Routing -- no
+    // param_serializer needed.
+    let seconds = FieldOverride {
+        rust_type: "crate::Seconds".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_seconds".into()),
+        ..Default::default()
+    };
+    let wait_time = FieldOverride {
+        rust_type: "crate::WaitTime".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_wait_time".into()),
+        ..Default::default()
+    };
 
     ROUTING_FIELDS
         .iter()
@@ -191,5 +216,7 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
                 .map(|name| (*name, flag_yes_no.clone())),
         )
         .chain(std::iter::once(("test", flag_test)))
+        .chain(SECONDS_FIELDS.iter().map(|name| (*name, seconds.clone())))
+        .chain(std::iter::once(("maximum_wait_time", wait_time)))
         .collect()
 }

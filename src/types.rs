@@ -218,6 +218,98 @@ impl<'de> Deserialize<'de> for Routing {
     }
 }
 
+/// A duration in seconds, or an "unbounded" sentinel.
+///
+/// Several voip.ms queue/announcement fields take a number of seconds *or* a
+/// word meaning no limit (`none` / `unlimited`), so a bare `u64` can't hold the
+/// sentinel. [`Seconds`] serializes the sentinel as `none`; [`WaitTime`] as
+/// `unlimited` (the word `maximum_wait_time` documents). Both deserialize
+/// tolerantly: a number, a numeric string, or either sentinel word.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Seconds {
+    /// A concrete number of seconds.
+    Value(u64),
+    /// No limit (wire: `none`).
+    Unlimited,
+}
+
+/// A wait time in seconds, or unlimited.
+///
+/// Like [`Seconds`] but serializes the unbounded case as `unlimited`, the word
+/// `maximum_wait_time` documents.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WaitTime {
+    /// A concrete number of seconds.
+    Value(u64),
+    /// No limit (wire: `unlimited`).
+    Unlimited,
+}
+
+macro_rules! impl_seconds {
+    ($name:ident, $unlimited_wire:literal, $expecting:literal) => {
+        impl From<u64> for $name {
+            fn from(v: u64) -> Self {
+                $name::Value(v)
+            }
+        }
+
+        impl Serialize for $name {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                match self {
+                    $name::Value(v) => serializer.serialize_str(&v.to_string()),
+                    $name::Unlimited => serializer.serialize_str($unlimited_wire),
+                }
+            }
+        }
+
+        impl<'de> Deserialize<'de> for $name {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct SecondsVisitor;
+
+                impl<'de> Visitor<'de> for SecondsVisitor {
+                    type Value = $name;
+
+                    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                        f.write_str($expecting)
+                    }
+
+                    fn visit_u64<E>(self, v: u64) -> Result<$name, E>
+                    where
+                        E: DeError,
+                    {
+                        Ok($name::Value(v))
+                    }
+
+                    fn visit_str<E>(self, v: &str) -> Result<$name, E>
+                    where
+                        E: DeError,
+                    {
+                        let t = v.trim();
+                        match t.to_ascii_lowercase().as_str() {
+                            "none" | "unlimited" => Ok($name::Unlimited),
+                            _ => t
+                                .parse::<u64>()
+                                .map($name::Value)
+                                .map_err(|_| E::custom(format!("invalid seconds value {v}"))),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_any(SecondsVisitor)
+            }
+        }
+    };
+}
+
+impl_seconds!(Seconds, "none", "a number of seconds or `none`");
+impl_seconds!(WaitTime, "unlimited", "a number of seconds or `unlimited`");
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -285,5 +377,46 @@ mod tests {
     fn deserialize_none() {
         let r: Routing = serde_json::from_str("\"none:\"").unwrap();
         assert_eq!(r, Routing::None);
+    }
+
+    #[test]
+    fn seconds_serializes_value_and_sentinel() {
+        assert_eq!(
+            serde_json::to_string(&Seconds::Value(30)).unwrap(),
+            "\"30\""
+        );
+        assert_eq!(
+            serde_json::to_string(&Seconds::Unlimited).unwrap(),
+            "\"none\""
+        );
+        assert_eq!(
+            serde_json::to_string(&WaitTime::Unlimited).unwrap(),
+            "\"unlimited\""
+        );
+    }
+
+    #[test]
+    fn seconds_deserializes_number_string_and_sentinels() {
+        // A bare number, a numeric string, and either sentinel word all parse.
+        assert_eq!(
+            serde_json::from_str::<Seconds>("45").unwrap(),
+            Seconds::Value(45)
+        );
+        assert_eq!(
+            serde_json::from_str::<Seconds>("\"45\"").unwrap(),
+            Seconds::Value(45)
+        );
+        for s in ["\"none\"", "\"NONE\"", "\"unlimited\""] {
+            assert_eq!(
+                serde_json::from_str::<Seconds>(s).unwrap(),
+                Seconds::Unlimited,
+                "{s}"
+            );
+        }
+        // WaitTime shares the tolerant parse.
+        assert_eq!(
+            serde_json::from_str::<WaitTime>("\"unlimited\"").unwrap(),
+            WaitTime::Unlimited
+        );
     }
 }

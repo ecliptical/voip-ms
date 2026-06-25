@@ -23,6 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   explicit `Some(false)` ("turn it off") stays distinct from `None` ("leave
   unchanged"). Callers passing a string (e.g. `enable: Some("1".to_string())`)
   must migrate to `enable: Some(true)`, and `test` to `test: true`.
+- **Breaking:** Queue/announcement duration fields documented as a number of
+  seconds *or* a no-limit word are now typed `Seconds` / `WaitTime` (hand-written
+  enums holding a `u64` count or an unbounded sentinel) instead of `String`:
+  `retry_timer`, `wrapup_time`, `member_delay`, `announce_round_seconds`,
+  `frequency_announcement`, `announce_position_frecuency` (`Seconds`, sentinel
+  `none`) and `maximum_wait_time` (`WaitTime`, sentinel `unlimited`). Callers
+  pass `Some(Seconds::Value(30))` / `Some(Seconds::Unlimited)`. Both are
+  re-exported from the crate root and deserialize tolerantly (number, numeric
+  string, or sentinel word).
 - **Breaking:** `ApiStatus` is now an enum instead of a `String` newtype. It
   has one variant per documented voip.ms `status` code (~475, e.g.
   `ApiStatus::InvalidCredentials`, `ApiStatus::APINotEnabled`,

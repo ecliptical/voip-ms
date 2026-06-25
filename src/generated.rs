@@ -8671,11 +8671,11 @@ pub struct SetQueueParams {
     /// Member delay when the agent is connected to the caller (Values 1 to 15
     /// in seconds or 'none')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub member_delay: Option<String>,
+    pub member_delay: Option<crate::Seconds>,
     /// Ammount of time a caller can wait in queue (Values in seconds: multiples
     /// of 30, max value: 1200 or 'unlimited')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub maximum_wait_time: Option<String>,
+    pub maximum_wait_time: Option<crate::WaitTime>,
     /// Maximum callers (Values: 1 to 60 or 'unlimited')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maximum_callers: Option<String>,
@@ -8709,26 +8709,26 @@ pub struct SetQueueParams {
     /// How long do we wait before trying all the members again (Values 5 to 60
     /// seconds or 'none'= No Delay)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub retry_timer: Option<String>,
+    pub retry_timer: Option<crate::Seconds>,
     /// After a successful call, the number of seconds to wait before sending a
     /// free agent another call (Values 1 to 60 seconds or 'none'= No Delay)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub wrapup_time: Option<String>,
+    pub wrapup_time: Option<crate::Seconds>,
     /// Code for Recording (Values from getRecordings or 'none')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voice_announcement: Option<String>,
     /// Periodic interval to play voice announce recording (Values in seconds:
     /// multiples of 15, max value: 1200 or 'none' = No announcement)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub frequency_announcement: Option<String>,
+    pub frequency_announcement: Option<crate::Seconds>,
     /// How often to make any periodic announcement (Values in seconds:
     /// multiples of 15, max value: 1200 or 'none' = No announcement)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub announce_position_frecuency: Option<String>,
+    pub announce_position_frecuency: Option<crate::Seconds>,
     /// Announce seconds (Values in seconds: 1 to 60 or 'none' = Do not
     /// announce)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub announce_round_seconds: Option<String>,
+    pub announce_round_seconds: Option<crate::Seconds>,
     /// Include estimated hold time in position announcements (Values
     /// 'yes'/'no'/'once')
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -13496,9 +13496,9 @@ pub struct GetQueuesResponseQueue {
     pub report_hold_time_agent: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_seconds"
     )]
-    pub member_delay: Option<u64>,
+    pub member_delay: Option<crate::Seconds>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -13506,9 +13506,9 @@ pub struct GetQueuesResponseQueue {
     pub music_on_hold: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_wait_time"
     )]
-    pub maximum_wait_time: Option<u64>,
+    pub maximum_wait_time: Option<crate::WaitTime>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -13532,14 +13532,14 @@ pub struct GetQueuesResponseQueue {
     pub agent_ring_timeout: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_seconds"
     )]
-    pub retry_timer: Option<u64>,
+    pub retry_timer: Option<crate::Seconds>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_seconds"
     )]
-    pub wrapup_time: Option<u64>,
+    pub wrapup_time: Option<crate::Seconds>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -13547,19 +13547,19 @@ pub struct GetQueuesResponseQueue {
     pub voice_announcement: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_seconds"
     )]
-    pub frequency_announcement: Option<String>,
+    pub frequency_announcement: Option<crate::Seconds>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_seconds"
     )]
-    pub announce_position_frecuency: Option<String>,
+    pub announce_position_frecuency: Option<crate::Seconds>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_opt_seconds"
     )]
-    pub announce_round_seconds: Option<String>,
+    pub announce_round_seconds: Option<crate::Seconds>,
     #[serde(
         default,
         deserialize_with = "deserialize_opt_estimated_hold_time_announce"

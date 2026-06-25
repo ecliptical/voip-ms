@@ -159,6 +159,13 @@ in `xtask/src/field_overrides.rs`:
   `fwd:5551234567`, `sip:user@host:port`, `none:`, …). Routing
   changes shape rarely and benefits from a custom `FromStr` (e.g.
   SIP URIs may contain `:`, so only the first `:` is the separator).
+* **Seconds-or-sentinel durations** map to [`crate::Seconds`] (six queue /
+  announcement fields in `SECONDS_FIELDS`) or [`crate::WaitTime`]
+  (`maximum_wait_time`), hand-written enums that hold a `u64` count *or* an
+  unbounded sentinel -- voip.ms documents these as a number of seconds or a
+  word (`none` / `unlimited`), which a bare `u64` can't represent. They carry
+  their own (de)serialization (tolerant of a number, a numeric string, or
+  either sentinel word).
 * **Boolean flags** map to `bool`, registered in the `FLAG_01_FIELDS` /
   `FLAG_YES_NO_FIELDS` consts of `xtask/src/field_overrides.rs`. Many
   parameters voip.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are

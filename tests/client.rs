@@ -682,3 +682,60 @@ async fn integer_coded_enum_round_trips() {
     let did = envelope.dids.unwrap().into_iter().next().unwrap();
     assert_eq!(did.billing_type, Some(DidBillingType::PerMinute));
 }
+
+#[tokio::test]
+async fn seconds_param_serializes_value_and_sentinel() {
+    // A queue duration is a count of seconds OR a no-limit sentinel that
+    // serializes to its documented word (`none` / `unlimited`).
+    use voip_ms::{Seconds, SetQueueParams, WaitTime};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setQueue"))
+        .and(query_param("retry_timer", "30"))
+        .and(query_param("wrapup_time", "none"))
+        .and(query_param("maximum_wait_time", "unlimited"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    client
+        .set_queue_raw(&SetQueueParams {
+            retry_timer: Some(Seconds::Value(30)),
+            wrapup_time: Some(Seconds::Unlimited),
+            maximum_wait_time: Some(WaitTime::Unlimited),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn seconds_response_deserializes_number_and_sentinel() {
+    use voip_ms::{Seconds, WaitTime};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getQueues"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "queues": [
+                { "queue_name": "q", "retry_timer": 30, "maximum_wait_time": "unlimited" }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_queues(&voip_ms::GetQueuesParams::default())
+        .await
+        .unwrap();
+    let queue = envelope.queues.unwrap().into_iter().next().unwrap();
+    assert_eq!(queue.retry_timer, Some(Seconds::Value(30)));
+    assert_eq!(queue.maximum_wait_time, Some(WaitTime::Unlimited));
+}

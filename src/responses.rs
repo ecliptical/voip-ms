@@ -26,7 +26,7 @@ use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::str::FromStr;
 
-use crate::types::Routing;
+use crate::types::{Routing, Seconds, WaitTime};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -227,6 +227,39 @@ where
         Some(other) => Err(D::Error::custom(format!(
             "expected routing string, got {other}"
         ))),
+    }
+}
+
+pub(crate) fn deserialize_opt_seconds<'de, D>(deserializer: D) -> Result<Option<Seconds>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_via::<Seconds, D>(deserializer)
+}
+
+pub(crate) fn deserialize_opt_wait_time<'de, D>(
+    deserializer: D,
+) -> Result<Option<WaitTime>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_via::<WaitTime, D>(deserializer)
+}
+
+/// Deserialize an optional value via the target type's own `Deserialize`,
+/// mapping JSON null and the empty string to `None`. Shared by the
+/// seconds-or-sentinel helpers, whose types accept a number, a numeric string,
+/// or a sentinel word but should still read an absent/empty field as `None`.
+fn deserialize_opt_via<'de, T, D>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) if s.trim().is_empty() => Ok(None),
+        Some(v) => T::deserialize(v).map(Some).map_err(D::Error::custom),
     }
 }
 
