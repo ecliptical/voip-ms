@@ -164,7 +164,7 @@ impl<'a> Emitter<'a> {
             };
             let deser = match &override_ {
                 Some(o) => o.response_deserializer.as_deref(),
-                None => scalar_deserializer(sub),
+                None => field_deserializer(sub),
             };
             let attrs = render_field_attrs(deser);
             if rust_ident == *fname {
@@ -236,6 +236,16 @@ fn render_field_attrs(deser: Option<&str>) -> String {
     match deser {
         None => "    #[serde(default)]\n".into(),
         Some(d) => format!("    #[serde(default, deserialize_with = \"{d}\")]\n"),
+    }
+}
+
+/// The `deserialize_with` a response field uses given its shape: scalars get
+/// their type-coercing helper; lists get the single-or-sequence helper (VoIP.ms
+/// returns a one-row list as a bare object); objects deserialize structurally.
+fn field_deserializer(shape: &Shape) -> Option<&'static str> {
+    match shape {
+        Shape::List(_) => Some("crate::responses::deserialize_opt_vec_from_single_or_seq"),
+        _ => scalar_deserializer(shape),
     }
 }
 

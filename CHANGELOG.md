@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-06
+
+### Fixed
+
+- Response list fields (`getVoicemailMessageFile`'s `message`,
+  `getRecordingFile`'s `recordings`, `getConferenceRecordingFile`'s `recording`,
+  and every other generated `Option<Vec<_>>` field) failed to deserialize with
+  "invalid type: map, expected a sequence" when VoIP.ms returned a single-row
+  result as a bare object instead of a one-element array -- which the live API
+  does for the fetch-one file methods. A tolerant single-or-sequence
+  deserializer now backs every list field: an array is taken as-is, a lone
+  object (or scalar) becomes a one-element `Vec`, and null / absent /
+  empty-string stays `None`.
+
 ## [0.3.1] - 2026-06-25
 
 ### Fixed

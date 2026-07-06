@@ -263,6 +263,35 @@ where
     }
 }
 
+/// Deserialize an optional list field that VoIP.ms may return either as a JSON
+/// array or, when the method yields a single row, as a bare unwrapped object.
+/// VoIP.ms's `print_r`-derived output collapses a one-element list to the
+/// element itself (e.g. `getVoicemailMessageFile`'s `message` comes back as an
+/// object, not a one-element array), so every generated list field accepts both
+/// wire forms: an array becomes the `Vec` as-is, a lone value becomes a
+/// one-element `Vec`, and null / absent / empty-string is `None`.
+pub(crate) fn deserialize_opt_vec_from_single_or_seq<'de, T, D>(
+    deserializer: D,
+) -> Result<Option<Vec<T>>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) if s.trim().is_empty() => Ok(None),
+        Some(Value::Array(items)) => items
+            .into_iter()
+            .map(|v| T::deserialize(v).map_err(D::Error::custom))
+            .collect::<Result<Vec<T>, _>>()
+            .map(Some),
+        Some(one) => T::deserialize(one)
+            .map(|v| Some(vec![v]))
+            .map_err(D::Error::custom),
+    }
+}
+
 /// `skip_serializing_if` predicate for true-only flag params (`test`): a
 /// `false` value is equivalent to absent and is left off the wire.
 pub(crate) fn is_false(b: &bool) -> bool {

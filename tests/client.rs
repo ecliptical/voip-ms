@@ -830,3 +830,35 @@ async fn fax_message_folder_is_free_text_not_voicemail_enum() {
         .await
         .unwrap();
 }
+
+#[test]
+fn single_object_list_field_coerces_to_one_element_vec() {
+    use voip_ms::GetVoicemailMessageFileResponse;
+
+    // A fetch-one method returns its list field as a bare object, not a
+    // one-element array; the tolerant deserializer wraps it into a `Vec`.
+    let single: GetVoicemailMessageFileResponse = serde_json::from_value(json!({
+        "status": "success",
+        "message": { "mailbox": "1001", "folder": "INBOX", "message_num": "1", "data": "Zm9v" }
+    }))
+    .unwrap();
+    let msgs = single.message.expect("message present");
+    assert_eq!(msgs.len(), 1);
+    assert_eq!(msgs[0].data.as_deref(), Some("Zm9v"));
+
+    // A genuine array is preserved as-is (no regression).
+    let many: GetVoicemailMessageFileResponse = serde_json::from_value(json!({
+        "status": "success",
+        "message": [
+            { "message_num": "1", "data": "Zm9v" },
+            { "message_num": "2", "data": "YmFy" }
+        ]
+    }))
+    .unwrap();
+    assert_eq!(many.message.expect("array present").len(), 2);
+
+    // A null / absent list field stays `None`.
+    let empty: GetVoicemailMessageFileResponse =
+        serde_json::from_value(json!({ "status": "success", "message": null })).unwrap();
+    assert!(empty.message.is_none());
+}
