@@ -10273,8 +10273,8 @@
                   "name": "date",
                   "shape": {
                     "kind": "scalar",
-                    "type": "date",
-                    "sample": "2016-01-30"
+                    "type": "datetime",
+                    "sample": "2016-01-30 09:15:42"
                   }
                 },
                 {

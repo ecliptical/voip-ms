@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-07
+
+### Changed
+
+- **Breaking:** `date` on `getVoicemailMessages` is now `Option<chrono::NaiveDateTime>`
+  instead of `Option<chrono::NaiveDate>`. VoIP.ms returns a full timestamp for
+  this field, e.g. `2023-06-26 15:37:05`, which failed to deserialize as a
+  bare date with "trailing input". The new type matches the identical `date`
+  field on `getCDR` and `getResellerCDR`.
+
 ## [0.4.0] - 2026-07-07
 
 ### Changed

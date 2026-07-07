@@ -896,3 +896,32 @@ fn callerid_accepts_named_display_form() {
     let faxes = fax.faxes.expect("faxes present");
     assert_eq!(faxes[0].callerid.as_deref(), Some("5552341234"));
 }
+
+#[test]
+fn voicemail_message_date_accepts_full_timestamp() {
+    use voip_ms::GetVoicemailMessagesResponse;
+
+    // VoIP.ms fills `date` on a voicemail message with a full timestamp, not
+    // a bare date. Typed as `NaiveDate`, this failed with "trailing input".
+    let vm: GetVoicemailMessagesResponse = serde_json::from_value(json!({
+        "status": "success",
+        "messages": [{
+            "mailbox": "1001",
+            "folder": "INBOX",
+            "message_num": "1",
+            "date": "2023-06-26 15:37:05",
+            "duration": "00:00:06"
+        }]
+    }))
+    .unwrap();
+    let messages = vm.messages.expect("messages present");
+    assert_eq!(
+        messages[0].date,
+        Some(
+            chrono::NaiveDate::from_ymd_opt(2023, 6, 26)
+                .unwrap()
+                .and_hms_opt(15, 37, 5)
+                .unwrap()
+        )
+    );
+}

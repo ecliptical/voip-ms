@@ -15343,8 +15343,11 @@ pub struct GetVoicemailMessagesResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub message_num: Option<u64>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_datetime"
+    )]
+    pub date: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
