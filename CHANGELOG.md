@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-07
+
+### Changed
+
+- **Breaking:** `callerid` on `getVoicemailMessages`, `getFAXMessages`,
+  `getPhonebook`, and `getCallerIDFiltering` is now `Option<String>` instead of
+  `Option<u64>`. VoIP.ms returns the caller's display form for inbound caller ID
+  -- a name and number in angle brackets, e.g. `NAME <4164442828>` -- which
+  failed to deserialize as an integer with "invalid digit found in string". The
+  new type matches the identical `callerid` on `getVoicemailTranscriptions`,
+  `getCDR`, and `getResellerCDR`. A purely numeric caller ID still round-trips as
+  its string form.
+
 ## [0.3.2] - 2026-07-06
 
 ### Fixed

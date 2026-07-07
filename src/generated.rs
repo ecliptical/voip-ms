@@ -10783,9 +10783,9 @@ pub struct GetCallerIDFilteringResponseFiltering {
     pub filtering: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub callerid: Option<u64>,
+    pub callerid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -12261,9 +12261,9 @@ pub struct GetFAXMessagesResponseFAX {
     pub date: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub callerid: Option<u64>,
+    pub callerid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -13532,9 +13532,9 @@ pub struct GetPhonebookResponsePhonebook {
     pub number: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub callerid: Option<u64>,
+    pub callerid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -15347,9 +15347,9 @@ pub struct GetVoicemailMessagesResponseMessage {
     pub date: Option<chrono::NaiveDate>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub callerid: Option<u64>,
+    pub callerid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"

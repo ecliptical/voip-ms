@@ -4221,8 +4221,8 @@
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "integer",
-                    "sample": "5551234567"
+                    "type": "string",
+                    "sample": "John Doe <5551234567>"
                   }
                 },
                 {
@@ -5741,8 +5741,8 @@
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "integer",
-                    "sample": "5552223333"
+                    "type": "string",
+                    "sample": "John Doe <5552223333>"
                   }
                 },
                 {
@@ -8758,8 +8758,8 @@
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "integer",
-                    "sample": "5552341234"
+                    "type": "string",
+                    "sample": "John Doe <5552341234>"
                   }
                 },
                 {
@@ -10281,8 +10281,8 @@
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "integer",
-                    "sample": "5551234567"
+                    "type": "string",
+                    "sample": "John Doe <5551234567>"
                   }
                 },
                 {

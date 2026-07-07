@@ -862,3 +862,37 @@ fn single_object_list_field_coerces_to_one_element_vec() {
         serde_json::from_value(json!({ "status": "success", "message": null })).unwrap();
     assert!(empty.message.is_none());
 }
+
+#[test]
+fn callerid_accepts_named_display_form() {
+    use voip_ms::{GetFAXMessagesResponse, GetVoicemailMessagesResponse};
+
+    // VoIP.ms fills `callerid` on an inbound message with the caller's
+    // display form -- a name and number in angle brackets -- not a bare
+    // number. Typed as `String`, the whole envelope must still deserialize.
+    let vm: GetVoicemailMessagesResponse = serde_json::from_value(json!({
+        "status": "success",
+        "messages": [{
+            "mailbox": "1001",
+            "folder": "INBOX",
+            "message_num": "1",
+            "callerid": "PARKWOODSDENTAL <4164442828>",
+            "duration": "00:00:06"
+        }]
+    }))
+    .unwrap();
+    let messages = vm.messages.expect("messages present");
+    assert_eq!(
+        messages[0].callerid.as_deref(),
+        Some("PARKWOODSDENTAL <4164442828>")
+    );
+
+    // A purely numeric caller ID still round-trips as its string form.
+    let fax: GetFAXMessagesResponse = serde_json::from_value(json!({
+        "status": "success",
+        "faxes": [{ "id": "42", "callerid": "5552341234" }]
+    }))
+    .unwrap();
+    let faxes = fax.faxes.expect("faxes present");
+    assert_eq!(faxes[0].callerid.as_deref(), Some("5552341234"));
+}
