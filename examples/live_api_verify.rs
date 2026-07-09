@@ -280,10 +280,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
             let servers: GetServersInfoResponse = client
                 .get_servers_info(&GetServersInfoParams::default())
                 .await?;
-            println!(
-                "[info] server count: {}",
-                servers.servers.len()
-            );
+            println!("[info] server count: {}", servers.servers.len());
             Ok(())
         })
         .await;
@@ -292,10 +289,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
         .run("get_dids_info", async {
             let dids: GetDIDsInfoResponse =
                 client.get_dids_info(&GetDIDsInfoParams::default()).await?;
-            println!(
-                "[info] DID count: {}",
-                dids.dids.len()
-            );
+            println!("[info] DID count: {}", dids.dids.len());
             Ok(())
         })
         .await;
@@ -305,10 +299,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
             let sub_accounts: GetSubAccountsResponse = client
                 .get_sub_accounts(&GetSubAccountsParams::default())
                 .await?;
-            println!(
-                "[info] sub-account count: {}",
-                sub_accounts.accounts.len()
-            );
+            println!("[info] sub-account count: {}", sub_accounts.accounts.len());
             Ok(())
         })
         .await;
@@ -316,10 +307,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
     checks
         .run("get_sms", async {
             let sms: GetSMSResponse = client.get_sms(&GetSMSParams::default()).await?;
-            println!(
-                "[info] sms count: {}",
-                sms.sms.len()
-            );
+            println!("[info] sms count: {}", sms.sms.len());
             Ok(())
         })
         .await;
