@@ -9882,17 +9882,7 @@ pub struct DeleteSMSResponse {
 
 /// Response body for [`Client::e911_address_types`] (wire method `e911AddressTypes`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct E911AddressTypesResponse {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub status: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub types: Option<String>,
+pub struct E911AddressTypesResponseType {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -9903,6 +9893,20 @@ pub struct E911AddressTypesResponse {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct E911AddressTypesResponse {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub status: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub types: Vec<E911AddressTypesResponseType>,
 }
 
 /// Response body for [`Client::e911_cancel`] (wire method `e911Cancel`).
@@ -9917,22 +9921,17 @@ pub struct E911CancelResponse {
 
 /// Response body for [`Client::e911_info`] (wire method `e911Info`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct E911InfoResponse {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub status: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub info: Option<String>,
+pub struct E911InfoResponseInfo {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub did: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub status: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -9993,6 +9992,17 @@ pub struct E911InfoResponse {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub other_info: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct E911InfoResponse {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub info: Option<E911InfoResponseInfo>,
 }
 
 /// Response body for [`Client::e911_provision`] (wire method `e911Provision`).
@@ -10269,9 +10279,9 @@ pub struct GetCDRResponseCDR {
     pub callerid: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub destination: Option<u64>,
+    pub destination: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -10541,9 +10551,9 @@ pub struct GetCallRecordingResponse {
     pub datetime: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub destination: Option<u64>,
+    pub destination: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
@@ -10582,9 +10592,9 @@ pub struct GetCallRecordingsResponseRecording {
     pub datetime: Option<chrono::NaiveDateTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub destination: Option<u64>,
+    pub destination: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
@@ -10734,9 +10744,9 @@ pub struct GetCallbacksResponseCallback {
     pub description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub number: Option<u64>,
+    pub number: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -10754,9 +10764,9 @@ pub struct GetCallbacksResponseCallback {
     pub digit_timeout: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
-    pub callerid_number: Option<u64>,
+    pub callerid_number: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -10788,9 +10798,9 @@ pub struct GetCallerIDFilteringResponseFiltering {
     pub callerid: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_routing"
@@ -11012,9 +11022,9 @@ pub struct GetClientsResponseClient {
     pub zip: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub phone_number: Option<u64>,
+    pub phone_number: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -11323,9 +11333,9 @@ pub struct GetConferenceRecordingFileResponse {
 pub struct GetConferenceRecordingsResponseRecording {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -11425,9 +11435,9 @@ pub struct GetDIDCountriesResponse {
 pub struct GetDIDsCANResponseDID {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -11620,9 +11630,9 @@ pub struct GetDIDsInfoResponseDID {
     pub sms_email_enabled: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
-    pub sms_forward: Option<u64>,
+    pub sms_forward: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
@@ -11916,9 +11926,9 @@ pub struct GetDIDsInternationalTollFreeResponse {
 pub struct GetDIDsUSAResponseDID {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -12030,9 +12040,9 @@ pub struct GetDISAsResponseDISA {
     pub digit_timeout: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
-    pub callerid_override: Option<u64>,
+    pub callerid_override: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -12178,9 +12188,9 @@ pub struct GetEmailToFAXResponseEmailToFAX {
     pub security_code_enabled: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub from: Option<u64>,
+    pub from: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -12266,14 +12276,14 @@ pub struct GetFAXMessagesResponseFAX {
     pub callerid: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub stationid: Option<u64>,
+    pub stationid: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub destination: Option<u64>,
+    pub destination: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -12335,9 +12345,9 @@ pub struct GetFAXNumbersInfoResponseNumber {
     pub id: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -12622,14 +12632,14 @@ pub struct GetForwardingsResponseForwarding {
     pub forwarding: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub phone_number: Option<u64>,
+    pub phone_number: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
-    pub callerid_override: Option<u64>,
+    pub callerid_override: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -12821,17 +12831,7 @@ pub struct GetLNPAttachResponse {
 
 /// Response body for [`Client::get_lnp_attach_list`] (wire method `getLNPAttachList`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct GetLNPAttachListResponse {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub status: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub list: Option<String>,
+pub struct GetLNPAttachListResponseList {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -12848,6 +12848,20 @@ pub struct GetLNPAttachListResponse {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub size: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct GetLNPAttachListResponse {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub status: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub list: Vec<GetLNPAttachListResponseList>,
 }
 
 /// Response body for [`Client::get_lnp_details`] (wire method `getLNPDetails`).
@@ -13062,17 +13076,7 @@ pub struct GetLNPDetailsResponse {
 
 /// Response body for [`Client::get_lnp_list`] (wire method `getLNPList`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct GetLNPListResponse {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub status: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub list: Option<String>,
+pub struct GetLNPListResponseList {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -13088,6 +13092,25 @@ pub struct GetLNPListResponse {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub foc_date: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct GetLNPListResponse {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub status: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub list: Vec<GetLNPListResponseList>,
 }
 
 /// Response body for [`Client::get_lnp_list_status`] (wire method `getLNPListStatus`).
@@ -13100,12 +13123,28 @@ pub struct GetLNPListStatusResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_map_from_object"
     )]
-    pub list_status: Option<String>,
+    pub list_status: std::collections::HashMap<String, String>,
 }
 
 /// Response body for [`Client::get_lnp_notes`] (wire method `getLNPNotes`).
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct GetLNPNotesResponseList {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub note: Option<String>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
+    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub time: Option<String>,
+}
+
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetLNPNotesResponse {
     #[serde(
@@ -13115,24 +13154,9 @@ pub struct GetLNPNotesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub list: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub note: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub date: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub time: Option<String>,
+    pub list: Vec<GetLNPNotesResponseList>,
 }
 
 /// Response body for [`Client::get_lnp_status`] (wire method `getLNPStatus`).
@@ -13278,14 +13302,14 @@ pub struct GetMMSResponseSMS {
     pub r#type: Option<MessageType>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub contact: Option<u64>,
+    pub contact: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -13544,9 +13568,9 @@ pub struct GetPhonebookResponsePhonebook {
     pub name: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub number: Option<u64>,
+    pub number: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14182,14 +14206,14 @@ pub struct GetRegistrationStatusResponse {
 pub struct GetReportEstimatedHoldTimeResponseType {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub value: Option<bool>,
+    pub value: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub description: Option<bool>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -14272,9 +14296,9 @@ pub struct GetResellerCDRResponseCDR {
     pub callerid: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub destination: Option<u64>,
+    pub destination: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14357,14 +14381,14 @@ pub struct GetResellerMMSResponseSMS {
     pub r#type: Option<MessageType>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub contact: Option<u64>,
+    pub contact: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14407,14 +14431,14 @@ pub struct GetResellerSMSResponseSMS {
     pub r#type: Option<MessageType>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub contact: Option<u64>,
+    pub contact: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14568,9 +14592,9 @@ pub struct GetSIPURIsResponseSIPURI {
     pub description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
-    pub callerid_override: Option<u64>,
+    pub callerid_override: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -14613,14 +14637,14 @@ pub struct GetSMSResponseSMS {
     pub r#type: Option<MessageType>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub contact: Option<u64>,
+    pub contact: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14824,9 +14848,9 @@ pub struct GetSubAccountsResponseAccount {
     pub device_type: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
-    pub callerid_number: Option<u64>,
+    pub callerid_number: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -14987,9 +15011,9 @@ pub struct GetSubAccountsResponseAccount {
     pub tfcarrier: Option<TollFreeCarrier>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
-    pub default_e911: Option<u64>,
+    pub default_e911: Option<String>,
     #[serde(default, deserialize_with = "deserialize_opt_call_pickup_behavior")]
     pub call_pickup_behavior: Option<CallPickupBehavior>,
 }
@@ -15054,8 +15078,11 @@ pub struct GetTerminationRatesResponse {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub status: Option<String>,
-    #[serde(default)]
-    pub route: Option<GetTerminationRatesResponseRoute>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub route: Vec<GetTerminationRatesResponseRoute>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
@@ -15795,9 +15822,9 @@ pub struct RemoveDIDvPRIResponse {
 pub struct SearchDIDsCANResponseDID {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -15864,9 +15891,9 @@ pub struct SearchDIDsCANResponse {
 pub struct SearchDIDsUSAResponseDID {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -16005,9 +16032,9 @@ pub struct SearchFAXAreaCodeUSAResponse {
 pub struct SearchTollFreeCANUSResponseDID {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -16044,9 +16071,9 @@ pub struct SearchTollFreeCANUSResponse {
 pub struct SearchTollFreeUSAResponseDID {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -16098,9 +16125,9 @@ pub struct SearchTollFreeUSAResponse {
 pub struct SearchVanityResponseDID {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub did: Option<u64>,
+    pub did: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"

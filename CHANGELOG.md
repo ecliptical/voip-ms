@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-09
+
+### Fixed
+
+- Five response fields whose types did not match what the live API returns,
+  each of which failed deserialization of an otherwise-successful call:
+  - `getTerminationRates`: `route` is a list of `{value, description}` entries,
+    not a single object.
+  - `e911AddressTypes`: `types` is a list of `{value, description}` catalog
+    entries, not flattened scalars (the doc sample was a mis-parsed `print_r`
+    dump).
+  - `getFaxNumbersInfo`: a number's `did` is a dotted string
+    (`647.948.4755`), typed `String` instead of `u64`.
+  - `getLNPListStatus`: `list_status` is a string-keyed `code => description`
+    map (including an empty-string key), now a
+    `HashMap<String, String>` instead of a scalar.
+  - `getReportEstimatedHoldTime`: the `types` entries carry free-text
+    `value`/`description` strings (e.g. `"once"` / `"Yes, only once"`), not
+    yes/no booleans.
+- Four more responses whose `print_r` doc sample was flattened into sibling
+  scalars instead of the real nested shape:
+  - `e911Info`: `info` is a nested object (`did`, `full_name`, address parts,
+    …), not top-level scalars.
+  - `getLNPList`, `getLNPNotes`, `getLNPAttachList`: `list` is a list of
+    objects (`{portid, numbers, foc_date, status}` / `{note, date, time}` /
+    `{attachid, type, size}`), not flattened scalars.
+- DID and phone-number identifier fields retyped from `u64` to `String`
+  (`did`, SMS/MMS `contact`, CDR `destination`, `phone_number`, `number`,
+  fax `stationid`/`from`/`destination`, `deleted_did`, `DIDAdded`, …): these
+  are identifiers, not quantities, and can carry a `+`, formatting, or a short
+  code that failed integer parsing. Caller-ID / forward override fields
+  (`callerid_number`, `callerid_override`, `default_e911`, `sms_forward`) are
+  likewise `String` but fold voip.ms's `-1` "not set" sentinel (and empty) to
+  `None`.
+
+### Added
+
+- A `map` response shape kind in the codegen, emitting a bare
+  `HashMap<String, V>` that defaults to empty (absent means empty, matching the
+  list convention), for reference catalogs whose keys are data rather than
+  schema.
+- `deserialize_opt_string_sentinel_none`, a string deserializer that folds the
+  `-1`/empty "not set" sentinel to `None`, for caller-ID override fields.
+
 ## [0.6.0] - 2026-07-09
 
 ### Changed

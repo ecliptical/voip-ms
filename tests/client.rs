@@ -923,3 +923,246 @@ fn voicemail_message_date_accepts_full_timestamp() {
         )
     );
 }
+
+#[test]
+fn termination_rates_route_is_a_list() {
+    use voip_ms::GetTerminationRatesResponse;
+
+    // VoIP.ms returns `route` as a one-element list of `{value, description}`,
+    // not a bare object. Typed as a single object, deserializing the array
+    // mapped its first element positionally onto the `value` field and failed
+    // with "expected string or number, got {...}".
+    let resp: GetTerminationRatesResponse = serde_json::from_value(json!({
+        "status": "success",
+        "route": [{ "value": "1", "description": "Value" }],
+        "rates": [{
+            "destination": "Canada - 204 Manitoba",
+            "prefix": "1204",
+            "increment": "6",
+            "rate": 0.0052
+        }]
+    }))
+    .unwrap();
+
+    let route = resp.route.first().expect("one route entry");
+    assert_eq!(route.value, Some(1));
+    assert_eq!(route.description.as_deref(), Some("Value"));
+    assert_eq!(resp.rates[0].prefix, Some(1204));
+    assert_eq!(resp.rates[0].rate, Some(Decimal::new(52, 4)));
+}
+
+#[test]
+fn e911_address_types_is_a_list() {
+    use voip_ms::E911AddressTypesResponse;
+
+    // The address types come back as a list of `{value, description}` catalog
+    // entries (like every other reference catalog), not flattened scalars.
+    let resp: E911AddressTypesResponse = serde_json::from_value(json!({
+        "status": "success",
+        "types": [
+            { "value": "Apartment", "description": "Apartment" },
+            { "value": "Basement", "description": "Basement" }
+        ]
+    }))
+    .unwrap();
+
+    assert_eq!(resp.types.len(), 2);
+    assert_eq!(resp.types[0].value.as_deref(), Some("Apartment"));
+    assert_eq!(resp.types[1].description.as_deref(), Some("Basement"));
+}
+
+#[test]
+fn fax_numbers_info_did_accepts_dotted_string() {
+    use voip_ms::GetFAXNumbersInfoResponse;
+
+    // A fax number's `did` arrives dotted (`647.948.4755`), not as a bare
+    // integer. Typed `u64`, it failed with "invalid digit found in string".
+    let resp: GetFAXNumbersInfoResponse = serde_json::from_value(json!({
+        "status": "success",
+        "numbers": [{ "id": "0000", "did": "647.948.4755" }]
+    }))
+    .unwrap();
+
+    assert_eq!(resp.numbers[0].did.as_deref(), Some("647.948.4755"));
+}
+
+#[test]
+fn lnp_list_status_is_a_string_keyed_map() {
+    use voip_ms::GetLNPListStatusResponse;
+
+    // `list_status` is a `code => description` map whose keys are data
+    // (including an empty-string key). Typed as a scalar, it failed with
+    // "expected string, number, or bool, got {...}".
+    let resp: GetLNPListStatusResponse = serde_json::from_value(json!({
+        "status": "success",
+        "list_status": {
+            "awaiting_documentation": "Awaiting Documentation",
+            "cancelled": "Cancelled",
+            "completed": "Completed",
+            "": "Port cancel upon customer request"
+        }
+    }))
+    .unwrap();
+
+    assert_eq!(
+        resp.list_status
+            .get("awaiting_documentation")
+            .map(String::as_str),
+        Some("Awaiting Documentation")
+    );
+    assert_eq!(
+        resp.list_status.get("").map(String::as_str),
+        Some("Port cancel upon customer request")
+    );
+    assert_eq!(resp.list_status.len(), 4);
+}
+
+#[test]
+fn report_estimated_hold_time_values_are_strings() {
+    use voip_ms::GetReportEstimatedHoldTimeResponse;
+
+    // The types catalog carries free-text values -- `value: "once"` with
+    // `description: "Yes, only once"` -- not booleans. Typed `bool`, the
+    // "Yes, only once" description failed the yes/no coercion.
+    let resp: GetReportEstimatedHoldTimeResponse = serde_json::from_value(json!({
+        "status": "success",
+        "types": [
+            { "value": "yes", "description": "Yes" },
+            { "value": "no", "description": "No" },
+            { "value": "once", "description": "Yes, only once" }
+        ]
+    }))
+    .unwrap();
+
+    assert_eq!(resp.types.len(), 3);
+    assert_eq!(resp.types[2].value.as_deref(), Some("once"));
+    assert_eq!(resp.types[2].description.as_deref(), Some("Yes, only once"));
+}
+
+#[test]
+fn e911_info_is_a_nested_object() {
+    use voip_ms::E911InfoResponse;
+
+    // A provisioned DID's e911 record comes back as a nested `info` object, not
+    // flattened top-level scalars. Modeled as a scalar it failed with
+    // "expected string, number, or bool, got {...}".
+    let resp: E911InfoResponse = serde_json::from_value(json!({
+        "status": "success",
+        "info": {
+            "did": "7472127447",
+            "status": "2",
+            "full_name": "test",
+            "street_number": "23",
+            "street_name": "W BROAD ST",
+            "address_type": "Hanger",
+            "city": "RICHMOND",
+            "state": "VA",
+            "zip_code": "12345",
+            "country": "US"
+        }
+    }))
+    .unwrap();
+
+    let info = resp.info.expect("info object");
+    assert_eq!(info.did.as_deref(), Some("7472127447"));
+    assert_eq!(info.city.as_deref(), Some("RICHMOND"));
+}
+
+#[test]
+fn lnp_list_is_a_list_of_orders() {
+    use voip_ms::GetLNPListResponse;
+
+    // `list` is a list of port orders, not flattened sibling scalars.
+    let resp: GetLNPListResponse = serde_json::from_value(json!({
+        "status": "success",
+        "list": [
+            { "portid": "0000", "numbers": "5551234567", "foc_date": "2019-01-08", "status": "processing" },
+            { "portid": "1111", "numbers": "5551234568", "foc_date": false, "status": "completed" }
+        ]
+    }))
+    .unwrap();
+
+    assert_eq!(resp.list.len(), 2);
+    assert_eq!(resp.list[0].portid.as_deref(), Some("0000"));
+    assert_eq!(resp.list[1].status.as_deref(), Some("completed"));
+}
+
+#[test]
+fn lnp_notes_and_attach_list_are_lists() {
+    use voip_ms::{GetLNPAttachListResponse, GetLNPNotesResponse};
+
+    let notes: GetLNPNotesResponse = serde_json::from_value(json!({
+        "status": "success",
+        "list": [{ "note": "Order submitted.", "date": "2019-02-25", "time": "15:05:11" }]
+    }))
+    .unwrap();
+    assert_eq!(notes.list.len(), 1);
+    assert_eq!(notes.list[0].note.as_deref(), Some("Order submitted."));
+
+    let attach: GetLNPAttachListResponse = serde_json::from_value(json!({
+        "status": "success",
+        "list": [{ "attachid": "000", "type": "pdf", "size": "151600" }]
+    }))
+    .unwrap();
+    assert_eq!(attach.list.len(), 1);
+    assert_eq!(attach.list[0].attachid.as_deref(), Some("000"));
+}
+
+#[test]
+fn phone_number_identifier_fields_accept_formatted_strings() {
+    use voip_ms::{GetForwardingsResponse, GetSMSResponse};
+
+    // DID / peer-contact / caller-id fields are identifiers, not integers: they
+    // can carry formatting, `+`, short codes, or non-NANP forms. Typed as `u64`
+    // any of those failed integer parsing.
+    let sms: GetSMSResponse = serde_json::from_value(json!({
+        "status": "success",
+        "sms": [{ "id": "1", "did": "+1 647-478-1287", "contact": "911" }]
+    }))
+    .unwrap();
+    assert_eq!(sms.sms[0].did.as_deref(), Some("+1 647-478-1287"));
+    assert_eq!(sms.sms[0].contact.as_deref(), Some("911"));
+
+    let fwd: GetForwardingsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "forwardings": [{ "forwarding": "1", "phone_number": "011 44 20 7946 0000" }]
+    }))
+    .unwrap();
+    assert_eq!(
+        fwd.forwardings[0].phone_number.as_deref(),
+        Some("011 44 20 7946 0000")
+    );
+}
+
+#[test]
+fn callerid_override_fields_are_strings_with_minus_one_as_none() {
+    use voip_ms::{GetForwardingsResponse, GetSubAccountsResponse};
+
+    // Caller-ID override fields are phone-number strings, but voip.ms signals
+    // "not set" with a `-1` sentinel (a value a real caller ID never takes),
+    // which folds to `None`; a real (possibly formatted) value survives.
+    let unset: GetSubAccountsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "accounts": [{ "id": "1", "account": "a", "callerid_number": "-1", "default_e911": "" }]
+    }))
+    .unwrap();
+    assert_eq!(unset.accounts[0].callerid_number, None);
+    assert_eq!(unset.accounts[0].default_e911, None);
+
+    let set: GetSubAccountsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "accounts": [{ "id": "1", "account": "a", "callerid_number": "+1 (647) 478-1287" }]
+    }))
+    .unwrap();
+    assert_eq!(
+        set.accounts[0].callerid_number.as_deref(),
+        Some("+1 (647) 478-1287")
+    );
+
+    let fwd: GetForwardingsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "forwardings": [{ "forwarding": "1", "callerid_override": "-1" }]
+    }))
+    .unwrap();
+    assert_eq!(fwd.forwardings[0].callerid_override, None);
+}

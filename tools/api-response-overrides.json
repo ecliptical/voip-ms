@@ -304,6 +304,190 @@
           ] } } }
         ]
       }
+    },
+    "e911Info": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "info", "shape": { "kind": "object", "fields": [
+            { "name": "did",            "shape": { "kind": "scalar", "type": "string", "sample": "7472127447" } },
+            { "name": "status",         "shape": { "kind": "scalar", "type": "string", "sample": "2" } },
+            { "name": "full_name",      "shape": { "kind": "scalar", "type": "string", "sample": "test" } },
+            { "name": "street_number",  "shape": { "kind": "scalar", "type": "string", "sample": "23" } },
+            { "name": "street_name",    "shape": { "kind": "scalar", "type": "string", "sample": "W BROAD ST" } },
+            { "name": "address_type",   "shape": { "kind": "scalar", "type": "string", "sample": "Hanger" } },
+            { "name": "address_number", "shape": { "kind": "scalar", "type": "string", "sample": "401" } },
+            { "name": "city",           "shape": { "kind": "scalar", "type": "string", "sample": "RICHMOND" } },
+            { "name": "state",          "shape": { "kind": "scalar", "type": "string", "sample": "VA" } },
+            { "name": "zip_code",       "shape": { "kind": "scalar", "type": "string", "sample": "12345" } },
+            { "name": "country",        "shape": { "kind": "scalar", "type": "string", "sample": "US" } },
+            { "name": "language",       "shape": { "kind": "scalar", "type": "string", "sample": "EN" } },
+            { "name": "email",          "shape": { "kind": "scalar", "type": "string", "sample": "user@example.com" } },
+            { "name": "other_info",     "shape": { "kind": "scalar", "type": "string", "sample": "" } }
+          ] } }
+        ]
+      }
+    },
+    "getLNPList": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "list", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "portid",   "shape": { "kind": "scalar", "type": "string", "sample": "0000" } },
+            { "name": "numbers",  "shape": { "kind": "scalar", "type": "string", "sample": "5551234567,5551234568" } },
+            { "name": "foc_date", "shape": { "kind": "scalar", "type": "string", "sample": "2019-01-08" } },
+            { "name": "status",   "shape": { "kind": "scalar", "type": "string", "sample": "processing" } }
+          ] } } }
+        ]
+      }
+    },
+    "getLNPNotes": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "list", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "note", "shape": { "kind": "scalar", "type": "string", "sample": "You have submitted a new LNP Order." } },
+            { "name": "date", "shape": { "kind": "scalar", "type": "date",   "sample": "2019-02-25" } },
+            { "name": "time", "shape": { "kind": "scalar", "type": "string", "sample": "15:05:11" } }
+          ] } } }
+        ]
+      }
+    },
+    "getLNPAttachList": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "list", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "attachid", "shape": { "kind": "scalar", "type": "string", "sample": "000" } },
+            { "name": "type",     "shape": { "kind": "scalar", "type": "string", "sample": "pdf" } },
+            { "name": "size",     "shape": { "kind": "scalar", "type": "string", "sample": "151600" } }
+          ] } } }
+        ]
+      }
+    },
+    "getCDR": {
+      "patches": [
+        { "path": "cdr[].destination", "type": "string" }
+      ]
+    },
+    "getResellerCDR": {
+      "patches": [
+        { "path": "cdr[].destination", "type": "string" }
+      ]
+    },
+    "getCallRecording": {
+      "patches": [
+        { "path": "destination", "type": "string" }
+      ]
+    },
+    "getCallRecordings": {
+      "patches": [
+        { "path": "recordings[].destination", "type": "string" }
+      ]
+    },
+    "getCallbacks": {
+      "patches": [
+        { "path": "callbacks[].number", "type": "string" }
+      ]
+    },
+    "getCallerIDFiltering": {
+      "patches": [
+        { "path": "filtering[].did", "type": "string" }
+      ]
+    },
+    "getClients": {
+      "patches": [
+        { "path": "clients[].phone_number", "type": "string" }
+      ]
+    },
+    "getConferenceRecordings": {
+      "patches": [
+        { "path": "recordings[].did", "type": "string" }
+      ]
+    },
+    "getDIDsCAN": {
+      "patches": [
+        { "path": "dids[].did", "type": "string" }
+      ]
+    },
+    "getDIDsUSA": {
+      "patches": [
+        { "path": "dids[].did", "type": "string" }
+      ]
+    },
+    "getEmailToFax": {
+      "patches": [
+        { "path": "emailToFax[].from", "type": "string" }
+      ]
+    },
+    "getFaxMessages": {
+      "patches": [
+        { "path": "faxes[].destination", "type": "string" },
+        { "path": "faxes[].stationid",   "type": "string" }
+      ]
+    },
+    "getForwardings": {
+      "patches": [
+        { "path": "forwardings[].phone_number", "type": "string" }
+      ]
+    },
+    "getMMS": {
+      "patches": [
+        { "path": "sms[].contact", "type": "string" },
+        { "path": "sms[].did",     "type": "string" }
+      ]
+    },
+    "getResellerMMS": {
+      "patches": [
+        { "path": "sms[].contact", "type": "string" },
+        { "path": "sms[].did",     "type": "string" }
+      ]
+    },
+    "getSMS": {
+      "patches": [
+        { "path": "sms[].contact", "type": "string" },
+        { "path": "sms[].did",     "type": "string" }
+      ]
+    },
+    "getResellerSMS": {
+      "patches": [
+        { "path": "sms[].contact", "type": "string" },
+        { "path": "sms[].did",     "type": "string" }
+      ]
+    },
+    "getPhonebook": {
+      "patches": [
+        { "path": "phonebooks[].number", "type": "string" }
+      ]
+    },
+    "searchDIDsCAN": {
+      "patches": [
+        { "path": "dids[].did", "type": "string" }
+      ]
+    },
+    "searchDIDsUSA": {
+      "patches": [
+        { "path": "dids[].did", "type": "string" }
+      ]
+    },
+    "searchTollFreeCanUS": {
+      "patches": [
+        { "path": "dids[].did", "type": "string" }
+      ]
+    },
+    "searchTollFreeUSA": {
+      "patches": [
+        { "path": "dids[].did", "type": "string" }
+      ]
+    },
+    "searchVanity": {
+      "patches": [
+        { "path": "dids[].did", "type": "string" }
+      ]
     }
   }
 }

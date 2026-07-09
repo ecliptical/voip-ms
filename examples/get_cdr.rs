@@ -54,9 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map(|d| d.to_string())
                     .unwrap_or_else(|| "(unknown)".to_string()),
                 call.callerid.as_deref().unwrap_or("(unknown)"),
-                call.destination
-                    .map(|d| d.to_string())
-                    .unwrap_or_else(|| "(unknown)".to_string()),
+                call.destination.as_deref().unwrap_or("(unknown)"),
                 call.duration.as_deref().unwrap_or("0:00"),
                 call.disposition.as_deref().unwrap_or("(unknown)"),
                 call.total.unwrap_or_default(),

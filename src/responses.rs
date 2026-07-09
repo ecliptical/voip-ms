@@ -71,6 +71,41 @@ where
     }
 }
 
+/// Deserialize an optional caller-ID / phone-number override into its string
+/// form, folding voip.ms's `-1` "not set" sentinel (and empty) to `None`.
+///
+/// These override fields (a sub-account's `callerid_number`, a forwarding's
+/// `callerid_override`, `default_e911`, `sms_forward`) are phone-number
+/// identifiers -- not integers -- so they must be `String` to survive a
+/// formatted or non-NANP value; but voip.ms signals "unset" with `-1` (or an
+/// empty string), which a real caller ID never is, so both collapse to `None`.
+pub(crate) fn deserialize_opt_string_sentinel_none<'de, D>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    let s = match value {
+        None | Some(Value::Null) => return Ok(None),
+        Some(Value::String(s)) => s,
+        Some(Value::Number(n)) => n.to_string(),
+        Some(Value::Bool(b)) => b.to_string(),
+        Some(other) => {
+            return Err(D::Error::custom(format!(
+                "expected string, number, or bool, got {other}"
+            )));
+        }
+    };
+
+    let trimmed = s.trim();
+    if trimmed.is_empty() || trimmed == "-1" {
+        Ok(None)
+    } else {
+        Ok(Some(s))
+    }
+}
+
 pub(crate) fn deserialize_opt_decimal_from_string_or_number<'de, D>(
     deserializer: D,
 ) -> Result<Option<Decimal>, D::Error>
@@ -289,6 +324,40 @@ where
         Some(one) => T::deserialize(one)
             .map(|v| vec![v])
             .map_err(D::Error::custom),
+    }
+}
+
+/// Deserialize a string-keyed map from a JSON object, tolerating absence.
+///
+/// VoIP.ms returns a `code => description` catalog (e.g. `getLNPListStatus`'s
+/// `list_status`) as a JSON object whose keys are data, not schema. Absent,
+/// `null`, and an empty string all yield an empty map -- the same
+/// absent-is-empty convention the list helper follows. A non-object, non-empty
+/// value is an error.
+pub(crate) fn deserialize_map_from_object<'de, K, V, D>(
+    deserializer: D,
+) -> Result<std::collections::HashMap<K, V>, D::Error>
+where
+    K: Deserialize<'de> + std::cmp::Eq + std::hash::Hash,
+    V: Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    use serde::de::IntoDeserializer as _;
+
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(std::collections::HashMap::new()),
+        Some(Value::String(s)) if s.trim().is_empty() => Ok(std::collections::HashMap::new()),
+        Some(Value::Object(entries)) => entries
+            .into_iter()
+            .map(|(k, v)| {
+                let key = K::deserialize(k.into_deserializer())
+                    .map_err(|e: serde::de::value::Error| D::Error::custom(e))?;
+                let val = V::deserialize(v).map_err(D::Error::custom)?;
+                Ok((key, val))
+            })
+            .collect(),
+        Some(other) => Err(D::Error::custom(format!("expected object, got {other}"))),
     }
 }
 

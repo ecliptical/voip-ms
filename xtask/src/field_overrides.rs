@@ -172,6 +172,18 @@ const SECONDS_FIELDS: &[&str] = &[
     "wrapup_time",
 ];
 
+/// Caller-ID / forward phone-number override fields. They are phone-number
+/// identifiers -- not integers -- so a formatted or non-NANP value must
+/// survive, but voip.ms signals "not set" with a `-1` sentinel (or empty),
+/// which a real caller ID never is. Typed `String` with a deserializer that
+/// folds `-1`/empty to `None`.
+const CALLERID_OVERRIDE_FIELDS: &[&str] = &[
+    "callerid_number",
+    "callerid_override",
+    "default_e911",
+    "sms_forward",
+];
+
 fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let routing = FieldOverride {
         rust_type: "crate::Routing".into(),
@@ -212,6 +224,17 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         response_deserializer: Some("crate::responses::deserialize_opt_wait_time".into()),
         ..Default::default()
     };
+    // Phone-number override: `String` (a formatted / non-NANP caller ID must
+    // survive) with a deserializer that folds the `-1`/empty "not set" sentinel
+    // to `None`. Params are already `Option<String>`, so `rust_type` is a no-op
+    // there; only the response deserializer changes.
+    let callerid_override = FieldOverride {
+        rust_type: "String".into(),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_string_sentinel_none".into(),
+        ),
+        ..Default::default()
+    };
 
     ROUTING_FIELDS
         .iter()
@@ -225,5 +248,10 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         .chain(std::iter::once(("test", flag_test)))
         .chain(SECONDS_FIELDS.iter().map(|name| (*name, seconds.clone())))
         .chain(std::iter::once(("maximum_wait_time", wait_time)))
+        .chain(
+            CALLERID_OVERRIDE_FIELDS
+                .iter()
+                .map(|name| (*name, callerid_override.clone())),
+        )
         .collect()
 }
