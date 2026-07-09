@@ -127,6 +127,19 @@ impl<'a> Emitter<'a> {
 
                 self.structs.push(body);
             }
+
+            Shape::Map(_) => {
+                let map_ty = self.field_type(name, "entries", shape);
+                let body = format!(
+                    "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
+                     pub struct {name} {{\n    \
+                         #[serde(default, deserialize_with = \"crate::responses::deserialize_map_from_object\")]\n    \
+                         pub entries: {map_ty},\n\
+                     }}\n",
+                );
+
+                self.structs.push(body);
+            }
         }
     }
 
@@ -168,14 +181,16 @@ impl<'a> Emitter<'a> {
                 Some(o) => o.response_deserializer.as_deref(),
                 None => field_deserializer(sub),
             };
-            // List fields are emitted as a bare `Vec<T>`, defaulting to empty:
-            // VoIP.ms signals an empty collection by omitting the field (or via
-            // an `is_empty` status that strips the subtree), so absent and empty
-            // carry the same meaning -- an `Option` would only add a
-            // never-actionable `None`. A `field_type` override always retypes to
-            // a scalar, so it keeps the `Option<T>` form.
-            let bare_vec = override_.is_none() && matches!(sub, Shape::List(_));
-            let field_ty = if bare_vec {
+            // Collection fields (list, map) are emitted as a bare `Vec<T>` /
+            // `HashMap<K, V>`, defaulting to empty: VoIP.ms signals an empty
+            // collection by omitting the field (or via an `is_empty` status that
+            // strips the subtree), so absent and empty carry the same meaning --
+            // an `Option` would only add a never-actionable `None`. A
+            // `field_type` override always retypes to a scalar, so it keeps the
+            // `Option<T>` form.
+            let bare_collection =
+                override_.is_none() && matches!(sub, Shape::List(_) | Shape::Map(_));
+            let field_ty = if bare_collection {
                 rust_ty
             } else {
                 format!("Option<{rust_ty}>")
@@ -219,7 +234,7 @@ impl<'a> Emitter<'a> {
                         self.emit_struct(&child, inner);
                         child
                     }
-                    Shape::List(_) => {
+                    Shape::List(_) | Shape::Map(_) => {
                         let child = element_type_name(parent, fname);
                         self.emit_struct(&child, inner);
                         child
@@ -227,6 +242,19 @@ impl<'a> Emitter<'a> {
                 };
 
                 format!("Vec<{elem_ty}>")
+            }
+
+            Shape::Map(value) => {
+                let value_ty = match &**value {
+                    Shape::Scalar { .. } => self.scalar_rust_type(value),
+                    Shape::Object(_) | Shape::List(_) | Shape::Map(_) => {
+                        let child = element_type_name(parent, fname);
+                        self.emit_struct(&child, value);
+                        child
+                    }
+                };
+
+                format!("std::collections::HashMap<String, {value_ty}>")
             }
         }
     }
@@ -259,6 +287,7 @@ fn render_field_attrs(deser: Option<&str>) -> String {
 fn field_deserializer(shape: &Shape) -> Option<&'static str> {
     match shape {
         Shape::List(_) => Some("crate::responses::deserialize_vec_from_single_or_seq"),
+        Shape::Map(_) => Some("crate::responses::deserialize_map_from_object"),
         _ => scalar_deserializer(shape),
     }
 }

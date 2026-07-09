@@ -85,6 +85,13 @@ pub enum Shape {
     /// A `[0] => …, [1] => …` array. The inner shape is the merged
     /// element template.
     List(Box<Shape>),
+    /// A string-keyed map whose keys are data, not schema (a `code =>
+    /// description` catalog like `getLNPListStatus`'s `list_status`). The inner
+    /// shape is the value template; keys are always strings. The `print_r`
+    /// extractor never infers this -- it comes only from a hand-authored
+    /// `api-responses.json`/override shape, where an object with dynamic keys
+    /// would otherwise be forced into a fixed-field struct.
+    Map(Box<Shape>),
 }
 
 /// JSON-equivalent of `Shape` (de)serialized to/from `api-responses.json`.
@@ -103,6 +110,9 @@ enum ShapeRepr {
     },
     List {
         element: Box<ShapeRepr>,
+    },
+    Map {
+        value: Box<ShapeRepr>,
     },
 }
 
@@ -129,6 +139,7 @@ impl Shape {
                     .collect(),
             ),
             ShapeRepr::List { element } => Shape::List(Box::new(Self::from_repr(*element))),
+            ShapeRepr::Map { value } => Shape::Map(Box::new(Self::from_repr(*value))),
         }
     }
 }
@@ -1091,6 +1102,12 @@ fn shape_to_json(shape: &Shape) -> JsonValue {
             let mut obj = serde_json::Map::new();
             obj.insert("kind".into(), JsonValue::String("list".into()));
             obj.insert("element".into(), shape_to_json(inner));
+            JsonValue::Object(obj)
+        }
+        Shape::Map(value) => {
+            let mut obj = serde_json::Map::new();
+            obj.insert("kind".into(), JsonValue::String("map".into()));
+            obj.insert("value".into(), shape_to_json(value));
             JsonValue::Object(obj)
         }
     }

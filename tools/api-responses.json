@@ -1466,16 +1466,16 @@
                   "name": "value",
                   "shape": {
                     "kind": "scalar",
-                    "type": "bool_yn",
-                    "sample": "yes"
+                    "type": "string",
+                    "sample": "once"
                   }
                 },
                 {
                   "name": "description",
                   "shape": {
                     "kind": "scalar",
-                    "type": "bool_yn",
-                    "sample": "Yes"
+                    "type": "string",
+                    "sample": "Yes, only once"
                   }
                 }
               ]
@@ -2792,25 +2792,28 @@
         {
           "name": "route",
           "shape": {
-            "kind": "object",
-            "fields": [
-              {
-                "name": "value",
-                "shape": {
-                  "kind": "scalar",
-                  "type": "integer",
-                  "sample": "2"
+            "kind": "list",
+            "element": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "value",
+                  "shape": {
+                    "kind": "scalar",
+                    "type": "integer",
+                    "sample": "2"
+                  }
+                },
+                {
+                  "name": "description",
+                  "shape": {
+                    "kind": "scalar",
+                    "type": "string",
+                    "sample": "Premium"
+                  }
                 }
-              },
-              {
-                "name": "description",
-                "shape": {
-                  "kind": "scalar",
-                  "type": "string",
-                  "sample": "Premium"
-                }
-              }
-            ]
+              ]
+            }
           }
         },
         {
@@ -8537,8 +8540,8 @@
                   "name": "did",
                   "shape": {
                     "kind": "scalar",
-                    "type": "integer",
-                    "sample": "5551234567"
+                    "type": "string",
+                    "sample": "647.948.4755"
                   }
                 },
                 {
@@ -9250,41 +9253,28 @@
         {
           "name": "types",
           "shape": {
-            "kind": "scalar",
-            "type": "string",
-            "sample": "Array( Array ("
-          }
-        },
-        {
-          "name": "value",
-          "shape": {
-            "kind": "scalar",
-            "type": "string",
-            "sample": "\"Apartment\","
-          }
-        },
-        {
-          "name": "description",
-          "shape": {
-            "kind": "scalar",
-            "type": "string",
-            "sample": "\"Apartment\" ), Array ("
-          }
-        },
-        {
-          "name": "value",
-          "shape": {
-            "kind": "scalar",
-            "type": "string",
-            "sample": "\"Basement\","
-          }
-        },
-        {
-          "name": "description",
-          "shape": {
-            "kind": "scalar",
-            "type": "string",
-            "sample": "\"Basement\""
+            "kind": "list",
+            "element": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "value",
+                  "shape": {
+                    "kind": "scalar",
+                    "type": "string",
+                    "sample": "Apartment"
+                  }
+                },
+                {
+                  "name": "description",
+                  "shape": {
+                    "kind": "scalar",
+                    "type": "string",
+                    "sample": "Apartment"
+                  }
+                }
+              ]
+            }
           }
         }
       ]
@@ -9543,9 +9533,12 @@
         {
           "name": "list_status",
           "shape": {
-            "kind": "scalar",
-            "type": "string",
-            "sample": "Array( \"status_code\" => \"Status Description\","
+            "kind": "map",
+            "value": {
+              "kind": "scalar",
+              "type": "string",
+              "sample": "Awaiting Documentation"
+            }
           }
         }
       ]
