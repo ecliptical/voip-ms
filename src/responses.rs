@@ -263,31 +263,31 @@ where
     }
 }
 
-/// Deserialize an optional list field that VoIP.ms may return either as a JSON
-/// array or, when the method yields a single row, as a bare unwrapped object.
-/// VoIP.ms's `print_r`-derived output collapses a one-element list to the
-/// element itself (e.g. `getVoicemailMessageFile`'s `message` comes back as an
-/// object, not a one-element array), so every generated list field accepts both
-/// wire forms: an array becomes the `Vec` as-is, a lone value becomes a
-/// one-element `Vec`, and null / absent / empty-string is `None`.
-pub(crate) fn deserialize_opt_vec_from_single_or_seq<'de, T, D>(
+/// Deserialize a list field that VoIP.ms may return either as a JSON array or,
+/// when the method yields a single row, as a bare unwrapped object. VoIP.ms's
+/// `print_r`-derived output collapses a one-element list to the element itself
+/// (e.g. `getVoicemailMessageFile`'s `message` comes back as an object, not a
+/// one-element array), so every generated list field accepts both wire forms: an
+/// array becomes the `Vec` as-is, a lone value becomes a one-element `Vec`, and
+/// null / absent / empty-string is the empty `Vec` -- an omitted or empty
+/// collection is not distinguished from a present-but-empty one.
+pub(crate) fn deserialize_vec_from_single_or_seq<'de, T, D>(
     deserializer: D,
-) -> Result<Option<Vec<T>>, D::Error>
+) -> Result<Vec<T>, D::Error>
 where
     T: Deserialize<'de>,
     D: Deserializer<'de>,
 {
     let value = Option::<Value>::deserialize(deserializer)?;
     match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) if s.trim().is_empty() => Ok(None),
+        None | Some(Value::Null) => Ok(Vec::new()),
+        Some(Value::String(s)) if s.trim().is_empty() => Ok(Vec::new()),
         Some(Value::Array(items)) => items
             .into_iter()
             .map(|v| T::deserialize(v).map_err(D::Error::custom))
-            .collect::<Result<Vec<T>, _>>()
-            .map(Some),
+            .collect(),
         Some(one) => T::deserialize(one)
-            .map(|v| Some(vec![v]))
+            .map(|v| vec![v])
             .map_err(D::Error::custom),
     }
 }

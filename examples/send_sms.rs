@@ -38,7 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     let did = dids_response
         .dids
-        .unwrap_or_default()
         .into_iter()
         .find(|did| did.did.as_deref() == Some(from.as_str()))
         .ok_or_else(|| Error::other(format!("DID {from} was not found on this account")))?;

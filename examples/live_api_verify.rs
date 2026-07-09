@@ -282,7 +282,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
                 .await?;
             println!(
                 "[info] server count: {}",
-                servers.servers.as_ref().map_or(0, std::vec::Vec::len)
+                servers.servers.len()
             );
             Ok(())
         })
@@ -294,7 +294,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
                 client.get_dids_info(&GetDIDsInfoParams::default()).await?;
             println!(
                 "[info] DID count: {}",
-                dids.dids.as_ref().map_or(0, std::vec::Vec::len)
+                dids.dids.len()
             );
             Ok(())
         })
@@ -307,7 +307,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
                 .await?;
             println!(
                 "[info] sub-account count: {}",
-                sub_accounts.accounts.as_ref().map_or(0, std::vec::Vec::len)
+                sub_accounts.accounts.len()
             );
             Ok(())
         })
@@ -318,7 +318,7 @@ async fn run_smoke_checks(client: &Client, config: &Config, checks: &mut Checks)
             let sms: GetSMSResponse = client.get_sms(&GetSMSParams::default()).await?;
             println!(
                 "[info] sms count: {}",
-                sms.sms.as_ref().map_or(0, std::vec::Vec::len)
+                sms.sms.len()
             );
             Ok(())
         })
@@ -523,7 +523,6 @@ async fn verify_sms_settings_endpoint(client: &Client, did: &str) -> Result<(), 
 
     let did_info = dids
         .dids
-        .unwrap_or_default()
         .into_iter()
         .find(|item| item.did.as_deref() == Some(did))
         .ok_or_else(|| format!("DID {did} not found"))?;

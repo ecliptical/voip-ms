@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-09
+
+### Changed
+
+- **Breaking:** every list-valued response field is now a bare `Vec<T>` that
+  defaults to empty, instead of `Option<Vec<T>>`. VoIP.ms signals an empty
+  collection by omitting the field (or via an `is_empty` status that strips the
+  subtree), so absent and empty always meant the same thing -- the `Option` only
+  added a `None` no caller could act on differently from `Some(vec![])`. Callers
+  drop the `.unwrap_or_default()` / `.unwrap()` / `.as_ref()` dance and use the
+  `Vec` directly (`.is_empty()`, `.iter()`, indexing).
+
+### Fixed
+
+- **Breaking:** `getNAT`, `getPlayInstructions`, and `getJoinWhenEmptyTypes`
+  return a list of `{value, description}` option objects, not a scalar. Their
+  response fields are now `Vec<…>` of a generated element struct with
+  `value: Option<String>` and `description: Option<String>`:
+  - `GetNATResponse.nat`: was `Option<Nat>`, now `Vec<GetNATResponseNAT>`.
+  - `GetPlayInstructionsResponse.play_instructions`: was
+    `Option<PlayInstructions>`, now
+    `Vec<GetPlayInstructionsResponsePlayInstruction>`.
+  - `GetJoinWhenEmptyTypesResponseType.value` / `.description`: were
+    `Option<bool>`, now `Option<String>`.
+  The name-based `Nat` / `PlayInstructions` enum substitution wrongly overrode
+  the list-typed reference-listing fields, and the extractor mis-inferred the
+  `yes`/`Yes` sample cells as booleans; a live `value` of `Strict` or an array
+  payload then failed to deserialize. The `Nat` and `PlayInstructions` enums are
+  unchanged and still type the corresponding scalar setting fields elsewhere.
+
 ## [0.5.0] - 2026-07-07
 
 ### Changed

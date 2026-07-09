@@ -10059,9 +10059,9 @@ pub struct GetAllowedCodecsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub allowed_codecs: Option<Vec<GetAllowedCodecsResponseAllowedCodec>>,
+    pub allowed_codecs: Vec<GetAllowedCodecsResponseAllowedCodec>,
 }
 
 /// Response body for [`Client::get_auth_types`] (wire method `getAuthTypes`).
@@ -10088,9 +10088,9 @@ pub struct GetAuthTypesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub auth_types: Option<Vec<GetAuthTypesResponseAuthType>>,
+    pub auth_types: Vec<GetAuthTypesResponseAuthType>,
 }
 
 /// Response body for [`Client::get_back_orders`] (wire method `getBackOrders`).
@@ -10169,9 +10169,9 @@ pub struct GetBackOrdersResponse {
     pub quantity: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub back_orders: Option<Vec<GetBackOrdersResponseBackOrder>>,
+    pub back_orders: Vec<GetBackOrdersResponseBackOrder>,
 }
 
 /// Response body for [`Client::get_balance`] (wire method `getBalance`).
@@ -10249,9 +10249,9 @@ pub struct GetBalanceManagementResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub balance_management: Option<Vec<GetBalanceManagementResponseBalanceManagement>>,
+    pub balance_management: Vec<GetBalanceManagementResponseBalanceManagement>,
 }
 
 /// Response body for [`Client::get_cdr`] (wire method `getCDR`).
@@ -10333,9 +10333,9 @@ pub struct GetCDRResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub cdr: Option<Vec<GetCDRResponseCDR>>,
+    pub cdr: Vec<GetCDRResponseCDR>,
 }
 
 /// Response body for [`Client::get_call_accounts`] (wire method `getCallAccounts`).
@@ -10362,9 +10362,9 @@ pub struct GetCallAccountsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub accounts: Option<Vec<GetCallAccountsResponseAccount>>,
+    pub accounts: Vec<GetCallAccountsResponseAccount>,
 }
 
 /// Response body for [`Client::get_call_billing`] (wire method `getCallBilling`).
@@ -10391,9 +10391,9 @@ pub struct GetCallBillingResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub call_billing: Option<Vec<GetCallBillingResponseCallBilling>>,
+    pub call_billing: Vec<GetCallBillingResponseCallBilling>,
 }
 
 /// Response body for [`Client::get_call_huntings`] (wire method `getCallHuntings`).
@@ -10452,9 +10452,9 @@ pub struct GetCallHuntingsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub call_hunting: Option<Vec<GetCallHuntingsResponseCallHunting>>,
+    pub call_hunting: Vec<GetCallHuntingsResponseCallHunting>,
 }
 
 /// Response body for [`Client::get_call_parking`] (wire method `getCallParking`).
@@ -10516,9 +10516,9 @@ pub struct GetCallParkingResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub call_hunting: Option<Vec<GetCallParkingResponseCallHunting>>,
+    pub call_hunting: Vec<GetCallParkingResponseCallHunting>,
 }
 
 /// Response body for [`Client::get_call_recording`] (wire method `getCallRecording`).
@@ -10612,9 +10612,9 @@ pub struct GetCallRecordingsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub recordings: Option<Vec<GetCallRecordingsResponseRecording>>,
+    pub recordings: Vec<GetCallRecordingsResponseRecording>,
 }
 
 /// Response body for [`Client::get_call_transcriptions`] (wire method `getCallTranscriptions`).
@@ -10656,9 +10656,9 @@ pub struct GetCallTranscriptionsResponseTranscription {
     pub duration: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub speakers: Option<Vec<String>>,
+    pub speakers: Vec<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -10671,9 +10671,9 @@ pub struct GetCallTranscriptionsResponseTranscription {
     pub confidence: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub recognized_phrases: Option<Vec<GetCallTranscriptionsResponseTranscriptionRecognizedPhrase>>,
+    pub recognized_phrases: Vec<GetCallTranscriptionsResponseTranscriptionRecognizedPhrase>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -10685,9 +10685,9 @@ pub struct GetCallTranscriptionsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub transcriptions: Option<Vec<GetCallTranscriptionsResponseTranscription>>,
+    pub transcriptions: Vec<GetCallTranscriptionsResponseTranscription>,
 }
 
 /// Response body for [`Client::get_call_types`] (wire method `getCallTypes`).
@@ -10714,9 +10714,9 @@ pub struct GetCallTypesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub call_types: Option<Vec<GetCallTypesResponseCallType>>,
+    pub call_types: Vec<GetCallTypesResponseCallType>,
 }
 
 /// Response body for [`Client::get_callbacks`] (wire method `getCallbacks`).
@@ -10768,9 +10768,9 @@ pub struct GetCallbacksResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub callbacks: Option<Vec<GetCallbacksResponseCallback>>,
+    pub callbacks: Vec<GetCallbacksResponseCallback>,
 }
 
 /// Response body for [`Client::get_caller_id_filtering`] (wire method `getCallerIDFiltering`).
@@ -10827,9 +10827,9 @@ pub struct GetCallerIDFilteringResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub filtering: Option<Vec<GetCallerIDFilteringResponseFiltering>>,
+    pub filtering: Vec<GetCallerIDFilteringResponseFiltering>,
 }
 
 /// Response body for [`Client::get_carriers`] (wire method `getCarriers`).
@@ -10856,9 +10856,9 @@ pub struct GetCarriersResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub carriers: Option<Vec<GetCarriersResponseCarrier>>,
+    pub carriers: Vec<GetCarriersResponseCarrier>,
 }
 
 /// Response body for [`Client::get_charges`] (wire method `getCharges`).
@@ -10892,9 +10892,9 @@ pub struct GetChargesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub charges: Option<Vec<GetChargesResponseCharge>>,
+    pub charges: Vec<GetChargesResponseCharge>,
 }
 
 /// Response body for [`Client::get_client_packages`] (wire method `getClientPackages`).
@@ -10921,9 +10921,9 @@ pub struct GetClientPackagesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub packages: Option<Vec<GetClientPackagesResponsePackage>>,
+    pub packages: Vec<GetClientPackagesResponsePackage>,
 }
 
 /// Response body for [`Client::get_client_threshold`] (wire method `getClientThreshold`).
@@ -11031,9 +11031,9 @@ pub struct GetClientsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub clients: Option<Vec<GetClientsResponseClient>>,
+    pub clients: Vec<GetClientsResponseClient>,
 }
 
 /// Response body for [`Client::get_conference`] (wire method `getConference`).
@@ -11180,9 +11180,9 @@ pub struct GetConferenceResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub conference: Option<Vec<GetConferenceResponseConference>>,
+    pub conference: Vec<GetConferenceResponseConference>,
 }
 
 /// Response body for [`Client::get_conference_members`] (wire method `getConferenceMembers`).
@@ -11284,9 +11284,9 @@ pub struct GetConferenceMembersResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub members: Option<Vec<GetConferenceMembersResponseMember>>,
+    pub members: Vec<GetConferenceMembersResponseMember>,
 }
 
 /// Response body for [`Client::get_conference_recording_file`] (wire method `getConferenceRecordingFile`).
@@ -11313,9 +11313,9 @@ pub struct GetConferenceRecordingFileResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub recording: Option<Vec<GetConferenceRecordingFileResponseRecording>>,
+    pub recording: Vec<GetConferenceRecordingFileResponseRecording>,
 }
 
 /// Response body for [`Client::get_conference_recordings`] (wire method `getConferenceRecordings`).
@@ -11357,9 +11357,9 @@ pub struct GetConferenceRecordingsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub recordings: Option<Vec<GetConferenceRecordingsResponseRecording>>,
+    pub recordings: Vec<GetConferenceRecordingsResponseRecording>,
 }
 
 /// Response body for [`Client::get_countries`] (wire method `getCountries`).
@@ -11386,9 +11386,9 @@ pub struct GetCountriesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub countries: Option<Vec<GetCountriesResponseCountry>>,
+    pub countries: Vec<GetCountriesResponseCountry>,
 }
 
 /// Response body for [`Client::get_did_countries`] (wire method `getDIDCountries`).
@@ -11415,9 +11415,9 @@ pub struct GetDIDCountriesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub countries: Option<Vec<GetDIDCountriesResponseCountry>>,
+    pub countries: Vec<GetDIDCountriesResponseCountry>,
 }
 
 /// Response body for [`Client::get_dids_can`] (wire method `getDIDsCAN`).
@@ -11489,9 +11489,9 @@ pub struct GetDIDsCANResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<GetDIDsCANResponseDID>>,
+    pub dids: Vec<GetDIDsCANResponseDID>,
 }
 
 /// Response body for [`Client::get_dids_info`] (wire method `getDIDsInfo`).
@@ -11704,9 +11704,9 @@ pub struct GetDIDsInfoResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<GetDIDsInfoResponseDID>>,
+    pub dids: Vec<GetDIDsInfoResponseDID>,
 }
 
 /// Response body for [`Client::get_dids_international_geographic`] (wire method `getDIDsInternationalGeographic`).
@@ -11778,9 +11778,9 @@ pub struct GetDIDsInternationalGeographicResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub locations: Option<Vec<GetDIDsInternationalGeographicResponseLocation>>,
+    pub locations: Vec<GetDIDsInternationalGeographicResponseLocation>,
 }
 
 /// Response body for [`Client::get_dids_international_national`] (wire method `getDIDsInternationalNational`).
@@ -11847,9 +11847,9 @@ pub struct GetDIDsInternationalNationalResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub locations: Option<Vec<GetDIDsInternationalNationalResponseLocation>>,
+    pub locations: Vec<GetDIDsInternationalNationalResponseLocation>,
 }
 
 /// Response body for [`Client::get_dids_international_toll_free`] (wire method `getDIDsInternationalTollFree`).
@@ -11906,9 +11906,9 @@ pub struct GetDIDsInternationalTollFreeResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub locations: Option<Vec<GetDIDsInternationalTollFreeResponseLocation>>,
+    pub locations: Vec<GetDIDsInternationalTollFreeResponseLocation>,
 }
 
 /// Response body for [`Client::get_dids_usa`] (wire method `getDIDsUSA`).
@@ -11985,9 +11985,9 @@ pub struct GetDIDsUSAResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<GetDIDsUSAResponseDID>>,
+    pub dids: Vec<GetDIDsUSAResponseDID>,
 }
 
 /// Response body for [`Client::get_did_vpri`] (wire method `getDIDvPRI`).
@@ -12000,9 +12000,9 @@ pub struct GetDIDvPRIResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<u64>>,
+    pub dids: Vec<u64>,
 }
 
 /// Response body for [`Client::get_disas`] (wire method `getDISAs`).
@@ -12049,9 +12049,9 @@ pub struct GetDISAsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub disa: Option<Vec<GetDISAsResponseDISA>>,
+    pub disa: Vec<GetDISAsResponseDISA>,
 }
 
 /// Response body for [`Client::get_dtmf_modes`] (wire method `getDTMFModes`).
@@ -12078,9 +12078,9 @@ pub struct GetDTMFModesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dtmf_modes: Option<Vec<GetDTMFModesResponseDTMFMode>>,
+    pub dtmf_modes: Vec<GetDTMFModesResponseDTMFMode>,
 }
 
 /// Response body for [`Client::get_deposits`] (wire method `getDeposits`).
@@ -12114,9 +12114,9 @@ pub struct GetDepositsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub deposits: Option<Vec<GetDepositsResponseDeposit>>,
+    pub deposits: Vec<GetDepositsResponseDeposit>,
 }
 
 /// Response body for [`Client::get_device_types`] (wire method `getDeviceTypes`).
@@ -12143,9 +12143,9 @@ pub struct GetDeviceTypesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub device_types: Option<Vec<GetDeviceTypesResponseDeviceType>>,
+    pub device_types: Vec<GetDeviceTypesResponseDeviceType>,
 }
 
 /// Response body for [`Client::get_email_to_fax`] (wire method `getEmailToFax`).
@@ -12192,9 +12192,9 @@ pub struct GetEmailToFAXResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub emailToFax: Option<Vec<GetEmailToFAXResponseEmailToFAX>>,
+    pub emailToFax: Vec<GetEmailToFAXResponseEmailToFAX>,
 }
 
 /// Response body for [`Client::get_fax_folders`] (wire method `getFaxFolders`).
@@ -12221,9 +12221,9 @@ pub struct GetFAXFoldersResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub folders: Option<Vec<GetFAXFoldersResponseFolder>>,
+    pub folders: Vec<GetFAXFoldersResponseFolder>,
 }
 
 /// Response body for [`Client::get_fax_message_pdf`] (wire method `getFaxMessagePDF`).
@@ -12320,9 +12320,9 @@ pub struct GetFAXMessagesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub faxes: Option<Vec<GetFAXMessagesResponseFAX>>,
+    pub faxes: Vec<GetFAXMessagesResponseFAX>,
 }
 
 /// Response body for [`Client::get_fax_numbers_info`] (wire method `getFaxNumbersInfo`).
@@ -12436,9 +12436,9 @@ pub struct GetFAXNumbersInfoResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub numbers: Option<Vec<GetFAXNumbersInfoResponseNumber>>,
+    pub numbers: Vec<GetFAXNumbersInfoResponseNumber>,
 }
 
 /// Response body for [`Client::get_fax_numbers_portability`] (wire method `getFaxNumbersPortability`).
@@ -12490,9 +12490,9 @@ pub struct GetFAXProvincesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub provinces: Option<Vec<GetFAXProvincesResponseProvince>>,
+    pub provinces: Vec<GetFAXProvincesResponseProvince>,
 }
 
 /// Response body for [`Client::get_fax_rate_centers_can`] (wire method `getFaxRateCentersCAN`).
@@ -12529,9 +12529,9 @@ pub struct GetFAXRateCentersCANResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub ratecenters: Option<Vec<GetFAXRateCentersCANResponseRatecenter>>,
+    pub ratecenters: Vec<GetFAXRateCentersCANResponseRatecenter>,
 }
 
 /// Response body for [`Client::get_fax_rate_centers_usa`] (wire method `getFaxRateCentersUSA`).
@@ -12568,9 +12568,9 @@ pub struct GetFAXRateCentersUSAResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub ratecenters: Option<Vec<GetFAXRateCentersUSAResponseRatecenter>>,
+    pub ratecenters: Vec<GetFAXRateCentersUSAResponseRatecenter>,
 }
 
 /// Response body for [`Client::get_fax_states`] (wire method `getFaxStates`).
@@ -12607,9 +12607,9 @@ pub struct GetFAXStatesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub states: Option<Vec<GetFAXStatesResponseState>>,
+    pub states: Vec<GetFAXStatesResponseState>,
 }
 
 /// Response body for [`Client::get_forwardings`] (wire method `getForwardings`).
@@ -12661,9 +12661,9 @@ pub struct GetForwardingsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub forwardings: Option<Vec<GetForwardingsResponseForwarding>>,
+    pub forwardings: Vec<GetForwardingsResponseForwarding>,
 }
 
 /// Response body for [`Client::get_ip`] (wire method `getIP`).
@@ -12730,9 +12730,9 @@ pub struct GetIVRsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub ivrs: Option<Vec<GetIVRsResponseIVR>>,
+    pub ivrs: Vec<GetIVRsResponseIVR>,
 }
 
 /// Response body for [`Client::get_international_types`] (wire method `getInternationalTypes`).
@@ -12759,9 +12759,9 @@ pub struct GetInternationalTypesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub types: Option<Vec<GetInternationalTypesResponseType>>,
+    pub types: Vec<GetInternationalTypesResponseType>,
 }
 
 /// Response body for [`Client::get_join_when_empty_types`] (wire method `getJoinWhenEmptyTypes`).
@@ -12769,14 +12769,14 @@ pub struct GetInternationalTypesResponse {
 pub struct GetJoinWhenEmptyTypesResponseType {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub value: Option<bool>,
+    pub value: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub description: Option<bool>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -12788,9 +12788,9 @@ pub struct GetJoinWhenEmptyTypesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub types: Option<Vec<GetJoinWhenEmptyTypesResponseType>>,
+    pub types: Vec<GetJoinWhenEmptyTypesResponseType>,
 }
 
 /// Response body for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
@@ -12925,9 +12925,9 @@ pub struct GetLNPDetailsResponse {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub numbers: Option<Vec<GetLNPDetailsResponseNumber>>,
+    pub numbers: Vec<GetLNPDetailsResponseNumber>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
@@ -13030,9 +13030,9 @@ pub struct GetLNPDetailsResponse {
     pub customer_notes: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub notes: Option<Vec<GetLNPDetailsResponseNote>>,
+    pub notes: Vec<GetLNPDetailsResponseNote>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -13055,9 +13055,9 @@ pub struct GetLNPDetailsResponse {
     pub focDate: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub attachments: Option<Vec<GetLNPDetailsResponseAttachment>>,
+    pub attachments: Vec<GetLNPDetailsResponseAttachment>,
 }
 
 /// Response body for [`Client::get_lnp_list`] (wire method `getLNPList`).
@@ -13179,9 +13179,9 @@ pub struct GetLanguagesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub languages: Option<Vec<GetLanguagesResponseLanguage>>,
+    pub languages: Vec<GetLanguagesResponseLanguage>,
 }
 
 /// Response body for [`Client::get_locales`] (wire method `getLocales`).
@@ -13208,9 +13208,9 @@ pub struct GetLocalesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub locales: Option<Vec<GetLocalesResponseLocale>>,
+    pub locales: Vec<GetLocalesResponseLocale>,
 }
 
 /// Response body for [`Client::get_locations`] (wire method `getLocations`).
@@ -13223,9 +13223,9 @@ pub struct GetLocationsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub locations: Option<Vec<String>>,
+    pub locations: Vec<String>,
 }
 
 /// Response body for [`Client::get_lock_international`] (wire method `getLockInternational`).
@@ -13252,9 +13252,9 @@ pub struct GetLockInternationalResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub lock_international: Option<Vec<GetLockInternationalResponseLockInternational>>,
+    pub lock_international: Vec<GetLockInternationalResponseLockInternational>,
 }
 
 /// Response body for [`Client::get_mms`] (wire method `getMMS`).
@@ -13313,9 +13313,9 @@ pub struct GetMMSResponseSMS {
     pub col_media3: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub media: Option<Vec<String>>,
+    pub media: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -13327,9 +13327,9 @@ pub struct GetMMSResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub sms: Option<Vec<GetMMSResponseSMS>>,
+    pub sms: Vec<GetMMSResponseSMS>,
 }
 
 /// Response body for [`Client::get_media_mms`] (wire method `getMediaMMS`).
@@ -13421,12 +13421,26 @@ pub struct GetMusicOnHoldResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub music_on_hold: Option<Vec<GetMusicOnHoldResponseMusicOnHold>>,
+    pub music_on_hold: Vec<GetMusicOnHoldResponseMusicOnHold>,
 }
 
 /// Response body for [`Client::get_nat`] (wire method `getNAT`).
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct GetNATResponseNAT {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub value: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub description: Option<String>,
+}
+
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetNATResponse {
     #[serde(
@@ -13434,8 +13448,11 @@ pub struct GetNATResponse {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub status: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_nat")]
-    pub nat: Option<Nat>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub nat: Vec<GetNATResponseNAT>,
 }
 
 /// Response body for [`Client::get_packages`] (wire method `getPackages`).
@@ -13502,9 +13519,9 @@ pub struct GetPackagesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub packages: Option<Vec<GetPackagesResponsePackage>>,
+    pub packages: Vec<GetPackagesResponsePackage>,
 }
 
 /// Response body for [`Client::get_phonebook`] (wire method `getPhonebook`).
@@ -13561,9 +13578,9 @@ pub struct GetPhonebookResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub phonebooks: Option<Vec<GetPhonebookResponsePhonebook>>,
+    pub phonebooks: Vec<GetPhonebookResponsePhonebook>,
 }
 
 /// Response body for [`Client::get_phonebook_groups`] (wire method `getPhonebookGroups`).
@@ -13595,12 +13612,26 @@ pub struct GetPhonebookGroupsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub phonebooks: Option<Vec<GetPhonebookGroupsResponsePhonebook>>,
+    pub phonebooks: Vec<GetPhonebookGroupsResponsePhonebook>,
 }
 
 /// Response body for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct GetPlayInstructionsResponsePlayInstruction {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub value: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub description: Option<String>,
+}
+
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct GetPlayInstructionsResponse {
     #[serde(
@@ -13608,8 +13639,11 @@ pub struct GetPlayInstructionsResponse {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub status: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_play_instructions")]
-    pub play_instructions: Option<PlayInstructions>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub play_instructions: Vec<GetPlayInstructionsResponsePlayInstruction>,
 }
 
 /// Response body for [`Client::get_portability`] (wire method `getPortability`).
@@ -13651,9 +13685,9 @@ pub struct GetPortabilityResponse {
     pub sms: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub plans: Option<Vec<GetPortabilityResponsePlan>>,
+    pub plans: Vec<GetPortabilityResponsePlan>,
 }
 
 /// Response body for [`Client::get_protocols`] (wire method `getProtocols`).
@@ -13680,9 +13714,9 @@ pub struct GetProtocolsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub protocols: Option<Vec<GetProtocolsResponseProtocol>>,
+    pub protocols: Vec<GetProtocolsResponseProtocol>,
 }
 
 /// Response body for [`Client::get_provinces`] (wire method `getProvinces`).
@@ -13709,9 +13743,9 @@ pub struct GetProvincesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub provinces: Option<Vec<GetProvincesResponseProvince>>,
+    pub provinces: Vec<GetProvincesResponseProvince>,
 }
 
 /// Response body for [`Client::get_queues`] (wire method `getQueues`).
@@ -13884,9 +13918,9 @@ pub struct GetQueuesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub queues: Option<Vec<GetQueuesResponseQueue>>,
+    pub queues: Vec<GetQueuesResponseQueue>,
 }
 
 /// Response body for [`Client::get_rate_centers_can`] (wire method `getRateCentersCAN`).
@@ -13913,9 +13947,9 @@ pub struct GetRateCentersCANResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub ratecenters: Option<Vec<GetRateCentersCANResponseRatecenter>>,
+    pub ratecenters: Vec<GetRateCentersCANResponseRatecenter>,
 }
 
 /// Response body for [`Client::get_rate_centers_usa`] (wire method `getRateCentersUSA`).
@@ -13942,9 +13976,9 @@ pub struct GetRateCentersUSAResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub ratecenters: Option<Vec<GetRateCentersUSAResponseRatecenter>>,
+    pub ratecenters: Vec<GetRateCentersUSAResponseRatecenter>,
 }
 
 /// Response body for [`Client::get_rates`] (wire method `getRates`).
@@ -13991,9 +14025,9 @@ pub struct GetRatesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub rates: Option<Vec<GetRatesResponseRate>>,
+    pub rates: Vec<GetRatesResponseRate>,
 }
 
 /// Response body for [`Client::get_recording_file`] (wire method `getRecordingFile`).
@@ -14020,9 +14054,9 @@ pub struct GetRecordingFileResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub recordings: Option<Vec<GetRecordingFileResponseRecording>>,
+    pub recordings: Vec<GetRecordingFileResponseRecording>,
 }
 
 /// Response body for [`Client::get_recordings`] (wire method `getRecordings`).
@@ -14049,9 +14083,9 @@ pub struct GetRecordingsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub recordings: Option<Vec<GetRecordingsResponseRecording>>,
+    pub recordings: Vec<GetRecordingsResponseRecording>,
 }
 
 /// Response body for [`Client::get_registration_status`] (wire method `getRegistrationStatus`).
@@ -14138,9 +14172,9 @@ pub struct GetRegistrationStatusResponse {
     pub from_server_pop: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub registrations: Option<Vec<GetRegistrationStatusResponseRegistration>>,
+    pub registrations: Vec<GetRegistrationStatusResponseRegistration>,
 }
 
 /// Response body for [`Client::get_report_estimated_hold_time`] (wire method `getReportEstimatedHoldTime`).
@@ -14167,9 +14201,9 @@ pub struct GetReportEstimatedHoldTimeResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub types: Option<Vec<GetReportEstimatedHoldTimeResponseType>>,
+    pub types: Vec<GetReportEstimatedHoldTimeResponseType>,
 }
 
 /// Response body for [`Client::get_reseller_balance`] (wire method `getResellerBalance`).
@@ -14297,9 +14331,9 @@ pub struct GetResellerCDRResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub cdr: Option<Vec<GetResellerCDRResponseCDR>>,
+    pub cdr: Vec<GetResellerCDRResponseCDR>,
 }
 
 /// Response body for [`Client::get_reseller_mms`] (wire method `getResellerMMS`).
@@ -14347,9 +14381,9 @@ pub struct GetResellerMMSResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub sms: Option<Vec<GetResellerMMSResponseSMS>>,
+    pub sms: Vec<GetResellerMMSResponseSMS>,
 }
 
 /// Response body for [`Client::get_reseller_sms`] (wire method `getResellerSMS`).
@@ -14397,9 +14431,9 @@ pub struct GetResellerSMSResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub sms: Option<Vec<GetResellerSMSResponseSMS>>,
+    pub sms: Vec<GetResellerSMSResponseSMS>,
 }
 
 /// Response body for [`Client::get_ring_groups`] (wire method `getRingGroups`).
@@ -14451,9 +14485,9 @@ pub struct GetRingGroupsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub ring_groups: Option<Vec<GetRingGroupsResponseRingGroup>>,
+    pub ring_groups: Vec<GetRingGroupsResponseRingGroup>,
 }
 
 /// Response body for [`Client::get_ring_strategies`] (wire method `getRingStrategies`).
@@ -14480,9 +14514,9 @@ pub struct GetRingStrategiesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub strategies: Option<Vec<GetRingStrategiesResponseStrategy>>,
+    pub strategies: Vec<GetRingStrategiesResponseStrategy>,
 }
 
 /// Response body for [`Client::get_routes`] (wire method `getRoutes`).
@@ -14509,9 +14543,9 @@ pub struct GetRoutesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub routes: Option<Vec<GetRoutesResponseRoute>>,
+    pub routes: Vec<GetRoutesResponseRoute>,
 }
 
 /// Response body for [`Client::get_sip_uris`] (wire method `getSIPURIs`).
@@ -14553,9 +14587,9 @@ pub struct GetSIPURIsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub sipuris: Option<Vec<GetSIPURIsResponseSIPURI>>,
+    pub sipuris: Vec<GetSIPURIsResponseSIPURI>,
 }
 
 /// Response body for [`Client::get_sms`] (wire method `getSMS`).
@@ -14608,9 +14642,9 @@ pub struct GetSMSResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub sms: Option<Vec<GetSMSResponseSMS>>,
+    pub sms: Vec<GetSMSResponseSMS>,
 }
 
 /// Response body for [`Client::get_servers_info`] (wire method `getServersInfo`).
@@ -14662,9 +14696,9 @@ pub struct GetServersInfoResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub servers: Option<Vec<GetServersInfoResponseServer>>,
+    pub servers: Vec<GetServersInfoResponseServer>,
 }
 
 /// Response body for [`Client::get_states`] (wire method `getStates`).
@@ -14691,9 +14725,9 @@ pub struct GetStatesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub states: Option<Vec<GetStatesResponseState>>,
+    pub states: Vec<GetStatesResponseState>,
 }
 
 /// Response body for [`Client::get_static_members`] (wire method `getStaticMembers`).
@@ -14735,9 +14769,9 @@ pub struct GetStaticMembersResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub members: Option<Vec<GetStaticMembersResponseMember>>,
+    pub members: Vec<GetStaticMembersResponseMember>,
 }
 
 /// Response body for [`Client::get_sub_accounts`] (wire method `getSubAccounts`).
@@ -14969,9 +15003,9 @@ pub struct GetSubAccountsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub accounts: Option<Vec<GetSubAccountsResponseAccount>>,
+    pub accounts: Vec<GetSubAccountsResponseAccount>,
 }
 
 /// Response body for [`Client::get_termination_rates`] (wire method `getTerminationRates`).
@@ -15024,9 +15058,9 @@ pub struct GetTerminationRatesResponse {
     pub route: Option<GetTerminationRatesResponseRoute>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub rates: Option<Vec<GetTerminationRatesResponseRate>>,
+    pub rates: Vec<GetTerminationRatesResponseRate>,
 }
 
 /// Response body for [`Client::get_time_conditions`] (wire method `getTimeConditions`).
@@ -15093,9 +15127,9 @@ pub struct GetTimeConditionsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub timecondition: Option<Vec<GetTimeConditionsResponseTimecondition>>,
+    pub timecondition: Vec<GetTimeConditionsResponseTimecondition>,
 }
 
 /// Response body for [`Client::get_timezones`] (wire method `getTimezones`).
@@ -15122,9 +15156,9 @@ pub struct GetTimezonesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub timezones: Option<Vec<GetTimezonesResponseTimezone>>,
+    pub timezones: Vec<GetTimezonesResponseTimezone>,
 }
 
 /// Response body for [`Client::get_transaction_history`] (wire method `getTransactionHistory`).
@@ -15167,9 +15201,9 @@ pub struct GetTransactionHistoryResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub transactions: Option<Vec<GetTransactionHistoryResponseTransaction>>,
+    pub transactions: Vec<GetTransactionHistoryResponseTransaction>,
 }
 
 /// Response body for [`Client::get_vpris`] (wire method `getVPRIs`).
@@ -15228,9 +15262,9 @@ pub struct GetVPRIsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub vpri: Option<Vec<GetVPRIsResponseVPRI>>,
+    pub vpri: Vec<GetVPRIsResponseVPRI>,
 }
 
 /// Response body for [`Client::get_voicemail_attachment_formats`] (wire method `getVoicemailAttachmentFormats`).
@@ -15257,10 +15291,9 @@ pub struct GetVoicemailAttachmentFormatsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub email_attachment_formats:
-        Option<Vec<GetVoicemailAttachmentFormatsResponseEmailAttachmentFormat>>,
+    pub email_attachment_formats: Vec<GetVoicemailAttachmentFormatsResponseEmailAttachmentFormat>,
 }
 
 /// Response body for [`Client::get_voicemail_folders`] (wire method `getVoicemailFolders`).
@@ -15287,9 +15320,9 @@ pub struct GetVoicemailFoldersResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub folders: Option<Vec<GetVoicemailFoldersResponseFolder>>,
+    pub folders: Vec<GetVoicemailFoldersResponseFolder>,
 }
 
 /// Response body for [`Client::get_voicemail_message_file`] (wire method `getVoicemailMessageFile`).
@@ -15323,9 +15356,9 @@ pub struct GetVoicemailMessageFileResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub message: Option<Vec<GetVoicemailMessageFileResponseMessage>>,
+    pub message: Vec<GetVoicemailMessageFileResponseMessage>,
 }
 
 /// Response body for [`Client::get_voicemail_messages`] (wire method `getVoicemailMessages`).
@@ -15379,9 +15412,9 @@ pub struct GetVoicemailMessagesResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub messages: Option<Vec<GetVoicemailMessagesResponseMessage>>,
+    pub messages: Vec<GetVoicemailMessagesResponseMessage>,
 }
 
 /// Response body for [`Client::get_voicemail_setups`] (wire method `getVoicemailSetups`).
@@ -15408,9 +15441,9 @@ pub struct GetVoicemailSetupsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub voicemailsetups: Option<Vec<GetVoicemailSetupsResponseVoicemailsetup>>,
+    pub voicemailsetups: Vec<GetVoicemailSetupsResponseVoicemailsetup>,
 }
 
 /// Response body for [`Client::get_voicemail_transcriptions`] (wire method `getVoicemailTranscriptions`).
@@ -15449,9 +15482,9 @@ pub struct GetVoicemailTranscriptionsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub messages: Option<Vec<GetVoicemailTranscriptionsResponseMessage>>,
+    pub messages: Vec<GetVoicemailTranscriptionsResponseMessage>,
 }
 
 /// Response body for [`Client::get_voicemails`] (wire method `getVoicemails`).
@@ -15574,9 +15607,9 @@ pub struct GetVoicemailsResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub voicemails: Option<Vec<GetVoicemailsResponseVoicemail>>,
+    pub voicemails: Vec<GetVoicemailsResponseVoicemail>,
 }
 
 /// Response body for [`Client::mail_fax_message_pdf`] (wire method `mailFaxMessagePDF`).
@@ -15821,9 +15854,9 @@ pub struct SearchDIDsCANResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<SearchDIDsCANResponseDID>>,
+    pub dids: Vec<SearchDIDsCANResponseDID>,
 }
 
 /// Response body for [`Client::search_dids_usa`] (wire method `searchDIDsUSA`).
@@ -15890,9 +15923,9 @@ pub struct SearchDIDsUSAResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<SearchDIDsUSAResponseDID>>,
+    pub dids: Vec<SearchDIDsUSAResponseDID>,
 }
 
 /// Response body for [`Client::search_fax_area_code_can`] (wire method `searchFaxAreaCodeCAN`).
@@ -16001,9 +16034,9 @@ pub struct SearchTollFreeCANUSResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<SearchTollFreeCANUSResponseDID>>,
+    pub dids: Vec<SearchTollFreeCANUSResponseDID>,
 }
 
 /// Response body for [`Client::search_toll_free_usa`] (wire method `searchTollFreeUSA`).
@@ -16055,9 +16088,9 @@ pub struct SearchTollFreeUSAResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<SearchTollFreeUSAResponseDID>>,
+    pub dids: Vec<SearchTollFreeUSAResponseDID>,
 }
 
 /// Response body for [`Client::search_vanity`] (wire method `searchVanity`).
@@ -16114,9 +16147,9 @@ pub struct SearchVanityResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Option<Vec<SearchVanityResponseDID>>,
+    pub dids: Vec<SearchVanityResponseDID>,
 }
 
 /// Response body for [`Client::send_call_recording_email`] (wire method `sendCallRecordingEmail`).

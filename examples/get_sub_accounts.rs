@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let status = response.status.as_deref().unwrap_or("(missing)");
     println!("status: {status}");
 
-    let accounts = response.accounts.unwrap_or_default();
+    let accounts = response.accounts;
     if accounts.is_empty() {
         println!("No sub-accounts found.");
     } else {

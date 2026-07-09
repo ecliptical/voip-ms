@@ -339,8 +339,7 @@ async fn typed_get_sub_accounts_tolerates_minus_one_sentinel_values() {
 
     let account = envelope
         .accounts
-        .as_ref()
-        .and_then(|accounts| accounts.first())
+        .first()
         .expect("expected at least one sub-account");
     assert_eq!(account.id, Some(123));
     assert_eq!(account.callerid_number, None);
@@ -377,8 +376,7 @@ async fn typed_get_sub_accounts_decodes_enum_and_routing_fields() {
 
     let account = envelope
         .accounts
-        .as_ref()
-        .and_then(|accounts| accounts.first())
+        .first()
         .expect("expected at least one sub-account");
 
     assert_eq!(account.dtmf_mode, Some(DtmfMode::Rfc2833));
@@ -525,7 +523,7 @@ async fn unknown_enum_value_is_preserved_verbatim() {
         .get_sub_accounts(&GetSubAccountsParams::default())
         .await
         .unwrap();
-    let account = envelope.accounts.unwrap().into_iter().next().unwrap();
+    let account = envelope.accounts.into_iter().next().unwrap();
     assert_eq!(
         account.dtmf_mode,
         Some(DtmfMode::Unknown("future_mode".into())),
@@ -578,7 +576,7 @@ async fn queue_empty_behavior_response_deserializes_third_value() {
         .get_queues(&voip_ms::GetQueuesParams::default())
         .await
         .unwrap();
-    let queue = envelope.queues.unwrap().into_iter().next().unwrap();
+    let queue = envelope.queues.into_iter().next().unwrap();
     assert_eq!(queue.leave_when_empty, Some(QueueEmptyBehavior::Strict));
 }
 
@@ -648,7 +646,7 @@ async fn message_type_response_deserializes_numeric_wire() {
         .get_sms(&voip_ms::GetSMSParams::default())
         .await
         .unwrap();
-    let msgs = envelope.sms.unwrap();
+    let msgs = envelope.sms;
     assert_eq!(msgs[0].r#type, Some(MessageType::Received));
     assert_eq!(msgs[1].r#type, Some(MessageType::Sent));
 }
@@ -657,7 +655,7 @@ async fn message_type_response_deserializes_numeric_wire() {
 async fn empty_collection_status_yields_empty_response() {
     // VoIP.ms answers an empty SMS list with `{"status": "no_sms"}` and no
     // `sms` field. For the typed call that is an empty list, not an error:
-    // it succeeds with `sms == None`. The `*_raw` escape hatch keeps the
+    // it succeeds with an empty `sms`. The `*_raw` escape hatch keeps the
     // verbatim contract and still surfaces it as `Error::Api`.
     let (server, client) = fixture().await;
 
@@ -673,7 +671,7 @@ async fn empty_collection_status_yields_empty_response() {
         .await
         .unwrap();
     assert_eq!(envelope.status.as_deref(), Some("no_sms"));
-    assert!(envelope.sms.is_none());
+    assert!(envelope.sms.is_empty());
 
     let err = client
         .get_sms_raw(&voip_ms::GetSMSParams::default())
@@ -741,7 +739,7 @@ async fn integer_coded_enum_round_trips() {
         .get_dids_info(&GetDIDsInfoParams::default())
         .await
         .unwrap();
-    let did = envelope.dids.unwrap().into_iter().next().unwrap();
+    let did = envelope.dids.into_iter().next().unwrap();
     assert_eq!(did.billing_type, Some(DidBillingType::PerMinute));
 }
 
@@ -797,7 +795,7 @@ async fn seconds_response_deserializes_number_and_sentinel() {
         .get_queues(&voip_ms::GetQueuesParams::default())
         .await
         .unwrap();
-    let queue = envelope.queues.unwrap().into_iter().next().unwrap();
+    let queue = envelope.queues.into_iter().next().unwrap();
     assert_eq!(queue.retry_timer, Some(Seconds::Value(30)));
     assert_eq!(queue.maximum_wait_time, Some(WaitTime::Unlimited));
 }
@@ -842,7 +840,7 @@ fn single_object_list_field_coerces_to_one_element_vec() {
         "message": { "mailbox": "1001", "folder": "INBOX", "message_num": "1", "data": "Zm9v" }
     }))
     .unwrap();
-    let msgs = single.message.expect("message present");
+    let msgs = single.message;
     assert_eq!(msgs.len(), 1);
     assert_eq!(msgs[0].data.as_deref(), Some("Zm9v"));
 
@@ -855,12 +853,12 @@ fn single_object_list_field_coerces_to_one_element_vec() {
         ]
     }))
     .unwrap();
-    assert_eq!(many.message.expect("array present").len(), 2);
+    assert_eq!(many.message.len(), 2);
 
-    // A null / absent list field stays `None`.
+    // A null / absent list field stays empty.
     let empty: GetVoicemailMessageFileResponse =
         serde_json::from_value(json!({ "status": "success", "message": null })).unwrap();
-    assert!(empty.message.is_none());
+    assert!(empty.message.is_empty());
 }
 
 #[test]
@@ -881,7 +879,7 @@ fn callerid_accepts_named_display_form() {
         }]
     }))
     .unwrap();
-    let messages = vm.messages.expect("messages present");
+    let messages = vm.messages;
     assert_eq!(
         messages[0].callerid.as_deref(),
         Some("PARKWOODSDENTAL <4164442828>")
@@ -893,7 +891,7 @@ fn callerid_accepts_named_display_form() {
         "faxes": [{ "id": "42", "callerid": "5552341234" }]
     }))
     .unwrap();
-    let faxes = fax.faxes.expect("faxes present");
+    let faxes = fax.faxes;
     assert_eq!(faxes[0].callerid.as_deref(), Some("5552341234"));
 }
 
@@ -914,7 +912,7 @@ fn voicemail_message_date_accepts_full_timestamp() {
         }]
     }))
     .unwrap();
-    let messages = vm.messages.expect("messages present");
+    let messages = vm.messages;
     assert_eq!(
         messages[0].date,
         Some(

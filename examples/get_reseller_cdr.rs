@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let status = response.status.as_deref().unwrap_or("(missing)");
     println!("status: {status}");
 
-    let cdr = response.cdr.unwrap_or_default();
+    let cdr = response.cdr;
     if cdr.is_empty() {
         println!("No call records found.");
     } else {

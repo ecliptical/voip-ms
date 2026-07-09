@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let registered = response.registered.unwrap_or(false);
     println!("{account} registered: {registered}");
 
-    for reg in response.registrations.unwrap_or_default() {
+    for reg in response.registrations {
         println!(
             "  server={} ({})  ip={}  port={}  next_registration={}",
             reg.server_name.as_deref().unwrap_or("(unknown)"),

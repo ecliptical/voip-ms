@@ -9,8 +9,10 @@
 //!   collide: the elements of `dids: [...]` in `getDIDsInfo` become
 //!   `GetDIDsInfoResponseDID`.
 //!
-//! All fields are `Option<T>` so unexpected omissions don't fail
-//! deserialization. Scalar types map to:
+//! Scalar and object fields are `Option<T>` so unexpected omissions don't fail
+//! deserialization; list fields are a bare `Vec<T>` defaulting to empty, since
+//! VoIP.ms signals an empty collection by omitting the field. Scalar types map
+//! to:
 //!
 //! | Inferred type | Rust type        | Deserializer                                       |
 //! |---------------|------------------|----------------------------------------------------|
@@ -104,7 +106,7 @@ impl<'a> Emitter<'a> {
                 let body = format!(
                     "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
                      pub struct {name} {{\n    \
-                         #[serde(default)]\n    \
+                         #[serde(default, deserialize_with = \"crate::responses::deserialize_vec_from_single_or_seq\")]\n    \
                          pub items: Vec<{inner_ty}>,\n\
                      }}\n",
                 );
@@ -166,10 +168,22 @@ impl<'a> Emitter<'a> {
                 Some(o) => o.response_deserializer.as_deref(),
                 None => field_deserializer(sub),
             };
+            // List fields are emitted as a bare `Vec<T>`, defaulting to empty:
+            // VoIP.ms signals an empty collection by omitting the field (or via
+            // an `is_empty` status that strips the subtree), so absent and empty
+            // carry the same meaning -- an `Option` would only add a
+            // never-actionable `None`. A `field_type` override always retypes to
+            // a scalar, so it keeps the `Option<T>` form.
+            let bare_vec = override_.is_none() && matches!(sub, Shape::List(_));
+            let field_ty = if bare_vec {
+                rust_ty
+            } else {
+                format!("Option<{rust_ty}>")
+            };
             let attrs = render_field_attrs(deser);
             if rust_ident == *fname {
                 body.push_str(&attrs);
-                body.push_str(&format!("    pub {rust_ident}: Option<{rust_ty}>,\n"));
+                body.push_str(&format!("    pub {rust_ident}: {field_ty},\n"));
             } else {
                 body.push_str("    #[serde(default");
                 if let Some(d) = deser {
@@ -177,7 +191,7 @@ impl<'a> Emitter<'a> {
                 }
 
                 body.push_str(&format!(", rename = \"{fname}\")]\n"));
-                body.push_str(&format!("    pub {rust_ident}: Option<{rust_ty}>,\n"));
+                body.push_str(&format!("    pub {rust_ident}: {field_ty},\n"));
             }
         }
 
@@ -244,7 +258,7 @@ fn render_field_attrs(deser: Option<&str>) -> String {
 /// returns a one-row list as a bare object); objects deserialize structurally.
 fn field_deserializer(shape: &Shape) -> Option<&'static str> {
     match shape {
-        Shape::List(_) => Some("crate::responses::deserialize_opt_vec_from_single_or_seq"),
+        Shape::List(_) => Some("crate::responses::deserialize_vec_from_single_or_seq"),
         _ => scalar_deserializer(shape),
     }
 }

@@ -180,7 +180,9 @@
   "field_type_skip": [
     "GetVoicemailsResponseVoicemail.urgent",
     "GetFAXMessagesParams.folder",
-    "GetFAXMessagesResponseFAX.folder"
+    "GetFAXMessagesResponseFAX.folder",
+    "GetNATResponse.nat",
+    "GetPlayInstructionsResponse.play_instructions"
   ],
   "field_type_override": {
     "SearchDIDsCANParams.type":      "SearchType",
@@ -227,6 +229,17 @@
     "no_timecondition"
   ],
   "methods": {
+    "getJoinWhenEmptyTypes": {
+      "patches": [
+        { "path": "types[].value",       "type": "string" },
+        { "path": "types[].description", "type": "string" }
+      ]
+    },
+    "getPlayInstructions": {
+      "patches": [
+        { "path": "play_instructions[].description", "type": "string" }
+      ]
+    },
     "getDIDsInfo": {
       "patches": [
         { "path": "dids[].did",            "type": "string"  },

@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let status = response.status.as_deref().unwrap_or("(missing)");
     println!("status: {status}");
 
-    let voicemails = response.voicemails.unwrap_or_default();
+    let voicemails = response.voicemails;
     if voicemails.is_empty() {
         println!("No voicemail boxes found.");
     } else {

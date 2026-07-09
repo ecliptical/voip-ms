@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let response: GetDIDsInfoResponse = client.get_dids_info(&GetDIDsInfoParams::default()).await?;
 
-    let dids = response.dids.unwrap_or_default();
+    let dids = response.dids;
     if dids.is_empty() {
         println!("No DIDs found.");
     } else {
