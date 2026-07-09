@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-09
+
+### Fixed
+
+- `searchFaxAreaCodeCAN` and `searchFaxAreaCodeUSA`: `ratecenters` is a list of
+  `{area_code, available, ratecenter}` objects, not a scalar. The doc sample was
+  a mis-parsed `print_r` dump that flattened the array into an `array(` scalar
+  plus a spurious `0` field, so an area code with matches failed with "expected
+  string, number, or bool, got [{...}]". An area code with no matches returns
+  `{"status":"success"}` with no `ratecenters` field, which now deserializes to
+  an empty list.
+
 ## [0.7.0] - 2026-07-09
 
 ### Fixed

@@ -15957,12 +15957,7 @@ pub struct SearchDIDsUSAResponse {
 
 /// Response body for [`Client::search_fax_area_code_can`] (wire method `searchFaxAreaCodeCAN`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct SearchFAXAreaCodeCANResponse0 {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub ratecenter: Option<String>,
+pub struct SearchFAXAreaCodeCANResponseRatecenter {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -15973,6 +15968,11 @@ pub struct SearchFAXAreaCodeCANResponse0 {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub available: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub ratecenter: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -15984,37 +15984,14 @@ pub struct SearchFAXAreaCodeCANResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub ratecenters: Option<String>,
-    #[serde(default, rename = "0")]
-    pub field_0: Option<SearchFAXAreaCodeCANResponse0>,
+    pub ratecenters: Vec<SearchFAXAreaCodeCANResponseRatecenter>,
 }
 
 /// Response body for [`Client::search_fax_area_code_usa`] (wire method `searchFaxAreaCodeUSA`).
 #[derive(Debug, Clone, Default, serde::Deserialize)]
-pub struct SearchFAXAreaCodeUSAResponse {
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub status: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub ratecenters: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
-        rename = "0"
-    )]
-    pub field_0: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
-    )]
-    pub ratecenter: Option<String>,
+pub struct SearchFAXAreaCodeUSAResponseRatecenter {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -16025,6 +16002,25 @@ pub struct SearchFAXAreaCodeUSAResponse {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub available: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub ratecenter: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct SearchFAXAreaCodeUSAResponse {
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub status: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub ratecenters: Vec<SearchFAXAreaCodeUSAResponseRatecenter>,
 }
 
 /// Response body for [`Client::search_toll_free_can_us`] (wire method `searchTollFreeCanUS`).

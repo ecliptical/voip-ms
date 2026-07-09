@@ -972,6 +972,73 @@ fn e911_address_types_is_a_list() {
 }
 
 #[test]
+fn search_fax_area_code_can_is_a_ratecenter_list() {
+    use voip_ms::SearchFAXAreaCodeCANResponse;
+
+    // Matching area codes return `ratecenters` as a list of
+    // `{area_code, available, ratecenter}` objects; typed as a scalar it
+    // failed with "expected string, number, or bool, got [{...}]".
+    let resp: SearchFAXAreaCodeCANResponse = serde_json::from_value(json!({
+        "status": "success",
+        "ratecenters": [
+            { "area_code": "514", "available": "yes", "ratecenter": "ILE-PERROT" },
+            { "area_code": "514", "available": "yes", "ratecenter": "LACHINE" },
+            { "area_code": "514", "available": "yes", "ratecenter": "POINTE-CLAIRE" },
+            { "area_code": "514", "available": "yes", "ratecenter": "STE-GENEVIEVE" },
+            { "area_code": "514", "available": "yes", "ratecenter": "ROXBORO" }
+        ]
+    }))
+    .unwrap();
+
+    assert_eq!(resp.ratecenters.len(), 5);
+    assert_eq!(resp.ratecenters[0].area_code, Some(514));
+    assert_eq!(resp.ratecenters[0].available, Some(true));
+    assert_eq!(
+        resp.ratecenters[0].ratecenter.as_deref(),
+        Some("ILE-PERROT")
+    );
+    assert_eq!(resp.ratecenters[4].ratecenter.as_deref(), Some("ROXBORO"));
+}
+
+#[test]
+fn search_fax_area_code_usa_is_a_ratecenter_list() {
+    use voip_ms::SearchFAXAreaCodeUSAResponse;
+
+    // Same shape as the Canadian variant: a list of
+    // `{area_code, available, ratecenter}` objects.
+    let resp: SearchFAXAreaCodeUSAResponse = serde_json::from_value(json!({
+        "status": "success",
+        "ratecenters": [
+            { "area_code": "415", "available": "yes", "ratecenter": "BELVEDERE (MARIN)" }
+        ]
+    }))
+    .unwrap();
+
+    assert_eq!(resp.ratecenters.len(), 1);
+    assert_eq!(resp.ratecenters[0].area_code, Some(415));
+    assert_eq!(resp.ratecenters[0].available, Some(true));
+    assert_eq!(
+        resp.ratecenters[0].ratecenter.as_deref(),
+        Some("BELVEDERE (MARIN)")
+    );
+}
+
+#[test]
+fn search_fax_area_code_empty_is_success() {
+    use voip_ms::{SearchFAXAreaCodeCANResponse, SearchFAXAreaCodeUSAResponse};
+
+    // Area codes with zero matches return `{"status":"success"}` with no
+    // `ratecenters` field at all; the list must default to empty, not fail.
+    let can: SearchFAXAreaCodeCANResponse =
+        serde_json::from_value(json!({ "status": "success" })).unwrap();
+    assert!(can.ratecenters.is_empty());
+
+    let usa: SearchFAXAreaCodeUSAResponse =
+        serde_json::from_value(json!({ "status": "success" })).unwrap();
+    assert!(usa.ratecenters.is_empty());
+}
+
+#[test]
 fn fax_numbers_info_did_accepts_dotted_string() {
     use voip_ms::GetFAXNumbersInfoResponse;
 

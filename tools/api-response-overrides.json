@@ -488,6 +488,32 @@
       "patches": [
         { "path": "dids[].did", "type": "string" }
       ]
+    },
+    "searchFaxAreaCodeCAN": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "ratecenters", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "area_code",  "shape": { "kind": "scalar", "type": "integer", "sample": "514" } },
+            { "name": "available",  "shape": { "kind": "scalar", "type": "bool_yn", "sample": "yes" } },
+            { "name": "ratecenter", "shape": { "kind": "scalar", "type": "string",  "sample": "ILE-PERROT" } }
+          ] } } }
+        ]
+      }
+    },
+    "searchFaxAreaCodeUSA": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "ratecenters", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "area_code",  "shape": { "kind": "scalar", "type": "integer", "sample": "415" } },
+            { "name": "available",  "shape": { "kind": "scalar", "type": "bool_yn", "sample": "yes" } },
+            { "name": "ratecenter", "shape": { "kind": "scalar", "type": "string",  "sample": "BELVEDERE (MARIN)" } }
+          ] } } }
+        ]
+      }
     }
   }
 }
