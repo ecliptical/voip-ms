@@ -111,18 +111,13 @@ pub(crate) fn decompose_into_acronyms(
     let mut i = 0;
     while i < lower.len() {
         let rest = &lower[i..];
-        let found = acronyms
+        let a = acronyms
             .iter()
             .copied()
-            .find(|a| a.len() <= rest.len() && a.eq_ignore_ascii_case(&rest[..a.len()]));
+            .find(|a| a.len() <= rest.len() && a.eq_ignore_ascii_case(&rest[..a.len()]))?;
 
-        match found {
-            Some(a) => {
-                chain.push(a);
-                i += a.len();
-            }
-            None => return None,
-        }
+        chain.push(a);
+        i += a.len();
     }
 
     Some(chain)
