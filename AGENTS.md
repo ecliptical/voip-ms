@@ -357,10 +357,18 @@ voip-ms/
 │   ├── api-responses.json            # Extracted response shapes (generated)
 │   ├── api-statuses.json             # Extracted error-code table (generated)
 │   └── api-response-overrides.json   # Hand-edited shape corrections + enums
+├── livetest/                         # Operator-local live-API drift harness (bin)
+│   └── src/
+│       ├── main.rs          # CLI, connectivity pre-check, sweep + probe run
+│       ├── config.rs        # Two-dimensional AREA × DEPTH selection; secrets
+│       ├── wire_methods.rs  # 222 wire names (generated: cargo xtask dump-methods)
+│       ├── areas/           # One module per functional area + the registry
+│       └── harness/         # Report, RAII Scope, ledger, marker, drift probe
 └── xtask/
     ├── Cargo.toml
     └── src/
         ├── main.rs              # WSDL+responses+overrides → src/generated.rs
+        ├── dump_methods.rs      # src/generated.rs → livetest/src/wire_methods.rs
         ├── extract.rs           # apidocs HTML → tools/api-responses.json
         ├── field_overrides.rs   # Field-name → domain-type substitution table
         ├── overrides.rs         # Overrides schema + apply logic
