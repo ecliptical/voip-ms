@@ -113,7 +113,12 @@ refresh needs eyes on the diff, not just a green build:
   the snake_case and PascalCase names read correctly; a new acronym can
   produce a single-letter token (`getDIDsInfo` → `get_di_ds_info`). Fix by
   adding the acronym to the `ACRONYMS` const in
-  [xtask/src/main.rs](xtask/src/main.rs) and regenerating.
+  [xtask/src/main.rs](xtask/src/main.rs) and regenerating. A new method also
+  needs a home in the `livetest` harness: run `cargo xtask dump-methods` to
+  refresh `livetest/src/wire_methods.rs`, then assign the method to exactly one
+  area's `methods()` in `livetest/src/areas/`. The completeness gate
+  (`cargo test -p livetest`) fails until every wire method is owned by exactly
+  one area.
 * **New status codes** — `api-statuses.json` grows; each new code becomes an
   `ApiStatus` variant. If two codes collapse to the same PascalCase variant,
   `cargo xtask gen` fails loudly with a "duplicate status variant" error —

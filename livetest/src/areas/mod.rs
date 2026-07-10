@@ -1,6 +1,24 @@
 //! The area registry and selection resolution.
 
+pub mod account;
+pub mod callflow;
+pub mod cdr;
+pub mod conference;
+pub mod dids;
+pub mod e911;
+pub mod fax;
+pub mod forwarding;
+pub mod ivr;
+pub mod mms;
+pub mod phonebook;
+pub mod porting;
+pub mod probe_macros;
+pub mod queue;
 pub mod reference;
+pub mod reseller;
+pub mod sms;
+pub mod subaccount;
+pub mod voicemail;
 
 use std::collections::BTreeSet;
 
@@ -12,7 +30,26 @@ use crate::harness::area::{Area, CostClass};
 /// Every area the harness knows about. Adding an area here (and it declaring
 /// its `methods()`) is what makes it selectable and covered.
 pub fn registry() -> Vec<Box<dyn Area>> {
-    vec![Box::new(reference::Reference)]
+    vec![
+        Box::new(account::Account),
+        Box::new(callflow::Callflow),
+        Box::new(cdr::Cdr),
+        Box::new(conference::Conference),
+        Box::new(dids::Dids),
+        Box::new(e911::E911),
+        Box::new(fax::Fax),
+        Box::new(forwarding::Forwarding),
+        Box::new(ivr::Ivr),
+        Box::new(mms::Mms),
+        Box::new(phonebook::Phonebook),
+        Box::new(porting::Porting),
+        Box::new(queue::Queue),
+        Box::new(reference::Reference),
+        Box::new(reseller::Reseller),
+        Box::new(sms::Sms),
+        Box::new(subaccount::Subaccount),
+        Box::new(voicemail::Voicemail),
+    ]
 }
 
 /// Resolve a [`AreaSelection`] against the registry into the concrete set of
@@ -85,8 +122,10 @@ pub fn describe() -> String {
 mod completeness {
     use super::*;
 
-    /// Every method an area claims must be a real wire method, and no area may
-    /// claim the same method as another (each method has one owning area).
+    use crate::wire_methods::WIRE_METHODS;
+
+    /// No area may claim the same method as another: each method has exactly
+    /// one owning area.
     #[test]
     fn method_names_are_unique_across_areas() {
         let mut seen: BTreeSet<&str> = BTreeSet::new();
@@ -112,5 +151,45 @@ mod completeness {
                 area.name()
             );
         }
+    }
+
+    /// The registry partitions the whole API surface exactly: every generated
+    /// wire method is owned by exactly one area, and no area claims a name that
+    /// isn't a generated wire method. A newly generated method with no owning
+    /// area (or a method removed from the crate but still claimed) fails here,
+    /// so coverage gaps and stale claims break the build rather than slipping
+    /// through. Regenerate `wire_methods.rs` with `cargo xtask dump-methods`
+    /// after changing the API surface.
+    #[test]
+    fn registry_partitions_every_wire_method_exactly_once() {
+        let wire: BTreeSet<&str> = WIRE_METHODS.iter().copied().collect();
+        assert_eq!(
+            wire.len(),
+            WIRE_METHODS.len(),
+            "wire_methods.rs contains duplicate entries"
+        );
+
+        let mut owned: BTreeSet<&str> = BTreeSet::new();
+        for area in registry() {
+            for m in area.methods() {
+                owned.insert(m);
+            }
+        }
+
+        let unowned: Vec<&&str> = wire.iter().filter(|m| !owned.contains(**m)).collect();
+        let unknown: Vec<&&str> = owned.iter().filter(|m| !wire.contains(**m)).collect();
+
+        assert!(
+            unowned.is_empty() && unknown.is_empty(),
+            "area registry does not partition the wire surface exactly:\n  \
+             {} wire method(s) with no owning area: {unowned:?}\n  \
+             {} claimed name(s) that are not wire methods: {unknown:?}",
+            unowned.len(),
+            unknown.len(),
+        );
+
+        // With both differences empty and no cross-area duplicates (checked
+        // above), the owned set equals the wire set.
+        assert_eq!(owned.len(), wire.len());
     }
 }

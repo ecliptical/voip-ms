@@ -9,6 +9,7 @@
 //! Run from the repository root:
 //!     cargo xtask gen
 
+mod dump_methods;
 mod extract;
 mod field_overrides;
 mod overrides;
@@ -1063,9 +1064,10 @@ fn main() -> ExitCode {
         "gen" => cmd_gen(),
         "extract-responses" => cmd_extract(&rest),
         "extract-statuses" => cmd_extract_statuses(&rest),
+        "dump-methods" => dump_methods::cmd_dump_methods(),
         other => Err(format!(
             "unknown subcommand `{other}` \
-             (expected `gen`, `extract-responses`, or `extract-statuses`)"
+             (expected `gen`, `extract-responses`, `extract-statuses`, or `dump-methods`)"
         )),
     };
 
