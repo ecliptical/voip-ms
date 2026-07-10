@@ -3,3 +3,8 @@ Cargo.lock
 .DS_Store
 /.claude/
 /tools/scratch/
+
+# livetest operator-local files -- may contain DIDs, usernames, credentials.
+livetest-ledger.jsonl
+livetest.env
+/livetest/*.local.*

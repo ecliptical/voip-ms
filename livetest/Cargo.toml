@@ -1,0 +1,22 @@
+[package]
+name = "livetest"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+publish = false
+license = "MIT"
+description = "Live VoIP.ms API integration harness (not published; local operator tool)."
+
+[[bin]]
+name = "livetest"
+path = "src/main.rs"
+
+[dependencies]
+voip-ms = { path = ".." }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "query", "rustls", "socks"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.6", features = ["derive", "env"] }
+anyhow = "1.0"
+async-trait = "0.1"
