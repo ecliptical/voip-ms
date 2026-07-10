@@ -3,22 +3,32 @@
 //! recordings, time conditions, and a queue's static members. The list-all
 //! reads probe cleanly; the id- or date-scoped reads (`getCallRecording`,
 //! `getCallRecordings`, `getRecordingFile`, `getStaticMembers`) are skipped at
-//! probe depth. The set/del/create writes are owned but run only at costly
-//! depth.
+//! probe depth.
+//!
+//! At `Lifecycle` depth the area runs create -> read -> delete fixtures over the
+//! free, self-contained resources it owns: a callback, a DISA, a ring group, a
+//! time condition, and a queue static member. The static member depends on a
+//! queue, so the fixture creates a throwaway marker-bearing queue to hang it on
+//! and tears the member down before the queue (LIFO). Its
+//! [`sweep`](Area::sweep) reclaims marker-bearing leftovers of each.
 
 use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
-use crate::harness::Report;
-use crate::harness::area::{Area, AreaCtx, CostClass};
+use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
+use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::scope::Scope;
+use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
 pub struct Callflow;
 
+const AREA: &str = "callflow";
+
 #[async_trait(?Send)]
 impl Area for Callflow {
     fn name(&self) -> &'static str {
-        "callflow"
+        AREA
     }
 
     fn cost_class(&self) -> CostClass {
@@ -66,8 +76,6 @@ impl Area for Callflow {
     }
 
     async fn probe(&self, ctx: &AreaCtx<'_>, report: &mut Report) {
-        const AREA: &str = "callflow";
-
         probe_list!(
             ctx,
             report,
@@ -159,4 +167,487 @@ impl Area for Callflow {
             timecondition
         );
     }
+
+    async fn sweep(&self, ctx: &AreaCtx<'_>, report: &mut Report) -> SweepResult {
+        let client = ctx.client;
+        let mut unreconciled = Vec::new();
+
+        // The static-member fixture hangs its member off a throwaway
+        // marker-bearing queue, and a queue has no account-wide member listing
+        // to reclaim members directly -- so the reclaim for both is deleting the
+        // queue, expecting the member to go with it. Done here rather than
+        // leaning on the `queue` area's sweep so callflow is self-contained when
+        // run alone (`--areas callflow`). If a queue delete is refused while a
+        // member still hangs on it, the failed delete surfaces as a non-clean
+        // sweep that blocks the run -- not a silent leak. The independent
+        // resources' order is otherwise immaterial.
+        for result in [
+            sweep_orphans(
+                report,
+                AREA,
+                "callback",
+                || list_callback_orphans(client),
+                |id| del_callback(client, id),
+            )
+            .await,
+            sweep_orphans(
+                report,
+                AREA,
+                "disa",
+                || list_disa_orphans(client),
+                |id| del_disa(client, id),
+            )
+            .await,
+            sweep_orphans(
+                report,
+                AREA,
+                "ringgroup",
+                || list_ring_group_orphans(client),
+                |id| del_ring_group(client, id),
+            )
+            .await,
+            sweep_orphans(
+                report,
+                AREA,
+                "timecondition",
+                || list_time_condition_orphans(client),
+                |id| del_time_condition(client, id),
+            )
+            .await,
+            sweep_orphans(
+                report,
+                AREA,
+                "staticmember-queue",
+                || list_dep_queue_orphans(client),
+                |id| del_queue(client, id),
+            )
+            .await,
+        ] {
+            unreconciled.extend(result.unreconciled);
+        }
+
+        SweepResult { unreconciled }
+    }
+
+    async fn run_fixtures(&self, ctx: &AreaCtx<'_>, report: &mut Report) {
+        let mut scope = Scope::new();
+        callback_fixture(ctx, report, &mut scope).await;
+        disa_fixture(ctx, report, &mut scope).await;
+        ring_group_fixture(ctx, report, &mut scope).await;
+        time_condition_fixture(ctx, report, &mut scope).await;
+        static_member_fixture(ctx, report, &mut scope).await;
+
+        for label in scope.cleanup(ctx.client).await {
+            report.record(
+                AREA,
+                "cleanup",
+                Outcome::Fail(format!("teardown failed for {label}")),
+            );
+        }
+    }
+}
+
+async fn callback_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
+    let client = ctx.client;
+    let description = ctx.token.marker(0);
+
+    let created = client
+        .set_callback(&SetCallbackParams {
+            description: Some(description),
+            number: Some(15555550100),
+            ..Default::default()
+        })
+        .await;
+
+    let id = match created {
+        Ok(resp) => match resp.callback {
+            Some(id) => id as i64,
+            None => return fail(report, "fixture:setCallback", "no id returned"),
+        },
+        Err(error) => {
+            return fail(
+                report,
+                "fixture:setCallback",
+                &format!("setCallback: {error}"),
+            );
+        }
+    };
+
+    report.record(AREA, "fixture:setCallback", Outcome::Pass);
+    scope.defer(format!("callback id={id}"), move |client| {
+        Box::pin(async move {
+            client
+                .del_callback(&DelCallbackParams { callback: Some(id) })
+                .await?;
+            Ok(())
+        })
+    });
+
+    read_back::<_, GetCallbacksResponse>(
+        client,
+        report,
+        AREA,
+        "fixture:getCallbacks",
+        &GetCallbacksParams::default(),
+        |r| Some(r.callbacks.len()),
+    )
+    .await;
+}
+
+async fn disa_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
+    let client = ctx.client;
+    let name = ctx.token.marker(1);
+
+    let created = client
+        .set_disa(&SetDISAParams {
+            name: Some(name),
+            pin: Some(1234),
+            ..Default::default()
+        })
+        .await;
+
+    let id = match created {
+        Ok(resp) => match resp.disa {
+            Some(id) => id as i64,
+            None => return fail(report, "fixture:setDISA", "no id returned"),
+        },
+        Err(error) => return fail(report, "fixture:setDISA", &format!("setDISA: {error}")),
+    };
+
+    report.record(AREA, "fixture:setDISA", Outcome::Pass);
+    scope.defer(format!("disa id={id}"), move |client| {
+        Box::pin(async move {
+            client.del_disa(&DelDISAParams { disa: Some(id) }).await?;
+            Ok(())
+        })
+    });
+
+    read_back::<_, GetDISAsResponse>(
+        client,
+        report,
+        AREA,
+        "fixture:getDISAs",
+        &GetDISAsParams::default(),
+        |r| Some(r.disa.len()),
+    )
+    .await;
+}
+
+async fn ring_group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
+    let client = ctx.client;
+    let name = ctx.token.marker(2);
+
+    let created = client
+        .set_ring_group(&SetRingGroupParams {
+            name: Some(name),
+            ..Default::default()
+        })
+        .await;
+
+    let id = match created {
+        Ok(resp) => match resp.ring_group {
+            Some(id) => id as i64,
+            None => return fail(report, "fixture:setRingGroup", "no id returned"),
+        },
+        Err(error) => {
+            return fail(
+                report,
+                "fixture:setRingGroup",
+                &format!("setRingGroup: {error}"),
+            );
+        }
+    };
+
+    report.record(AREA, "fixture:setRingGroup", Outcome::Pass);
+    scope.defer(format!("ringgroup id={id}"), move |client| {
+        Box::pin(async move {
+            client
+                .del_ring_group(&DelRingGroupParams {
+                    ringgroup: Some(id),
+                })
+                .await?;
+            Ok(())
+        })
+    });
+
+    read_back::<_, GetRingGroupsResponse>(
+        client,
+        report,
+        AREA,
+        "fixture:getRingGroups",
+        &GetRingGroupsParams::default(),
+        |r| Some(r.ring_groups.len()),
+    )
+    .await;
+}
+
+async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
+    let client = ctx.client;
+    let name = ctx.token.marker(3);
+
+    let created = client
+        .set_time_condition(&SetTimeConditionParams {
+            name: Some(name),
+            routing_match: Some(Routing::None),
+            routing_nomatch: Some(Routing::None),
+            starthour: Some("09".to_string()),
+            startminute: Some("00".to_string()),
+            endhour: Some("17".to_string()),
+            endminute: Some("00".to_string()),
+            weekdaystart: Some("1".to_string()),
+            weekdayend: Some("5".to_string()),
+            ..Default::default()
+        })
+        .await;
+
+    let id = match created {
+        Ok(resp) => match resp.timecondition {
+            Some(id) => id as i64,
+            None => return fail(report, "fixture:setTimeCondition", "no id returned"),
+        },
+        Err(error) => {
+            return fail(
+                report,
+                "fixture:setTimeCondition",
+                &format!("setTimeCondition: {error}"),
+            );
+        }
+    };
+
+    report.record(AREA, "fixture:setTimeCondition", Outcome::Pass);
+    scope.defer(format!("timecondition id={id}"), move |client| {
+        Box::pin(async move {
+            client
+                .del_time_condition(&DelTimeConditionParams {
+                    timecondition: Some(id),
+                })
+                .await?;
+            Ok(())
+        })
+    });
+
+    read_back::<_, GetTimeConditionsResponse>(
+        client,
+        report,
+        AREA,
+        "fixture:getTimeConditions",
+        &GetTimeConditionsParams::default(),
+        |r| Some(r.timecondition.len()),
+    )
+    .await;
+}
+
+/// A static member hangs off a queue, so the fixture stands up a throwaway
+/// marker-bearing queue first, hangs the member on it, and defers teardown of
+/// the member *then* the queue -- LIFO cleanup enforces the dependency order.
+async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
+    let client = ctx.client;
+    let queue_name = ctx.token.marker(4);
+
+    let queue_id = match client
+        .set_queue(&SetQueueParams {
+            queue_name: Some(queue_name),
+            ..Default::default()
+        })
+        .await
+    {
+        Ok(resp) => match resp.queue {
+            Some(id) => id as i64,
+            None => return fail(report, "fixture:setQueue(dep)", "no id returned"),
+        },
+        Err(error) => {
+            return fail(
+                report,
+                "fixture:setQueue(dep)",
+                &format!("setQueue dependency: {error}"),
+            );
+        }
+    };
+
+    report.record(AREA, "fixture:setQueue(dep)", Outcome::Pass);
+    scope.defer(format!("queue(dep) id={queue_id}"), move |client| {
+        Box::pin(async move {
+            client
+                .del_queue(&DelQueueParams {
+                    queue: Some(queue_id),
+                })
+                .await?;
+            Ok(())
+        })
+    });
+
+    let member_name = ctx.token.marker(5);
+    let created = client
+        .set_static_member(&SetStaticMemberParams {
+            queue: Some(queue_id),
+            member_name: Some(member_name),
+            member: Some("15555550101".to_string()),
+            priority: Some(1),
+            ..Default::default()
+        })
+        .await;
+
+    let member_id = match created {
+        Ok(resp) => match resp.member {
+            Some(id) => id as i64,
+            None => return fail(report, "fixture:setStaticMember", "no id returned"),
+        },
+        Err(error) => {
+            return fail(
+                report,
+                "fixture:setStaticMember",
+                &format!("setStaticMember: {error}"),
+            );
+        }
+    };
+
+    report.record(AREA, "fixture:setStaticMember", Outcome::Pass);
+    scope.defer(format!("staticmember id={member_id}"), move |client| {
+        Box::pin(async move {
+            client
+                .del_static_member(&DelStaticMemberParams {
+                    member: Some(member_id),
+                    queue: Some(queue_id),
+                })
+                .await?;
+            Ok(())
+        })
+    });
+
+    read_back::<_, GetStaticMembersResponse>(
+        client,
+        report,
+        AREA,
+        "fixture:getStaticMembers",
+        &GetStaticMembersParams {
+            queue: Some(queue_id.to_string()),
+            ..Default::default()
+        },
+        |r| Some(r.members.len()),
+    )
+    .await;
+}
+
+fn fail(report: &mut Report, label: &str, error: &str) {
+    report.record(AREA, label, Outcome::Fail(error.to_string()));
+}
+
+async fn list_callback_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
+    let resp: GetCallbacksResponse = client.get_callbacks(&GetCallbacksParams::default()).await?;
+    Ok(resp
+        .callbacks
+        .into_iter()
+        .filter(|c| owned(&c.description))
+        .filter_map(|c| {
+            c.callback.map(|id| Orphan {
+                label: format!("callback id={id}"),
+                id: id as i64,
+            })
+        })
+        .collect())
+}
+
+async fn del_callback(client: &Client, id: i64) -> anyhow::Result<()> {
+    client
+        .del_callback(&DelCallbackParams { callback: Some(id) })
+        .await?;
+    Ok(())
+}
+
+async fn list_disa_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
+    let resp: GetDISAsResponse = client.get_disas(&GetDISAsParams::default()).await?;
+    Ok(resp
+        .disa
+        .into_iter()
+        .filter(|d| owned(&d.name))
+        .filter_map(|d| {
+            d.disa.map(|id| Orphan {
+                label: format!("disa id={id}"),
+                id: id as i64,
+            })
+        })
+        .collect())
+}
+
+async fn del_disa(client: &Client, id: i64) -> anyhow::Result<()> {
+    client.del_disa(&DelDISAParams { disa: Some(id) }).await?;
+    Ok(())
+}
+
+async fn list_ring_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
+    let resp: GetRingGroupsResponse = client
+        .get_ring_groups(&GetRingGroupsParams::default())
+        .await?;
+    Ok(resp
+        .ring_groups
+        .into_iter()
+        .filter(|g| owned(&g.name))
+        .filter_map(|g| {
+            g.ring_group.map(|id| Orphan {
+                label: format!("ringgroup id={id}"),
+                id: id as i64,
+            })
+        })
+        .collect())
+}
+
+async fn del_ring_group(client: &Client, id: i64) -> anyhow::Result<()> {
+    client
+        .del_ring_group(&DelRingGroupParams {
+            ringgroup: Some(id),
+        })
+        .await?;
+    Ok(())
+}
+
+async fn list_time_condition_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
+    let resp: GetTimeConditionsResponse = client
+        .get_time_conditions(&GetTimeConditionsParams::default())
+        .await?;
+    Ok(resp
+        .timecondition
+        .into_iter()
+        .filter(|t| owned(&t.name))
+        .filter_map(|t| {
+            t.timecondition.map(|id| Orphan {
+                label: format!("timecondition id={id}"),
+                id: id as i64,
+            })
+        })
+        .collect())
+}
+
+async fn del_time_condition(client: &Client, id: i64) -> anyhow::Result<()> {
+    client
+        .del_time_condition(&DelTimeConditionParams {
+            timecondition: Some(id),
+        })
+        .await?;
+    Ok(())
+}
+
+/// The marker-bearing queues the static-member fixture stands up as scaffolding.
+/// Enumerated here (not left to the `queue` area) so callflow reclaims them --
+/// and, by cascade, any static member left on them -- when run without `queue`.
+/// Overlaps harmlessly with the `queue` area's sweep when both are selected.
+async fn list_dep_queue_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
+    let resp: GetQueuesResponse = client.get_queues(&GetQueuesParams::default()).await?;
+    Ok(resp
+        .queues
+        .into_iter()
+        .filter(|q| owned(&q.queue_name))
+        .filter_map(|q| {
+            q.queue.map(|id| Orphan {
+                label: format!("queue id={id}"),
+                id: id as i64,
+            })
+        })
+        .collect())
+}
+
+async fn del_queue(client: &Client, id: i64) -> anyhow::Result<()> {
+    client
+        .del_queue(&DelQueueParams { queue: Some(id) })
+        .await?;
+    Ok(())
 }

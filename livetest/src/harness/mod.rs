@@ -2,6 +2,7 @@
 //! drift probe that is the whole point of the harness.
 
 pub mod area;
+pub mod fixtures;
 pub mod ledger;
 pub mod marker;
 pub mod probe;
