@@ -1726,6 +1726,10 @@
       "description": "There are no Phonebook entries"
     },
     {
+      "code": "no_phonebook_group",
+      "description": "There are no Phonebook Groups"
+    },
+    {
       "code": "no_provision",
       "description": "E911 service wasn't activated, this response comes with a description of the error."
     },

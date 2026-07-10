@@ -2189,6 +2189,8 @@ pub enum ApiStatus {
     NoPackage,
     /// `no_phonebook` — There are no Phonebook entries
     NoPhonebook,
+    /// `no_phonebook_group` — There are no Phonebook Groups
+    NoPhonebookGroup,
     /// `no_provision` — E911 service wasn't activated, this response comes with a description of the error.
     NoProvision,
     /// `no_provision_update` — E911 service wasn't updated, this response comes with a description of the error.
@@ -2731,6 +2733,7 @@ impl ApiStatus {
             ApiStatus::NoNumbers => "no_numbers",
             ApiStatus::NoPackage => "no_package",
             ApiStatus::NoPhonebook => "no_phonebook",
+            ApiStatus::NoPhonebookGroup => "no_phonebook_group",
             ApiStatus::NoProvision => "no_provision",
             ApiStatus::NoProvisionUpdate => "no_provision_update",
             ApiStatus::NoQueue => "no_queue",
@@ -3230,6 +3233,7 @@ impl ApiStatus {
             "no_numbers" => ApiStatus::NoNumbers,
             "no_package" => ApiStatus::NoPackage,
             "no_phonebook" => ApiStatus::NoPhonebook,
+            "no_phonebook_group" => ApiStatus::NoPhonebookGroup,
             "no_provision" => ApiStatus::NoProvision,
             "no_provision_update" => ApiStatus::NoProvisionUpdate,
             "no_queue" => ApiStatus::NoQueue,
@@ -3913,6 +3917,7 @@ impl ApiStatus {
             ApiStatus::NoNumbers => Some("There are no Fax Numbers"),
             ApiStatus::NoPackage => Some("there are no Packages"),
             ApiStatus::NoPhonebook => Some("There are no Phonebook entries"),
+            ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
             ApiStatus::NoProvision => Some(
                 "E911 service wasn't activated, this response comes with a description of the error.",
             ),
@@ -4029,6 +4034,7 @@ impl ApiStatus {
                 | ApiStatus::NoNumbers
                 | ApiStatus::NoPackage
                 | ApiStatus::NoPhonebook
+                | ApiStatus::NoPhonebookGroup
                 | ApiStatus::NoQueue
                 | ApiStatus::NoRate
                 | ApiStatus::NoRecording
