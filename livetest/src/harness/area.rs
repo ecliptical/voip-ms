@@ -9,7 +9,7 @@
 
 use async_trait::async_trait;
 
-use crate::config::Depth;
+use crate::config::{Config, Depth};
 use crate::harness::Report;
 use crate::harness::ledger::Ledger;
 use crate::harness::marker::RunToken;
@@ -32,6 +32,10 @@ pub struct AreaCtx<'a> {
     pub depth: Depth,
     pub token: &'a RunToken,
     pub ledger: &'a Ledger,
+    /// Runtime config, for the `--depth costly` fixture inputs
+    /// (`--test-did`/`--sms-dst`/`--mms-media-url`/`--order-test-did`/the DID
+    /// search fields) that only a handful of areas consult.
+    pub config: &'a Config,
 }
 
 /// A functional area of the API surface.
