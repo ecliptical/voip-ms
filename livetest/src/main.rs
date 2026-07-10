@@ -106,6 +106,7 @@ async fn run() -> Result<bool> {
             depth: config.depth,
             token: &token,
             ledger: &ledger,
+            config: &config,
         };
 
         let result = area.sweep(&ctx, &mut report).await;
@@ -127,6 +128,7 @@ async fn run() -> Result<bool> {
             depth: config.depth,
             token: &token,
             ledger: &ledger,
+            config: &config,
         };
 
         area.probe(&ctx, &mut report).await;

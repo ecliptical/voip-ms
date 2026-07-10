@@ -220,6 +220,7 @@
     "no_numbers",
     "no_package",
     "no_phonebook",
+    "no_phonebook_group",
     "no_queue",
     "no_rate",
     "no_recording",

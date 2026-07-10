@@ -122,6 +122,40 @@ pub struct Cli {
     #[arg(long, env = "LIVETEST_LEDGER_PATH")]
     pub ledger_path: Option<PathBuf>,
 
+    /// Canadian province to search for a purchasable DID (values from
+    /// `getProvinces`, e.g. `ON`). Only consulted with `--order-test-did`.
+    #[arg(long, default_value = "ON")]
+    pub did_search_province: String,
+
+    /// Query for the DID search (a `contains` search over the number). Only
+    /// consulted with `--order-test-did`.
+    #[arg(long, default_value = "5")]
+    pub did_search_query: String,
+
+    /// Opt into the dids area's own `--depth costly` fixture: order a DID,
+    /// enable SMS, read it back, then cancel it. Self-contained and off by
+    /// default even at costly depth -- a real purchase, kept separate from the
+    /// dedicated `--test-did` used by the sms/mms fixtures.
+    #[arg(long)]
+    pub order_test_did: bool,
+
+    /// A dedicated, already SMS/MMS-enabled DID for the sms/mms `--depth
+    /// costly` fixtures. Provisioned once by the operator outside the harness;
+    /// the harness only ever reads and sends through it, never cancels it.
+    /// Required together with `--sms-dst` for those fixtures to run.
+    #[arg(long)]
+    pub test_did: Option<String>,
+
+    /// Destination number for the sms/mms `--depth costly` sendSMS/sendMMS
+    /// fixtures. Required together with `--test-did`.
+    #[arg(long)]
+    pub sms_dst: Option<String>,
+
+    /// Media URL for the mms `--depth costly` sendMMS fixture (optional;
+    /// sendMMS works with just a message).
+    #[arg(long)]
+    pub mms_media_url: Option<String>,
+
     /// List the available areas and exit.
     #[arg(long)]
     pub list_areas: bool,
@@ -140,6 +174,20 @@ pub struct Config {
     pub area_selection: AreaSelection,
     pub confirmed_costly: bool,
     pub ledger_path: PathBuf,
+    pub did_search_province: String,
+    pub did_search_query: String,
+    pub order_test_did: bool,
+    /// The sms/mms `--depth costly` fixture's dedicated DID and destination,
+    /// present only when both `--test-did` and `--sms-dst` were supplied.
+    pub sms_fixture: Option<SmsFixtureConfig>,
+    pub mms_media_url: Option<String>,
+}
+
+/// Inputs for the sms/mms `--depth costly` fixtures, required together.
+#[derive(Debug, Clone)]
+pub struct SmsFixtureConfig {
+    pub test_did: String,
+    pub sms_dst: String,
 }
 
 /// Which areas to run, before intersecting with the known-area registry.
@@ -206,6 +254,14 @@ impl Config {
             .ledger_path
             .unwrap_or_else(|| PathBuf::from("livetest-ledger.jsonl"));
 
+        let test_did = cli.test_did.filter(|s| !s.trim().is_empty());
+        let sms_dst = cli.sms_dst.filter(|s| !s.trim().is_empty());
+        let sms_fixture = match (test_did, sms_dst) {
+            (Some(test_did), Some(sms_dst)) => Some(SmsFixtureConfig { test_did, sms_dst }),
+            (None, None) => None,
+            _ => bail!("--test-did and --sms-dst must be set together"),
+        };
+
         Ok(Config {
             username,
             password,
@@ -215,6 +271,11 @@ impl Config {
             area_selection,
             confirmed_costly: cli.i_understand_this_costs_money,
             ledger_path,
+            did_search_province: cli.did_search_province,
+            did_search_query: cli.did_search_query,
+            order_test_did: cli.order_test_did,
+            sms_fixture,
+            mms_media_url: cli.mms_media_url.filter(|s| !s.trim().is_empty()),
         })
     }
 
