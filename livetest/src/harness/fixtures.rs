@@ -15,7 +15,7 @@ use crate::harness::area::SweepResult;
 use crate::harness::marker::is_owned_marker;
 use crate::harness::probe::{ProbeOutcome, probe};
 use crate::harness::{Outcome, Report};
-use voip_ms::Client;
+use voip_ms::{ApiStatus, Client, Error};
 
 /// Read a just-created resource back through the typed path with drift
 /// diffing, recording the outcome under `area`/`label`. The scoped `params`
@@ -79,6 +79,16 @@ where
 {
     let orphans = match list().await {
         Ok(orphans) => orphans,
+        // An empty-collection status is a zero-orphan enumeration, not a
+        // failure: `getPhonebookGroups`-style methods return e.g.
+        // `no_phonebook_group` for an empty account, which the typed `call`
+        // path turns into `Error::Api` whenever the status isn't registered
+        // in `ApiStatus::is_empty` (undocumented codes decode as `Unknown`
+        // and can't be proven empty). Mirror the probe path's handling here,
+        // and defensively extend it to any `Unknown` status that *looks*
+        // like the same "no_*" empty-collection convention, so an
+        // undocumented status doesn't abort the whole sweep.
+        Err(error) if is_empty_like(&error) => return SweepResult::clean(),
         Err(error) => {
             report.record(
                 area,
@@ -116,6 +126,7 @@ where
     // Re-enumerate: anything still present after the delete pass is unreconciled.
     let remaining = match list().await {
         Ok(remaining) => remaining,
+        Err(error) if is_empty_like(&error) => Vec::new(),
         Err(error) => {
             report.record(
                 area,
@@ -130,5 +141,26 @@ where
 
     SweepResult {
         unreconciled: remaining.into_iter().map(|o| o.label).collect(),
+    }
+}
+
+/// Whether an enumeration failure is actually VoIP.ms's "the list is empty"
+/// status wearing an error costume, not a real failure.
+///
+/// Areas' `list_*_orphans` helpers call a typed `get_*` method and propagate
+/// its error via `?`, which erases the concrete [`voip_ms::Error`] into
+/// [`anyhow::Error`]; downcast it back to check. Documented empty-collection
+/// codes are caught by [`ApiStatus::is_empty`]. Undocumented ones (e.g.
+/// `no_phonebook_group`, missing from the API's own status table) decode as
+/// `Unknown` and can't be proven empty that way, so also treat any `Unknown`
+/// status whose wire code follows the same `no_*` convention as empty --
+/// until the library's status table is corrected, this is the only signal
+/// available.
+fn is_empty_like(error: &anyhow::Error) -> bool {
+    match error.downcast_ref::<Error>() {
+        Some(Error::Api(status)) => {
+            status.is_empty() || matches!(status, ApiStatus::Unknown(s) if s.starts_with("no_"))
+        }
+        _ => false,
     }
 }
