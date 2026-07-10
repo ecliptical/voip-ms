@@ -59,14 +59,19 @@ async fn run() -> Result<bool> {
     }
 
     let config = Config::from_cli(cli)?;
+    let server = if config.api_url.is_some() {
+        "custom"
+    } else {
+        "voip.ms (default)"
+    };
+    let auth = if config.basic_auth.is_some() {
+        " +basic-auth"
+    } else {
+        ""
+    };
     println!(
-        "livetest: depth={:?}, proxy={}, ledger={}",
+        "livetest: depth={:?}, server={server}{auth}, ledger={}",
         config.depth,
-        if config.proxy.is_some() {
-            "configured"
-        } else {
-            "none"
-        },
         ledger::describe_path(&config.ledger_path),
     );
 

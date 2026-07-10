@@ -1,9 +1,10 @@
 //! Runtime configuration for the live harness.
 //!
-//! Everything sensitive -- API credentials and the egress proxy (URL + auth) --
-//! is supplied at runtime via CLI flags or environment variables. Nothing is
-//! defaulted to a committed value, and the [`std::fmt::Debug`] impls here redact
-//! secrets so a config dump never leaks them.
+//! Everything sensitive -- the VoIP.ms API credentials and any API-server
+//! add-on Basic auth -- is supplied at runtime via CLI flags or environment
+//! variables. Nothing is defaulted to a committed value, and the
+//! [`std::fmt::Debug`] impls here redact secrets so a config dump never leaks
+//! them.
 
 use std::path::PathBuf;
 
@@ -38,23 +39,20 @@ impl Depth {
     }
 }
 
-/// Egress proxy configuration. The VoIP.ms per-account API allow-list rejects
-/// unknown source IPs (`ip_not_enabled`), so runs from a non-allow-listed host
-/// route through an allow-listed proxy.
+/// Optional HTTP Basic auth an API server may require, separate from the VoIP.ms
+/// API credentials. A server that emulates or fronts the VoIP.ms API (e.g. one
+/// hosted on an allow-listed IP) may gate access this way.
 #[derive(Clone)]
-pub struct Proxy {
-    pub url: String,
-    pub username: Option<String>,
-    pub password: Option<String>,
+pub struct BasicAuth {
+    pub username: String,
+    pub password: String,
 }
 
-impl std::fmt::Debug for Proxy {
+impl std::fmt::Debug for BasicAuth {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Never render the proxy URL (may embed userinfo) or the auth pair.
-        f.debug_struct("Proxy")
-            .field("url", &"<redacted>")
-            .field("username", &self.username.as_ref().map(|_| "<redacted>"))
-            .field("password", &self.password.as_ref().map(|_| "<redacted>"))
+        f.debug_struct("BasicAuth")
+            .field("username", &"<redacted>")
+            .field("password", &"<redacted>")
             .finish()
     }
 }
@@ -80,18 +78,20 @@ pub struct Cli {
     #[arg(long, env = "VOIP_MS_PASSWORD")]
     pub password: Option<String>,
 
-    /// Egress proxy URL (http/https/socks5). Its host must be on the VoIP.ms
-    /// API allow-list. May embed userinfo, or supply --proxy-username/-password.
-    #[arg(long, env = "LIVETEST_PROXY_URL")]
-    pub proxy_url: Option<String>,
+    /// API server REST endpoint URL. Defaults to the real VoIP.ms API server;
+    /// point it at another server that emulates or fronts the VoIP.ms API
+    /// (e.g. one on an allow-listed IP).
+    #[arg(long, env = "LIVETEST_API_URL")]
+    pub api_url: Option<String>,
 
-    /// Proxy basic-auth username.
-    #[arg(long, env = "LIVETEST_PROXY_USERNAME")]
-    pub proxy_username: Option<String>,
+    /// Username for the API server's optional add-on HTTP Basic auth, separate
+    /// from the VoIP.ms API credentials.
+    #[arg(long, env = "LIVETEST_API_BASIC_USERNAME")]
+    pub api_basic_username: Option<String>,
 
-    /// Proxy basic-auth password.
-    #[arg(long, env = "LIVETEST_PROXY_PASSWORD")]
-    pub proxy_password: Option<String>,
+    /// Password for the API server's optional add-on HTTP Basic auth.
+    #[arg(long, env = "LIVETEST_API_BASIC_PASSWORD")]
+    pub api_basic_password: Option<String>,
 
     /// Depth within each selected area.
     #[arg(long, value_enum, default_value_t = Depth::Probe)]
@@ -119,7 +119,7 @@ pub struct Cli {
     /// Path to the operator-local run-ledger (tracks un-markable resources like
     /// DIDs). Git-ignored; may contain DIDs/usernames. Defaults to
     /// ./livetest-ledger.jsonl in the current directory.
-    #[arg(long)]
+    #[arg(long, env = "LIVETEST_LEDGER_PATH")]
     pub ledger_path: Option<PathBuf>,
 
     /// List the available areas and exit.
@@ -132,7 +132,10 @@ pub struct Cli {
 pub struct Config {
     pub username: String,
     pub password: String,
-    pub proxy: Option<Proxy>,
+    /// API server REST endpoint. `None` means the default VoIP.ms server.
+    pub api_url: Option<String>,
+    /// The API server's optional add-on Basic auth.
+    pub basic_auth: Option<BasicAuth>,
     pub depth: Depth,
     pub area_selection: AreaSelection,
     pub confirmed_costly: bool,
@@ -173,13 +176,15 @@ impl Config {
             );
         }
 
-        let proxy = match cli.proxy_url {
-            Some(url) if !url.trim().is_empty() => Some(Proxy {
-                url,
-                username: cli.proxy_username.filter(|s| !s.is_empty()),
-                password: cli.proxy_password.filter(|s| !s.is_empty()),
-            }),
-            _ => None,
+        let api_url = cli.api_url.filter(|s| !s.trim().is_empty());
+
+        let basic_auth = match (
+            cli.api_basic_username.filter(|s| !s.is_empty()),
+            cli.api_basic_password.filter(|s| !s.is_empty()),
+        ) {
+            (Some(username), Some(password)) => Some(BasicAuth { username, password }),
+            (None, None) => None,
+            _ => bail!("--api-basic-username and --api-basic-password must be set together"),
         };
 
         let area_selection = if cli.all_areas {
@@ -204,7 +209,8 @@ impl Config {
         Ok(Config {
             username,
             password,
-            proxy,
+            api_url,
+            basic_auth,
             depth: cli.depth,
             area_selection,
             confirmed_costly: cli.i_understand_this_costs_money,
@@ -212,24 +218,62 @@ impl Config {
         })
     }
 
-    /// Build a [`voip_ms::Client`] routed through the configured proxy (if any).
+    /// Build a [`voip_ms::Client`] against the configured API server, applying
+    /// the server's optional add-on Basic auth.
     pub fn build_client(&self) -> Result<voip_ms::Client> {
         let mut http = reqwest::Client::builder();
 
-        if let Some(proxy) = &self.proxy {
-            let mut p = reqwest::Proxy::all(&proxy.url)
-                .context("invalid proxy URL (expected http/https/socks5)")?;
-            if let (Some(user), Some(pass)) = (&proxy.username, &proxy.password) {
-                p = p.basic_auth(user, pass);
-            }
-
-            http = http.proxy(p);
+        // Add-on Basic auth (separate from the VoIP.ms API credentials) as a
+        // default header on every request.
+        if let Some(auth) = &self.basic_auth {
+            let mut headers = reqwest::header::HeaderMap::new();
+            let token = base64_encode(&format!("{}:{}", auth.username, auth.password));
+            let mut value = reqwest::header::HeaderValue::from_str(&format!("Basic {token}"))
+                .context("building the API server Basic-auth header")?;
+            value.set_sensitive(true);
+            headers.insert(reqwest::header::AUTHORIZATION, value);
+            http = http.default_headers(headers);
         }
 
-        let http = http.build().context("building the proxied HTTP client")?;
-        voip_ms::Client::builder(self.username.clone(), self.password.clone())
-            .http_client(http)
-            .build()
-            .context("building the VoIP.ms client")
+        let http = http.build().context("building the HTTP client")?;
+
+        let mut builder = voip_ms::Client::builder(self.username.clone(), self.password.clone())
+            .http_client(http);
+
+        if let Some(api_url) = &self.api_url {
+            let url = reqwest::Url::parse(api_url)
+                .context("invalid --api-url (expected a full REST endpoint URL)")?;
+            builder = builder.base_url(url);
+        }
+
+        builder.build().context("building the VoIP.ms client")
     }
+}
+
+/// Minimal standard-alphabet base64 for the Basic-auth header, avoiding a
+/// dependency for one small encode.
+fn base64_encode(input: &str) -> String {
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let bytes = input.as_bytes();
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = *chunk.get(1).unwrap_or(&0) as u32;
+        let b2 = *chunk.get(2).unwrap_or(&0) as u32;
+        let n = (b0 << 16) | (b1 << 8) | b2;
+        out.push(ALPHABET[(n >> 18) as usize & 63] as char);
+        out.push(ALPHABET[(n >> 12) as usize & 63] as char);
+        out.push(if chunk.len() > 1 {
+            ALPHABET[(n >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            ALPHABET[n as usize & 63] as char
+        } else {
+            '='
+        });
+    }
+
+    out
 }
