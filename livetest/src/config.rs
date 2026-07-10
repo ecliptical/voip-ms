@@ -139,6 +139,17 @@ pub struct Cli {
     #[arg(long)]
     pub order_test_did: bool,
 
+    /// Opt into the fax area's `--depth costly` fixture: order a fax number,
+    /// configure it, read it back, then cancel it. Mirrors `--order-test-did`;
+    /// off by default even at costly depth -- a real purchase.
+    #[arg(long)]
+    pub order_test_fax: bool,
+
+    /// Canadian province to search for a purchasable fax number (values from
+    /// `getFaxProvinces`, e.g. `ON`). Only consulted with `--order-test-fax`.
+    #[arg(long, default_value = "ON")]
+    pub fax_search_province: String,
+
     /// A dedicated, already SMS/MMS-enabled DID for the sms/mms `--depth
     /// costly` fixtures. Provisioned once by the operator outside the harness;
     /// the harness only ever reads and sends through it, never cancels it.
@@ -155,6 +166,203 @@ pub struct Cli {
     /// sendMMS works with just a message).
     #[arg(long)]
     pub mms_media_url: Option<String>,
+
+    // --- e911 (costly) -----------------------------------------------------
+    /// A DID to exercise the e911 area's costly-depth path against. Supplying
+    /// it plus the address fields runs `e911Validate` (validate-only, no
+    /// provisioning). Provisioning additionally requires `--e911-provision`.
+    #[arg(long)]
+    pub e911_did: Option<String>,
+
+    /// Actually provision (and then read + cancel) the e911 address for
+    /// `--e911-did`, instead of only validating it. Off by default: validation
+    /// is preferred over provisioning, which carries a fee and records a
+    /// physical address.
+    #[arg(long)]
+    pub e911_provision: bool,
+
+    /// e911 full name for validation/provisioning (required with `--e911-did`).
+    #[arg(long)]
+    pub e911_full_name: Option<String>,
+
+    /// e911 street number (required with `--e911-did`).
+    #[arg(long)]
+    pub e911_street_number: Option<i64>,
+
+    /// e911 street name (required with `--e911-did`).
+    #[arg(long)]
+    pub e911_street_name: Option<String>,
+
+    /// e911 city (required with `--e911-did`).
+    #[arg(long)]
+    pub e911_city: Option<String>,
+
+    /// e911 state/province (required with `--e911-did`).
+    #[arg(long)]
+    pub e911_state: Option<String>,
+
+    /// e911 country, `US` or `CA` (required with `--e911-did`).
+    #[arg(long)]
+    pub e911_country: Option<String>,
+
+    /// e911 zip/postal code (required with `--e911-did`).
+    #[arg(long)]
+    pub e911_zip: Option<String>,
+
+    /// e911 language, `EN` or `FR` (required for CA addresses; carried through
+    /// to provisioning).
+    #[arg(long)]
+    pub e911_language: Option<String>,
+
+    // --- account (costly) --------------------------------------------------
+    /// Reseller client id for the account area's input-gated reads
+    /// (`getCharges`, `getDeposits`) and for the `addCharge`/`addPayment`
+    /// mutators. Absent: those methods record skip (no input).
+    #[arg(long)]
+    pub account_client_id: Option<i64>,
+
+    /// Amount to credit via `addPayment` for `--account-client-id`. Supplying
+    /// it is the only way `addPayment` fires -- absence is the safety, since
+    /// this moves money and has no dry-run.
+    #[arg(long)]
+    pub payment_amount: Option<f64>,
+
+    /// Amount to debit via `addCharge` for `--account-client-id`. Supplying it
+    /// is the only way `addCharge` fires.
+    #[arg(long)]
+    pub charge_amount: Option<f64>,
+
+    /// Start date (`YYYY-MM-DD`) for `getTransactionHistory`; required together
+    /// with `--transaction-date-to` for that probe to run.
+    #[arg(long)]
+    pub transaction_date_from: Option<String>,
+
+    /// End date (`YYYY-MM-DD`) for `getTransactionHistory`.
+    #[arg(long)]
+    pub transaction_date_to: Option<String>,
+
+    // --- porting (costly) --------------------------------------------------
+    /// A DID to probe `getPortability` against (the read-side, non-committing
+    /// portability check). Absent: `getPortability` records skip (no input).
+    #[arg(long)]
+    pub portability_did: Option<String>,
+
+    /// An existing LNP port id for the id-scoped porting reads (`getLNPDetails`,
+    /// `getLNPStatus`, `getLNPNotes`, `getLNPList`, `getLNPAttachList`). Absent:
+    /// those record skip (no input).
+    #[arg(long)]
+    pub port_id: Option<i64>,
+
+    /// Actually submit an LNP port via `addLNPPort`. Off by default and gated:
+    /// a port submission commits to moving a number between carriers and has no
+    /// dry-run, so it fires only with this flag AND `--port-*` detail inputs.
+    #[arg(long)]
+    pub submit_port: bool,
+
+    /// Port type code for `addLNPPort` (required with `--submit-port`).
+    #[arg(long)]
+    pub port_type: Option<i64>,
+
+    /// Number(s) to port for `addLNPPort` (required with `--submit-port`).
+    #[arg(long)]
+    pub port_numbers: Option<String>,
+
+    /// Losing-carrier account name for `addLNPPort` (required with
+    /// `--submit-port`): statement name, provider name, and provider account.
+    #[arg(long)]
+    pub port_statement_name: Option<String>,
+
+    /// Losing-carrier provider name for `addLNPPort`.
+    #[arg(long)]
+    pub port_provider_name: Option<String>,
+
+    /// Losing-carrier account number for `addLNPPort`.
+    #[arg(long)]
+    pub port_provider_account: Option<String>,
+
+    /// Authorizing person's first name for `addLNPPort`.
+    #[arg(long)]
+    pub port_first_name: Option<String>,
+
+    /// Authorizing person's last name for `addLNPPort`.
+    #[arg(long)]
+    pub port_last_name: Option<String>,
+
+    /// Service address line 1 for `addLNPPort`.
+    #[arg(long)]
+    pub port_address: Option<String>,
+
+    /// Service address city for `addLNPPort`.
+    #[arg(long)]
+    pub port_city: Option<String>,
+
+    /// Service address state/province for `addLNPPort`.
+    #[arg(long)]
+    pub port_state: Option<String>,
+
+    /// Service address zip/postal code for `addLNPPort`.
+    #[arg(long)]
+    pub port_zip: Option<String>,
+
+    /// Service address country for `addLNPPort` (`US`/`CA`).
+    #[arg(long)]
+    pub port_country: Option<String>,
+
+    // --- reseller (costly) -------------------------------------------------
+    /// A reseller client id for the reseller area's input-gated reads
+    /// (`getClientPackages`, `getClientThreshold`, `getResellerBalance`).
+    /// Absent: those record skip (no input).
+    #[arg(long)]
+    pub reseller_client_id: Option<String>,
+
+    /// Actually create a reseller client via `signupClient`. Off by default and
+    /// gated: it moves money (a new billable client) and has no dry-run, so it
+    /// fires only with this flag AND the `--signup-*` detail inputs.
+    #[arg(long)]
+    pub signup_reseller_client: bool,
+
+    /// New client first name for `signupClient` (required with
+    /// `--signup-reseller-client`).
+    #[arg(long)]
+    pub signup_first_name: Option<String>,
+
+    /// New client last name for `signupClient`.
+    #[arg(long)]
+    pub signup_last_name: Option<String>,
+
+    /// New client email for `signupClient` (also used as the confirmation
+    /// email).
+    #[arg(long)]
+    pub signup_email: Option<String>,
+
+    /// New client password for `signupClient` (also used as the confirmation
+    /// password). Runtime-only, redacted in Debug.
+    #[arg(long)]
+    pub signup_password: Option<String>,
+
+    /// New client street address for `signupClient`.
+    #[arg(long)]
+    pub signup_address: Option<String>,
+
+    /// New client city for `signupClient`.
+    #[arg(long)]
+    pub signup_city: Option<String>,
+
+    /// New client state/province for `signupClient`.
+    #[arg(long)]
+    pub signup_state: Option<String>,
+
+    /// New client country for `signupClient` (values from `getCountries`).
+    #[arg(long)]
+    pub signup_country: Option<String>,
+
+    /// New client zip/postal code for `signupClient`.
+    #[arg(long)]
+    pub signup_zip: Option<String>,
+
+    /// New client phone number for `signupClient`.
+    #[arg(long)]
+    pub signup_phone: Option<String>,
 
     /// List the available areas and exit.
     #[arg(long)]
@@ -177,10 +385,16 @@ pub struct Config {
     pub did_search_province: String,
     pub did_search_query: String,
     pub order_test_did: bool,
+    pub order_test_fax: bool,
+    pub fax_search_province: String,
     /// The sms/mms `--depth costly` fixture's dedicated DID and destination,
     /// present only when both `--test-did` and `--sms-dst` were supplied.
     pub sms_fixture: Option<SmsFixtureConfig>,
     pub mms_media_url: Option<String>,
+    pub e911: E911Config,
+    pub account: AccountConfig,
+    pub porting: PortingConfig,
+    pub reseller: ResellerConfig,
 }
 
 /// Inputs for the sms/mms `--depth costly` fixtures, required together.
@@ -188,6 +402,96 @@ pub struct Config {
 pub struct SmsFixtureConfig {
     pub test_did: String,
     pub sms_dst: String,
+}
+
+/// e911 costly-depth inputs. `did` present + a complete address runs
+/// `e911Validate`; provisioning additionally requires `provision`. Each mutator
+/// is fired only when its inputs are complete, so an incomplete address records
+/// skip (no input) rather than failing.
+#[derive(Debug, Clone, Default)]
+pub struct E911Config {
+    pub did: Option<String>,
+    pub provision: bool,
+    pub full_name: Option<String>,
+    pub street_number: Option<i64>,
+    pub street_name: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub country: Option<String>,
+    pub zip: Option<String>,
+    pub language: Option<String>,
+}
+
+/// account costly-depth inputs. The money-movers fire only when their amount
+/// (and a client id) is supplied; the input-gated reads fire only with their
+/// required id/date-window.
+#[derive(Debug, Clone, Default)]
+pub struct AccountConfig {
+    pub client_id: Option<i64>,
+    pub payment_amount: Option<f64>,
+    pub charge_amount: Option<f64>,
+    pub transaction_date_from: Option<String>,
+    pub transaction_date_to: Option<String>,
+}
+
+/// porting costly-depth inputs. `getPortability`/`getLNP*` fire with their id
+/// inputs; `addLNPPort` fires only when `submit` is set and the detail fields
+/// are complete.
+#[derive(Debug, Clone, Default)]
+pub struct PortingConfig {
+    pub portability_did: Option<String>,
+    pub port_id: Option<i64>,
+    pub submit: bool,
+    pub port_type: Option<i64>,
+    pub numbers: Option<String>,
+    pub statement_name: Option<String>,
+    pub provider_name: Option<String>,
+    pub provider_account: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub address: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub zip: Option<String>,
+    pub country: Option<String>,
+}
+
+/// reseller costly-depth inputs. The input-gated reads fire with a client id;
+/// `signupClient` fires only when `signup` is set and the detail fields are
+/// complete. Secrets are redacted in `Debug`.
+#[derive(Clone, Default)]
+pub struct ResellerConfig {
+    pub client_id: Option<String>,
+    pub signup: bool,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub email: Option<String>,
+    pub password: Option<String>,
+    pub address: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub country: Option<String>,
+    pub zip: Option<String>,
+    pub phone: Option<String>,
+}
+
+impl std::fmt::Debug for ResellerConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ResellerConfig")
+            .field("client_id", &self.client_id)
+            .field("signup", &self.signup)
+            .field("first_name", &self.first_name)
+            .field("last_name", &self.last_name)
+            .field("email", &self.email)
+            .field("password", &self.password.as_ref().map(|_| "<redacted>"))
+            .field("address", &self.address)
+            .field("city", &self.city)
+            .field("state", &self.state)
+            .field("country", &self.country)
+            .field("zip", &self.zip)
+            .field("phone", &self.phone)
+            .finish()
+    }
 }
 
 /// Which areas to run, before intersecting with the known-area registry.
@@ -262,6 +566,60 @@ impl Config {
             _ => bail!("--test-did and --sms-dst must be set together"),
         };
 
+        let e911 = E911Config {
+            did: cli.e911_did.filter(|s| !s.trim().is_empty()),
+            provision: cli.e911_provision,
+            full_name: cli.e911_full_name.filter(|s| !s.trim().is_empty()),
+            street_number: cli.e911_street_number,
+            street_name: cli.e911_street_name.filter(|s| !s.trim().is_empty()),
+            city: cli.e911_city.filter(|s| !s.trim().is_empty()),
+            state: cli.e911_state.filter(|s| !s.trim().is_empty()),
+            country: cli.e911_country.filter(|s| !s.trim().is_empty()),
+            zip: cli.e911_zip.filter(|s| !s.trim().is_empty()),
+            language: cli.e911_language.filter(|s| !s.trim().is_empty()),
+        };
+
+        let account = AccountConfig {
+            client_id: cli.account_client_id,
+            payment_amount: cli.payment_amount,
+            charge_amount: cli.charge_amount,
+            transaction_date_from: cli.transaction_date_from.filter(|s| !s.trim().is_empty()),
+            transaction_date_to: cli.transaction_date_to.filter(|s| !s.trim().is_empty()),
+        };
+
+        let porting = PortingConfig {
+            portability_did: cli.portability_did.filter(|s| !s.trim().is_empty()),
+            port_id: cli.port_id,
+            submit: cli.submit_port,
+            port_type: cli.port_type,
+            numbers: cli.port_numbers.filter(|s| !s.trim().is_empty()),
+            statement_name: cli.port_statement_name.filter(|s| !s.trim().is_empty()),
+            provider_name: cli.port_provider_name.filter(|s| !s.trim().is_empty()),
+            provider_account: cli.port_provider_account.filter(|s| !s.trim().is_empty()),
+            first_name: cli.port_first_name.filter(|s| !s.trim().is_empty()),
+            last_name: cli.port_last_name.filter(|s| !s.trim().is_empty()),
+            address: cli.port_address.filter(|s| !s.trim().is_empty()),
+            city: cli.port_city.filter(|s| !s.trim().is_empty()),
+            state: cli.port_state.filter(|s| !s.trim().is_empty()),
+            zip: cli.port_zip.filter(|s| !s.trim().is_empty()),
+            country: cli.port_country.filter(|s| !s.trim().is_empty()),
+        };
+
+        let reseller = ResellerConfig {
+            client_id: cli.reseller_client_id.filter(|s| !s.trim().is_empty()),
+            signup: cli.signup_reseller_client,
+            first_name: cli.signup_first_name.filter(|s| !s.trim().is_empty()),
+            last_name: cli.signup_last_name.filter(|s| !s.trim().is_empty()),
+            email: cli.signup_email.filter(|s| !s.trim().is_empty()),
+            password: cli.signup_password.filter(|s| !s.trim().is_empty()),
+            address: cli.signup_address.filter(|s| !s.trim().is_empty()),
+            city: cli.signup_city.filter(|s| !s.trim().is_empty()),
+            state: cli.signup_state.filter(|s| !s.trim().is_empty()),
+            country: cli.signup_country.filter(|s| !s.trim().is_empty()),
+            zip: cli.signup_zip.filter(|s| !s.trim().is_empty()),
+            phone: cli.signup_phone.filter(|s| !s.trim().is_empty()),
+        };
+
         Ok(Config {
             username,
             password,
@@ -274,8 +632,14 @@ impl Config {
             did_search_province: cli.did_search_province,
             did_search_query: cli.did_search_query,
             order_test_did: cli.order_test_did,
+            order_test_fax: cli.order_test_fax,
+            fax_search_province: cli.fax_search_province,
             sms_fixture,
             mms_media_url: cli.mms_media_url.filter(|s| !s.trim().is_empty()),
+            e911,
+            account,
+            porting,
+            reseller,
         })
     }
 
