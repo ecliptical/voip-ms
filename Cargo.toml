@@ -12,7 +12,7 @@ edition = "2024"
 rust-version = "1.88"
 
 [workspace]
-members = [".", "xtask"]
+members = [".", "livetest", "xtask"]
 
 [features]
 default = ["rustls-tls-native-roots"]
