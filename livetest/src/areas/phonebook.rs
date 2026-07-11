@@ -158,7 +158,7 @@ async fn entry_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
     let created = client
         .set_phonebook(&SetPhonebookParams {
             name: Some(name),
-            number: Some(15555550102),
+            number: Some("15555550102".into()),
             ..Default::default()
         })
         .await;

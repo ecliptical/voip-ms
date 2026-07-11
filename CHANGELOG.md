@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** the DID-identifier rule below now covers every phone-number
+  field: `number`, `phone_number`, `contact`, `destination`, and `stationid`
+  join `did` in the generator's built-in String-override table
+  (`PHONE_STRING_FIELDS`). Concretely, `SetCallbackParams.number` and
+  `SetPhonebookParams.number` change from `Option<i64>` to `Option<String>` --
+  the WSDL declared them `xsd:integer` even though `setPhonebook` documents
+  `sip:2563` as a valid value, so a SIP phonebook entry was previously
+  impossible to send and a get/set round-trip required a lossy parse (the
+  matching response fields were already `String`). All previously patched
+  response fields keep their exact types; the per-method patches that
+  re-stated this rule are removed from `tools/api-response-overrides.json`,
+  and `cargo xtask gen` now warns when a patch is shadowed by a field-name
+  override.
 - **Breaking:** DID identifier fields are now `String`, never numeric. The WSDL
   declared the `did` parameter of `getFaxNumbersInfo`,
   `getFaxNumbersPortability`, `setFaxNumberEmail`, `setFaxNumberInfo`, and

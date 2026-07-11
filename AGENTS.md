@@ -180,6 +180,21 @@ in `xtask/src/field_overrides.rs`:
   flag whose `false` means the same as absent (the `test` param) sets
   `param_skip_if` so it's emitted as plain `bool` (default `false`, omitted from
   the request when `false`) rather than `Option<bool>`.
+* **Phone-number identifier fields** stay `String` on both the param and
+  response side (`PHONE_STRING_FIELDS` in `xtask/src/field_overrides.rs`:
+  `did`, `number`, `phone_number`, `contact`, `destination`, `stationid`).
+  A phone number is an identifier, never a quantity -- it can carry leading
+  zeros, exceed `i64` range, or hold a SIP form (`sip:2563` in
+  `setPhonebook`) -- but both the WSDL (`xsd:integer` on the fax `did` and
+  `setCallback`/`setPhonebook` `number` params) and the extractor (an
+  all-digit doc sample infers `integer`) under-type them, so the override
+  forces `String` globally instead of patching method-by-method. The
+  response side keeps the tolerant string deserializer since VoIP.ms may
+  ship the value as a bare JSON number. Deliberately excluded: the plural
+  `dids` (sometimes a list of numeric vPRI ids) and `from` (a date filter
+  in the `getSMS`-family params, an email in `getEmailToFax`'s response).
+  `cargo xtask gen` warns when a `patches` entry is shadowed by a
+  field-name override so retired per-method patches get removed.
 * **Declarative enum overrides** in
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)

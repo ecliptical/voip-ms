@@ -825,6 +825,33 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
+    // A patch whose leaf field has a field-name override is dead weight: the
+    // override supplies both the Rust type and the deserializer, so the
+    // patched scalar type is never consulted. Warn so the entry gets removed
+    // (unless a `field_type_skip` on that field name keeps some struct on the
+    // inferred/patched type, in which case the patch may still be live).
+    let skipped_fields: BTreeSet<&str> = field_type_skip
+        .iter()
+        .filter_map(|entry| entry.rsplit_once('.').map(|(_, f)| f))
+        .collect();
+    for (method, mo) in &overrides_doc.methods {
+        for patch in &mo.patches {
+            let leaf = patch.path.rsplit('.').next().unwrap_or(&patch.path);
+            // A path ending in `[]` retypes a list *element*, which the
+            // field-name table never touches.
+            if leaf.ends_with("[]") {
+                continue;
+            }
+            if table.get(leaf).is_some() && !skipped_fields.contains(leaf) {
+                eprintln!(
+                    "warning: {method}: patch `{}` is shadowed by the \
+                     field-name override for `{leaf}`; remove it",
+                    patch.path,
+                );
+            }
+        }
+    }
+
     // `"StructName.field" -> EnumName`: assign one struct's field a specific
     // enum type, overriding the inferred type and any name-based `field_types`.
     let mut field_type_override: BTreeMap<String, field_overrides::FieldOverride> = BTreeMap::new();

@@ -184,16 +184,29 @@ const CALLERID_OVERRIDE_FIELDS: &[&str] = &[
     "sms_forward",
 ];
 
-/// DID identifier fields. A DID is a phone number -- an identifier, never a
+/// Phone-number identifier fields. A phone number is an identifier, never a
 /// quantity -- so it must stay `String`: it can carry leading zeros and exceed
-/// `i64` range, and any parse to a number loses information. Most methods'
-/// `did` already type `String` (WSDL `xsd:string` or a response path override),
-/// but the WSDL declares the fax methods' `did` params as `xsd:integer`; this
-/// forces them back to `String`, uniform with every other `did`. Only the
-/// singular `did` is overridden: the plural `dids` is variously a list of DID
-/// objects or of numeric vPRI ids in responses, which a blanket `String`
-/// override would wrongly flatten.
-const DID_STRING_FIELDS: &[&str] = &["did"];
+/// `i64` range, and any parse to a number loses information. The WSDL and the
+/// doc-sample extractor both under-type these (the WSDL declares the fax
+/// methods' `did` and the `setCallback`/`setPhonebook` `number` params as
+/// `xsd:integer`; the extractor sees an all-digit sample and infers
+/// `integer`), so the override forces `String` uniformly on both the param
+/// and response side. Every field with one of these names carries a phone
+/// number in every method that has it. Deliberately excluded:
+///
+/// * the plural `dids` -- variously a list of DID objects or of numeric vPRI
+///   ids in responses, which a blanket `String` override would wrongly
+///   flatten;
+/// * `from` -- a date filter in the `getSMS`-family params but an email
+///   address in `getEmailToFax`'s response, so it keeps per-method handling.
+const PHONE_STRING_FIELDS: &[&str] = &[
+    "contact",
+    "destination",
+    "did",
+    "number",
+    "phone_number",
+    "stationid",
+];
 
 fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let routing = FieldOverride {
@@ -246,11 +259,11 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         ),
         ..Default::default()
     };
-    // A DID stays `String` on both the param and response side. On the response
-    // side VoIP.ms may send it as a bare JSON number, so it keeps the tolerant
-    // string deserializer the JSON path overrides already applied to `did`
-    // fields -- dropping it would reintroduce drift on a numeric `did`.
-    let did_string = FieldOverride {
+    // A phone number stays `String` on both the param and response side. On
+    // the response side VoIP.ms may send it as a bare JSON number, so it keeps
+    // the tolerant string deserializer -- dropping it would reintroduce drift
+    // on a numeric wire value.
+    let phone_string = FieldOverride {
         rust_type: "String".into(),
         response_deserializer: Some(
             "crate::responses::deserialize_opt_string_from_string_number_or_bool".into(),
@@ -276,9 +289,9 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
                 .map(|name| (*name, callerid_override.clone())),
         )
         .chain(
-            DID_STRING_FIELDS
+            PHONE_STRING_FIELDS
                 .iter()
-                .map(|name| (*name, did_string.clone())),
+                .map(|name| (*name, phone_string.clone())),
         )
         .collect()
 }

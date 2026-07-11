@@ -254,7 +254,7 @@ async fn callback_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Sc
     let created = client
         .set_callback(&SetCallbackParams {
             description: Some(description),
-            number: Some(15555550100),
+            number: Some("15555550100".into()),
             ..Default::default()
         })
         .await;
