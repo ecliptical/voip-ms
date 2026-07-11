@@ -199,55 +199,96 @@ using CRATES_IO_TOKEN, and creates a GitHub release.
 3. Live calls to VoIP.ms are intentionally excluded from CI because they
 	 require real credentials and account state.
 
-## Live API verification workflow
+## Live API verification (`livetest`)
 
-The repository includes a dedicated workflow for optional live verification:
-`.github/workflows/live-api-verify.yaml`.
+The `livetest` workspace member is an operator-local harness that exercises the
+API against a real account to catch response-shape drift the wiremock tests
+cannot -- the recurring class of bug where the live API returns JSON the
+generated `*Response` type can't deserialize. Its central check fetches each
+method's raw envelope, then attempts the typed deserialization over it, so a
+failure is unambiguously drift (raw succeeds, typed fails) rather than a network
+or API error, and it prints the raw JSON alongside the serde error, ready to
+paste into a `tools/api-response-overrides.json` fix.
 
-Use this workflow for on-demand execution via `workflow_dispatch`. It is
-intentionally separate from `rust-ci.yaml` so pull requests remain
-deterministic and credential-free, and it deliberately does **not** run on
-tag pushes: GitHub-hosted runners use ephemeral egress IPs that VoIP.ms's
-per-account API IP allow-list rejects with `ip_not_enabled`. Trigger it
-manually from an allow-listed host (or wire it to a self-hosted runner with
-a known static egress IP) when you want a live check.
+It is a `[[bin]]` member (`publish = false`), so it never ships in the published
+crate and never runs under `cargo test`. Invoke it explicitly:
 
-### Required account configuration
+```bash
+cargo run -p livetest -- [OPTIONS]
+cargo run -p livetest -- --list-areas   # enumerate areas; no credentials needed
+cargo run -p livetest -- --help
+```
 
-1. Create a dedicated VoIP.ms sandbox account (or isolated reseller test scope).
-2. Enable API access and generate API credentials.
-3. Allow-list the GitHub runner egress IP(s) on the VoIP.ms API page.
-4. For SMS checks, provide at least one DID with SMS available and enabled.
-5. For sub-account lifecycle checks, ensure the sandbox has permission to
-   create and delete sub-accounts.
+### Selection: areas x depth
 
-### Required GitHub Actions secrets
+Two orthogonal dimensions choose what runs:
 
-* `VOIP_MS_USERNAME`
-* `VOIP_MS_PASSWORD`
+* **Areas** (`--areas dids,sms,...`, `--all-areas`, `--exclude ...`) -- the 222
+  methods partition into functional areas (dids, sms, mms, voicemail, cdr,
+  account, subaccount, fax, forwarding, e911, conference, ivr, queue,
+  phonebook, porting, reseller, callflow, reference). The default set is every
+  *free* area; the costly-by-nature areas (`account`, `e911`, `fax`, `porting`,
+  `reseller`) are excluded until named, so they run only "once in a while."
+* **Depth** (`--depth probe|lifecycle|costly`, default `probe`):
+  * `probe` -- read-only calls only, with the raw-vs-typed drift diff. Free.
+  * `lifecycle` -- also runs free create -> read -> delete fixtures.
+  * `costly` -- also runs money/irreversible methods. Requires
+    `--i-understand-this-costs-money`. Each costly method fires only when its
+    own input (e.g. `--order-test-did`, `--sms-dst`, `--payment-amount`) is
+    supplied; without it the method is skipped, not failed.
 
-Optional fixture secrets used by opt-in checks:
+A pre-flight sweep reconciles leftover fixtures from prior runs (matched by an
+ownership marker, plus a git-ignored run-ledger for un-markable resources like
+DIDs) before creating any new ones, and aborts if it cannot reach a clean slate.
 
-* `VOIP_MS_TEST_DID`
-* `VOIP_MS_SMS_DST`
-* `VOIP_MS_SMS_MESSAGE`
+### Connecting through an API server
 
-### Safety model
+By default the harness targets the real VoIP.ms API server, which requires the
+caller's source IP to be on the account's API allow-list. To run from a
+non-allow-listed host, point it at an allow-listed API server (a reverse proxy
+that forwards to VoIP.ms from an allow-listed IP) and, if that server gates
+access, supply its add-on HTTP Basic auth (separate from the VoIP.ms API
+credentials):
 
-The live harness defaults to read-only smoke checks.
+* `--api-url` / `LIVETEST_API_URL` -- the server's REST endpoint.
+* `--api-basic-username` / `LIVETEST_API_BASIC_USERNAME`
+* `--api-basic-password` / `LIVETEST_API_BASIC_PASSWORD`
 
-State-changing checks require both:
+### Secrets
 
-* `LIVE_VERIFY_MODE=extended`
-* `LIVE_VERIFY_ALLOW_STATE_CHANGES=true`
+All secrets are supplied at runtime, never committed:
 
-Potentially costly checks (for example sending SMS) require both:
+* `--username` / `VOIP_MS_USERNAME`, `--password` / `VOIP_MS_PASSWORD` -- the
+  VoIP.ms API credentials (username is the account email; the password is the
+  distinct API password from the portal's SOAP & REST/JSON API page).
+* the API-server URL and Basic-auth pair above, if used.
+* fixture inputs (destination numbers, DIDs, amounts) passed per run.
 
-* `LIVE_VERIFY_ENABLE_SMS_SEND_CHECK=true`
-* `LIVE_VERIFY_ALLOW_COSTLY=true`
+Credentials and the API-server auth are redacted from all harness output, and
+the run-ledger (`livetest-ledger.jsonl`, which may contain DIDs/usernames) is
+git-ignored. Keep any local env file out of the repo.
 
-This dual-gate model prevents accidental financial transactions and keeps
-release verification safe by default.
+### Example
+
+A read-only drift sweep across every area (free and costly-by-nature), through
+an allow-listed API server, with all secrets from the environment:
+
+```bash
+VOIP_MS_USERNAME=... VOIP_MS_PASSWORD=... \
+LIVETEST_API_URL=https://your-api-server.example/api/v1/rest.php \
+LIVETEST_API_BASIC_USERNAME=... LIVETEST_API_BASIC_PASSWORD=... \
+cargo run -p livetest -- --all-areas
+```
+
+The run prints per-method `pass` / `fail` / `skip` / `drift` lines and a final
+JSON summary; it exits non-zero if anything failed or drifted.
+
+### CI
+
+Not wired to CI yet. GitHub-hosted runners use ephemeral egress IPs that the
+VoIP.ms per-account allow-list rejects (`ip_not_enabled`), so a future CI job
+must run from an allow-listed host or through an allow-listed API server, with
+the credentials and server auth held as secrets.
 
 ## CI/CD workflows
 
@@ -264,11 +305,6 @@ release verification safe by default.
 	* runs fmt, clippy, tests, and publish dry-run checks
 	* publishes to crates.io with `CRATES_IO_TOKEN`
 	* creates a GitHub release from the tag
-* `live-api-verify.yaml` supports optional live verification:
-	* `workflow_dispatch` only — operator-invokable smoke or extended checks
-	* not wired to any push or tag event, because GitHub-hosted runners
-		use ephemeral egress IPs that VoIP.ms's per-account API IP
-		allow-list will reject (`ip_not_enabled`). Trigger manually from
-		a host whose IP is on the VoIP.ms API allow-list, or from a
-		self-hosted runner with a known static egress IP.
-	* explicit safety gates for state-changing or costly operations
+
+Live verification is not a CI workflow; it is the operator-local `livetest`
+harness described under "Live API verification (`livetest`)" above.
