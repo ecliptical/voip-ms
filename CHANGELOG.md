@@ -21,10 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `getEmailToFax` and `getFaxFolders` on an account with none configured return
-  the statuses `no_emailtofax` / `no_folder`, which are undocumented in the API
-  error-code table. They are now registered as empty-collection statuses, so the
-  typed methods return an empty response instead of `Error::Api`.
+- Register four undocumented empty-collection statuses that the live API returns
+  for an empty list but that are absent from the API's error-code table:
+  `no_emailtofax` (`getEmailToFax`), `no_folder` (`getFaxFolders`),
+  `no_transactions` (`getTransactionHistory`), and `no_vpri` (`getVPRIs`). The
+  typed methods now return an empty response for these instead of `Error::Api`.
+  Found by auditing every list-returning method against the live API.
 
 ## [0.8.0] - 2026-07-09
 
