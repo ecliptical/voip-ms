@@ -15,7 +15,43 @@ use crate::harness::area::SweepResult;
 use crate::harness::marker::is_owned_marker;
 use crate::harness::probe::{ProbeOutcome, probe};
 use crate::harness::{Outcome, Report};
-use voip_ms::{ApiStatus, Client, Error};
+use voip_ms::{ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams};
+
+/// Every `(required)` `setQueue` field but the caller-supplied `queue_name`,
+/// filled with values the API accepts, so a fixture only sets its name and the
+/// `queue_number` via `..required_queue_params(number)`. Shared by the `queue`
+/// area and the `callflow` static-member fixture that stands up a throwaway
+/// queue. A queue with a missing required field is rejected one field at a time
+/// (`missing_number`, then the next), so all of them must be present at once.
+///
+/// `queue_number` is caller-supplied because two queue fixtures run in one
+/// `--all-areas` sweep and a duplicate number is refused; each derives a
+/// distinct one from the run token.
+pub fn required_queue_params(queue_number: u64) -> SetQueueParams {
+    SetQueueParams {
+        queue_number: Some(queue_number),
+        queue_language: Some("en".into()),
+        priority_weight: Some("1".into()),
+        report_hold_time_agent: Some("yes".into()),
+        join_when_empty: Some(QueueEmptyBehavior::Yes),
+        leave_when_empty: Some(QueueEmptyBehavior::No),
+        ring_strategy: Some(RingStrategy::RingAll),
+        ring_inuse: Some(false),
+        ..Default::default()
+    }
+}
+
+/// A deterministic-per-run queue number folded from the run token and a
+/// `seq` (so the two same-run queue fixtures never collide). Kept in the
+/// 4-digit space; cross-run collisions are reclaimed by the marker sweep.
+pub fn queue_number(token: &str, seq: u64) -> u64 {
+    let mut hash: u64 = seq;
+    for b in token.as_bytes() {
+        hash = hash.wrapping_mul(31).wrapping_add(u64::from(*b));
+    }
+
+    1000 + (hash % 9000)
+}
 
 /// Read a just-created resource back through the typed path with drift
 /// diffing, recording the outcome under `area`/`label`. The scoped `params`
@@ -36,10 +72,56 @@ where
     P: Serialize + Sync,
     T: DeserializeOwned,
 {
-    let outcome = probe::<P, T>(client, label, params, count).await;
+    // The `label` (`fixture:getX`) is the report key, not a wire method: the
+    // wire call is `getX`. Strip the prefix so the read-back invokes the same
+    // method the top-level probe does -- passing the full label made every
+    // read-back hit an unknown method and fail with `invalid_method` (issue #18
+    // Class B), so the populated-response drift check never ran.
+    let method = label.strip_prefix("fixture:").unwrap_or(label);
+    let outcome = probe::<P, T>(client, method, params, count).await;
+
+    // Defensive diagnostic: if a read-back still returns an error status,
+    // capture the exact request and the raw response envelope so a live run can
+    // pin the cause without a second targeted run.
+    if let ProbeOutcome::ApiError(ref status) = outcome {
+        capture_read_back_error(client, area, method, params, status).await;
+    }
+
     let drifted = matches!(outcome, ProbeOutcome::Drift { .. });
     report.record_probe(area, label, outcome);
     !drifted
+}
+
+/// Dump the exact read-back request (wire method + serialized query params) and
+/// the raw response envelope for a fixture read-back that returned an error
+/// status, so the Class B `invalid_method` case can be diagnosed from a live run.
+async fn capture_read_back_error<P>(
+    client: &Client,
+    area: &str,
+    method: &str,
+    params: &P,
+    status: &str,
+) where
+    P: Serialize + Sync,
+{
+    eprintln!("[capture] {area}/{method}: read-back returned error status `{status}`");
+    match serde_json::to_value(params) {
+        Ok(json) => eprintln!("[capture]   request: method={method} params={json}"),
+        Err(error) => {
+            eprintln!("[capture]   request: method={method} (params unserializable: {error})");
+        }
+    }
+
+    match client.call_raw_unchecked(method, params).await {
+        Ok(body) => {
+            let pretty = serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string());
+            eprintln!("[capture]   raw response:");
+            for line in pretty.lines() {
+                eprintln!("[capture]     {line}");
+            }
+        }
+        Err(error) => eprintln!("[capture]   raw response unavailable: {error}"),
+    }
 }
 
 /// A marker-bearing orphan the sweep found and must delete: a human label for
@@ -54,6 +136,42 @@ pub struct Orphan {
 /// field shape.
 pub fn owned(field: &Option<String>) -> bool {
     field.as_deref().is_some_and(is_owned_marker)
+}
+
+/// Fold a teardown `del_*` result so a delete of an already-absent resource
+/// counts as success: an "absent" status ([`ApiStatus::is_empty`], e.g.
+/// `no_conference`, or an `invalid_*` "not a valid <resource> ID" code) means
+/// the object the teardown targets is gone, which is the teardown's goal.
+///
+/// Without this, a fixture whose resource was already reclaimed -- by an earlier
+/// aborted step, or a prior run's sweep -- reports a *phantom* cleanup failure
+/// naming an orphan that does not exist. A genuine delete failure (permission,
+/// transport, a dependency still attached) is not absent-like and still errors.
+pub fn tolerate_absent<T>(result: Result<T, Error>) -> anyhow::Result<()> {
+    match result {
+        Ok(_) => Ok(()),
+        Err(Error::Api(status)) if is_absent(&status) => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
+
+/// Whether a `del_*` error status means the target is already gone: an
+/// empty-collection status ([`ApiStatus::is_empty`], e.g. `no_conference`) or
+/// an `invalid_<resource>` code, which VoIP.ms returns for a delete addressing
+/// a non-existent id (e.g. `invalid_conference` -- "This is not a valid
+/// Conference ID"). Scoped to a teardown deleting an id the harness itself
+/// created, where "not a valid id" can only mean it is already reclaimed.
+///
+/// The `invalid_credentials`/`invalid_*_auth` family is *not* absence -- it is a
+/// real auth failure that must stay a teardown failure -- so it is excluded even
+/// though it shares the `invalid_` prefix.
+fn is_absent(status: &ApiStatus) -> bool {
+    if status.is_empty() {
+        return true;
+    }
+
+    let code = status.to_string();
+    code.starts_with("invalid_") && !code.contains("credential") && !code.contains("auth")
 }
 
 /// Run one area's marker-orphan reconciliation: enumerate marker-bearing
@@ -162,5 +280,62 @@ fn is_empty_like(error: &anyhow::Error) -> bool {
             status.is_empty() || matches!(status, ApiStatus::Unknown(s) if s.starts_with("no_"))
         }
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tolerate_absent_folds_absent_and_empty_statuses_to_ok() {
+        // Empty-collection status: the resource list is empty, so the target
+        // is gone. `del_*` methods return a response payload, so `T` is not
+        // `()`; the annotation stands in for a real delete response.
+        assert!(tolerate_absent::<()>(Err(Error::Api(ApiStatus::NoConference))).is_ok());
+        // "not a valid <resource> id": a delete of an already-reclaimed id.
+        assert!(tolerate_absent::<()>(Err(Error::Api(ApiStatus::InvalidConference))).is_ok());
+        assert!(
+            tolerate_absent::<()>(Err(Error::Api(ApiStatus::Unknown("invalid_queue".into()))))
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn tolerate_absent_passes_success_through() {
+        // A successful delete discards its response payload.
+        assert!(tolerate_absent(Ok("del-response")).is_ok());
+    }
+
+    #[test]
+    fn tolerate_absent_preserves_a_genuine_failure() {
+        // A non-absent error status is a real teardown failure and must not be
+        // swallowed -- including a credentials error, which shares the
+        // `invalid_` prefix but is not absence.
+        assert!(tolerate_absent::<()>(Err(Error::Api(ApiStatus::InvalidCredentials))).is_err());
+    }
+
+    #[test]
+    fn is_absent_matches_resource_absence_not_auth_failures() {
+        assert!(is_absent(&ApiStatus::NoConference));
+        assert!(is_absent(&ApiStatus::InvalidConference));
+        assert!(is_absent(&ApiStatus::Unknown("invalid_widget".into())));
+        // A credentials error is not an "absent target"; it must stay a failure
+        // even though its wire code starts with `invalid_`.
+        assert!(!is_absent(&ApiStatus::InvalidCredentials));
+    }
+
+    #[test]
+    fn queue_number_is_stable_and_distinct_per_seq() {
+        let a0 = queue_number("tok", 0);
+        let a1 = queue_number("tok", 1);
+        assert_eq!(
+            queue_number("tok", 0),
+            a0,
+            "stable for a fixed (token, seq)"
+        );
+        assert_ne!(a0, a1, "distinct per seq so same-run queues don't collide");
+        assert!((1000..=9999).contains(&a0));
+        assert!((1000..=9999).contains(&a1));
     }
 }

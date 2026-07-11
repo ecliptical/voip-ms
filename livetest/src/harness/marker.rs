@@ -42,6 +42,17 @@ impl RunToken {
         format!("{OWNED_MARKER}{}-{seq}", self.0)
     }
 
+    /// A marker for `name` fields with a tight length limit (e.g. a ring
+    /// group's, which rejects the full [`marker`](Self::marker) with
+    /// `name_toolong`). Keeps the `livetest-` prefix so [`is_owned_marker`]
+    /// still reclaims it, trailing the last 4 token chars plus `seq` for
+    /// same-run distinctness -- at most `9 + 4 + 1 + len(seq)` chars.
+    pub fn short_marker(&self, seq: u32) -> String {
+        let token = &self.0;
+        let tail = &token[token.len().saturating_sub(4)..];
+        format!("{OWNED_MARKER}{tail}{seq}")
+    }
+
     /// A sub-account username: `lvt<token><seq>`, kept short and alphanumeric.
     pub fn username(&self, seq: u32) -> String {
         format!("{OWNED_USERNAME_PREFIX}{}{seq}", self.0)
@@ -62,4 +73,31 @@ pub fn is_owned_marker(value: &str) -> bool {
 /// True when `username` looks like a harness-created sub-account from any run.
 pub fn is_owned_username(username: &str) -> bool {
     username.starts_with(OWNED_USERNAME_PREFIX)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn short_marker_is_reclaimable_and_shorter_than_the_full_marker() {
+        let token = RunToken("1869f12345678".into());
+        let short = token.short_marker(2);
+        // Still recognized by the sweep.
+        assert!(
+            is_owned_marker(&short),
+            "short marker must carry the prefix"
+        );
+        // Materially shorter than the full marker that triggers `name_toolong`.
+        assert!(short.len() < token.marker(2).len());
+        // Distinct per seq so same-run fixtures don't collide.
+        assert_ne!(token.short_marker(0), token.short_marker(1));
+    }
+
+    #[test]
+    fn short_marker_handles_a_token_shorter_than_the_tail_window() {
+        // `saturating_sub` must not panic on a sub-4-char token.
+        let short = RunToken("ab".into()).short_marker(0);
+        assert!(is_owned_marker(&short));
+    }
 }

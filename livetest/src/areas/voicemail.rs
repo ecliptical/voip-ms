@@ -14,7 +14,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -124,7 +124,9 @@ async fn voicemail_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
         .create_voicemail(&CreateVoicemailParams {
             digits: Some(mailbox),
             name: Some(name.clone()),
-            password: Some(format!("{mailbox}0")),
+            // A voicemail password must be exactly 4 digits (API rule behind
+            // `invalid_password`); the 4-digit `mailbox` doubles as one.
+            password: Some(format!("{mailbox:04}")),
             skip_password: Some(false),
             attach_message: Some(false),
             delete_message: Some(false),
@@ -150,12 +152,13 @@ async fn voicemail_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
     report.record(AREA, "fixture:createVoicemail", Outcome::Pass);
     scope.defer(format!("voicemail mailbox={mailbox}"), move |client| {
         Box::pin(async move {
-            client
-                .del_voicemail(&DelVoicemailParams {
-                    mailbox: Some(mailbox),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_voicemail(&DelVoicemailParams {
+                        mailbox: Some(mailbox),
+                    })
+                    .await,
+            )
         })
     });
 

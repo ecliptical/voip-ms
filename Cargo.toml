@@ -23,6 +23,11 @@ default = ["rustls-tls-native-roots"]
 rustls-tls-native-roots = ["reqwest/rustls"]
 native-tls = ["reqwest/native-tls"]
 
+# Exposes `Client::call_raw_unchecked` -- returns the raw envelope without
+# classifying its status, for diagnosing unexpected error statuses. Off by
+# default; the live-API harness enables it.
+unchecked-raw = []
+
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.13.4", default-features = false, features = ["json", "query"] }

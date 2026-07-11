@@ -16,7 +16,9 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{
+    Orphan, owned, queue_number, read_back, required_queue_params, sweep_orphans, tolerate_absent,
+};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -255,6 +257,9 @@ async fn callback_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Sc
         .set_callback(&SetCallbackParams {
             description: Some(description),
             number: Some("15555550100".into()),
+            delay_before: Some(0),
+            response_timeout: Some(5),
+            digit_timeout: Some(5),
             ..Default::default()
         })
         .await;
@@ -276,10 +281,11 @@ async fn callback_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Sc
     report.record(AREA, "fixture:setCallback", Outcome::Pass);
     scope.defer(format!("callback id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_callback(&DelCallbackParams { callback: Some(id) })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_callback(&DelCallbackParams { callback: Some(id) })
+                    .await,
+            )
         })
     });
 
@@ -302,6 +308,7 @@ async fn disa_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope)
         .set_disa(&SetDISAParams {
             name: Some(name),
             pin: Some(1234),
+            digit_timeout: Some(5),
             ..Default::default()
         })
         .await;
@@ -317,8 +324,7 @@ async fn disa_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope)
     report.record(AREA, "fixture:setDISA", Outcome::Pass);
     scope.defer(format!("disa id={id}"), move |client| {
         Box::pin(async move {
-            client.del_disa(&DelDISAParams { disa: Some(id) }).await?;
-            Ok(())
+            tolerate_absent(client.del_disa(&DelDISAParams { disa: Some(id) }).await)
         })
     });
 
@@ -335,11 +341,17 @@ async fn disa_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope)
 
 async fn ring_group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
     let client = ctx.client;
-    let name = ctx.token.marker(2);
+    let name = ctx.token.short_marker(2);
 
+    // `members` and `voicemail` are `(required)`. `members` takes routing
+    // headers to real resources (`account:<sub>;fwd:<id>`) and `voicemail` a
+    // real box id or `none`; without a dependent resource these are best-effort
+    // and a live run may still reject them (surfaced as a Fail).
     let created = client
         .set_ring_group(&SetRingGroupParams {
             name: Some(name),
+            members: Some("account:100000".into()),
+            voicemail: Some("none".into()),
             ..Default::default()
         })
         .await;
@@ -361,12 +373,13 @@ async fn ring_group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
     report.record(AREA, "fixture:setRingGroup", Outcome::Pass);
     scope.defer(format!("ringgroup id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_ring_group(&DelRingGroupParams {
-                    ringgroup: Some(id),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_ring_group(&DelRingGroupParams {
+                        ringgroup: Some(id),
+                    })
+                    .await,
+            )
         })
     });
 
@@ -388,8 +401,12 @@ async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &
     let created = client
         .set_time_condition(&SetTimeConditionParams {
             name: Some(name),
-            routing_match: Some(Routing::None),
-            routing_nomatch: Some(Routing::None),
+            // `Routing::None` serializes to the header `none:`, which
+            // `setTimeCondition` rejects with `invalid_routing_header`; a
+            // system action (`sys:hangup`) is a valid target that needs no
+            // dependent resource. Best-effort until a live run confirms it.
+            routing_match: Some(Routing::System("hangup".into())),
+            routing_nomatch: Some(Routing::System("hangup".into())),
             starthour: Some("09".to_string()),
             startminute: Some("00".to_string()),
             endhour: Some("17".to_string()),
@@ -417,12 +434,13 @@ async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &
     report.record(AREA, "fixture:setTimeCondition", Outcome::Pass);
     scope.defer(format!("timecondition id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_time_condition(&DelTimeConditionParams {
-                    timecondition: Some(id),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_time_condition(&DelTimeConditionParams {
+                        timecondition: Some(id),
+                    })
+                    .await,
+            )
         })
     });
 
@@ -447,7 +465,7 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
     let queue_id = match client
         .set_queue(&SetQueueParams {
             queue_name: Some(queue_name),
-            ..Default::default()
+            ..required_queue_params(queue_number(ctx.token.as_str(), 1))
         })
         .await
     {
@@ -467,12 +485,13 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
     report.record(AREA, "fixture:setQueue(dep)", Outcome::Pass);
     scope.defer(format!("queue(dep) id={queue_id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_queue(&DelQueueParams {
-                    queue: Some(queue_id),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_queue(&DelQueueParams {
+                        queue: Some(queue_id),
+                    })
+                    .await,
+            )
         })
     });
 
@@ -504,13 +523,14 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
     report.record(AREA, "fixture:setStaticMember", Outcome::Pass);
     scope.defer(format!("staticmember id={member_id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_static_member(&DelStaticMemberParams {
-                    member: Some(member_id),
-                    queue: Some(queue_id),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_static_member(&DelStaticMemberParams {
+                        member: Some(member_id),
+                        queue: Some(queue_id),
+                    })
+                    .await,
+            )
         })
     });
 

@@ -10,7 +10,9 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{
+    Orphan, owned, queue_number, read_back, required_queue_params, sweep_orphans, tolerate_absent,
+};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -92,7 +94,7 @@ async fn queue_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
     let created = client
         .set_queue(&SetQueueParams {
             queue_name: Some(queue_name),
-            ..Default::default()
+            ..required_queue_params(queue_number(ctx.token.as_str(), 0))
         })
         .await;
 
@@ -121,10 +123,7 @@ async fn queue_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
     report.record(AREA, "fixture:setQueue", Outcome::Pass);
     scope.defer(format!("queue id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_queue(&DelQueueParams { queue: Some(id) })
-                .await?;
-            Ok(())
+            tolerate_absent(client.del_queue(&DelQueueParams { queue: Some(id) }).await)
         })
     });
 
