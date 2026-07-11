@@ -9570,10 +9570,10 @@ pub struct AssignDIDvPRIResponse {
     pub vpri: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number",
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
         rename = "DIDAdded"
     )]
-    pub did_added: Option<u64>,
+    pub did_added: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -9621,9 +9621,9 @@ pub struct CancelFAXNumberResponse {
     pub status: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub deleted_did: Option<u64>,
+    pub deleted_did: Option<String>,
 }
 
 /// Response body for [`Client::connect_did`] (wire method `connectDID`).
@@ -10415,9 +10415,9 @@ pub struct GetCDRResponseCDR {
     pub total: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub uniqueid: Option<u64>,
+    pub uniqueid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14435,9 +14435,9 @@ pub struct GetResellerCDRResponseCDR {
     pub total: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub uniqueid: Option<u64>,
+    pub uniqueid: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -15905,10 +15905,10 @@ pub struct RemoveDIDvPRIResponse {
     pub vpri: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number",
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
         rename = "DIDRemoved"
     )]
-    pub did_removed: Option<u64>,
+    pub did_removed: Option<String>,
 }
 
 /// Response body for [`Client::search_dids_can`] (wire method `searchDIDsCAN`).

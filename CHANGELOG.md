@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** the response identifier fields `DIDAdded` (`assignDIDvPRI`),
+  `DIDRemoved` (`removeDIDvPRI`), and `deleted_did` (`cancelFaxNumber`) are
+  `Option<String>` (were `Option<u64>`). Each reports the single DID the call
+  acted on -- a phone number, which must stay a string for the same reasons as
+  every other DID field (leading zeros, non-NANP forms, values beyond `i64`).
+  The doc-sample extractor inferred `integer` from an all-digit sample, and the
+  method-specific wire names missed the name-based phone-number override until
+  now.
+- **Breaking:** the `getCDR` / `getResellerCDR` response `uniqueid` is
+  `Option<String>` (was `Option<u64>`). A call-record unique id can be
+  alphanumeric (e.g. `12964421x41098i8c`), which no integer type can hold, so
+  the old typing failed to deserialize a real value; the
+  `getTransactionHistory` `uniqueid` was already `String`.
+
 ## [0.9.0] - 2026-07-10
 
 ### Changed

@@ -1,7 +1,8 @@
 use rust_decimal::Decimal;
 use serde_json::{Value, json};
 use voip_ms::{
-    ApiStatus, Client, Error, GetBalanceParams, GetSubAccountsParams, GetSubAccountsResponse,
+    ApiStatus, Client, Error, GetBalanceParams, GetCDRParams, GetSubAccountsParams,
+    GetSubAccountsResponse,
 };
 use wiremock::matchers::{method, path, query_param, query_param_is_missing};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -1312,4 +1313,27 @@ fn callerid_override_fields_are_strings_with_minus_one_as_none() {
     }))
     .unwrap();
     assert_eq!(fwd.forwardings[0].callerid_override, None);
+}
+
+#[tokio::test]
+async fn typed_get_cdr_decodes_alphanumeric_uniqueid() {
+    // A CDR `uniqueid` can be alphanumeric (e.g. `12964421x41098i8c`), so the
+    // field must be `String`: the earlier `u64` typing failed to deserialize a
+    // real value outright.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [{ "destination": "5551234567", "uniqueid": "12964421x41098i8c" }]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
+    let cdr = envelope.cdr.first().expect("expected at least one CDR row");
+    assert_eq!(cdr.uniqueid.as_deref(), Some("12964421x41098i8c"));
+    assert_eq!(cdr.destination.as_deref(), Some("5551234567"));
 }

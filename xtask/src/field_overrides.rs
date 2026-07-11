@@ -233,7 +233,14 @@ const CALLERID_OVERRIDE_FIELDS: &[&str] = &[
 /// `xsd:integer`; the extractor sees an all-digit sample and infers
 /// `integer`), so the override forces `String` uniformly on both the param
 /// and response side. Every field with one of these names carries a phone
-/// number in every method that has it. Deliberately excluded:
+/// number in every method that has it. `DIDAdded` / `DIDRemoved` /
+/// `deleted_did` each report the single DID an `assignDIDvPRI`,
+/// `removeDIDvPRI`, or `cancelFaxNumber` call acted on -- a DID, not the count
+/// the past-participle name suggests.
+///
+/// Entries are the *wire* field name (the resolver matches before the
+/// snake-case ident is derived), so a camelCase wire name is written as-is
+/// (`DIDAdded`, not `did_added`). Deliberately excluded:
 ///
 /// * the plural `dids` -- variously a list of DID objects or of numeric vPRI
 ///   ids in responses, which a blanket `String` override would wrongly
@@ -241,13 +248,24 @@ const CALLERID_OVERRIDE_FIELDS: &[&str] = &[
 /// * `from` -- a date filter in the `getSMS`-family params but an email
 ///   address in `getEmailToFax`'s response, so it keeps per-method handling.
 const PHONE_STRING_FIELDS: &[&str] = &[
+    "DIDAdded",
+    "DIDRemoved",
     "contact",
+    "deleted_did",
     "destination",
     "did",
     "number",
     "phone_number",
     "stationid",
 ];
+
+/// Opaque identifier fields that arrive as an all-digit sample -- so the
+/// extractor infers `integer` -- but are not numbers: a `getCDR` /
+/// `getResellerCDR` call's `uniqueid` can be alphanumeric (e.g.
+/// `12964421x41098i8c`), which no integer type can hold. Forced to `String`
+/// with the same tolerant deserializer as [`PHONE_STRING_FIELDS`], since the
+/// wire value may still be a bare number.
+const ID_STRING_FIELDS: &[&str] = &["uniqueid"];
 
 /// Date-range filter params, documented uniformly as `'YYYY-MM-DD'`
 /// (`Example: '2010-11-30'`). Typed [`chrono::NaiveDate`], whose own
@@ -349,6 +367,7 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         .chain(
             PHONE_STRING_FIELDS
                 .iter()
+                .chain(ID_STRING_FIELDS.iter())
                 .map(|name| (*name, phone_string.clone())),
         )
         .collect()
