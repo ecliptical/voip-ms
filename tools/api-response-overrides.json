@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle. The `enums` + `field_types` sections declare low-cardinality enum types substituted for `Option<String>` in both *Params and *Response structs (see xtask/src/field_overrides.rs). Boolean flags (1/0 and yes/no) are typed via the built-in tables in field_overrides.rs, not here. `field_type_skip` suppresses a name-based override for one struct where the name is reused for an unrelated value; `field_type_override` assigns one struct's field a specific enum (used for `type`, which means different things per method).",
+  "comment": "Hand-curated corrections to tools/api-responses.json. See xtask/src/overrides.rs for the schema. Edit when the extractor gets a scalar type wrong or for methods whose Output blocks the parser can't handle. The `enums` + `field_types` sections declare low-cardinality enum types substituted for `Option<String>` in both *Params and *Response structs (see xtask/src/field_overrides.rs). Boolean flags (1/0 and yes/no) and phone-number identifier fields (kept String) are typed via the built-in tables in field_overrides.rs, not here. `field_type_skip` suppresses a name-based override for one struct where the name is reused for an unrelated value; `field_type_override` assigns one struct's field a specific enum (used for `type`, which means different things per method).",
   "enums": {
     "DtmfMode": {
       "doc": "DTMF transport mode for SIP sub-accounts.",
@@ -247,7 +247,6 @@
     },
     "getDIDsInfo": {
       "patches": [
-        { "path": "dids[].did",            "type": "string"  },
         { "path": "dids[].cnam",           "type": "bool_01" },
         { "path": "dids[].sms_available",  "type": "bool_01" },
         { "path": "dids[].sms_enabled",    "type": "bool_01" }
@@ -379,124 +378,9 @@
         ]
       }
     },
-    "getCDR": {
-      "patches": [
-        { "path": "cdr[].destination", "type": "string" }
-      ]
-    },
-    "getResellerCDR": {
-      "patches": [
-        { "path": "cdr[].destination", "type": "string" }
-      ]
-    },
-    "getCallRecording": {
-      "patches": [
-        { "path": "destination", "type": "string" }
-      ]
-    },
-    "getCallRecordings": {
-      "patches": [
-        { "path": "recordings[].destination", "type": "string" }
-      ]
-    },
-    "getCallbacks": {
-      "patches": [
-        { "path": "callbacks[].number", "type": "string" }
-      ]
-    },
-    "getCallerIDFiltering": {
-      "patches": [
-        { "path": "filtering[].did", "type": "string" }
-      ]
-    },
-    "getClients": {
-      "patches": [
-        { "path": "clients[].phone_number", "type": "string" }
-      ]
-    },
-    "getConferenceRecordings": {
-      "patches": [
-        { "path": "recordings[].did", "type": "string" }
-      ]
-    },
-    "getDIDsCAN": {
-      "patches": [
-        { "path": "dids[].did", "type": "string" }
-      ]
-    },
-    "getDIDsUSA": {
-      "patches": [
-        { "path": "dids[].did", "type": "string" }
-      ]
-    },
     "getEmailToFax": {
       "patches": [
         { "path": "emailToFax[].from", "type": "string" }
-      ]
-    },
-    "getFaxMessages": {
-      "patches": [
-        { "path": "faxes[].destination", "type": "string" },
-        { "path": "faxes[].stationid",   "type": "string" }
-      ]
-    },
-    "getForwardings": {
-      "patches": [
-        { "path": "forwardings[].phone_number", "type": "string" }
-      ]
-    },
-    "getMMS": {
-      "patches": [
-        { "path": "sms[].contact", "type": "string" },
-        { "path": "sms[].did",     "type": "string" }
-      ]
-    },
-    "getResellerMMS": {
-      "patches": [
-        { "path": "sms[].contact", "type": "string" },
-        { "path": "sms[].did",     "type": "string" }
-      ]
-    },
-    "getSMS": {
-      "patches": [
-        { "path": "sms[].contact", "type": "string" },
-        { "path": "sms[].did",     "type": "string" }
-      ]
-    },
-    "getResellerSMS": {
-      "patches": [
-        { "path": "sms[].contact", "type": "string" },
-        { "path": "sms[].did",     "type": "string" }
-      ]
-    },
-    "getPhonebook": {
-      "patches": [
-        { "path": "phonebooks[].number", "type": "string" }
-      ]
-    },
-    "searchDIDsCAN": {
-      "patches": [
-        { "path": "dids[].did", "type": "string" }
-      ]
-    },
-    "searchDIDsUSA": {
-      "patches": [
-        { "path": "dids[].did", "type": "string" }
-      ]
-    },
-    "searchTollFreeCanUS": {
-      "patches": [
-        { "path": "dids[].did", "type": "string" }
-      ]
-    },
-    "searchTollFreeUSA": {
-      "patches": [
-        { "path": "dids[].did", "type": "string" }
-      ]
-    },
-    "searchVanity": {
-      "patches": [
-        { "path": "dids[].did", "type": "string" }
       ]
     },
     "searchFaxAreaCodeCAN": {

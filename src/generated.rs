@@ -7905,7 +7905,7 @@ pub struct SetCallbackParams {
     pub description: Option<String>,
     /// Number that will be called back (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub number: Option<i64>,
+    pub number: Option<String>,
     /// Delay befor calling back (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delay_before: Option<i64>,
@@ -8699,7 +8699,7 @@ pub struct SetPhonebookParams {
     /// Number or SIP for the Phonebook entry (Example: 'sip:2563' or
     /// '5552223333') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub number: Option<i64>,
+    pub number: Option<String>,
     /// Caller ID Override when dialing via Speed Dial
     #[serde(skip_serializing_if = "Option::is_none")]
     pub callerid: Option<String>,
