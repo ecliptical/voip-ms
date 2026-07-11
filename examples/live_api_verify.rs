@@ -561,9 +561,7 @@ async fn verify_subaccount_lifecycle(client: &Client) -> Result<(), Box<dyn Erro
     );
 
     let delete_result = client
-        .del_sub_account(&DelSubAccountParams {
-            id: Some(i64::try_from(id)?),
-        })
+        .del_sub_account(&DelSubAccountParams { id: Some(id) })
         .await;
 
     match delete_result {

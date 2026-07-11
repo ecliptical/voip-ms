@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** integer request params are `u64` (was `i64`), matching the
+  response side. Every VoIP.ms integer param is a non-negative id or count
+  (the documented `-1` sentinels are enum-typed), and ids read from responses
+  are `u64`, so the old `i64` forced a cast on every get/set round-trip.
+- **Breaking:** decimal request params are `rust_decimal::Decimal` (was
+  `f64`). The affected params are money amounts (`charge`, `payment`,
+  `setup`, `monthly`, `minute`) plus `timezone`; `Decimal` serializes the
+  exact value, where `f64` could ship float artifacts on the two methods
+  that move money.
+- **Breaking:** `date_from` / `date_to` params are `chrono::NaiveDate` (was
+  `String`); its `Serialize` emits the documented `YYYY-MM-DD` wire form.
+  The crate's `chrono` dependency gains the `serde` feature for this.
+- **Breaking:** generated field identifiers are snake_case. Wire names that
+  are camelCase (`isMobile`, `rateCenter`, `emailToFax`) or run-together
+  acronyms (`sipuri`) become idiomatic idents (`is_mobile`, `rate_center`,
+  `email_to_fax`, `sip_uri`) with a serde `rename` preserving the wire form
+  on both the params and response side; `#![allow(non_snake_case)]` is gone
+  from the generated module. Params and responses now share one
+  keyword-escaping ident helper, closing a latent gap where a param named
+  `match` or `ref` would have emitted invalid Rust.
+- **Breaking:** `addLNPPort`'s `locationType` param and `getLNPDetails`'s
+  matching response field are the new `LocationType` enum
+  (`Residential`/`Business`, wire `0`/`1`) instead of a bare number.
+- Name-based field-type substitution no longer applies to collection-shaped
+  response fields -- a scalar override can never stand in for a list/object,
+  so reference catalogs (`getNAT`, `getPlayInstructions`) keep their
+  structural types without needing `field_type_skip` entries (both entries
+  removed).
+- New `cargo xtask check-flags`: audits the hand-curated boolean-flag tables
+  against the doc-mined parameter descriptions, reporting flag-like params
+  not yet typed as `bool` and stale table entries. Finding `locationType`
+  above was its first catch.
 - **Breaking:** the DID-identifier rule below now covers every phone-number
   field: `number`, `phone_number`, `contact`, `destination`, and `stationid`
   join `did` in the generator's built-in String-override table

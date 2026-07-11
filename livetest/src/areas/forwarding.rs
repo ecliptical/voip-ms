@@ -82,7 +82,7 @@ async fn forwarding_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
 
     let id = match created {
         Ok(resp) => match resp.forwarding {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => {
                 report.record(
                     AREA,
@@ -136,13 +136,13 @@ async fn list_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|f| {
             f.forwarding.map(|id| Orphan {
                 label: format!("forwarding id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_forwarding(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_forwarding(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_forwarding(&DelForwardingParams {
             forwarding: Some(id),

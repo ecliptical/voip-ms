@@ -77,7 +77,7 @@ impl Area for Fax {
             "getEmailToFax",
             GetEmailToFAXParams,
             GetEmailToFAXResponse,
-            emailToFax
+            email_to_fax
         );
         probe_list!(
             ctx,
@@ -261,7 +261,7 @@ async fn order_fixture_fax(ctx: &AreaCtx<'_>, report: &mut Report) {
 
     let ordered = client
         .order_fax_number(&OrderFAXNumberParams {
-            location: Some(location as i64),
+            location: Some(location),
             quantity: Some(1),
             ..Default::default()
         })
@@ -386,14 +386,14 @@ async fn cancel_fax_by_did(client: &Client, did: &str) -> anyhow::Result<()> {
 
 /// The numeric record id for a fax number, resolved through the harness context
 /// (so the sweep's error path can distinguish an empty account from a failure).
-async fn lookup_fax_record_id(ctx: &AreaCtx<'_>, did: &str) -> voip_ms::Result<Option<i64>> {
+async fn lookup_fax_record_id(ctx: &AreaCtx<'_>, did: &str) -> voip_ms::Result<Option<u64>> {
     fax_record_id(ctx.client, did).await
 }
 
 /// Resolve a fax number's numeric record `id` from `getFaxNumbersInfo`. Returns
 /// `None` when the number is not on the account. `NoNumbers` is a registered
 /// empty status, so an absent number arrives as `Ok` with an empty list.
-async fn fax_record_id(client: &Client, did: &str) -> voip_ms::Result<Option<i64>> {
+async fn fax_record_id(client: &Client, did: &str) -> voip_ms::Result<Option<u64>> {
     let resp = client
         .get_fax_numbers_info(&GetFAXNumbersInfoParams {
             did: Some(did.to_string()),
@@ -405,7 +405,7 @@ async fn fax_record_id(client: &Client, did: &str) -> voip_ms::Result<Option<i64
         .into_iter()
         .find(|n| n.did.as_deref() == Some(did))
         .and_then(|n| n.id)
-        .and_then(|id| id.parse::<i64>().ok()))
+        .and_then(|id| id.parse::<u64>().ok()))
 }
 
 /// Find one available CAN fax rate center in the configured province and return

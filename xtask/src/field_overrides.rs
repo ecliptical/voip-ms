@@ -16,7 +16,7 @@
 //!    [`Table`] alongside the built-ins. This is how data-driven
 //!    enum substitutions (`dtmf_mode`, `nat`, …) reach the generator.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// How a particular field name should be typed.
 #[derive(Debug, Clone, Default)]
@@ -68,6 +68,47 @@ impl Table {
     }
 }
 
+/// Resolves which override (if any) applies to one emitted struct field,
+/// combining the three override sources with their precedence: a per-struct
+/// assignment (`field_type_override`) wins outright; otherwise the name-based
+/// table applies -- but only to scalar-shaped fields, and not where a
+/// `field_type_skip` entry suppresses it for this struct.
+pub struct Resolver<'a> {
+    /// Name-based override table (built-ins + `field_types` enums).
+    pub table: &'a Table,
+    /// `"StructName.field"` -> override assignments (`field_type_override`).
+    pub per_struct: &'a BTreeMap<String, FieldOverride>,
+    /// `"StructName.field"` paths where the name-based table is suppressed.
+    pub skip: &'a BTreeSet<String>,
+}
+
+impl<'a> Resolver<'a> {
+    /// The override for `struct_name.fname`. `name_based` says whether the
+    /// name-based table may apply: params (always WSDL scalars) pass `true`;
+    /// response fields pass "is this field scalar-shaped" -- a substituted
+    /// scalar type can never stand in for a list/object/map, so collection
+    /// fields (e.g. the reference catalogs `getNAT` and
+    /// `getPlayInstructions` return under an overridden field name) keep
+    /// their structural type without needing a skip entry.
+    pub fn resolve(
+        &self,
+        struct_name: &str,
+        fname: &str,
+        name_based: bool,
+    ) -> Option<&'a FieldOverride> {
+        let path = format!("{struct_name}.{fname}");
+        if let Some(o) = self.per_struct.get(&path) {
+            return Some(o);
+        }
+
+        if !name_based || self.skip.contains(&path) {
+            return None;
+        }
+
+        self.table.get(fname)
+    }
+}
+
 /// Field names that should be typed as [`crate::Routing`] instead of
 /// `String`. All of these encode a `tag:value` routing target.
 const ROUTING_FIELDS: &[&str] = &[
@@ -90,7 +131,7 @@ const ROUTING_FIELDS: &[&str] = &[
 /// form comes from a param `serialize_with`, since a bare `bool` would serialize
 /// as `true`/`false`, which these parameters reject. Documented as
 /// `1 = true, 0 = false` (or `1=Enable / 0=Disable`).
-const FLAG_01_FIELDS: &[&str] = &[
+pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "activate",
     "advanced",
     "answered",
@@ -135,7 +176,7 @@ const FLAG_01_FIELDS: &[&str] = &[
 /// instead of `String`, with the `yes`/`no` wire form from a param
 /// `serialize_with`. These are the conference, queue, and voicemail toggles
 /// documented as `(yes/no)`.
-const FLAG_YES_NO_FIELDS: &[&str] = &[
+pub(crate) const FLAG_YES_NO_FIELDS: &[&str] = &[
     "admin",
     "announce_join_leave",
     "announce_only_user",
@@ -208,6 +249,14 @@ const PHONE_STRING_FIELDS: &[&str] = &[
     "stationid",
 ];
 
+/// Date-range filter params, documented uniformly as `'YYYY-MM-DD'`
+/// (`Example: '2010-11-30'`). Typed [`chrono::NaiveDate`], whose own
+/// `Serialize` emits exactly that wire form, instead of the WSDL's
+/// `xsd:string`. The bare `date` field is deliberately excluded -- it is a
+/// datetime in some responses (`getLNPDetails`) and a date in others, so no
+/// single type fits.
+const DATE_FIELDS: &[&str] = &["date_from", "date_to"];
+
 fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let routing = FieldOverride {
         rust_type: "crate::Routing".into(),
@@ -259,6 +308,14 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         ),
         ..Default::default()
     };
+    // NaiveDate's own Serialize emits the `%Y-%m-%d` wire form, so no
+    // param_serializer; the response deserializer also folds the
+    // `0000-00-00` placeholder to None should a response ever carry one.
+    let date = FieldOverride {
+        rust_type: "chrono::NaiveDate".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_date".into()),
+        ..Default::default()
+    };
     // A phone number stays `String` on both the param and response side. On
     // the response side VoIP.ms may send it as a bare JSON number, so it keeps
     // the tolerant string deserializer -- dropping it would reintroduce drift
@@ -288,6 +345,7 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
                 .iter()
                 .map(|name| (*name, callerid_override.clone())),
         )
+        .chain(DATE_FIELDS.iter().map(|name| (*name, date.clone())))
         .chain(
             PHONE_STRING_FIELDS
                 .iter()

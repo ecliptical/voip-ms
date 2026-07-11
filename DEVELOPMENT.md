@@ -82,18 +82,26 @@ cargo xtask extract-statuses  "$HTML"
 # 3. Review the extract diffs BEFORE regenerating (see checklist below).
 git diff tools/api-responses.json tools/api-statuses.json
 
-# 4. Apply any corrections to tools/api-response-overrides.json (NOT the
-#    generated files), then regenerate src/generated.rs.
+# 4. Audit the boolean-flag tables against the refreshed docs. Advisory:
+#    a reported candidate is either a new flag (add it to FLAG_01_FIELDS /
+#    FLAG_YES_NO_FIELDS in xtask/src/field_overrides.rs) or a two-valued
+#    enum (declare it in the overrides JSON instead); a "stale" entry means
+#    the docs dropped the field.
+cargo xtask check-flags
+
+# 5. Apply any corrections to tools/api-response-overrides.json (NOT the
+#    generated files), then regenerate src/generated.rs. Heed its warnings:
+#    a patch shadowed by a field-name override should be deleted.
 cargo xtask gen
 
-# 5. Run the full quality gate — note the doc build, which CI does NOT run.
+# 6. Run the full quality gate — note the doc build, which CI does NOT run.
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --all-targets
 RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
   cargo doc --no-deps
 
-# 6. Review the generated diff, update CHANGELOG.md, and commit
+# 7. Review the generated diff, update CHANGELOG.md, and commit
 #    tools/*.json + src/generated.rs together.
 git diff src/generated.rs
 ```

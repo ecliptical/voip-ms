@@ -21,13 +21,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let (username, password) = credentials()?;
-    let client_id: i64 = std::env::var("VOIP_MS_CLIENT")
+    let client_id: u64 = std::env::var("VOIP_MS_CLIENT")
         .map_err(|_| "VOIP_MS_CLIENT is not set")?
         .parse()
         .map_err(|_| "VOIP_MS_CLIENT must be a numeric client ID")?;
-    let date_from =
-        std::env::var("VOIP_MS_DATE_FROM").map_err(|_| "VOIP_MS_DATE_FROM is not set")?;
-    let date_to = std::env::var("VOIP_MS_DATE_TO").map_err(|_| "VOIP_MS_DATE_TO is not set")?;
+    let date_from = std::env::var("VOIP_MS_DATE_FROM")
+        .map_err(|_| "VOIP_MS_DATE_FROM is not set")?
+        .parse::<voip_ms::chrono::NaiveDate>()
+        .map_err(|_| "VOIP_MS_DATE_FROM must be YYYY-MM-DD")?;
+    let date_to = std::env::var("VOIP_MS_DATE_TO")
+        .map_err(|_| "VOIP_MS_DATE_TO is not set")?
+        .parse::<voip_ms::chrono::NaiveDate>()
+        .map_err(|_| "VOIP_MS_DATE_TO must be YYYY-MM-DD")?;
 
     let client = Client::new(username, password);
 

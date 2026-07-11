@@ -116,7 +116,7 @@ async fn group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
 
     let id = match created {
         Ok(resp) => match resp.group {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setPhonebookGroup", "no id returned"),
         },
         Err(error) => {
@@ -165,7 +165,7 @@ async fn entry_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
 
     let id = match created {
         Ok(resp) => match resp.phonebook {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setPhonebook", "no id returned"),
         },
         Err(error) => {
@@ -213,13 +213,13 @@ async fn list_entry_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|p| {
             p.phonebook.map(|id| Orphan {
                 label: format!("phonebook id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_entry(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_entry(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_phonebook(&DelPhonebookParams {
             phonebook: Some(id),
@@ -239,13 +239,13 @@ async fn list_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|g| {
             g.phonebook_group.map(|id| Orphan {
                 label: format!("phonebookgroup id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_group(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_group(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_phonebook_group(&DelPhonebookGroupParams {
             group: Some(id.to_string()),

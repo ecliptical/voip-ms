@@ -48,8 +48,8 @@ impl Area for Cdr {
         }
 
         let today = voip_ms::chrono::Local::now().date_naive();
-        let date_from = (today - voip_ms::chrono::Duration::days(30)).to_string();
-        let date_to = today.to_string();
+        let date_from = today - voip_ms::chrono::Duration::days(30);
+        let date_to = today;
 
         read_back::<_, GetCDRResponse>(
             ctx.client,
@@ -59,7 +59,7 @@ impl Area for Cdr {
             &GetCDRParams {
                 date_from: Some(date_from),
                 date_to: Some(date_to),
-                timezone: Some(0.0),
+                timezone: Some(voip_ms::rust_decimal::Decimal::ZERO),
                 ..Default::default()
             },
             |r| Some(r.cdr.len()),

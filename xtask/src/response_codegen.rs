@@ -26,7 +26,7 @@
 use std::collections::BTreeMap;
 
 use crate::extract::{ScalarTy, Shape};
-use crate::field_overrides::{FieldOverride, Table};
+use crate::field_overrides::Resolver;
 use crate::{acronyms_sorted, camel_to_pascal};
 
 /// Render all `*Response` structs for the methods in `responses`.
@@ -36,9 +36,7 @@ use crate::{acronyms_sorted, camel_to_pascal};
 pub fn emit_response_structs(
     method_names: &[String],
     responses: &BTreeMap<String, Shape>,
-    table: &Table,
-    field_type_skip: &std::collections::BTreeSet<String>,
-    field_type_override: &BTreeMap<String, FieldOverride>,
+    resolver: &Resolver,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -49,7 +47,7 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new(table, field_type_skip, field_type_override);
+        let mut emitter = Emitter::new(resolver);
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -67,26 +65,14 @@ struct Emitter<'a> {
     /// Structs emitted in dependency-friendly order (children appended
     /// before any later sibling that references them).
     structs: Vec<String>,
-    table: &'a Table,
-    /// `"StructName.field"` paths where the field-name override table is
-    /// suppressed (the field keeps its inferred/patched type).
-    field_type_skip: &'a std::collections::BTreeSet<String>,
-    /// `"StructName.field"` paths assigned a specific enum type, overriding
-    /// the inferred type and any name-based override.
-    field_type_override: &'a BTreeMap<String, FieldOverride>,
+    resolver: &'a Resolver<'a>,
 }
 
 impl<'a> Emitter<'a> {
-    fn new(
-        table: &'a Table,
-        field_type_skip: &'a std::collections::BTreeSet<String>,
-        field_type_override: &'a BTreeMap<String, FieldOverride>,
-    ) -> Self {
+    fn new(resolver: &'a Resolver<'a>) -> Self {
         Self {
             structs: Vec::new(),
-            table,
-            field_type_skip,
-            field_type_override,
+            resolver,
         }
     }
 
@@ -157,27 +143,22 @@ impl<'a> Emitter<'a> {
             }
         }
 
+        let acronyms = acronyms_sorted();
         let mut body = String::new();
         body.push_str("#[derive(Debug, Clone, Default, serde::Deserialize)]\n");
         body.push_str(&format!("pub struct {name} {{\n"));
         for (fname, sub) in deduped {
-            let rust_ident = rust_field_ident(fname);
-            // A per-struct `field_type_override` wins outright; otherwise the
-            // name-based table applies, unless `field_type_skip` suppresses it
-            // for this same-named-but-unrelated field.
-            let path = format!("{name}.{fname}");
-            let override_ = if let Some(o) = self.field_type_override.get(&path) {
-                Some(o.clone())
-            } else if self.field_type_skip.contains(&path) {
-                None
-            } else {
-                self.table.get(fname).cloned()
-            };
-            let rust_ty = match &override_ {
+            let rust_ident = crate::rust_field_ident(fname, &acronyms);
+            // The name-based table only applies to scalar-shaped fields: a
+            // substituted scalar type can never stand in for a list/object.
+            let override_ = self
+                .resolver
+                .resolve(name, fname, matches!(sub, Shape::Scalar { .. }));
+            let rust_ty = match override_ {
                 Some(o) => o.rust_type.clone(),
                 None => self.field_type(name, fname, sub),
             };
-            let deser = match &override_ {
+            let deser = match override_ {
                 Some(o) => o.response_deserializer.as_deref(),
                 None => field_deserializer(sub),
             };
@@ -196,7 +177,7 @@ impl<'a> Emitter<'a> {
                 format!("Option<{rust_ty}>")
             };
             let attrs = render_field_attrs(deser);
-            if rust_ident == *fname {
+            if rust_ident.trim_start_matches("r#") == *fname {
                 body.push_str(&attrs);
                 body.push_str(&format!("    pub {rust_ident}: {field_ty},\n"));
             } else {
@@ -372,94 +353,4 @@ fn singularize(s: &str, acronyms: &[&'static str]) -> String {
     }
 
     s.to_string()
-}
-
-/// `type` is reserved; `match` and a couple of others may show up in
-/// future API additions. Add as needed.
-fn rust_field_ident(name: &str) -> String {
-    if name.is_empty() {
-        return "field_empty".into();
-    }
-
-    let safe = matches!(
-        name,
-        "type"
-            | "match"
-            | "fn"
-            | "mod"
-            | "ref"
-            | "use"
-            | "loop"
-            | "move"
-            | "box"
-            | "where"
-            | "self"
-            | "Self"
-            | "static"
-            | "trait"
-            | "true"
-            | "false"
-            | "as"
-            | "async"
-            | "await"
-            | "dyn"
-            | "enum"
-            | "extern"
-            | "impl"
-            | "in"
-            | "let"
-            | "pub"
-            | "return"
-            | "struct"
-            | "super"
-            | "unsafe"
-            | "while"
-            | "yield"
-            | "if"
-            | "else"
-            | "for"
-            | "break"
-            | "continue"
-            | "const"
-            | "crate"
-    );
-
-    if safe {
-        return format!("r#{name}");
-    }
-
-    if is_rust_identifier(name) {
-        return name.to_string();
-    }
-
-    // Numeric or otherwise non-identifier names: prefix with `field_`
-    // and replace any remaining unsafe chars with `_`.
-    let mut out = String::with_capacity(name.len() + 6);
-    out.push_str("field_");
-    for c in name.chars() {
-        if is_ident_char(c) {
-            out.push(c);
-        } else {
-            out.push('_');
-        }
-    }
-
-    out
-}
-
-fn is_rust_identifier(s: &str) -> bool {
-    let mut chars = s.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-
-    if !(first == '_' || first.is_ascii_alphabetic()) {
-        return false;
-    }
-
-    chars.all(is_ident_char)
-}
-
-fn is_ident_char(c: char) -> bool {
-    c == '_' || c.is_ascii_alphanumeric()
 }
