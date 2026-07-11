@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-07-11
+
+### Fixed
+
+- `getConference` reports an uncapped conference's `max_members` as the word
+  `Unlimited`, which the `u64` typing could not deserialize. The field is now
+  a `MaxMembers` (a count or `Unlimited`), so the response decodes.
+- A method that answers a successful call with an empty body (e.g.
+  `delConference`) no longer fails with a JSON parse error: an empty response
+  body is treated as `{"status":"success"}`.
+
 ### Removed
 
 - The `live_api_verify` example and its `live-api-verify.yaml` workflow, both
