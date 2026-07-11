@@ -245,6 +245,18 @@ pub enum WaitTime {
     Unlimited,
 }
 
+/// A conference member cap, or unlimited.
+///
+/// `getConference` reports `max_members` as a count or the word `Unlimited`
+/// when the conference has no cap.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MaxMembers {
+    /// A concrete member cap.
+    Value(u64),
+    /// No cap (wire: `Unlimited`).
+    Unlimited,
+}
+
 macro_rules! impl_seconds {
     ($name:ident, $unlimited_wire:literal, $expecting:literal) => {
         impl From<u64> for $name {
@@ -309,6 +321,7 @@ macro_rules! impl_seconds {
 
 impl_seconds!(Seconds, "none", "a number of seconds or `none`");
 impl_seconds!(WaitTime, "unlimited", "a number of seconds or `unlimited`");
+impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 
 #[cfg(test)]
 mod tests {
@@ -417,6 +430,28 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<WaitTime>("\"unlimited\"").unwrap(),
             WaitTime::Unlimited
+        );
+    }
+
+    #[test]
+    fn max_members_handles_count_and_capital_unlimited() {
+        // The wire sends a numeric string or the capitalized word `Unlimited`.
+        assert_eq!(
+            serde_json::from_str::<MaxMembers>("\"40\"").unwrap(),
+            MaxMembers::Value(40)
+        );
+        assert_eq!(
+            serde_json::from_str::<MaxMembers>("\"Unlimited\"").unwrap(),
+            MaxMembers::Unlimited
+        );
+        // Serialize round-trips the exact wire form, capital `U` included.
+        assert_eq!(
+            serde_json::to_string(&MaxMembers::Unlimited).unwrap(),
+            "\"Unlimited\""
+        );
+        assert_eq!(
+            serde_json::to_string(&MaxMembers::Value(40)).unwrap(),
+            "\"40\""
         );
     }
 }

@@ -8104,7 +8104,7 @@ pub struct SetConferenceParams {
     pub members: Option<String>,
     /// Members Max Value (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_members: Option<String>,
+    pub max_members: Option<crate::MaxMembers>,
     /// The recording played when a user joins, typically some kind of beep
     /// sound (Values from getRecordings)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -11160,9 +11160,9 @@ pub struct GetConferenceResponseConference {
     pub description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_max_members"
     )]
-    pub max_members: Option<u64>,
+    pub max_members: Option<crate::MaxMembers>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"

@@ -315,6 +315,13 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         response_deserializer: Some("crate::responses::deserialize_opt_wait_time".into()),
         ..Default::default()
     };
+    // getConference reports `max_members` as a count or the word `Unlimited`;
+    // like Seconds/WaitTime it carries its own Serialize, so no param_serializer.
+    let max_members = FieldOverride {
+        rust_type: "crate::MaxMembers".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_max_members".into()),
+        ..Default::default()
+    };
     // Phone-number override: `String` (a formatted / non-NANP caller ID must
     // survive) with a deserializer that folds the `-1`/empty "not set" sentinel
     // to `None`. Params are already `Option<String>`, so `rust_type` is a no-op
@@ -358,6 +365,7 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         .chain(std::iter::once(("test", flag_test)))
         .chain(SECONDS_FIELDS.iter().map(|name| (*name, seconds.clone())))
         .chain(std::iter::once(("maximum_wait_time", wait_time)))
+        .chain(std::iter::once(("max_members", max_members)))
         .chain(
             CALLERID_OVERRIDE_FIELDS
                 .iter()

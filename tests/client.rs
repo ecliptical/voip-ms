@@ -1,8 +1,8 @@
 use rust_decimal::Decimal;
 use serde_json::{Value, json};
 use voip_ms::{
-    ApiStatus, Client, Error, GetBalanceParams, GetCDRParams, GetSubAccountsParams,
-    GetSubAccountsResponse,
+    ApiStatus, Client, Error, GetBalanceParams, GetCDRParams, GetConferenceParams,
+    GetSubAccountsParams, GetSubAccountsResponse, MaxMembers,
 };
 use wiremock::matchers::{method, path, query_param, query_param_is_missing};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -165,6 +165,25 @@ async fn response_without_status_field_is_invalid() {
         .unwrap_err();
 
     assert!(matches!(err, Error::InvalidResponse(_)), "got {err:?}");
+}
+
+#[tokio::test]
+async fn empty_body_is_treated_as_success() {
+    // delConference and similar answer a successful call with an empty body;
+    // that must read as success, not a JSON parse error.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(""))
+        .mount(&server)
+        .await;
+
+    let body = client
+        .call_raw("delConference", &GetBalanceParams::default())
+        .await
+        .expect("empty body must classify as success");
+    assert_eq!(body["status"], "success");
 }
 
 #[tokio::test]
@@ -1336,4 +1355,37 @@ async fn typed_get_cdr_decodes_alphanumeric_uniqueid() {
     let cdr = envelope.cdr.first().expect("expected at least one CDR row");
     assert_eq!(cdr.uniqueid.as_deref(), Some("12964421x41098i8c"));
     assert_eq!(cdr.destination.as_deref(), Some("5551234567"));
+}
+
+#[tokio::test]
+async fn typed_get_conference_decodes_unlimited_max_members() {
+    // getConference reports an uncapped conference's max_members as the word
+    // `Unlimited`; the earlier `u64` typing failed to deserialize it.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getConference"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "conference": [
+                { "conference": "7397", "name": "lvt", "max_members": "Unlimited" },
+                { "conference": "7398", "name": "capped", "max_members": "40" }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_conference(&GetConferenceParams::default())
+        .await
+        .unwrap();
+    assert_eq!(
+        envelope.conference[0].max_members,
+        Some(MaxMembers::Unlimited)
+    );
+    assert_eq!(
+        envelope.conference[1].max_members,
+        Some(MaxMembers::Value(40))
+    );
 }

@@ -72,17 +72,31 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
     let client = ctx.client;
     let name = ctx.token.marker(0);
 
-    // `recording`, `voicemailsetup`, and `choices` are `(required)` and take
-    // account-specific codes ("Values from getRecordings"/`getVoicemailSetups`);
-    // these are the conventional defaults (code 1) and a single hangup choice --
-    // best-effort until a live run confirms them. A rejection surfaces as a Fail
-    // naming the offending field (e.g. `missing_recording`).
+    // `recording` is `(required)` and must be a real recording id ("Values from
+    // getRecordings"); a nonexistent id is rejected (`invalid_recording`), so
+    // discover one and skip if the account has none. `voicemailsetup` code 1 and
+    // a single hangup choice are the conventional defaults.
+    let recording = match client.get_recordings(&GetRecordingsParams::default()).await {
+        Ok(resp) => resp.recordings.into_iter().find_map(|r| r.value),
+        // `no_recording` deserializes as an empty list on some paths; treat any
+        // read failure as "none discoverable" rather than a hard error here.
+        Err(_) => None,
+    };
+    let Some(recording) = recording else {
+        report.record(
+            AREA,
+            "fixture:setIVR",
+            Outcome::Skip("requires an existing recording".to_string()),
+        );
+        return;
+    };
+
     let created = client
         .set_ivr(&SetIVRParams {
             name: Some(name),
             timeout: Some(10),
             language: Some("en".to_string()),
-            recording: Some(1),
+            recording: Some(recording),
             voicemailsetup: Some(1),
             choices: Some("1=sys:hangup".to_string()),
             ..Default::default()

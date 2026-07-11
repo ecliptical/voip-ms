@@ -257,7 +257,9 @@ async fn callback_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Sc
         .set_callback(&SetCallbackParams {
             description: Some(description),
             number: Some("15555550100".into()),
-            delay_before: Some(0),
+            // `delay_before` must be non-zero; the API treats 0 as absent
+            // (`missing_delay_before`).
+            delay_before: Some(1),
             response_timeout: Some(5),
             digit_timeout: Some(5),
             ..Default::default()
@@ -344,14 +346,36 @@ async fn ring_group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
     let name = ctx.token.short_marker(2);
 
     // `members` and `voicemail` are `(required)`. `members` takes routing
-    // headers to real resources (`account:<sub>;fwd:<id>`) and `voicemail` a
-    // real box id or `none`; without a dependent resource these are best-effort
-    // and a live run may still reject them (surfaced as a Fail).
+    // headers to real resources (`account:<sub>`); a nonexistent sub is rejected
+    // (`invalid_mailbox`), so discover a real one and skip if the account has
+    // none. `voicemail` is a box id or the `0` ("no voicemail") sentinel -- the
+    // word `none` is not accepted.
+    let sub_account = match client
+        .get_sub_accounts(&GetSubAccountsParams::default())
+        .await
+    {
+        Ok(resp) => resp.accounts.into_iter().find_map(|a| a.account),
+        Err(error) => {
+            return fail(
+                report,
+                "fixture:setRingGroup",
+                &format!("getSubAccounts (for member): {error}"),
+            );
+        }
+    };
+    let Some(sub_account) = sub_account else {
+        return report.record(
+            AREA,
+            "fixture:setRingGroup",
+            Outcome::Skip("requires a sub-account to use as a member".to_string()),
+        );
+    };
+
     let created = client
         .set_ring_group(&SetRingGroupParams {
             name: Some(name),
-            members: Some("account:100000".into()),
-            voicemail: Some("none".into()),
+            members: Some(format!("account:{sub_account}")),
+            voicemail: Some("0".into()),
             ..Default::default()
         })
         .await;
@@ -411,8 +435,10 @@ async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &
             startminute: Some("00".to_string()),
             endhour: Some("17".to_string()),
             endminute: Some("00".to_string()),
-            weekdaystart: Some("1".to_string()),
-            weekdayend: Some("5".to_string()),
+            // Weekday conditions are day abbreviations (`mon`..`sun`), not
+            // numbers -- a numeric value is rejected (`invalid_weekdaystart`).
+            weekdaystart: Some("mon".to_string()),
+            weekdayend: Some("fri".to_string()),
             ..Default::default()
         })
         .await;
@@ -473,6 +499,16 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
             Some(id) => id,
             None => return fail(report, "fixture:setQueue(dep)", "no id returned"),
         },
+        // A queue number the account can't provision (no internal-extension
+        // range) is rejected with `invalid_number`; that is an account
+        // limitation, not a harness defect, so skip rather than fail.
+        Err(Error::Api(ApiStatus::InvalidNumber)) => {
+            return report.record(
+                AREA,
+                "fixture:setQueue(dep)",
+                Outcome::Skip("account has no provisionable queue number".to_string()),
+            );
+        }
         Err(error) => {
             return fail(
                 report,

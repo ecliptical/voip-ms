@@ -1,7 +1,7 @@
 use reqwest::Url;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::error::{ApiStatus, Error, Result};
 
@@ -67,7 +67,16 @@ impl Client {
             .await?
             .error_for_status()?;
 
-        let body: Value = response.json().await?;
+        let text = response.text().await?;
+        // Some methods (e.g. delConference) answer a successful call with an
+        // empty body instead of a `{"status":"success"}` envelope; treat that
+        // as success rather than a JSON parse error.
+        let body: Value = if text.trim().is_empty() {
+            json!({ "status": "success" })
+        } else {
+            serde_json::from_str(&text)
+                .map_err(|e| Error::InvalidResponse(format!("response body is not JSON: {e}")))?
+        };
         let empty = check_status(&body)?;
         Ok((body, empty))
     }
@@ -105,7 +114,8 @@ impl Client {
     /// genuine error status, so a caller can inspect exactly what the server
     /// returned (the status plus any diagnostic fields). Prefer [`Client::call`]
     /// or [`Client::call_raw`] for normal use; reach for this to diagnose an
-    /// unexpected error status.
+    /// unexpected error status. An empty body reads as `{"status":"success"}`;
+    /// a non-empty body that isn't JSON is an [`Error::InvalidResponse`].
     ///
     /// Gated behind the `unchecked-raw` feature.
     #[cfg(feature = "unchecked-raw")]
@@ -126,7 +136,13 @@ impl Client {
             .await?
             .error_for_status()?;
 
-        Ok(response.json().await?)
+        let text = response.text().await?;
+        if text.trim().is_empty() {
+            return Ok(json!({ "status": "success" }));
+        }
+
+        serde_json::from_str(&text)
+            .map_err(|e| Error::InvalidResponse(format!("response body is not JSON: {e}")))
     }
 
     /// Issue a request and deserialize the full JSON response body into `T`.

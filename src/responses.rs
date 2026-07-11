@@ -26,7 +26,7 @@ use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::str::FromStr;
 
-use crate::types::{Routing, Seconds, WaitTime};
+use crate::types::{MaxMembers, Routing, Seconds, WaitTime};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -279,6 +279,15 @@ where
     D: Deserializer<'de>,
 {
     deserialize_opt_via::<WaitTime, D>(deserializer)
+}
+
+pub(crate) fn deserialize_opt_max_members<'de, D>(
+    deserializer: D,
+) -> Result<Option<MaxMembers>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_via::<MaxMembers, D>(deserializer)
 }
 
 /// Deserialize an optional value via the target type's own `Deserialize`,

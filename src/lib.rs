@@ -63,7 +63,7 @@ mod types;
 pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL};
 pub use error::{Error, Result};
 pub use generated::*;
-pub use types::{Routing, RoutingParseError, Seconds, WaitTime};
+pub use types::{MaxMembers, Routing, RoutingParseError, Seconds, WaitTime};
 
 // Dependencies whose types appear in this crate's public API. Re-exported so
 // callers can name those types (and `match` on [`Error::Http`]) without adding

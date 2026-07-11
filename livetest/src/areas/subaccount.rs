@@ -149,7 +149,10 @@ async fn subaccount_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
             device_type: Some(1),
             lock_international: Some(1),
             international_route: Some(1),
-            music_on_hold: Some("none".into()),
+            // `music_on_hold` is a class from getMusicOnHold; `default` ("No
+            // Music") is the always-present baseline. `none` is rejected
+            // (`invalid_musiconhold`).
+            music_on_hold: Some("default".into()),
             allowed_codecs: Some("ulaw".into()),
             dtmf_mode: Some(DtmfMode::Auto),
             nat: Some(Nat::Yes),

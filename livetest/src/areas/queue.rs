@@ -110,6 +110,17 @@ async fn queue_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
                 return;
             }
         },
+        // A queue number the account can't provision (no internal-extension
+        // range) is rejected with `invalid_number` -- an account limitation,
+        // not a harness defect, so skip rather than fail.
+        Err(Error::Api(ApiStatus::InvalidNumber)) => {
+            report.record(
+                AREA,
+                "fixture:setQueue",
+                Outcome::Skip("account has no provisionable queue number".to_string()),
+            );
+            return;
+        }
         Err(error) => {
             report.record(
                 AREA,

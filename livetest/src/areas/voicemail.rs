@@ -135,7 +135,10 @@ async fn voicemail_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
             say_callerid: Some(false),
             play_instructions: Some(PlayInstructions::Unread),
             language: Some("en".to_string()),
-            email_attachment_format: Some(EmailAttachmentFormat::No),
+            // `createVoicemail` requires a real attachment format from
+            // getVoicemailAttachmentFormats; `no` is rejected
+            // (`invalid_email_attachment_format`). `wav49` is the recommended one.
+            email_attachment_format: Some(EmailAttachmentFormat::Wav49),
             ..Default::default()
         })
         .await;
