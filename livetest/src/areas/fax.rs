@@ -313,7 +313,7 @@ async fn order_fixture_fax(ctx: &AreaCtx<'_>, report: &mut Report) {
 
     if let Err(error) = client
         .set_fax_number_info(&SetFAXNumberInfoParams {
-            did: fax_did_i64(&did),
+            did: Some(did.clone()),
             email: Some(ctx.token.marker(0)),
             ..Default::default()
         })
@@ -334,7 +334,7 @@ async fn order_fixture_fax(ctx: &AreaCtx<'_>, report: &mut Report) {
         AREA,
         "fixture:getFaxNumbersInfo",
         &GetFAXNumbersInfoParams {
-            did: fax_did_i64(&did),
+            did: Some(did.clone()),
         },
         |r| Some(r.numbers.len()),
     )
@@ -396,7 +396,7 @@ async fn lookup_fax_record_id(ctx: &AreaCtx<'_>, did: &str) -> voip_ms::Result<O
 async fn fax_record_id(client: &Client, did: &str) -> voip_ms::Result<Option<i64>> {
     let resp = client
         .get_fax_numbers_info(&GetFAXNumbersInfoParams {
-            did: fax_did_i64(did),
+            did: Some(did.to_string()),
         })
         .await?;
 
@@ -429,12 +429,6 @@ async fn find_available_fax_location(ctx: &AreaCtx<'_>) -> voip_ms::Result<Optio
 /// number; the fixture orders `quantity=1`, so take the first.
 fn first_did(dids: &str) -> String {
     dids.split(',').next().unwrap_or(dids).trim().to_string()
-}
-
-/// The fax params take the DID as `Option<i64>`; a non-numeric number yields
-/// `None` rather than a panic, which the caller treats as "not found."
-fn fax_did_i64(did: &str) -> Option<i64> {
-    did.parse::<i64>().ok()
 }
 
 fn fail(report: &mut Report, label: &str, error: &str) {

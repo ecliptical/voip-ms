@@ -2169,8 +2169,12 @@ pub enum ApiStatus {
     NoDID,
     /// `no_disa` — There are no DISAs
     NoDISA,
+    /// `no_emailtofax` — There are no Email to Fax entries
+    NoEmailtofax,
     /// `no_filter` — There are no Filters
     NoFilter,
+    /// `no_folder` — There are no Fax Folders
+    NoFolder,
     /// `no_forwarding` — There was no Forwarding
     NoForwarding,
     /// `no_ivr` — There are no ivr
@@ -2723,7 +2727,9 @@ impl ApiStatus {
             ApiStatus::NoConference => "no_conference",
             ApiStatus::NoDID => "no_did",
             ApiStatus::NoDISA => "no_disa",
+            ApiStatus::NoEmailtofax => "no_emailtofax",
             ApiStatus::NoFilter => "no_filter",
+            ApiStatus::NoFolder => "no_folder",
             ApiStatus::NoForwarding => "no_forwarding",
             ApiStatus::NoIVR => "no_ivr",
             ApiStatus::NoMailbox => "no_mailbox",
@@ -3223,7 +3229,9 @@ impl ApiStatus {
             "no_conference" => ApiStatus::NoConference,
             "no_did" => ApiStatus::NoDID,
             "no_disa" => ApiStatus::NoDISA,
+            "no_emailtofax" => ApiStatus::NoEmailtofax,
             "no_filter" => ApiStatus::NoFilter,
+            "no_folder" => ApiStatus::NoFolder,
             "no_forwarding" => ApiStatus::NoForwarding,
             "no_ivr" => ApiStatus::NoIVR,
             "no_mailbox" => ApiStatus::NoMailbox,
@@ -3907,7 +3915,9 @@ impl ApiStatus {
             ApiStatus::NoConference => Some("There are no Conferences"),
             ApiStatus::NoDID => Some("There are no DIDs"),
             ApiStatus::NoDISA => Some("There are no DISAs"),
+            ApiStatus::NoEmailtofax => Some("There are no Email to Fax entries"),
             ApiStatus::NoFilter => Some("There are no Filters"),
+            ApiStatus::NoFolder => Some("There are no Fax Folders"),
             ApiStatus::NoForwarding => Some("There was no Forwarding"),
             ApiStatus::NoIVR => Some("There are no ivr"),
             ApiStatus::NoMailbox => Some("There are no Mailboxes"),
@@ -4024,7 +4034,9 @@ impl ApiStatus {
                 | ApiStatus::NoConference
                 | ApiStatus::NoDID
                 | ApiStatus::NoDISA
+                | ApiStatus::NoEmailtofax
                 | ApiStatus::NoFilter
+                | ApiStatus::NoFolder
                 | ApiStatus::NoForwarding
                 | ApiStatus::NoIVR
                 | ApiStatus::NoMailbox
@@ -5920,7 +5932,7 @@ pub struct GetFAXNumbersInfoParams {
     /// Fax Number to retrieves the information of a single number, or not send
     /// if you want retrieves the information of all your Fax Numbers.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub did: Option<i64>,
+    pub did: Option<String>,
 }
 
 /// \- Shows if a Fax Number can be ported into our network
@@ -5931,7 +5943,7 @@ pub struct GetFAXNumbersPortabilityParams {
     /// DID Number to be ported into our network (Example: 5552341234)
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub did: Option<i64>,
+    pub did: Option<String>,
 }
 
 /// \- Retrieves a list of Canadian Fax Provinces if no additional parameter is
@@ -8453,7 +8465,7 @@ pub struct SetFAXNumberEmailParams {
     /// DID Number to be ported into our network (Example: 5552341234)
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub did: Option<i64>,
+    pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
     /// (Example: \[email protected\])
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -8488,7 +8500,7 @@ pub struct SetFAXNumberInfoParams {
     /// DID Number to be ported into our network (Example: 5552341234)
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub did: Option<i64>,
+    pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
     /// (Example: \[email protected\])
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -8539,7 +8551,7 @@ pub struct SetFAXNumberURLCallbackParams {
     /// DID Number to be ported into our network (Example: 5552341234)
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub did: Option<i64>,
+    pub did: Option<String>,
     /// URL where make a POST when you receive a Fax Message.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
@@ -12018,7 +12030,7 @@ pub struct GetDIDvPRIResponse {
         default,
         deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub dids: Vec<u64>,
+    pub dids: Vec<String>,
 }
 
 /// Response body for [`Client::get_disas`] (wire method `getDISAs`).

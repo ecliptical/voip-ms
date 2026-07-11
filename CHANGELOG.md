@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** DID identifier fields are now `String`, never numeric. The WSDL
+  declared the `did` parameter of `getFaxNumbersInfo`,
+  `getFaxNumbersPortability`, `setFaxNumberEmail`, `setFaxNumberInfo`, and
+  `setFaxNumberURLCallback` as `xsd:integer`, so they were generated as
+  `Option<i64>`; a DID is a phone number (an identifier, not a quantity) that
+  can carry leading zeros and exceed `i64` range, so passing one lost
+  information. They are now `Option<String>`, uniform with every other `did`.
+  Likewise `getDIDvPRI`'s `dids` response field was inferred as `Vec<u64>` from
+  a numeric-looking sample but holds DIDs; it is now `Vec<String>`.
+
+### Fixed
+
+- `getEmailToFax` and `getFaxFolders` on an account with none configured return
+  the statuses `no_emailtofax` / `no_folder`, which are undocumented in the API
+  error-code table. They are now registered as empty-collection statuses, so the
+  typed methods return an empty response instead of `Error::Api`.
+
 ## [0.8.0] - 2026-07-09
 
 ### Fixed

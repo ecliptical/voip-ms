@@ -1686,8 +1686,16 @@
       "description": "There are no DISAs"
     },
     {
+      "code": "no_emailtofax",
+      "description": "There are no Email to Fax entries"
+    },
+    {
       "code": "no_filter",
       "description": "There are no Filters"
+    },
+    {
+      "code": "no_folder",
+      "description": "There are no Fax Folders"
     },
     {
       "code": "no_forwarding",
