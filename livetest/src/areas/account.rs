@@ -149,8 +149,8 @@ impl Area for Account {
                     AREA,
                     "fixture:getTransactionHistory",
                     &GetTransactionHistoryParams {
-                        date_from: Some(from.clone()),
-                        date_to: Some(to.clone()),
+                        date_from: Some(*from),
+                        date_to: Some(*to),
                     },
                     |r| Some(r.transactions.len()),
                 )

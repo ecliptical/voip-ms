@@ -459,6 +459,86 @@ async fn yes_no_flag_param_serializes_to_word() {
 }
 
 #[tokio::test]
+async fn money_and_id_params_serialize_exactly() {
+    // Money params are `Decimal`, whose `Serialize` emits the exact decimal
+    // string -- no float artifacts on the two methods that move money. Ids are
+    // `u64`, matching the response side.
+    use voip_ms::AddChargeParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "addCharge"))
+        .and(query_param("client", "250071"))
+        .and(query_param("charge", "1.25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = AddChargeParams {
+        client: Some(250071),
+        charge: Some(Decimal::new(125, 2)),
+        test: true,
+        ..Default::default()
+    };
+    client.add_charge_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn date_params_serialize_as_iso_dates() {
+    // Date-range params are `NaiveDate`; its `Serialize` emits the
+    // `YYYY-MM-DD` wire form the docs specify.
+    use voip_ms::GetCDRParams;
+    use voip_ms::chrono::NaiveDate;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .and(query_param("date_from", "2026-01-01"))
+        .and(query_param("date_to", "2026-01-31"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetCDRParams {
+        date_from: NaiveDate::from_ymd_opt(2026, 1, 1),
+        date_to: NaiveDate::from_ymd_opt(2026, 1, 31),
+        ..Default::default()
+    };
+    client.get_cdr_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn snake_cased_param_keeps_camel_case_wire_name() {
+    // A field whose wire name is camelCase gets a snake_case Rust ident with
+    // a serde `rename` back to the wire form; `is_mobile` is also a `1`/`0`
+    // flag, so both attributes compose on the same field.
+    use voip_ms::AddLNPPortParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "addLNPPort"))
+        .and(query_param("isMobile", "1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = AddLNPPortParams {
+        is_mobile: Some(true),
+        ..Default::default()
+    };
+    client.add_lnp_port_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
 async fn true_only_flag_present_when_true() {
     // `test` is a plain `bool`: `true` serializes `1`, and `false` (the
     // default) is left off the wire entirely.

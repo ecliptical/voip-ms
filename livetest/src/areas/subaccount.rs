@@ -71,7 +71,7 @@ impl Area for Subaccount {
             "getSIPURIs",
             GetSIPURIsParams,
             GetSIPURIsResponse,
-            sipuris
+            sip_uris
         );
         probe_list!(
             ctx,
@@ -178,9 +178,7 @@ async fn subaccount_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
     scope.defer(format!("subaccount id={id}"), move |client| {
         Box::pin(async move {
             client
-                .del_sub_account(&DelSubAccountParams {
-                    id: Some(id as i64),
-                })
+                .del_sub_account(&DelSubAccountParams { id: Some(id) })
                 .await?;
             Ok(())
         })
@@ -248,7 +246,7 @@ async fn sipuri_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scop
     scope.defer(format!("sipuri id={id}"), move |client| {
         Box::pin(async move {
             client
-                .del_sip_uri(&DelSIPURIParams { sipuri: Some(id) })
+                .del_sip_uri(&DelSIPURIParams { sip_uri: Some(id) })
                 .await?;
             Ok(())
         })
@@ -260,19 +258,18 @@ async fn sipuri_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scop
         AREA,
         "fixture:getSIPURIs",
         &GetSIPURIsParams::default(),
-        |r| Some(r.sipuris.len()),
+        |r| Some(r.sip_uris.len()),
     )
     .await;
 }
 
-async fn find_sipuri_by_marker(client: &Client, marker: &str) -> anyhow::Result<Option<i64>> {
+async fn find_sipuri_by_marker(client: &Client, marker: &str) -> anyhow::Result<Option<u64>> {
     let resp: GetSIPURIsResponse = client.get_sip_uris(&GetSIPURIsParams::default()).await?;
     Ok(resp
-        .sipuris
+        .sip_uris
         .into_iter()
         .find(|s| s.description.as_deref() == Some(marker))
-        .and_then(|s| s.sipuri)
-        .map(|id| id as i64))
+        .and_then(|s| s.sip_uri))
 }
 
 async fn list_subaccount_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
@@ -291,13 +288,13 @@ async fn list_subaccount_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>>
         .filter_map(|a| {
             a.id.map(|id| Orphan {
                 label: format!("subaccount {}", a.account.as_deref().unwrap_or("?")),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_subaccount(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_subaccount(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_sub_account(&DelSubAccountParams { id: Some(id) })
         .await?;
@@ -307,21 +304,21 @@ async fn del_subaccount(client: &Client, id: i64) -> anyhow::Result<()> {
 async fn list_sipuri_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetSIPURIsResponse = client.get_sip_uris(&GetSIPURIsParams::default()).await?;
     Ok(resp
-        .sipuris
+        .sip_uris
         .into_iter()
         .filter(|s| owned(&s.description))
         .filter_map(|s| {
-            s.sipuri.map(|id| Orphan {
+            s.sip_uri.map(|id| Orphan {
                 label: format!("sipuri {}", s.uri.as_deref().unwrap_or("?")),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_sipuri(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_sipuri(client: &Client, id: u64) -> anyhow::Result<()> {
     client
-        .del_sip_uri(&DelSIPURIParams { sipuri: Some(id) })
+        .del_sip_uri(&DelSIPURIParams { sip_uri: Some(id) })
         .await?;
     Ok(())
 }

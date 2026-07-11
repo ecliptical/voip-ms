@@ -137,7 +137,7 @@ async fn conference_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
 
     let id = match created {
         Ok(resp) => match resp.conference {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setConference", "no id returned"),
         },
         Err(error) => {
@@ -188,7 +188,7 @@ async fn member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scop
 
     let id = match created {
         Ok(resp) => match resp.member {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setConferenceMember", "no id returned"),
         },
         Err(error) => {
@@ -236,13 +236,13 @@ async fn list_conference_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>>
         .filter_map(|c| {
             c.conference.map(|id| Orphan {
                 label: format!("conference id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_conference(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_conference(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_conference(&DelConferenceParams {
             conference: Some(id),
@@ -262,13 +262,13 @@ async fn list_member_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|m| {
             m.member.map(|id| Orphan {
                 label: format!("conferencemember id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_member(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_member(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_conference_member(&DelConferenceMemberParams { member: Some(id) })
         .await?;

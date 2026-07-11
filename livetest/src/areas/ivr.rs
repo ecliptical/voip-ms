@@ -83,7 +83,7 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
 
     let id = match created {
         Ok(resp) => match resp.ivr {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => {
                 report.record(
                     AREA,
@@ -131,13 +131,13 @@ async fn list_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|i| {
             i.ivr.map(|id| Orphan {
                 label: format!("ivr id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_ivr(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_ivr(client: &Client, id: u64) -> anyhow::Result<()> {
     client.del_ivr(&DelIVRParams { ivr: Some(id) }).await?;
     Ok(())
 }

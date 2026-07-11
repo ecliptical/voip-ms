@@ -46,7 +46,7 @@ where
 /// logging and the identifier needed to delete it.
 pub struct Orphan {
     pub label: String,
-    pub id: i64,
+    pub id: u64,
 }
 
 /// True when a free-text field (a description or name) carries the harness
@@ -74,7 +74,7 @@ pub async fn sweep_orphans<L, LFut, D, DFut>(
 where
     L: Fn() -> LFut,
     LFut: Future<Output = anyhow::Result<Vec<Orphan>>>,
-    D: Fn(i64) -> DFut,
+    D: Fn(u64) -> DFut,
     DFut: Future<Output = anyhow::Result<()>>,
 {
     let orphans = match list().await {

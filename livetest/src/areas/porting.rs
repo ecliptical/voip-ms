@@ -112,7 +112,7 @@ impl Area for Porting {
 
 /// The id-scoped read side. Each fires only when `--port-id` is supplied,
 /// otherwise records skip (no input).
-async fn port_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, port_id: Option<i64>) {
+async fn port_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, port_id: Option<u64>) {
     let Some(portid) = port_id else {
         for label in [
             "fixture:getLNPDetails",
@@ -207,13 +207,13 @@ async fn submit_port_fixture(ctx: &AreaCtx<'_>, report: &mut Report, cfg: &Porti
     let result = ctx
         .client
         .add_lnp_port(&AddLNPPortParams {
-            portType: Some(detail.port_type),
+            port_type: Some(detail.port_type),
             numbers: Some(detail.numbers.clone()),
-            statementName: Some(detail.statement_name.clone()),
-            providerName: Some(detail.provider_name.clone()),
-            providerAccount: Some(detail.provider_account.clone()),
-            firstName: Some(detail.first_name.clone()),
-            lastName: Some(detail.last_name.clone()),
+            statement_name: Some(detail.statement_name.clone()),
+            provider_name: Some(detail.provider_name.clone()),
+            provider_account: Some(detail.provider_account.clone()),
+            first_name: Some(detail.first_name.clone()),
+            last_name: Some(detail.last_name.clone()),
             address1: Some(detail.address.clone()),
             city: Some(detail.city.clone()),
             state: Some(detail.state.clone()),
@@ -243,7 +243,7 @@ async fn submit_port_fixture(ctx: &AreaCtx<'_>, report: &mut Report, cfg: &Porti
 /// supplied. An incomplete set yields `None` so the fixture records skip (no
 /// input) rather than submitting a partial, rejected port.
 struct PortDetail {
-    port_type: i64,
+    port_type: u64,
     numbers: String,
     statement_name: String,
     provider_name: String,

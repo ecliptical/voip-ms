@@ -175,7 +175,7 @@ async fn voicemail_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
 /// A deterministic-per-run mailbox number in the 4-digit space, folded from the
 /// run token. Collisions across runs are reclaimed by the marker-driven sweep;
 /// a same-run collision cannot happen (one fixture per run).
-fn mailbox_digits(token: &str) -> i64 {
+fn mailbox_digits(token: &str) -> u64 {
     let mut hash: u64 = 0;
     for b in token.as_bytes() {
         hash = hash.wrapping_mul(31).wrapping_add(u64::from(*b));
@@ -183,7 +183,7 @@ fn mailbox_digits(token: &str) -> i64 {
 
     // 1000..=9999: minimum 1 digit is allowed, but a 4-digit box avoids the
     // low-numbered ranges a real account is likelier to use.
-    1000 + (hash % 9000) as i64
+    1000 + (hash % 9000)
 }
 
 async fn list_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
@@ -197,13 +197,13 @@ async fn list_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|v| {
             v.mailbox.map(|mailbox| Orphan {
                 label: format!("voicemail mailbox={mailbox}"),
-                id: mailbox as i64,
+                id: mailbox,
             })
         })
         .collect())
 }
 
-async fn del_voicemail(client: &Client, mailbox: i64) -> anyhow::Result<()> {
+async fn del_voicemail(client: &Client, mailbox: u64) -> anyhow::Result<()> {
     client
         .del_voicemail(&DelVoicemailParams {
             mailbox: Some(mailbox),

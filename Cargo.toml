@@ -24,7 +24,7 @@ rustls-tls-native-roots = ["reqwest/rustls"]
 native-tls = ["reqwest/native-tls"]
 
 [dependencies]
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.13.4", default-features = false, features = ["json", "query"] }
 rust_decimal = "1.42"
 serde = { version = "1.0", features = ["derive"] }

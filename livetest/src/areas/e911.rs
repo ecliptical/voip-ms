@@ -121,7 +121,7 @@ impl Area for E911 {
 struct E911Address {
     did: String,
     full_name: String,
-    street_number: i64,
+    street_number: u64,
     street_name: String,
     city: String,
     state: String,

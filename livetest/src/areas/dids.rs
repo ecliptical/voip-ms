@@ -323,7 +323,7 @@ async fn order_fixture_did(ctx: &AreaCtx<'_>, report: &mut Report) {
         .order_did(&OrderDIDParams {
             did: Some(did.clone()),
             routing: Some(Routing::None),
-            pop: Some(pop as i64),
+            pop: Some(pop),
             dialtime: Some(60),
             cnam: Some(0),
             billing_type: Some(DidBillingType::PerMinute),

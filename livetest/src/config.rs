@@ -10,6 +10,8 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, ValueEnum};
+use voip_ms::chrono::NaiveDate;
+use voip_ms::rust_decimal::Decimal;
 
 /// How far the harness goes within each selected area.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
@@ -187,7 +189,7 @@ pub struct Cli {
 
     /// e911 street number (required with `--e911-did`).
     #[arg(long)]
-    pub e911_street_number: Option<i64>,
+    pub e911_street_number: Option<u64>,
 
     /// e911 street name (required with `--e911-did`).
     #[arg(long)]
@@ -219,27 +221,27 @@ pub struct Cli {
     /// (`getCharges`, `getDeposits`) and for the `addCharge`/`addPayment`
     /// mutators. Absent: those methods record skip (no input).
     #[arg(long)]
-    pub account_client_id: Option<i64>,
+    pub account_client_id: Option<u64>,
 
     /// Amount to credit via `addPayment` for `--account-client-id`. Supplying
     /// it is the only way `addPayment` fires -- absence is the safety, since
     /// this moves money and has no dry-run.
     #[arg(long)]
-    pub payment_amount: Option<f64>,
+    pub payment_amount: Option<Decimal>,
 
     /// Amount to debit via `addCharge` for `--account-client-id`. Supplying it
     /// is the only way `addCharge` fires.
     #[arg(long)]
-    pub charge_amount: Option<f64>,
+    pub charge_amount: Option<Decimal>,
 
     /// Start date (`YYYY-MM-DD`) for `getTransactionHistory`; required together
     /// with `--transaction-date-to` for that probe to run.
     #[arg(long)]
-    pub transaction_date_from: Option<String>,
+    pub transaction_date_from: Option<NaiveDate>,
 
     /// End date (`YYYY-MM-DD`) for `getTransactionHistory`.
     #[arg(long)]
-    pub transaction_date_to: Option<String>,
+    pub transaction_date_to: Option<NaiveDate>,
 
     // --- porting (costly) --------------------------------------------------
     /// A DID to probe `getPortability` against (the read-side, non-committing
@@ -251,7 +253,7 @@ pub struct Cli {
     /// `getLNPStatus`, `getLNPNotes`, `getLNPList`, `getLNPAttachList`). Absent:
     /// those record skip (no input).
     #[arg(long)]
-    pub port_id: Option<i64>,
+    pub port_id: Option<u64>,
 
     /// Actually submit an LNP port via `addLNPPort`. Off by default and gated:
     /// a port submission commits to moving a number between carriers and has no
@@ -261,7 +263,7 @@ pub struct Cli {
 
     /// Port type code for `addLNPPort` (required with `--submit-port`).
     #[arg(long)]
-    pub port_type: Option<i64>,
+    pub port_type: Option<u64>,
 
     /// Number(s) to port for `addLNPPort` (required with `--submit-port`).
     #[arg(long)]
@@ -413,7 +415,7 @@ pub struct E911Config {
     pub did: Option<String>,
     pub provision: bool,
     pub full_name: Option<String>,
-    pub street_number: Option<i64>,
+    pub street_number: Option<u64>,
     pub street_name: Option<String>,
     pub city: Option<String>,
     pub state: Option<String>,
@@ -427,11 +429,11 @@ pub struct E911Config {
 /// required id/date-window.
 #[derive(Debug, Clone, Default)]
 pub struct AccountConfig {
-    pub client_id: Option<i64>,
-    pub payment_amount: Option<f64>,
-    pub charge_amount: Option<f64>,
-    pub transaction_date_from: Option<String>,
-    pub transaction_date_to: Option<String>,
+    pub client_id: Option<u64>,
+    pub payment_amount: Option<Decimal>,
+    pub charge_amount: Option<Decimal>,
+    pub transaction_date_from: Option<NaiveDate>,
+    pub transaction_date_to: Option<NaiveDate>,
 }
 
 /// porting costly-depth inputs. `getPortability`/`getLNP*` fire with their id
@@ -440,9 +442,9 @@ pub struct AccountConfig {
 #[derive(Debug, Clone, Default)]
 pub struct PortingConfig {
     pub portability_did: Option<String>,
-    pub port_id: Option<i64>,
+    pub port_id: Option<u64>,
     pub submit: bool,
-    pub port_type: Option<i64>,
+    pub port_type: Option<u64>,
     pub numbers: Option<String>,
     pub statement_name: Option<String>,
     pub provider_name: Option<String>,
@@ -583,8 +585,8 @@ impl Config {
             client_id: cli.account_client_id,
             payment_amount: cli.payment_amount,
             charge_amount: cli.charge_amount,
-            transaction_date_from: cli.transaction_date_from.filter(|s| !s.trim().is_empty()),
-            transaction_date_to: cli.transaction_date_to.filter(|s| !s.trim().is_empty()),
+            transaction_date_from: cli.transaction_date_from,
+            transaction_date_to: cli.transaction_date_to,
         };
 
         let porting = PortingConfig {

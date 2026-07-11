@@ -157,6 +157,13 @@
         { "name": "PerMinute", "wire": "1" },
         { "name": "Flat",      "wire": "2" }
       ]
+    },
+    "LocationType": {
+      "doc": "Type of service location for an LNP port.",
+      "variants": [
+        { "name": "Residential", "wire": "0" },
+        { "name": "Business",    "wire": "1" }
+      ]
     }
   },
   "field_types": {
@@ -175,14 +182,13 @@
     "sort":                    "RecordingSort",
     "dialing_mode":            "DialingMode",
     "tfcarrier":               "TollFreeCarrier",
-    "billing_type":            "DidBillingType"
+    "billing_type":            "DidBillingType",
+    "locationType":            "LocationType"
   },
   "field_type_skip": [
     "GetVoicemailsResponseVoicemail.urgent",
     "GetFAXMessagesParams.folder",
-    "GetFAXMessagesResponseFAX.folder",
-    "GetNATResponse.nat",
-    "GetPlayInstructionsResponse.play_instructions"
+    "GetFAXMessagesResponseFAX.folder"
   ],
   "field_type_override": {
     "SearchDIDsCANParams.type":      "SearchType",

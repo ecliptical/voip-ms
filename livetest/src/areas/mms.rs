@@ -107,7 +107,7 @@ impl Area for Mms {
             AREA,
             "fixture:getMediaMMS",
             &GetMediaMMSParams {
-                id: Some(id as i64),
+                id: Some(id),
                 ..Default::default()
             },
             |_| None,

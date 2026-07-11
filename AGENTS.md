@@ -33,6 +33,15 @@ and the WSDL snapshot are committed.
   codegen cost on `cargo build`. It's a pure-Rust workspace member, not
   a Python script, so contributors don't need a separate toolchain.
 
+The WSDL's scalar types are advisory, not authoritative: `xsd:string` →
+`String`, `xsd:integer` → `u64` (every integer param is a non-negative id
+or count, and response ids are already `u64`, so `i64` would force a cast
+on every round-trip), `xsd:decimal` → `rust_decimal::Decimal` (the decimal
+params are money amounts, which `f64` would serialize with float
+artifacts). The `xsd_to_rust` mapping lives in `xtask/src/main.rs`; the
+field-name override table (see 5a) corrects individual fields the WSDL
+mistypes entirely.
+
 **How to apply**: When VoIP.ms adds an API method, replace
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
 `src/generated.rs` — the `@generated` banner reflects reality.
@@ -139,6 +148,14 @@ acronym-heavy names (`getDIDsInfo` → `get_di_ds_info`,
 developer would have chosen by hand. New acronyms get added to the
 `ACRONYMS` set in the generator.
 
+Field identifiers go through the same tokenizer: a camelCase wire name
+(`isMobile`, `rateCenter`, `sipuri`) becomes a snake_case Rust ident
+(`is_mobile`, `rate_center`, `sip_uri`) with a serde `rename` back to the
+wire form, on both the `*Params` (serialize) and `*Response` (deserialize)
+side. `rust_field_ident` in `xtask/src/main.rs` also keyword-escapes
+(`type` → `r#type`) and `field_`-prefixes names that aren't
+identifier-shaped.
+
 **How to apply**: When a new VoIP.ms method introduces an acronym that
 produces a single-letter token in `tokenize()`, add it to the `ACRONYMS`
 constant in `xtask/src/main.rs` and regenerate.
@@ -195,6 +212,10 @@ in `xtask/src/field_overrides.rs`:
   in the `getSMS`-family params, an email in `getEmailToFax`'s response).
   `cargo xtask gen` warns when a `patches` entry is shadowed by a
   field-name override so retired per-method patches get removed.
+* **Date-range params** (`date_from`, `date_to` in `DATE_FIELDS`) map to
+  [`chrono::NaiveDate`], whose own `Serialize` emits the documented
+  `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is a
+  datetime in some responses and a date in others, so no single type fits.
 * **Declarative enum overrides** in
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
@@ -208,17 +229,22 @@ in `xtask/src/field_overrides.rs`:
   `TranscriptionFormat`, `PlayInstructions`, `RingStrategy`,
   `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`,
   `EstimatedHoldTimeAnnounce`, `CallPickupBehavior`, `RecordingSort`,
-  `DialingMode`, `TollFreeCarrier`, and `DidBillingType`. Integer-coded
-  enums (`1`/`2`, `-1`) work the same way -- the generated deserializer
-  accepts the wire value as a JSON string, number, or bool.
+  `DialingMode`, `TollFreeCarrier`, `DidBillingType`, and `LocationType`.
+  Integer-coded enums (`1`/`2`, `-1`) work the same way -- the generated
+  deserializer accepts the wire value as a JSON string, number, or bool.
 
 Both kinds of substituted enum carry an `Unknown(String)` (or
 `Unknown { tag, value }` for `Routing`) catch-all so VoIP.ms adding
 a new variant or shipping an unexpected value never breaks
 deserialization.
 
-Field-name substitution is global, so two JSON sections handle fields
-whose name means different things in different structs:
+Field-name substitution is global but shape-aware: on the response side it
+applies only to scalar-shaped fields, since a substituted scalar type can
+never stand in for a list or object -- so a reference catalog returned
+under an overridden field name (`getNAT`'s `nat`, `getPlayInstructions`'s
+`play_instructions`) keeps its structural type automatically. Beyond that,
+two JSON sections handle fields whose name means different things in
+different structs:
 
 * `field_type_skip` (`["StructName.field"]`) suppresses the name-based
   override for one struct -- on both the `*Params` and `*Response` side --
@@ -247,7 +273,10 @@ with documented values `low`/`normal`/`high`), add an entry to `enums`
 and a `field_types` mapping in `tools/api-response-overrides.json` and
 regenerate. For a new boolean flag, add its field name to
 `FLAG_01_FIELDS` or `FLAG_YES_NO_FIELDS` in
-`xtask/src/field_overrides.rs` (no JSON or new type needed). For a scalar
+`xtask/src/field_overrides.rs` (no JSON or new type needed) --
+`cargo xtask check-flags` audits those tables against the doc-mined
+parameter descriptions and reports both uncovered flag-like params and
+stale entries. For a scalar
 that needs structured parsing (multi-part value, custom validation),
 hand-write it in `src/types.rs`, register the field names in
 `xtask/src/field_overrides.rs::ROUTING_FIELDS`-style const, and add the
@@ -396,7 +425,9 @@ Deps whose types appear in the public API (`chrono`, `reqwest`, `rust_decimal`,
 `serde_json`, `serde`) are pinned to a minor and re-exported from the crate root
 so callers name the exact compatible version without a separate dependency.
 
-* **chrono 0.4**: `NaiveDate`/`NaiveDateTime` in typed response fields.
+* **chrono 0.4** (`serde`): `NaiveDate`/`NaiveDateTime` in typed response
+  fields and date-range params; the `serde` feature supplies the params'
+  `YYYY-MM-DD` `Serialize`.
 * **reqwest 0.13.4** (`json`, `query`, no default features): HTTP client + JSON
   deserialization. TLS backend is feature-gated. Floored at 0.13.4 -- the
   earlier 0.13.x rustls features the TLS flags reference were renamed there.

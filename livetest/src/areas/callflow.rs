@@ -261,7 +261,7 @@ async fn callback_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Sc
 
     let id = match created {
         Ok(resp) => match resp.callback {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setCallback", "no id returned"),
         },
         Err(error) => {
@@ -308,7 +308,7 @@ async fn disa_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope)
 
     let id = match created {
         Ok(resp) => match resp.disa {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setDISA", "no id returned"),
         },
         Err(error) => return fail(report, "fixture:setDISA", &format!("setDISA: {error}")),
@@ -346,7 +346,7 @@ async fn ring_group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
 
     let id = match created {
         Ok(resp) => match resp.ring_group {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setRingGroup", "no id returned"),
         },
         Err(error) => {
@@ -402,7 +402,7 @@ async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &
 
     let id = match created {
         Ok(resp) => match resp.timecondition {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setTimeCondition", "no id returned"),
         },
         Err(error) => {
@@ -452,7 +452,7 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
         .await
     {
         Ok(resp) => match resp.queue {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setQueue(dep)", "no id returned"),
         },
         Err(error) => {
@@ -489,7 +489,7 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 
     let member_id = match created {
         Ok(resp) => match resp.member {
-            Some(id) => id as i64,
+            Some(id) => id,
             None => return fail(report, "fixture:setStaticMember", "no id returned"),
         },
         Err(error) => {
@@ -541,13 +541,13 @@ async fn list_callback_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|c| {
             c.callback.map(|id| Orphan {
                 label: format!("callback id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_callback(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_callback(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_callback(&DelCallbackParams { callback: Some(id) })
         .await?;
@@ -563,13 +563,13 @@ async fn list_disa_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .filter_map(|d| {
             d.disa.map(|id| Orphan {
                 label: format!("disa id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_disa(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_disa(client: &Client, id: u64) -> anyhow::Result<()> {
     client.del_disa(&DelDISAParams { disa: Some(id) }).await?;
     Ok(())
 }
@@ -585,13 +585,13 @@ async fn list_ring_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>>
         .filter_map(|g| {
             g.ring_group.map(|id| Orphan {
                 label: format!("ringgroup id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_ring_group(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_ring_group(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_ring_group(&DelRingGroupParams {
             ringgroup: Some(id),
@@ -611,13 +611,13 @@ async fn list_time_condition_orphans(client: &Client) -> anyhow::Result<Vec<Orph
         .filter_map(|t| {
             t.timecondition.map(|id| Orphan {
                 label: format!("timecondition id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_time_condition(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_time_condition(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_time_condition(&DelTimeConditionParams {
             timecondition: Some(id),
@@ -639,13 +639,13 @@ async fn list_dep_queue_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> 
         .filter_map(|q| {
             q.queue.map(|id| Orphan {
                 label: format!("queue id={id}"),
-                id: id as i64,
+                id,
             })
         })
         .collect())
 }
 
-async fn del_queue(client: &Client, id: i64) -> anyhow::Result<()> {
+async fn del_queue(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_queue(&DelQueueParams { queue: Some(id) })
         .await?;
