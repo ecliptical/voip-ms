@@ -2215,6 +2215,10 @@ pub enum ApiStatus {
     NoSMS,
     /// `no_timecondition` — There are no Time Conditions
     NoTimecondition,
+    /// `no_transactions` — There are no transactions
+    NoTransactions,
+    /// `no_vpri` — There are no vPRIs
+    NoVPRI,
     /// `order_failed` — The order wasn't completed.
     OrderFailed,
     /// `problem_sending_mail` — There was a problem sending an email.
@@ -2750,6 +2754,8 @@ impl ApiStatus {
             ApiStatus::NoSIPURI => "no_sipuri",
             ApiStatus::NoSMS => "no_sms",
             ApiStatus::NoTimecondition => "no_timecondition",
+            ApiStatus::NoTransactions => "no_transactions",
+            ApiStatus::NoVPRI => "no_vpri",
             ApiStatus::OrderFailed => "order_failed",
             ApiStatus::ProblemSendingMail => "problem_sending_mail",
             ApiStatus::ProviderOutofservice => "provider_outofservice",
@@ -3252,6 +3258,8 @@ impl ApiStatus {
             "no_sipuri" => ApiStatus::NoSIPURI,
             "no_sms" => ApiStatus::NoSMS,
             "no_timecondition" => ApiStatus::NoTimecondition,
+            "no_transactions" => ApiStatus::NoTransactions,
+            "no_vpri" => ApiStatus::NoVPRI,
             "order_failed" => ApiStatus::OrderFailed,
             "problem_sending_mail" => ApiStatus::ProblemSendingMail,
             "provider_outofservice" => ApiStatus::ProviderOutofservice,
@@ -3942,6 +3950,8 @@ impl ApiStatus {
             ApiStatus::NoSIPURI => Some("There are no SIP URIs"),
             ApiStatus::NoSMS => Some("There are no SMS messages"),
             ApiStatus::NoTimecondition => Some("There are no Time Conditions"),
+            ApiStatus::NoTransactions => Some("There are no transactions"),
+            ApiStatus::NoVPRI => Some("There are no vPRIs"),
             ApiStatus::OrderFailed => Some("The order wasn't completed."),
             ApiStatus::ProblemSendingMail => Some("There was a problem sending an email."),
             ApiStatus::ProviderOutofservice => Some("One of our providers is out of service"),
@@ -4054,6 +4064,8 @@ impl ApiStatus {
                 | ApiStatus::NoSIPURI
                 | ApiStatus::NoSMS
                 | ApiStatus::NoTimecondition
+                | ApiStatus::NoTransactions
+                | ApiStatus::NoVPRI
         )
     }
 }

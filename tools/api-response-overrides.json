@@ -229,7 +229,9 @@
     "no_ringgroup",
     "no_sipuri",
     "no_sms",
-    "no_timecondition"
+    "no_timecondition",
+    "no_transactions",
+    "no_vpri"
   ],
   "methods": {
     "getJoinWhenEmptyTypes": {

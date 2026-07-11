@@ -1778,6 +1778,14 @@
       "description": "There are no Time Conditions"
     },
     {
+      "code": "no_transactions",
+      "description": "There are no transactions"
+    },
+    {
+      "code": "no_vpri",
+      "description": "There are no vPRIs"
+    },
+    {
       "code": "order_failed",
       "description": "The order wasn't completed."
     },
