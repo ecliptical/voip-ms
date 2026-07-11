@@ -210,7 +210,9 @@
     "no_conference",
     "no_did",
     "no_disa",
+    "no_emailtofax",
     "no_filter",
+    "no_folder",
     "no_forwarding",
     "no_ivr",
     "no_mailbox",
@@ -247,6 +249,11 @@
         { "path": "dids[].cnam",           "type": "bool_01" },
         { "path": "dids[].sms_available",  "type": "bool_01" },
         { "path": "dids[].sms_enabled",    "type": "bool_01" }
+      ]
+    },
+    "getDIDvPRI": {
+      "patches": [
+        { "path": "dids[]", "type": "string" }
       ]
     },
     "setSIPURI": {
