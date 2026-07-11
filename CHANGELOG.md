@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-07-11
+
+### Fixed
+
+- Corrected the wire values of three hand-curated enums, audited against the
+  live reference endpoints they document (`getVoicemailAttachmentFormats`,
+  `getRingStrategies`, `getPlayInstructions`):
+  - `EmailAttachmentFormat::Mp3` serializes/deserializes `wavmp3` (was the
+    nonexistent `mp3`).
+  - `RingStrategy` drops the phantom `Linear` and `WRandom` variants
+    (`getRingStrategies` rejects both; only `ringall`, `leastrecent`,
+    `fewestcalls`, `random`, `rrmemory` are valid).
+  - `PlayInstructions` drops the phantom `DontSay` variant
+    (`getPlayInstructions` accepts only `u` / `su`).
+
 ## [0.10.1] - 2026-07-11
 
 ### Fixed
