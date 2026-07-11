@@ -22,7 +22,7 @@ use async_trait::async_trait;
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::config::Depth;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::read_back;
+use crate::harness::fixtures::{read_back, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -354,13 +354,14 @@ async fn order_fixture_did(ctx: &AreaCtx<'_>, report: &mut Report) {
     let cancel_did = did.clone();
     scope.defer(format!("did={cancel_did}"), move |client| {
         Box::pin(async move {
-            client
-                .cancel_did(&CancelDIDParams {
-                    did: Some(cancel_did),
-                    ..Default::default()
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .cancel_did(&CancelDIDParams {
+                        did: Some(cancel_did),
+                        ..Default::default()
+                    })
+                    .await,
+            )
         })
     });
 

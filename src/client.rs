@@ -96,6 +96,39 @@ impl Client {
         Ok(body)
     }
 
+    /// Issue a request for `method` and return the raw JSON response body
+    /// verbatim, *without* classifying its `status` field -- a non-`success`
+    /// status is returned as-is in the body rather than as an [`Error::Api`].
+    /// Only a transport failure or a missing-JSON body is an `Err`.
+    ///
+    /// Unlike [`Client::call_raw`], this surfaces the whole envelope even for a
+    /// genuine error status, so a caller can inspect exactly what the server
+    /// returned (the status plus any diagnostic fields). Prefer [`Client::call`]
+    /// or [`Client::call_raw`] for normal use; reach for this to diagnose an
+    /// unexpected error status.
+    ///
+    /// Gated behind the `unchecked-raw` feature.
+    #[cfg(feature = "unchecked-raw")]
+    pub async fn call_raw_unchecked<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        let response = self
+            .http
+            .get(self.base_url.clone())
+            .query(&[
+                ("api_username", self.api_username.as_str()),
+                ("api_password", self.api_password.as_str()),
+                ("method", method),
+            ])
+            .query(params)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        Ok(response.json().await?)
+    }
+
     /// Issue a request and deserialize the full JSON response body into `T`.
     ///
     /// Like [`Client::call_raw`], a non-`success` status is returned as

@@ -7,7 +7,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -105,12 +105,13 @@ async fn forwarding_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
     report.record(AREA, "fixture:setForwarding", Outcome::Pass);
     scope.defer(format!("forwarding id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_forwarding(&DelForwardingParams {
-                    forwarding: Some(id),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_forwarding(&DelForwardingParams {
+                        forwarding: Some(id),
+                    })
+                    .await,
+            )
         })
     });
 

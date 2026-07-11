@@ -7,7 +7,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -72,11 +72,19 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
     let client = ctx.client;
     let name = ctx.token.marker(0);
 
+    // `recording`, `voicemailsetup`, and `choices` are `(required)` and take
+    // account-specific codes ("Values from getRecordings"/`getVoicemailSetups`);
+    // these are the conventional defaults (code 1) and a single hangup choice --
+    // best-effort until a live run confirms them. A rejection surfaces as a Fail
+    // naming the offending field (e.g. `missing_recording`).
     let created = client
         .set_ivr(&SetIVRParams {
             name: Some(name),
             timeout: Some(10),
             language: Some("en".to_string()),
+            recording: Some(1),
+            voicemailsetup: Some(1),
+            choices: Some("1=sys:hangup".to_string()),
             ..Default::default()
         })
         .await;
@@ -105,10 +113,9 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
 
     report.record(AREA, "fixture:setIVR", Outcome::Pass);
     scope.defer(format!("ivr id={id}"), move |client| {
-        Box::pin(async move {
-            client.del_ivr(&DelIVRParams { ivr: Some(id) }).await?;
-            Ok(())
-        })
+        Box::pin(
+            async move { tolerate_absent(client.del_ivr(&DelIVRParams { ivr: Some(id) }).await) },
+        )
     });
 
     read_back::<_, GetIVRsResponse>(

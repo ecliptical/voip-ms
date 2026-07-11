@@ -17,10 +17,14 @@
 
 use async_trait::async_trait;
 
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::config::{Depth, ResellerConfig};
 use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back;
+use crate::harness::probe::{ProbeOutcome, probe};
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
@@ -76,24 +80,22 @@ impl Area for Reseller {
             packages
         );
         skip_needs_input!(report, AREA, "getResellerBalance", "requires a client id");
-        probe_list!(
+        probe_reseller::<_, GetResellerMMSResponse>(
             ctx,
             report,
-            AREA,
             "getResellerMMS",
-            GetResellerMMSParams,
-            GetResellerMMSResponse,
-            sms
-        );
-        probe_list!(
+            &GetResellerMMSParams::default(),
+            |r| Some(r.sms.len()),
+        )
+        .await;
+        probe_reseller::<_, GetResellerSMSResponse>(
             ctx,
             report,
-            AREA,
             "getResellerSMS",
-            GetResellerSMSParams,
-            GetResellerSMSResponse,
-            sms
-        );
+            &GetResellerSMSParams::default(),
+            |r| Some(r.sms.len()),
+        )
+        .await;
     }
 
     async fn run_fixtures(&self, ctx: &AreaCtx<'_>, report: &mut Report) {
@@ -257,4 +259,34 @@ fn signup_detail(cfg: &ResellerConfig) -> Option<SignupDetail> {
 
 fn skip_no_input(report: &mut Report, label: &str) {
     report.record(AREA, label, Outcome::Skip("no input".to_string()));
+}
+
+/// Probe a reseller list method, folding `invalid_client` into a Skip. That
+/// status here means the run account is not a reseller (issue #18) -- an
+/// account-capability limitation, not a code or drift defect -- so the whole
+/// reseller area is inapplicable rather than failing. Any other outcome (drift,
+/// a different API error, transport) is recorded verbatim.
+async fn probe_reseller<P, T>(
+    ctx: &AreaCtx<'_>,
+    report: &mut Report,
+    method: &str,
+    params: &P,
+    count: impl Fn(&T) -> Option<usize>,
+) where
+    P: Serialize + Sync,
+    T: DeserializeOwned,
+{
+    let outcome = probe::<P, T>(ctx.client, method, params, count).await;
+    if let ProbeOutcome::ApiError(status) = &outcome
+        && status == &ApiStatus::InvalidClient.to_string()
+    {
+        report.record(
+            AREA,
+            method,
+            Outcome::Skip("account is not a reseller (invalid_client)".to_string()),
+        );
+        return;
+    }
+
+    report.record_probe(AREA, method, outcome);
 }

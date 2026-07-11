@@ -20,7 +20,7 @@ use async_trait::async_trait;
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::config::{Depth, E911Config};
 use crate::harness::area::{Area, AreaCtx, CostClass};
-use crate::harness::fixtures::read_back;
+use crate::harness::fixtures::{read_back, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -206,12 +206,13 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
     let cancel_did = address.did.clone();
     scope.defer(format!("e911 did={cancel_did}"), move |client| {
         Box::pin(async move {
-            client
-                .e911_cancel(&E911CancelParams {
-                    did: Some(cancel_did),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .e911_cancel(&E911CancelParams {
+                        did: Some(cancel_did),
+                    })
+                    .await,
+            )
         })
     });
 

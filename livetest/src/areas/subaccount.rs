@@ -13,7 +13,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -135,6 +135,10 @@ async fn subaccount_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
     let description = ctx.token.marker(0);
     let password = format!("Lv{}Pw1", ctx.token.as_str());
 
+    // The remaining `(required)` fields take "Values from get*" codes that vary
+    // by account; these are the conventional defaults (code 1, `ulaw`, `none`
+    // music-on-hold) -- best-effort until a live run confirms them. A rejection
+    // surfaces as a Fail naming the offending field's status.
     let created = client
         .create_sub_account(&CreateSubAccountParams {
             username: Some(username),
@@ -142,6 +146,13 @@ async fn subaccount_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
             description: Some(description),
             auth_type: Some(1),
             password: Some(password),
+            device_type: Some(1),
+            lock_international: Some(1),
+            international_route: Some(1),
+            music_on_hold: Some("none".into()),
+            allowed_codecs: Some("ulaw".into()),
+            dtmf_mode: Some(DtmfMode::Auto),
+            nat: Some(Nat::Yes),
             ..Default::default()
         })
         .await;
@@ -177,10 +188,11 @@ async fn subaccount_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
     report.record(AREA, "fixture:createSubAccount", Outcome::Pass);
     scope.defer(format!("subaccount id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_sub_account(&DelSubAccountParams { id: Some(id) })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_sub_account(&DelSubAccountParams { id: Some(id) })
+                    .await,
+            )
         })
     });
 
@@ -245,10 +257,11 @@ async fn sipuri_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scop
     report.record(AREA, "fixture:setSIPURI", Outcome::Pass);
     scope.defer(format!("sipuri id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_sip_uri(&DelSIPURIParams { sip_uri: Some(id) })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_sip_uri(&DelSIPURIParams { sip_uri: Some(id) })
+                    .await,
+            )
         })
     });
 

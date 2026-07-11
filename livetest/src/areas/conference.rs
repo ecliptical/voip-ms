@@ -12,7 +12,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -152,12 +152,13 @@ async fn conference_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
     report.record(AREA, "fixture:setConference", Outcome::Pass);
     scope.defer(format!("conference id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_conference(&DelConferenceParams {
-                    conference: Some(id),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_conference(&DelConferenceParams {
+                        conference: Some(id),
+                    })
+                    .await,
+            )
         })
     });
 
@@ -203,10 +204,11 @@ async fn member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scop
     report.record(AREA, "fixture:setConferenceMember", Outcome::Pass);
     scope.defer(format!("conferencemember id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_conference_member(&DelConferenceMemberParams { member: Some(id) })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_conference_member(&DelConferenceMemberParams { member: Some(id) })
+                    .await,
+            )
         })
     });
 

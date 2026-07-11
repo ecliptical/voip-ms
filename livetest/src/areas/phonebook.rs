@@ -8,7 +8,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans};
+use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -131,12 +131,13 @@ async fn group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
     report.record(AREA, "fixture:setPhonebookGroup", Outcome::Pass);
     scope.defer(format!("phonebookgroup id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_phonebook_group(&DelPhonebookGroupParams {
-                    group: Some(id.to_string()),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_phonebook_group(&DelPhonebookGroupParams {
+                        group: Some(id.to_string()),
+                    })
+                    .await,
+            )
         })
     });
 
@@ -180,12 +181,13 @@ async fn entry_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
     report.record(AREA, "fixture:setPhonebook", Outcome::Pass);
     scope.defer(format!("phonebook id={id}"), move |client| {
         Box::pin(async move {
-            client
-                .del_phonebook(&DelPhonebookParams {
-                    phonebook: Some(id),
-                })
-                .await?;
-            Ok(())
+            tolerate_absent(
+                client
+                    .del_phonebook(&DelPhonebookParams {
+                        phonebook: Some(id),
+                    })
+                    .await,
+            )
         })
     });
 
