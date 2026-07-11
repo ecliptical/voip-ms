@@ -214,3 +214,52 @@ fn check_status(body: &Value) -> Result<Option<ApiStatus>> {
         Err(Error::Api(status))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_uses_default_base_url() {
+        let c = Client::new("user", "pass");
+        assert_eq!(c.base_url().as_str(), DEFAULT_BASE_URL);
+    }
+
+    #[test]
+    fn builder_overrides_base_url_and_http_client() {
+        let url = Url::parse("https://example.test/api").unwrap();
+        let c = Client::builder("u", "p")
+            .base_url(url.clone())
+            .http_client(reqwest::Client::new())
+            .build()
+            .unwrap();
+        assert_eq!(c.base_url(), &url);
+    }
+
+    #[test]
+    fn clone_shares_configuration() {
+        let c = Client::new("u", "p");
+        let c2 = c.clone();
+        assert_eq!(c.base_url(), c2.base_url());
+    }
+
+    #[test]
+    fn check_status_classifies_each_case() {
+        assert!(matches!(
+            check_status(&serde_json::json!({"status": "success"})),
+            Ok(None)
+        ));
+        assert!(matches!(
+            check_status(&serde_json::json!({"status": "no_sms"})),
+            Ok(Some(_))
+        ));
+        assert!(matches!(
+            check_status(&serde_json::json!({"status": "invalid_credentials"})),
+            Err(Error::Api(_))
+        ));
+        assert!(matches!(
+            check_status(&serde_json::json!({})),
+            Err(Error::InvalidResponse(_))
+        ));
+    }
+}

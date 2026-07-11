@@ -400,3 +400,262 @@ where
 {
     s.serialize_str(if *v { "1" } else { "0" })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde::Deserialize;
+    use serde_json::json;
+    use std::collections::HashMap;
+
+    // The (de)serializers here are `deserialize_with` callbacks generic over
+    // `D: Deserializer`, and `serde_json::Value` is a `Deserializer`, so each
+    // is driven by passing a `json!(..)` value straight in -- the same wire
+    // shapes the generated code routes through them.
+
+    #[test]
+    fn enum_wire_string_coerces_scalars_and_rejects_composites() {
+        let call = deserialize_enum_wire_string::<serde_json::Value>;
+        assert_eq!(call(json!("yes")).unwrap(), "yes");
+        assert_eq!(call(json!(1)).unwrap(), "1");
+        assert_eq!(call(json!(true)).unwrap(), "true");
+        assert!(call(json!([1, 2])).is_err());
+        assert!(call(json!({"a": 1})).is_err());
+    }
+
+    #[test]
+    fn opt_string_folds_empty_and_coerces_scalars() {
+        let call = deserialize_opt_string_from_string_number_or_bool::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("   ")).unwrap(), None);
+        assert_eq!(call(json!("hi")).unwrap(), Some("hi".to_string()));
+        assert_eq!(call(json!(42)).unwrap(), Some("42".to_string()));
+        assert_eq!(call(json!(false)).unwrap(), Some("false".to_string()));
+        assert!(call(json!(["x"])).is_err());
+    }
+
+    #[test]
+    fn opt_string_sentinel_none_maps_minus_one_and_scalars() {
+        let call = deserialize_opt_string_sentinel_none::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(call(json!("-1")).unwrap(), None);
+        assert_eq!(call(json!(-1)).unwrap(), None);
+        assert_eq!(
+            call(json!("5551234567")).unwrap(),
+            Some("5551234567".to_string())
+        );
+        assert_eq!(call(json!(1000)).unwrap(), Some("1000".to_string()));
+        assert_eq!(call(json!(true)).unwrap(), Some("true".to_string()));
+        assert!(call(json!({})).is_err());
+    }
+
+    #[test]
+    fn opt_decimal_from_string_or_number() {
+        let call = deserialize_opt_decimal_from_string_or_number::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(
+            call(json!("3.50")).unwrap(),
+            Some(Decimal::from_str("3.50").unwrap())
+        );
+        assert_eq!(
+            call(json!(2)).unwrap(),
+            Some(Decimal::from_str("2").unwrap())
+        );
+        assert!(call(json!("not-a-number")).is_err());
+        assert!(call(json!(true)).is_err());
+    }
+
+    #[test]
+    fn opt_u64_folds_minus_one_and_rejects_bad_input() {
+        let call = deserialize_opt_u64_from_string_or_number::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(call(json!("-1")).unwrap(), None);
+        assert_eq!(call(json!(-1)).unwrap(), None);
+        assert_eq!(call(json!(7)).unwrap(), Some(7));
+        assert_eq!(call(json!("42")).unwrap(), Some(42));
+        // A negative other than -1 cannot be a u64.
+        assert!(call(json!(-2)).is_err());
+        assert!(call(json!("abc")).is_err());
+        assert!(call(json!(true)).is_err());
+    }
+
+    #[test]
+    fn opt_bool_accepts_all_documented_forms() {
+        let call = deserialize_opt_bool_from_string_number_or_yn::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        for t in [
+            json!(true),
+            json!(1),
+            json!("1"),
+            json!("y"),
+            json!("YES"),
+            json!("true"),
+            json!("t"),
+        ] {
+            assert_eq!(call(t.clone()).unwrap(), Some(true), "{t}");
+        }
+
+        for f in [
+            json!(false),
+            json!(0),
+            json!("0"),
+            json!("n"),
+            json!("NO"),
+            json!("false"),
+            json!("f"),
+        ] {
+            assert_eq!(call(f.clone()).unwrap(), Some(false), "{f}");
+        }
+
+        assert!(call(json!("maybe")).is_err());
+        assert!(call(json!(-1)).is_err());
+        assert!(call(json!([1])).is_err());
+    }
+
+    #[test]
+    fn opt_date_folds_zero_placeholder_and_rejects_bad() {
+        let call = deserialize_opt_date::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00")).unwrap(), None);
+        assert_eq!(
+            call(json!("2024-03-15")).unwrap(),
+            Some(NaiveDate::from_ymd_opt(2024, 3, 15).unwrap())
+        );
+        assert!(call(json!("15/03/2024")).is_err());
+        assert!(call(json!(20240315)).is_err());
+    }
+
+    #[test]
+    fn opt_datetime_folds_zero_placeholder_and_rejects_bad() {
+        let call = deserialize_opt_datetime::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
+        assert_eq!(
+            call(json!("2024-03-15 08:30:00")).unwrap(),
+            Some(
+                NaiveDate::from_ymd_opt(2024, 3, 15)
+                    .unwrap()
+                    .and_hms_opt(8, 30, 0)
+                    .unwrap()
+            )
+        );
+        assert!(call(json!("2024-03-15")).is_err());
+        assert!(call(json!(0)).is_err());
+    }
+
+    #[test]
+    fn opt_routing_folds_empty_and_rejects_non_string() {
+        let call = deserialize_opt_routing::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(
+            call(json!("fwd:15555")).unwrap(),
+            Some(Routing::Forward("15555".into()))
+        );
+        // A routing string missing its `:` separator is a parse error.
+        assert!(call(json!("nocolon")).is_err());
+        assert!(call(json!(5)).is_err());
+    }
+
+    #[test]
+    fn opt_seconds_and_wait_time_via_helper() {
+        let sec = deserialize_opt_seconds::<serde_json::Value>;
+        assert_eq!(sec(json!(null)).unwrap(), None);
+        assert_eq!(sec(json!("  ")).unwrap(), None);
+        assert_eq!(sec(json!(30)).unwrap(), Some(Seconds::Value(30)));
+        assert_eq!(sec(json!("none")).unwrap(), Some(Seconds::Unlimited));
+        assert!(sec(json!("garbage")).is_err());
+
+        let wt = deserialize_opt_wait_time::<serde_json::Value>;
+        assert_eq!(wt(json!("unlimited")).unwrap(), Some(WaitTime::Unlimited));
+        assert_eq!(wt(json!("45")).unwrap(), Some(WaitTime::Value(45)));
+    }
+
+    // The list and map helpers take a real `Deserializer`, so they are driven
+    // through a wrapper struct field, matching generated usage.
+
+    #[derive(Deserialize)]
+    struct VecWrap {
+        #[serde(default, deserialize_with = "deserialize_vec_from_single_or_seq")]
+        items: Vec<u64>,
+    }
+
+    #[test]
+    fn vec_from_single_or_seq_coerces_all_shapes() {
+        let empty: VecWrap = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(empty.items, Vec::<u64>::new());
+        let null: VecWrap = serde_json::from_value(json!({"items": null})).unwrap();
+        assert_eq!(null.items, Vec::<u64>::new());
+        let blank: VecWrap = serde_json::from_value(json!({"items": ""})).unwrap();
+        assert_eq!(blank.items, Vec::<u64>::new());
+        let one: VecWrap = serde_json::from_value(json!({"items": 7})).unwrap();
+        assert_eq!(one.items, vec![7]);
+        let many: VecWrap = serde_json::from_value(json!({"items": [1, 2, 3]})).unwrap();
+        assert_eq!(many.items, vec![1, 2, 3]);
+        assert!(serde_json::from_value::<VecWrap>(json!({"items": "x"})).is_err());
+    }
+
+    #[derive(Deserialize)]
+    struct MapWrap {
+        #[serde(default, deserialize_with = "deserialize_map_from_object")]
+        entries: HashMap<String, String>,
+    }
+
+    #[test]
+    fn map_from_object_tolerates_absence_and_rejects_non_object() {
+        let empty: MapWrap = serde_json::from_value(json!({})).unwrap();
+        assert!(empty.entries.is_empty());
+        let null: MapWrap = serde_json::from_value(json!({"entries": null})).unwrap();
+        assert!(null.entries.is_empty());
+        let blank: MapWrap = serde_json::from_value(json!({"entries": ""})).unwrap();
+        assert!(blank.entries.is_empty());
+        let full: MapWrap =
+            serde_json::from_value(json!({"entries": {"1": "New", "2": "Old"}})).unwrap();
+        assert_eq!(full.entries.get("1").map(String::as_str), Some("New"));
+        assert!(serde_json::from_value::<MapWrap>(json!({"entries": [1, 2]})).is_err());
+    }
+
+    #[derive(serde::Serialize)]
+    struct FlagWrap {
+        #[serde(serialize_with = "serialize_opt_flag_01")]
+        a: Option<bool>,
+        #[serde(serialize_with = "serialize_opt_flag_yes_no")]
+        b: Option<bool>,
+        #[serde(serialize_with = "serialize_flag_01")]
+        c: bool,
+    }
+
+    #[test]
+    fn flag_serializers_emit_wire_forms_including_none() {
+        let some = FlagWrap {
+            a: Some(true),
+            b: Some(false),
+            c: true,
+        };
+        assert_eq!(
+            serde_json::to_value(&some).unwrap(),
+            json!({"a": "1", "b": "no", "c": "1"})
+        );
+        let none = FlagWrap {
+            a: None,
+            b: None,
+            c: false,
+        };
+        assert_eq!(
+            serde_json::to_value(&none).unwrap(),
+            json!({"a": null, "b": null, "c": "0"})
+        );
+    }
+
+    #[test]
+    fn is_false_predicate() {
+        assert!(is_false(&false));
+        assert!(!is_false(&true));
+    }
+}

@@ -44,7 +44,11 @@ mistypes entirely.
 
 **How to apply**: When VoIP.ms adds an API method, replace
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
-`src/generated.rs` — the `@generated` banner reflects reality.
+`src/generated.rs` — the `@generated` banner reflects reality. The
+hand-maintained `tests/generated_*.rs` oracles are the tripwire for this
+step: after a regen, a failure there means the surface changed in a way the
+oracles don't yet know about; reconcile them by hand (see DEVELOPMENT.md's
+testing strategy), never suppress or auto-generate them.
 
 ### 2. Responses are typed-by-default, with raw escape hatches
 
@@ -395,7 +399,11 @@ voip-ms/
 │   ├── responses.rs     # Custom serde deserializers for generated.rs
 │   └── types.rs         # Hand-written domain types (Routing, …)
 ├── tests/
-│   └── client.rs        # wiremock-based integration tests
+│   ├── client.rs                # wiremock integration + wire-contract tests
+│   ├── generated_params.rs      # drift oracle: every *Params serializes
+│   ├── generated_responses.rs   # drift oracle: every *Response deserializes
+│   ├── generated_enums.rs       # drift oracle: wire-enum tag<->variant maps
+│   └── generated_api_status.rs  # drift oracle: every ApiStatus code round-trips
 ├── tools/
 │   ├── server.wsdl                   # Committed WSDL snapshot
 │   ├── api-responses.json            # Extracted response shapes (generated)
