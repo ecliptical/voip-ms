@@ -25,7 +25,7 @@
       "variants": [
         { "name": "Wav49", "wire": "wav49", "doc": "GSM-compressed WAV." },
         { "name": "Wav",   "wire": "wav" },
-        { "name": "Mp3",   "wire": "mp3" },
+        { "name": "Mp3",   "wire": "wavmp3", "doc": "MP3 (wire value `wavmp3`)." },
         { "name": "No",    "wire": "no",    "doc": "Do not attach audio." }
       ]
     },
@@ -40,8 +40,7 @@
       "doc": "Voicemail playback instruction mode.",
       "variants": [
         { "name": "SkipUnread", "wire": "su", "doc": "Skip instructions on unread messages." },
-        { "name": "Unread",     "wire": "u",  "doc": "Read full instructions for unread messages." },
-        { "name": "DontSay",    "wire": "du", "doc": "Don't say instructions." }
+        { "name": "Unread",     "wire": "u",  "doc": "Read full instructions for unread messages." }
       ]
     },
     "RingStrategy": {
@@ -51,9 +50,7 @@
         { "name": "LeastRecent",  "wire": "leastrecent" },
         { "name": "FewestCalls",  "wire": "fewestcalls" },
         { "name": "Random",       "wire": "random" },
-        { "name": "RrMemory",     "wire": "rrmemory" },
-        { "name": "Linear",       "wire": "linear" },
-        { "name": "WRandom",      "wire": "wrandom" }
+        { "name": "RrMemory",     "wire": "rrmemory" }
       ]
     },
     "RingGroupOrder": {

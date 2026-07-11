@@ -96,12 +96,18 @@ fn dtmf_mode_unknown_preserved() {
 
 #[test]
 fn email_attachment_format_wire_roundtrips() {
-    for w in ["wav49", "wav", "mp3", "no"] {
+    for w in ["wav49", "wav", "wavmp3", "no"] {
         assert_eq!(EmailAttachmentFormat::from_wire(w).as_wire(), w);
         let v = serde_json::to_value(EmailAttachmentFormat::from_wire(w)).unwrap();
         let back: EmailAttachmentFormat = serde_json::from_value(v).unwrap();
         assert_eq!(back, EmailAttachmentFormat::from_wire(w));
     }
+
+    // The MP3 option's wire value is `wavmp3`, not `mp3`.
+    assert_eq!(
+        EmailAttachmentFormat::from_wire("wavmp3"),
+        EmailAttachmentFormat::Mp3
+    );
 
     assert_eq!(
         EmailAttachmentFormat::from_wire("wav49").to_string(),
@@ -207,7 +213,7 @@ fn nat_unknown_preserved() {
 
 #[test]
 fn play_instructions_wire_roundtrips() {
-    for w in ["su", "u", "du"] {
+    for w in ["su", "u"] {
         assert_eq!(PlayInstructions::from_wire(w).as_wire(), w);
         let v = serde_json::to_value(PlayInstructions::from_wire(w)).unwrap();
         let back: PlayInstructions = serde_json::from_value(v).unwrap();
@@ -297,8 +303,6 @@ fn ring_strategy_wire_roundtrips() {
         "fewestcalls",
         "random",
         "rrmemory",
-        "linear",
-        "wrandom",
     ] {
         assert_eq!(RingStrategy::from_wire(w).as_wire(), w);
         let v = serde_json::to_value(RingStrategy::from_wire(w)).unwrap();

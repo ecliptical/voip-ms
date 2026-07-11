@@ -297,6 +297,7 @@ pub enum EmailAttachmentFormat {
     /// GSM-compressed WAV.
     Wav49,
     Wav,
+    /// MP3 (wire value `wavmp3`).
     Mp3,
     /// Do not attach audio.
     No,
@@ -310,7 +311,7 @@ impl EmailAttachmentFormat {
         match self {
             EmailAttachmentFormat::Wav49 => "wav49",
             EmailAttachmentFormat::Wav => "wav",
-            EmailAttachmentFormat::Mp3 => "mp3",
+            EmailAttachmentFormat::Mp3 => "wavmp3",
             EmailAttachmentFormat::No => "no",
             EmailAttachmentFormat::Unknown(s) => s.as_str(),
         }
@@ -321,7 +322,7 @@ impl EmailAttachmentFormat {
         match s {
             "wav49" => EmailAttachmentFormat::Wav49,
             "wav" => EmailAttachmentFormat::Wav,
-            "mp3" => EmailAttachmentFormat::Mp3,
+            "wavmp3" => EmailAttachmentFormat::Mp3,
             "no" => EmailAttachmentFormat::No,
             other => EmailAttachmentFormat::Unknown(other.to_string()),
         }
@@ -644,8 +645,6 @@ pub enum PlayInstructions {
     SkipUnread,
     /// Read full instructions for unread messages.
     Unread,
-    /// Don't say instructions.
-    DontSay,
     /// Any wire value this crate doesn't recognize.
     Unknown(String),
 }
@@ -656,7 +655,6 @@ impl PlayInstructions {
         match self {
             PlayInstructions::SkipUnread => "su",
             PlayInstructions::Unread => "u",
-            PlayInstructions::DontSay => "du",
             PlayInstructions::Unknown(s) => s.as_str(),
         }
     }
@@ -666,7 +664,6 @@ impl PlayInstructions {
         match s {
             "su" => PlayInstructions::SkipUnread,
             "u" => PlayInstructions::Unread,
-            "du" => PlayInstructions::DontSay,
             other => PlayInstructions::Unknown(other.to_string()),
         }
     }
@@ -922,8 +919,6 @@ pub enum RingStrategy {
     FewestCalls,
     Random,
     RrMemory,
-    Linear,
-    WRandom,
     /// Any wire value this crate doesn't recognize.
     Unknown(String),
 }
@@ -937,8 +932,6 @@ impl RingStrategy {
             RingStrategy::FewestCalls => "fewestcalls",
             RingStrategy::Random => "random",
             RingStrategy::RrMemory => "rrmemory",
-            RingStrategy::Linear => "linear",
-            RingStrategy::WRandom => "wrandom",
             RingStrategy::Unknown(s) => s.as_str(),
         }
     }
@@ -951,8 +944,6 @@ impl RingStrategy {
             "fewestcalls" => RingStrategy::FewestCalls,
             "random" => RingStrategy::Random,
             "rrmemory" => RingStrategy::RrMemory,
-            "linear" => RingStrategy::Linear,
-            "wrandom" => RingStrategy::WRandom,
             other => RingStrategy::Unknown(other.to_string()),
         }
     }
