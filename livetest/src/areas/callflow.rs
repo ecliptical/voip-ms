@@ -400,7 +400,7 @@ async fn ring_group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
             tolerate_absent(
                 client
                     .del_ring_group(&DelRingGroupParams {
-                        ringgroup: Some(id),
+                        ring_group: Some(id),
                     })
                     .await,
             )
@@ -650,7 +650,7 @@ async fn list_ring_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>>
 async fn del_ring_group(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_ring_group(&DelRingGroupParams {
-            ringgroup: Some(id),
+            ring_group: Some(id),
         })
         .await?;
     Ok(())
