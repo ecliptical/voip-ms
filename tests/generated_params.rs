@@ -510,11 +510,15 @@ fn del_ring_group_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = DelRingGroupParams {
-        ringgroup: Some(1),
+        ring_group: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
+    // The field is `ring_group` (consistent with get/set) but still travels on
+    // the wire as the upstream `ringgroup`.
+    assert_eq!(v2.get("ringgroup"), Some(&serde_json::json!(1)));
+    assert!(v2.get("ring_group").is_none());
 }
 
 #[test]

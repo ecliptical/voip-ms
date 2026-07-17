@@ -5115,8 +5115,8 @@ pub struct DelRecordingParams {
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DelRingGroupParams {
     /// ID for a specific Ring Group (Example: 19183) (required)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ringgroup: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "ringgroup")]
+    pub ring_group: Option<u64>,
 }
 
 /// \- Deletes a specific SIP URI from your Account.

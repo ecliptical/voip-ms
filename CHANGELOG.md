@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-17
+
+### Changed
+
+- `DelRingGroupParams` names its id field `ring_group` (was `ringgroup`),
+  matching `GetRingGroupsParams` and `SetRingGroupParams` so a consumer who
+  just listed or configured a ring group reuses the same field to delete it.
+  The upstream `delRingGroup` wire parameter is still `ringgroup` (a
+  `#[serde(rename)]` maps it back). Breaking for callers that named the old
+  field.
+
 ## [0.10.2] - 2026-07-11
 
 ### Fixed

@@ -37,6 +37,31 @@ const ACRONYMS: &[&str] = &[
 /// Fields that come from the `Client`, not the per-method request struct.
 const CLIENT_FIELDS: &[&str] = &["api_username", "api_password"];
 
+/// Param-field identifier renames, keyed by `(struct name, WSDL field name)`
+/// mapping to the Rust field identifier to emit instead of the one
+/// [`rust_field_ident`] derives. The WSDL name still travels on the wire (a
+/// `#[serde(rename)]` falls out because the ident now differs from it).
+///
+/// Reserved for genuine cross-method inconsistency in the upstream WSDL, where
+/// one method names an id differently than its siblings and a consumer who just
+/// read or set the value naturally reuses the sibling's name.
+const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
+    // `delRingGroup` names the id `ringgroup` while `getRingGroups` and
+    // `setRingGroup` use `ring_group`; align the delete with the family so a
+    // caller who just listed or configured a group reuses the same field.
+    ("DelRingGroupParams", "ringgroup", "ring_group"),
+];
+
+/// The Rust field identifier for a WSDL param, applying any
+/// [`FIELD_IDENT_OVERRIDE`] and otherwise deriving it with [`rust_field_ident`].
+fn param_field_ident(struct_name: &str, fname: &str, acronyms: &[&'static str]) -> String {
+    FIELD_IDENT_OVERRIDE
+        .iter()
+        .find(|(s, f, _)| *s == struct_name && *f == fname)
+        .map(|(_, _, ident)| (*ident).to_string())
+        .unwrap_or_else(|| rust_field_ident(fname, acronyms))
+}
+
 /// Rust type for a WSDL param type. Integers map to `u64`, matching the
 /// response side: every VoIP.ms integer param is a non-negative id or count
 /// (the documented `-1` sentinels are enum-typed via `field_types`), and the
@@ -630,7 +655,7 @@ fn emit(
                 None => xsd_to_rust(ftype).to_string(),
             };
 
-            let ident = rust_field_ident(fname, &acronyms);
+            let ident = param_field_ident(&struct_name, fname, &acronyms);
             let rename = (ident.trim_start_matches("r#") != fname).then_some(fname);
             if let Some(desc) = docs.and_then(|d| d.get(fname)) {
                 render_doc(&mut out, "    ", desc);
