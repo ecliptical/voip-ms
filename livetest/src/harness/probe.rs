@@ -60,6 +60,9 @@ where
             // anomaly, not drift (drift is a shape mismatch on a valid envelope).
             return ProbeOutcome::Transport(format!("invalid response: {e}"));
         }
+        // Params failed wire conversion before any request went out (e.g. a
+        // timezone that couldn't resolve); a harness bug, not API drift.
+        Err(e @ Error::InvalidParams(_)) => return ProbeOutcome::Transport(e.to_string()),
     };
 
     match serde_json::from_value::<T>(raw.clone()) {

@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-21
+
+### Changed
+
+- Every timezone across the API surface is now a `chrono_tz::Tz` (re-exported
+  as `voip_ms::chrono_tz`); the crate translates to each method's wire format
+  internally. Breaking for callers that passed the previous `String` /
+  `rust_decimal::Decimal` values.
+  - **Record-listing offset methods** (`getCDR`, `getResellerCDR`, `getSMS`,
+    `getMMS`, `getResellerSMS`, `getResellerMMS`): the public `timezone` is
+    `Option<Tz>`. The wire wants a numeric UTC offset (`-12` to `13`), so each
+    call resolves the zone's offset at the query start date (`date_from` /
+    `from`) -- DST-aware, e.g. `America/New_York` sends `-5` in January and
+    `-4` in July -- via a generated `*ParamsWire` twin. A zone with no start
+    date to anchor the resolution, an unparseable start date, or an offset
+    outside VoIP.ms's range (e.g. `Pacific/Kiritimati`, +14) fails the call
+    with the new `Error::InvalidParams` before any request is sent. VoIP.ms
+    applies one offset to the whole range, so rows across a DST boundary can
+    still be off by an hour -- inherent to the API, not resolvable client-side.
+  - **Named-zone params** (`createVoicemail` / `setVoicemail` /
+    `getTimezones`): typed `Tz`, carried on the wire as the IANA name
+    (`America/New_York`).
+  - **Named-zone responses** (`getVoicemails`, `getTimezones`): typed the new
+    `TimezoneName` -- `Known(Tz)` for a recognized zone, `Unrecognized(String)`
+    verbatim otherwise. VoIP.ms's `getTimezones` catalog still lists legacy
+    names the IANA database has dropped (`Asia/Beijing`, `US/Pacific-New`,
+    `Factory`, the old Saudi `Riyadh87`/`88`/`89` zones,
+    `Canada/East-Saskatchewan`) -- confirmed live, where a strict `Tz` failed
+    the whole response on the first one encountered.
+  - New `TimezoneOffset` -- the validated numeric wire form (`-12..=13`,
+    fractional-hour capable) that zones resolve into via
+    `TimezoneOffset::at(tz, date)`; public for callers that need the raw
+    number. `Display` renders `UTC-05:00`.
+
+### Fixed
+
+- `GetMediaMMSResponse::media` is now a `HashMap<String, String>` (index ->
+  media URL) instead of a scalar `String` plus mis-inferred `field_0`/`field_1`/
+  `field_2` siblings. The API docs render the field garbled, so the extractor
+  mis-inferred its shape; live, `getMediaMMS` returns `media` as an object
+  (`{"1": "https://voip.ms/media/.../media.jpeg"}`), which the old type failed
+  to deserialize. Confirmed by a live `sendMMS` -> `getMediaMMS` round trip.
+- `OrderFAXNumberResponse::dids` is now a `Vec<String>` (the ordered fax
+  numbers) instead of a scalar `String` plus mis-inferred `0`/`1`/`2` sibling
+  fields -- the same garbled-doc mis-inference as `getMediaMMS`. Live, a
+  successful `orderFaxNumber` returns `dids` as an array (`["5878831590"]`),
+  which the old type failed to deserialize, so every successful fax order
+  errored client-side after the number was already provisioned.
+
 ## [0.11.0] - 2026-07-17
 
 ### Changed

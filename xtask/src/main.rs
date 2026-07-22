@@ -62,6 +62,70 @@ fn param_field_ident(struct_name: &str, fname: &str, acronyms: &[&'static str]) 
         .unwrap_or_else(|| rust_field_ident(fname, acronyms))
 }
 
+/// A record-listing method whose `timezone` param is a numeric UTC offset
+/// (`-12..=13`) on the wire but a named `chrono_tz::Tz` in the public params.
+///
+/// For each of these, the generator emits a private `*ParamsWire` twin struct
+/// (identical fields, `timezone` as the resolved `crate::TimezoneOffset`
+/// number) plus a `TryFrom<&*Params>` that resolves the zone's UTC offset at
+/// the query start date, and routes the `Client` method bodies through it.
+/// The public struct still derives `Serialize` -- there `timezone` emits the
+/// IANA name, which is what a log or JSON dump should show; only the wire twin
+/// carries the number VoIP.ms expects.
+struct OffsetOp {
+    /// The wire method (e.g. `getCDR`).
+    wire: &'static str,
+    /// The sibling start-date param that anchors the DST resolution.
+    start_field: &'static str,
+    /// Whether `start_field` is a `chrono::NaiveDate` (the CDR methods) rather
+    /// than a `'YYYY-MM-DD'` string (the SMS/MMS methods).
+    start_is_date: bool,
+}
+
+const OFFSET_OPS: &[OffsetOp] = &[
+    OffsetOp {
+        wire: "getCDR",
+        start_field: "date_from",
+        start_is_date: true,
+    },
+    OffsetOp {
+        wire: "getResellerCDR",
+        start_field: "date_from",
+        start_is_date: true,
+    },
+    OffsetOp {
+        wire: "getSMS",
+        start_field: "from",
+        start_is_date: false,
+    },
+    OffsetOp {
+        wire: "getMMS",
+        start_field: "from",
+        start_is_date: false,
+    },
+    OffsetOp {
+        wire: "getResellerSMS",
+        start_field: "from",
+        start_is_date: false,
+    },
+    OffsetOp {
+        wire: "getResellerMMS",
+        start_field: "from",
+        start_is_date: false,
+    },
+];
+
+fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
+    OFFSET_OPS.iter().find(|o| o.wire == wire)
+}
+
+/// Doc emitted on the offset ops' public `timezone` field in place of the
+/// mined upstream text, which describes the numeric wire form ("Numeric: -12
+/// to 13") the public `Tz` field no longer is.
+const OFFSET_TIMEZONE_DOC: &str = "IANA time zone for the reported timestamps (Example: \
+     'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects, at the query \
+     start date (DST-aware). Omit to keep timestamps in the account's configured time zone.";
+
 /// Rust type for a WSDL param type. Integers map to `u64`, matching the
 /// response side: every VoIP.ms integer param is a non-negative id or count
 /// (the documented `-1` sentinels are enum-typed via `field_types`), and the
@@ -647,7 +711,7 @@ fn emit(
 
         out.push_str(&format!("pub struct {struct_name} {{\n"));
         let docs = param_docs.get(op);
-        for (fname, ftype) in body_fields {
+        for (fname, ftype) in body_fields.iter().copied() {
             // Params are WSDL scalars, so the name-based table always applies.
             let override_ = resolver.resolve(&struct_name, fname, true);
             let rust_ty = match override_ {
@@ -657,7 +721,19 @@ fn emit(
 
             let ident = param_field_ident(&struct_name, fname, &acronyms);
             let rename = (ident.trim_start_matches("r#") != fname).then_some(fname);
-            if let Some(desc) = docs.and_then(|d| d.get(fname)) {
+            let mined = docs.and_then(|d| d.get(fname));
+            if offset_op(op).is_some() && fname == "timezone" {
+                // The mined doc describes the numeric wire form the public
+                // `Tz` field no longer is; keep only its `(required)` marker.
+                let required = mined.is_some_and(|d| d.contains("(required)"));
+                let doc = if required {
+                    format!("{OFFSET_TIMEZONE_DOC} (required)")
+                } else {
+                    OFFSET_TIMEZONE_DOC.to_string()
+                };
+
+                render_doc(&mut out, "    ", &doc);
+            } else if let Some(desc) = mined {
                 render_doc(&mut out, "    ", desc);
             }
 
@@ -692,6 +768,17 @@ fn emit(
             }
         }
         out.push_str("}\n");
+
+        if let Some(off) = offset_op(op) {
+            out.push_str(&emit_offset_wire(
+                op,
+                off,
+                &struct_name,
+                &body_fields,
+                resolver,
+                &acronyms,
+            ));
+        }
     }
 
     out.push_str(&response_codegen::emit_response_structs(
@@ -709,6 +796,30 @@ fn emit(
             render_method_doc(&mut out, "    ", desc);
             out.push_str("    ///\n");
         }
+        if offset_op(op).is_some() {
+            // Route through the wire twin, resolving `timezone` (a `Tz`) to
+            // the numeric UTC offset at the query start date.
+            out.push_str(&format!(
+                "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
+                 ///\n    \
+                 /// A `timezone` zone is resolved to the numeric UTC offset the wire\n    \
+                 /// expects, at the query start date; a zone that cannot be resolved\n    \
+                 /// is [`Error::InvalidParams`](crate::Error::InvalidParams).\n    \
+                 pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
+                     self.call(\"{op}\", &{struct_name}Wire::try_from(params)?).await\n    \
+                 }}\n\n\
+                 /// Call the `{op}` API method and return the raw JSON envelope.\n    \
+                 ///\n    \
+                 /// A `timezone` zone is resolved to the numeric UTC offset the wire\n    \
+                 /// expects, at the query start date; a zone that cannot be resolved\n    \
+                 /// is [`Error::InvalidParams`](crate::Error::InvalidParams).\n    \
+                 pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
+                     self.call_raw(\"{op}\", &{struct_name}Wire::try_from(params)?).await\n    \
+                 }}\n\n"
+            ));
+            continue;
+        }
+
         out.push_str(&format!(
             "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
              pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
@@ -723,6 +834,146 @@ fn emit(
 
     out.push_str("}\n");
     out
+}
+
+/// Emit the private `*ParamsWire` twin for an [`OffsetOp`]: the same fields as
+/// the public struct, with `timezone` as the resolved numeric
+/// `crate::TimezoneOffset`, plus the `TryFrom<&*Params>` that resolves the
+/// public `Tz` at the query start date.
+fn emit_offset_wire(
+    op: &str,
+    off: &OffsetOp,
+    struct_name: &str,
+    body_fields: &[&(String, String)],
+    resolver: &field_overrides::Resolver,
+    acronyms: &[&'static str],
+) -> String {
+    let wire_name = format!("{struct_name}Wire");
+    let mut out = String::new();
+
+    out.push_str(&format!(
+        "\n/// Wire form of [`{struct_name}`]: `timezone` resolved to the numeric UTC\n\
+         /// offset `{op}` expects.\n\
+         #[derive(Debug, Clone, Serialize)]\n\
+         struct {wire_name} {{\n"
+    ));
+    for (fname, ftype) in body_fields.iter().copied() {
+        let ident = param_field_ident(struct_name, fname, acronyms);
+        let rename = (ident.trim_start_matches("r#") != fname).then_some(fname);
+        if fname == "timezone" {
+            out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\")]\n");
+            out.push_str("    timezone: Option<crate::TimezoneOffset>,\n");
+            continue;
+        }
+
+        // Resolve overrides as the public struct so wire fields match it
+        // exactly (same types, serializers, renames).
+        let override_ = resolver.resolve(struct_name, fname, true);
+        let rust_ty = match override_ {
+            Some(o) => o.rust_type.clone(),
+            None => xsd_to_rust(ftype).to_string(),
+        };
+        let param_serializer = override_.and_then(|o| o.param_serializer.as_deref());
+        match override_.and_then(|o| o.param_skip_if.as_deref()) {
+            Some(skip_if) => {
+                out.push_str(&format!("    #[serde(skip_serializing_if = \"{skip_if}\""));
+                if let Some(ser) = param_serializer {
+                    out.push_str(&format!(", serialize_with = \"{ser}\""));
+                }
+                if let Some(wire) = rename {
+                    out.push_str(&format!(", rename = \"{wire}\""));
+                }
+                out.push_str(")]\n");
+                out.push_str(&format!("    {ident}: {rust_ty},\n"));
+            }
+            None => {
+                out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\"");
+                if let Some(ser) = param_serializer {
+                    out.push_str(&format!(", serialize_with = \"{ser}\""));
+                }
+                if let Some(wire) = rename {
+                    out.push_str(&format!(", rename = \"{wire}\""));
+                }
+                out.push_str(")]\n");
+                out.push_str(&format!("    {ident}: Option<{rust_ty}>,\n"));
+            }
+        }
+    }
+    out.push_str("}\n\n");
+
+    let start_ident = param_field_ident(struct_name, off.start_field, acronyms);
+    out.push_str(&format!(
+        "impl TryFrom<&{struct_name}> for {wire_name} {{\n    \
+             type Error = crate::types::TimezoneOffsetError;\n\n    \
+             fn try_from(p: &{struct_name}) -> std::result::Result<Self, Self::Error> {{\n"
+    ));
+    if off.start_is_date {
+        out.push_str(&format!(
+            "        let timezone = match p.timezone {{\n            \
+                 Some(tz) => {{\n                \
+                     let start = p.{start_ident}\n                    \
+                         .ok_or(crate::types::TimezoneOffsetError::MissingStartDate)?;\n                \
+                     Some(crate::TimezoneOffset::at(tz, start)?)\n            \
+                 }}\n            \
+                 None => None,\n        \
+             }};\n"
+        ));
+    } else {
+        out.push_str(&format!(
+            "        let timezone = match p.timezone {{\n            \
+                 Some(tz) => {{\n                \
+                     let start = p.{start_ident}\n                    \
+                         .as_deref()\n                    \
+                         .ok_or(crate::types::TimezoneOffsetError::MissingStartDate)?\n                    \
+                         .trim()\n                    \
+                         .parse::<chrono::NaiveDate>()\n                    \
+                         .map_err(|_| crate::types::TimezoneOffsetError::InvalidStartDate)?;\n                \
+                     Some(crate::TimezoneOffset::at(tz, start)?)\n            \
+                 }}\n            \
+                 None => None,\n        \
+             }};\n"
+        ));
+    }
+
+    out.push_str("        Ok(Self {\n");
+    for (fname, ftype) in body_fields.iter().copied() {
+        let ident = param_field_ident(struct_name, fname, acronyms);
+        if fname == "timezone" {
+            out.push_str("            timezone,\n");
+            continue;
+        }
+
+        let rust_ty = match resolver.resolve(struct_name, fname, true) {
+            Some(o) => o.rust_type.clone(),
+            None => xsd_to_rust(ftype).to_string(),
+        };
+        if is_copy_ty(&rust_ty) {
+            out.push_str(&format!("            {ident}: p.{ident},\n"));
+        } else {
+            out.push_str(&format!("            {ident}: p.{ident}.clone(),\n"));
+        }
+    }
+    out.push_str("        })\n    }\n}\n");
+    out
+}
+
+/// Whether a generated param type is `Copy`, so the wire-twin conversion can
+/// move it instead of tripping `clippy::clone_on_copy`. The declared-enum
+/// types (e.g. `MessageType`) are not listed: their `Unknown(String)`
+/// catch-all makes them `Clone`-only.
+fn is_copy_ty(t: &str) -> bool {
+    matches!(
+        t,
+        "bool"
+            | "u64"
+            | "chrono::NaiveDate"
+            | "rust_decimal::Decimal"
+            | "chrono_tz::Tz"
+            | "crate::TimezoneOffset"
+            | "crate::Seconds"
+            | "crate::WaitTime"
+            | "crate::MaxMembers"
+    )
 }
 
 pub(crate) fn repo_root() -> PathBuf {
@@ -987,6 +1238,29 @@ fn cmd_gen() -> Result<(), String> {
                 response_deserializer: Some(enum_deserializer_path(enum_name)),
                 ..Default::default()
             },
+        );
+    }
+
+    // Timezone assignments, hand-written here rather than in the JSON (whose
+    // `field_type_override` values are validated as declared enums): named-zone
+    // params are strict `chrono_tz::Tz`; named-zone response fields are the
+    // tolerant `crate::TimezoneName` (voip.ms still reports legacy names the
+    // IANA database dropped); and the offset ops' public `timezone` is `Tz`
+    // (its numeric wire form is produced by the `*ParamsWire` twin -- the
+    // public field serializes as the readable IANA name).
+    let acronyms = acronyms_sorted();
+    for path in field_overrides::NAMED_ZONE_TZ_PARAM_PATHS {
+        field_type_override.insert((*path).to_string(), field_overrides::tz_param_override());
+    }
+
+    for path in field_overrides::NAMED_ZONE_TZ_RESPONSE_PATHS {
+        field_type_override.insert((*path).to_string(), field_overrides::tz_response_override());
+    }
+
+    for op in OFFSET_OPS {
+        field_type_override.insert(
+            format!("{}Params.timezone", camel_to_pascal(op.wire, &acronyms)),
+            field_overrides::tz_param_override(),
         );
     }
 

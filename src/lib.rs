@@ -63,9 +63,12 @@ mod types;
 pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL};
 pub use error::{Error, Result};
 pub use generated::*;
-pub use types::{MaxMembers, Routing, RoutingParseError, Seconds, WaitTime};
+pub use types::{
+    MaxMembers, Routing, RoutingParseError, Seconds, TimezoneName, TimezoneOffset,
+    TimezoneOffsetError, WaitTime,
+};
 
 // Dependencies whose types appear in this crate's public API. Re-exported so
 // callers can name those types (and `match` on [`Error::Http`]) without adding
 // a separate, independently-versioned dependency of their own.
-pub use {chrono, reqwest, rust_decimal, serde_json};
+pub use {chrono, chrono_tz, reqwest, rust_decimal, serde_json};

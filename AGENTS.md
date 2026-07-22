@@ -187,6 +187,35 @@ in `xtask/src/field_overrides.rs`:
   word (`none` / `unlimited`), which a bare `u64` can't represent. They carry
   their own (de)serialization (tolerant of a number, a numeric string, or
   either sentinel word).
+* **Timezones are `chrono_tz::Tz` everywhere**, translated per wire contract.
+  The field name `timezone` means two incompatible things upstream, so the
+  assignments are per-struct (injected into the `field_type_override` map in
+  `main.rs`, since the JSON section is validated enum-only), not name-based:
+  - *Named-zone* params (`createVoicemail` / `setVoicemail` / `getTimezones` --
+    `field_overrides.rs::NAMED_ZONE_TZ_PARAM_PATHS`) are strict `Tz`, carried
+    on the wire via `serialize_opt_tz`. *Named-zone responses*
+    (`getVoicemails`, `getTimezones` -- `NAMED_ZONE_TZ_RESPONSE_PATHS`) are the
+    tolerant [`crate::TimezoneName`] (`Known(Tz)` or `Unrecognized(String)`)
+    via `deserialize_opt_timezone_name`: voip.ms's live `getTimezones` catalog
+    lists legacy names the IANA database has dropped (`Asia/Beijing`,
+    `US/Pacific-New`, `Factory`, old Saudi `Riyadh87`/`88`/`89`,
+    `Canada/East-Saskatchewan`), and a strict `Tz` failed the whole response on
+    the first one -- confirmed by `cargo run -p livetest`, not by the wiremock
+    suite (whose fixtures never included a legacy name).
+  - *Record-listing offset* params (`getCDR` / `getResellerCDR` / `getSMS` /
+    `getMMS` / `getResellerSMS` / `getResellerMMS` -- the `OFFSET_OPS` table in
+    `main.rs`) want a numeric UTC offset (`-12..=13`), which the WSDL
+    under-types inconsistently (`xsd:decimal` on the CDR pair, `xsd:string` on
+    the SMS/MMS four). The public field is still `Option<Tz>`; the generator
+    emits a private `*ParamsWire` twin plus a `TryFrom<&*Params>` that resolves
+    the zone's offset at the query start date (`date_from` / `from`) into
+    [`crate::TimezoneOffset`] (the validated numeric wire form, hand-written in
+    `src/types.rs`), and routes both generated method bodies through it. No
+    start date, an unparseable one, or an out-of-range zone (`+14`) is
+    `Error::InvalidParams` before any request is sent. The public struct still
+    derives `Serialize` -- there `timezone` emits the IANA name (what a log
+    should show); only the wire twin carries the number, so raw `call_raw`
+    users must do their own offset conversion.
 * **Boolean flags** map to `bool`, registered in the `FLAG_01_FIELDS` /
   `FLAG_YES_NO_FIELDS` consts of `xtask/src/field_overrides.rs`. Many
   parameters VoIP.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are

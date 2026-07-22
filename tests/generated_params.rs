@@ -2019,7 +2019,7 @@ fn get_timezones_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetTimezonesParams {
-        timezone: Some("x".into()),
+        timezone: Some(voip_ms::chrono_tz::America::New_York),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();

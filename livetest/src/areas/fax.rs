@@ -268,8 +268,8 @@ async fn order_fixture_fax(ctx: &AreaCtx<'_>, report: &mut Report) {
         .await;
 
     let did = match ordered {
-        Ok(resp) => match resp.dids.filter(|d| !d.is_empty()) {
-            Some(dids) => first_did(&dids),
+        Ok(resp) => match resp.dids.into_iter().find(|d| !d.trim().is_empty()) {
+            Some(did) => did.trim().to_string(),
             None => {
                 return fail(
                     report,
@@ -314,7 +314,10 @@ async fn order_fixture_fax(ctx: &AreaCtx<'_>, report: &mut Report) {
     if let Err(error) = client
         .set_fax_number_info(&SetFAXNumberInfoParams {
             did: Some(did.clone()),
-            email: Some(ctx.token.marker(0)),
+            // Must be a syntactically valid email or the API rejects it with
+            // `invalid_email`; carry the run marker in the local-part so the
+            // ownership is still visible.
+            email: Some(format!("{}@livetest.invalid", ctx.token.marker(0))),
             ..Default::default()
         })
         .await
@@ -427,10 +430,6 @@ async fn find_available_fax_location(ctx: &AreaCtx<'_>) -> voip_ms::Result<Optio
 
 /// `orderFaxNumber`'s `dids` field can carry more than one comma-separated
 /// number; the fixture orders `quantity=1`, so take the first.
-fn first_did(dids: &str) -> String {
-    dids.split(',').next().unwrap_or(dids).trim().to_string()
-}
-
 fn fail(report: &mut Report, label: &str, error: &str) {
     report.record(AREA, label, Outcome::Fail(error.to_string()));
 }

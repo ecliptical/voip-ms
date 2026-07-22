@@ -213,6 +213,48 @@ const SECONDS_FIELDS: &[&str] = &[
     "wrapup_time",
 ];
 
+/// The named-zone `timezone` params: IANA zone names (`America/New_York`)
+/// stored on a mailbox or selecting a `getTimezones` catalog entry. Typed
+/// [`chrono_tz::Tz`] per struct rather than by field name, because the same
+/// field name on the CDR / SMS / MMS record-listing methods is a different
+/// contract entirely -- a numeric UTC offset -- handled by the `OFFSET_OPS`
+/// wire transform in `main.rs`. Keyed `"StructName.field"`.
+pub(crate) const NAMED_ZONE_TZ_PARAM_PATHS: &[&str] = &[
+    "CreateVoicemailParams.timezone",
+    "SetVoicemailParams.timezone",
+    "GetTimezonesParams.timezone",
+];
+
+/// The named-zone *response* fields. Typed [`crate::TimezoneName`] rather than
+/// `Tz`: voip.ms still reports legacy names the IANA database has dropped
+/// (`Asia/Beijing`, `US/Pacific-New`, `Factory`, ...), so a response value
+/// must be able to carry an unrecognized name verbatim. Params stay strict
+/// `Tz` -- the crate never *sends* a name it can't resolve.
+pub(crate) const NAMED_ZONE_TZ_RESPONSE_PATHS: &[&str] = &[
+    "GetVoicemailsResponseVoicemail.timezone",
+    "GetTimezonesResponseTimezone.value",
+];
+
+/// The [`FieldOverride`] typing a param as [`chrono_tz::Tz`]: the IANA name
+/// travels on the wire via `serialize_opt_tz`.
+pub(crate) fn tz_param_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "chrono_tz::Tz".into(),
+        param_serializer: Some("crate::responses::serialize_opt_tz".into()),
+        ..Default::default()
+    }
+}
+
+/// The [`FieldOverride`] typing a response field as [`crate::TimezoneName`],
+/// which preserves names the IANA database doesn't recognize.
+pub(crate) fn tz_response_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "crate::TimezoneName".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_timezone_name".into()),
+        ..Default::default()
+    }
+}
+
 /// Caller-ID / forward phone-number override fields. They are phone-number
 /// identifiers -- not integers -- so a formatted or non-NANP value must
 /// survive, but voip.ms signals "not set" with a `-1` sentinel (or empty),

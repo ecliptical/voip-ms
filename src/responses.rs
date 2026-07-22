@@ -20,13 +20,14 @@
 //! module path.
 
 use chrono::{NaiveDate, NaiveDateTime};
+use chrono_tz::Tz;
 use rust_decimal::Decimal;
 use serde::de::Error as DeError;
 use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::str::FromStr;
 
-use crate::types::{MaxMembers, Routing, Seconds, WaitTime};
+use crate::types::{MaxMembers, Routing, Seconds, TimezoneName, WaitTime};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -265,6 +266,34 @@ where
     }
 }
 
+/// Deserialize an optional named-zone response field into a [`TimezoneName`]:
+/// a parsed zone when the IANA database recognizes the name, the verbatim
+/// string when it doesn't (voip.ms still reports legacy names like
+/// `Asia/Beijing`), and `None` for absent/empty.
+pub(crate) fn deserialize_opt_timezone_name<'de, D>(
+    deserializer: D,
+) -> Result<Option<TimezoneName>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) => {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                return Ok(None);
+            }
+
+            let Ok(name) = trimmed.parse::<TimezoneName>();
+            Ok(Some(name))
+        }
+        Some(other) => Err(D::Error::custom(format!(
+            "expected IANA timezone string, got {other}"
+        ))),
+    }
+}
+
 pub(crate) fn deserialize_opt_seconds<'de, D>(deserializer: D) -> Result<Option<Seconds>, D::Error>
 where
     D: Deserializer<'de>,
@@ -408,6 +437,19 @@ where
     S: Serializer,
 {
     s.serialize_str(if *v { "1" } else { "0" })
+}
+
+/// Serialize an optional named-zone param as its IANA name (`America/New_York`),
+/// the form the voicemail and `getTimezones` methods expect. `None` would be
+/// skipped before reaching here.
+pub(crate) fn serialize_opt_tz<S>(v: &Option<Tz>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match v {
+        Some(tz) => s.serialize_str(tz.name()),
+        None => s.serialize_none(),
+    }
 }
 
 #[cfg(test)]

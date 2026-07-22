@@ -131,7 +131,7 @@ async fn voicemail_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
             attach_message: Some(false),
             delete_message: Some(false),
             say_time: Some(false),
-            timezone: Some("America/New_York".to_string()),
+            timezone: Some(voip_ms::chrono_tz::America::New_York),
             say_callerid: Some(false),
             play_instructions: Some(PlayInstructions::Unread),
             language: Some("en".to_string()),

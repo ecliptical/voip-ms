@@ -386,6 +386,26 @@
         { "path": "emailToFax[].from", "type": "string" }
       ]
     },
+    "getMediaMMS": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "id", "shape": { "kind": "scalar", "type": "integer", "sample": "272377221" } },
+          { "name": "date", "shape": { "kind": "scalar", "type": "datetime", "sample": "2014-03-30 10:24:16" } },
+          { "name": "media", "shape": { "kind": "map", "value": { "kind": "scalar", "type": "string", "sample": "https://voip.ms/media/abc/media.jpeg" } } }
+        ]
+      }
+    },
+    "orderFaxNumber": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "dids", "shape": { "kind": "list", "element": { "kind": "scalar", "type": "string", "sample": "5878831590" } } }
+        ]
+      }
+    },
     "searchFaxAreaCodeCAN": {
       "shape": {
         "kind": "object",

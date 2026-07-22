@@ -1389,3 +1389,120 @@ async fn typed_get_conference_decodes_unlimited_max_members() {
         Some(MaxMembers::Value(40))
     );
 }
+
+#[tokio::test]
+async fn record_listing_timezone_resolves_zone_to_offset_at_start_date() {
+    // The record-listing `timezone` is a `Tz` on the public params; the wire
+    // gets the zone's numeric UTC offset resolved at the query start date --
+    // DST-aware, so New York is -4 in July and -5 in January.
+    use voip_ms::GetSMSParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSMS"))
+        .and(query_param("from", "2026-07-15"))
+        .and(query_param("timezone", "-4"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetSMSParams {
+        from: Some("2026-07-15".into()),
+        timezone: Some(voip_ms::chrono_tz::America::New_York),
+        ..Default::default()
+    };
+    client.get_sms_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn cdr_timezone_resolves_offset_from_date_from() {
+    // The CDR variant anchors the resolution on `date_from` (a typed date);
+    // January in New York is EST, -5.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .and(query_param("timezone", "-5"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetCDRParams {
+        date_from: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 1, 15),
+        date_to: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 1, 16),
+        timezone: Some(voip_ms::chrono_tz::America::New_York),
+        ..Default::default()
+    };
+    client.get_cdr_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn record_listing_timezone_without_start_date_errors() {
+    // A zone with no start date has no instant to resolve DST at; the call
+    // fails before any request is sent.
+    use voip_ms::{GetSMSParams, TimezoneOffsetError};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let params = GetSMSParams {
+        timezone: Some(voip_ms::chrono_tz::America::New_York),
+        ..Default::default()
+    };
+    let err = client.get_sms_raw(&params).await.unwrap_err();
+    assert!(matches!(
+        err,
+        Error::InvalidParams(TimezoneOffsetError::MissingStartDate)
+    ));
+}
+
+#[tokio::test]
+async fn named_zone_timezone_serializes_as_iana_name() {
+    // The voicemail / getTimezones `timezone` is a named zone, not an offset:
+    // the wire carries the IANA name verbatim. The response side is tolerant --
+    // voip.ms's catalog still lists legacy names (`Asia/Beijing`) the IANA
+    // database has dropped, which must survive verbatim instead of failing
+    // the whole response.
+    use voip_ms::{GetTimezonesParams, TimezoneName};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getTimezones"))
+        .and(query_param("timezone", "America/New_York"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "timezones": [
+                { "value": "America/New_York", "description": "America/New York" },
+                { "value": "Asia/Beijing", "description": "Asia/Beijing" }
+            ]
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetTimezonesParams {
+        timezone: Some(voip_ms::chrono_tz::America::New_York),
+    };
+    let envelope = client.get_timezones(&params).await.unwrap();
+    assert_eq!(
+        envelope.timezones[0].value,
+        Some(TimezoneName::Known(voip_ms::chrono_tz::America::New_York))
+    );
+    assert_eq!(
+        envelope.timezones[1].value,
+        Some(TimezoneName::Unrecognized("Asia/Beijing".into()))
+    );
+}

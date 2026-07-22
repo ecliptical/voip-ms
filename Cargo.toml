@@ -2,7 +2,7 @@
 [package]
 name = "voip-ms"
 description = "Async client for the VoIP.ms REST API"
-version = "0.11.0"
+version = "0.12.0"
 repository = "https://github.com/ecliptical/voip-ms"
 authors = ["Peter Nehrer <pnehrer@eclipticalsoftware.com>"]
 license = "MIT"
@@ -30,6 +30,7 @@ unchecked-raw = []
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = { version = "0.10", features = ["serde"] }
 reqwest = { version = "0.13.4", default-features = false, features = ["json", "query"] }
 rust_decimal = "1.42"
 serde = { version = "1.0", features = ["derive"] }

@@ -21,4 +21,10 @@ pub enum Error {
     /// doesn't recognize).
     #[error("API status: {0}")]
     Api(ApiStatus),
+
+    /// The request parameters could not be converted to their wire form
+    /// before sending -- e.g. a record-listing `timezone` whose UTC offset
+    /// cannot be resolved or falls outside the range VoIP.ms accepts.
+    #[error("invalid parameters: {0}")]
+    InvalidParams(#[from] crate::types::TimezoneOffsetError),
 }

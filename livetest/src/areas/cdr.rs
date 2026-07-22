@@ -51,19 +51,44 @@ impl Area for Cdr {
         let date_from = today - voip_ms::chrono::Duration::days(30);
         let date_to = today;
 
-        read_back::<_, GetCDRResponse>(
-            ctx.client,
-            report,
-            AREA,
-            "fixture:getCDR",
-            &GetCDRParams {
-                date_from: Some(date_from),
-                date_to: Some(date_to),
-                timezone: Some(voip_ms::rust_decimal::Decimal::ZERO),
-                ..Default::default()
-            },
-            |r| Some(r.cdr.len()),
-        )
+        // `read_back` calls `Client::call_raw` with these params directly, which
+        // bypasses `get_cdr`/`get_cdr_raw`'s `timezone: Tz` -> numeric-offset
+        // resolution (that conversion lives in the generated method's private
+        // wire twin, not on `GetCDRParams` itself). Resolve it by hand here --
+        // via the same public `TimezoneOffset::at` the generated code calls --
+        // so the live request carries the number VoIP.ms expects, proving the
+        // same DST-at-`date_from` path a real caller of `get_cdr` exercises.
+        let timezone = voip_ms::chrono_tz::UTC;
+        let offset = match voip_ms::TimezoneOffset::at(timezone, date_from) {
+            Ok(o) => o,
+            Err(e) => {
+                report.record(
+                    AREA,
+                    "fixture:getCDR",
+                    Outcome::Fail(format!("timezone resolution failed: {e}")),
+                );
+                return;
+            }
+        };
+
+        let mut params = serde_json::to_value(GetCDRParams {
+            date_from: Some(date_from),
+            date_to: Some(date_to),
+            // At least one call-status filter is required or VoIP.ms rejects
+            // the request with `no_callstatus`.
+            answered: Some(true),
+            noanswer: Some(true),
+            busy: Some(true),
+            failed: Some(true),
+            timezone: Some(timezone),
+            ..Default::default()
+        })
+        .expect("GetCDRParams always serializes");
+        params["timezone"] = serde_json::Value::String(offset.hours().to_string());
+
+        read_back::<_, GetCDRResponse>(ctx.client, report, AREA, "fixture:getCDR", &params, |r| {
+            Some(r.cdr.len())
+        })
         .await;
 
         report.record(
