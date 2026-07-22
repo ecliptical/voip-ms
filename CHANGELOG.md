@@ -188,6 +188,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   typed methods now return an empty response for these instead of `Error::Api`.
   Found by auditing every list-returning method against the live API.
 
+### Removed
+
+- The `live_api_verify` example and its `live-api-verify.yaml` workflow, both
+  superseded by the `livetest` workspace member. `livetest` covers the full API
+  surface (all 222 methods across functional areas) with raw-vs-typed drift
+  diffing, populated-fixture lifecycles, and a pre-flight sweep, where the
+  example probed a fixed ~20 methods. See "Live API verification (`livetest`)"
+  in DEVELOPMENT.md for how to run it.
+
 ## [0.8.0] - 2026-07-09
 
 ### Fixed
