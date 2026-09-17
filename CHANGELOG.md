@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   semver-compatible for callers naming the re-exported `voip_ms::reqwest` /
   `voip_ms::rust_decimal`.
 
+## [0.12.0] - 2026-07-21
+
 ### Changed
 
 - Every timezone across the API surface is now a `chrono_tz::Tz` (re-exported
