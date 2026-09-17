@@ -173,6 +173,10 @@ Publishing is automated via [.github/workflows/release.yaml](.github/workflows/r
 
 1. Ensure Cargo.toml has the target version.
 2. Move release notes from Unreleased into a versioned section in CHANGELOG.md.
+   **Insert a new heading above the newest existing one; never rename an
+   existing heading in place.** Renaming files the outgoing release's notes
+   under the new number and drops the previous version from the file entirely,
+   which is how v0.12.0's notes went missing and had to be restored.
 3. Push a tag in the form vX.Y.Z.
 
 ```bash
