@@ -2,6 +2,7 @@ use reqwest::Url;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
+use std::fmt;
 
 use crate::error::{ApiStatus, Error, Result};
 
@@ -12,7 +13,7 @@ pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
 ///
 /// Clients are cheap to clone; the underlying [`reqwest::Client`] uses an
 /// internal connection pool that is shared across clones.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Client {
     http: reqwest::Client,
     base_url: Url,
@@ -199,8 +200,43 @@ impl Client {
     }
 }
 
+/// Stands in for the API password wherever a client is formatted.
+const REDACTED: &str = "<redacted>";
+
+/// `url` with any `user:pass@` userinfo removed.
+fn without_userinfo(url: &Url) -> Url {
+    let mut url = url.clone();
+    // Both setters fail only on a cannot-be-a-base URL, which has no userinfo
+    // to strip in the first place.
+    let _ = url.set_username("");
+    let _ = url.set_password(None);
+    url
+}
+
+// `Debug` on `Client` and `ClientBuilder` is hand-written rather than derived
+// because a derive prints `api_password` verbatim, and one `{:?}` reaching a
+// log or a downstream error message leaks a live account password. The other
+// two fields are deliberate:
+//
+// * `api_username` is shown. The account email says which account a client
+//   speaks for -- the reason to format one at all -- and authenticates nothing
+//   on its own.
+// * `base_url` is shown with userinfo stripped. A caller may point the client
+//   at a proxy whose URL embeds `user:pass@`, which `Url`'s own `Display`
+//   prints verbatim.
+impl fmt::Debug for Client {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let base_url = without_userinfo(&self.base_url);
+        f.debug_struct("Client")
+            .field("http", &self.http)
+            .field("base_url", &base_url.as_str())
+            .field("api_username", &self.api_username)
+            .field("api_password", &REDACTED)
+            .finish()
+    }
+}
+
 /// Builder for [`Client`].
-#[derive(Debug)]
 pub struct ClientBuilder {
     http: Option<reqwest::Client>,
     base_url: Option<Url>,
@@ -237,6 +273,21 @@ impl ClientBuilder {
             api_username: self.api_username,
             api_password: self.api_password,
         })
+    }
+}
+
+impl fmt::Debug for ClientBuilder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let base_url = self
+            .base_url
+            .as_ref()
+            .map(|u| without_userinfo(u).to_string());
+        f.debug_struct("ClientBuilder")
+            .field("http", &self.http)
+            .field("base_url", &base_url)
+            .field("api_username", &self.api_username)
+            .field("api_password", &REDACTED)
+            .finish()
     }
 }
 
@@ -290,6 +341,54 @@ mod tests {
         let c = Client::new("u", "p");
         let c2 = c.clone();
         assert_eq!(c.base_url(), c2.base_url());
+    }
+
+    #[test]
+    fn debug_redacts_the_password() {
+        let c = Client::new("user@example.com", "hunter2");
+        let rendered = format!("{c:?}");
+
+        assert!(!rendered.contains("hunter2"), "Client Debug: {rendered}");
+        assert!(rendered.contains(REDACTED), "Client Debug: {rendered}");
+        assert!(
+            rendered.contains("user@example.com"),
+            "Client Debug should still identify the account: {rendered}"
+        );
+
+        let b = Client::builder("user@example.com", "hunter2");
+        let rendered = format!("{b:?}");
+
+        assert!(
+            !rendered.contains("hunter2"),
+            "ClientBuilder Debug: {rendered}"
+        );
+        assert!(
+            rendered.contains(REDACTED),
+            "ClientBuilder Debug: {rendered}"
+        );
+    }
+
+    #[test]
+    fn debug_strips_base_url_userinfo() {
+        let url = Url::parse("https://proxyuser:proxypass@example.test/api").unwrap();
+        let c = Client::builder("u", "p")
+            .base_url(url.clone())
+            .build()
+            .unwrap();
+
+        let rendered = format!("{c:?}");
+        assert!(!rendered.contains("proxypass"), "Client Debug: {rendered}");
+        assert!(!rendered.contains("proxyuser"), "Client Debug: {rendered}");
+
+        let rendered = format!("{:?}", Client::builder("u", "p").base_url(url.clone()));
+        assert!(
+            !rendered.contains("proxypass"),
+            "ClientBuilder Debug: {rendered}"
+        );
+
+        // Stripping is presentational only -- the client still requests the URL
+        // it was given, credentials included.
+        assert_eq!(c.base_url(), &url);
     }
 
     #[test]

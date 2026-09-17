@@ -7,7 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.12.0] - 2026-07-21
+## [0.12.1] - 2026-09-17
+
+### Security
+
+- The API password no longer reaches error or `Debug` output. The crate
+  authenticates by query parameter, so every request URL carries a live
+  `api_password`; two paths printed it verbatim.
+  - `Error::Http` now wraps a `reqwest::Error` whose URL has been stripped.
+    A `reqwest::Error` renders its URL from both `Display` and `Debug`, so any
+    consumer writing `format!("{e}")`, `e.to_string()`, `%e`, `?e` or `{e:#}`
+    printed the password. The stripping happens in the `From<reqwest::Error>`
+    conversion, so it covers every fallible call site at once. The variant
+    keeps its shape and its `source()`, and the inner error's classification
+    (`status()`, `is_timeout()`, `is_connect()`, `is_body()`, `is_decode()`)
+    is unaffected -- all of it reads the error's kind, not its URL.
+  - `Client` and `ClientBuilder` implement `Debug` by hand instead of deriving
+    it. The derive printed `api_password` directly, which no URL-based
+    redaction could catch. The password renders as `<redacted>`;
+    `api_username` is still shown (it identifies the account and authenticates
+    nothing on its own), and `base_url` is shown with any `user:pass@` userinfo
+    stripped, since a caller-supplied proxy URL may embed credentials that
+    `Url`'s own `Display` prints verbatim.
+
+### Changed
+
+- Raised the `rust_decimal` floor to 1.43, its current minor. Semver-compatible
+  for callers naming the re-exported `voip_ms::rust_decimal`.
 
 ### Changed
 
