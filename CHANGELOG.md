@@ -32,8 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Raised the `rust_decimal` floor to 1.43, its current minor. Semver-compatible
-  for callers naming the re-exported `voip_ms::rust_decimal`.
+- Raised the `reqwest` floor to 0.13.5. `reqwest::Error::is_dns`, which
+  consumers call on the error inside `Error::Http` to classify a failure, does
+  not exist in the previous 0.13.4 floor.
+- Raised the `rust_decimal` floor to 1.43, its current minor. Both bumps are
+  semver-compatible for callers naming the re-exported `voip_ms::reqwest` /
+  `voip_ms::rust_decimal`.
 
 ### Changed
 

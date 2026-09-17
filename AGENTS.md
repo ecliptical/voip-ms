@@ -465,9 +465,12 @@ so callers name the exact compatible version without a separate dependency.
 * **chrono 0.4** (`serde`): `NaiveDate`/`NaiveDateTime` in typed response
   fields and date-range params; the `serde` feature supplies the params'
   `YYYY-MM-DD` `Serialize`.
-* **reqwest 0.13.4** (`json`, `query`, no default features): HTTP client + JSON
-  deserialization. TLS backend is feature-gated. Floored at 0.13.4 -- the
-  earlier 0.13.x rustls features the TLS flags reference were renamed there.
+* **reqwest 0.13.5** (`json`, `query`, no default features): HTTP client + JSON
+  deserialization. TLS backend is feature-gated. Two things force the patch
+  floor rather than a bare `0.13`: the earlier 0.13.x rustls features the TLS
+  flags reference were renamed in 0.13.4, and `reqwest::Error::is_dns` --
+  which consumers call on the error inside [`Error::Http`] to classify a
+  failure -- only exists from 0.13.5.
 * **rust_decimal 1.42**: Decimal parsing for money-like response fields.
 * **serde 1.0** + **serde_json 1.0**: Request serialization, response
   deserialization (`serde_json::Value` is the `call_raw` return type).

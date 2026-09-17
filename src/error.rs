@@ -122,8 +122,9 @@ mod tests {
     #[tokio::test]
     async fn conversion_preserves_classification_and_source() {
         let raw = refused_request_error().await;
-        let (is_timeout, is_connect, is_body, is_decode, status) = (
+        let (is_timeout, is_dns, is_connect, is_body, is_decode, status) = (
             raw.is_timeout(),
+            raw.is_dns(),
             raw.is_connect(),
             raw.is_body(),
             raw.is_decode(),
@@ -136,6 +137,7 @@ mod tests {
         };
 
         assert_eq!(inner.is_timeout(), is_timeout);
+        assert_eq!(inner.is_dns(), is_dns);
         assert_eq!(inner.is_connect(), is_connect);
         assert_eq!(inner.is_body(), is_body);
         assert_eq!(inner.is_decode(), is_decode);
