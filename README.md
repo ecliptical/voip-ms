@@ -221,10 +221,10 @@ async fn main() -> voip_ms::Result<()> {
 
 ## Error model
 
-All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voip_ms/enum.Error.html). The three variants are:
+All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voip_ms/enum.Error.html). The variants are:
 
-* `Error::Http` — the request failed at the transport or HTTP-status level.
-* `Error::Api(ApiStatus)` — the response was a well-formed JSON envelope but
+* `Error::Http` -- the request failed at the transport or HTTP-status level.
+* `Error::Api(ApiStatus)` -- the response was a well-formed JSON envelope but
   the `status` field was something other than `success`. `ApiStatus` is an
   enum with a variant per documented code (`ApiStatus::InvalidCredentials`,
   `ApiStatus::APINotEnabled`, …) for ergonomic match arms, plus an
@@ -251,8 +251,42 @@ All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voi
       Err(e) => return Err(e),
   }
   ```
-* `Error::InvalidResponse` — the response was not the expected JSON envelope
+* `Error::InvalidResponse` -- the response was not the expected JSON envelope
   (e.g. missing `status` field).
+* `Error::InvalidParams` -- the parameters could not be converted to their wire
+  form, so nothing was sent.
+
+### Classifying a transport failure
+
+`Error::transport()` reduces a failure to a `TransportFailure`, or `None` when
+the failure is not a transport one:
+
+```rust
+use voip_ms::RetryOutlook;
+
+match client.get_balance(&params).await {
+    Ok(balance) => { /* … */ }
+    Err(e) => match e.transport() {
+        // An allow-list rejection is not here: VoIP.ms answers it on a 200
+        // with `ApiStatus::IPNotEnabled`, so it stays an `Error::Api`.
+        None => return Err(e),
+        Some(failure) => match failure.retry_outlook() {
+            RetryOutlook::Worthwhile => { /* try again now */ }
+            RetryOutlook::AfterWaiting => { /* back off, then retry */ }
+            RetryOutlook::Futile => { /* fix something first */ }
+            // Repeat only what is safe to repeat: `getBalance` yes,
+            // `addCharge` no, unless `failure.never_reached_upstream()`.
+            RetryOutlook::Unknown => { /* … */ }
+        },
+    },
+}
+```
+
+`never_reached_upstream()` answers whether any account state can have changed;
+`retry_outlook()` answers whether repeating the identical call is worth
+anything. They are separate questions -- a 401 changed nothing and is still
+futile to repeat. Neither type implements `Display`: the classification is
+shared, the wording is yours.
 
 ## Development and release
 

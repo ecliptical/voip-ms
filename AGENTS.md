@@ -359,15 +359,15 @@ skip-list and hand-write it in `src/client.rs`. Do not pollute
 
 ### Error surfacing
 
-Three variants, no more:
+Four variants, no more:
 
-* `Error::Http` — wraps `reqwest::Error`. Includes both transport-level
+* `Error::Http` -- wraps `reqwest::Error`. Includes both transport-level
   failures and `error_for_status`'s non-2xx surfacing.
-* `Error::Api(ApiStatus)` — the response parsed as `{ "status": "..." }`
+* `Error::Api(ApiStatus)` -- the response parsed as `{ "status": "..." }`
   with something other than `"success"`. `ApiStatus` is a generated enum
   with one PascalCase variant per documented code (~475 of them) plus an
   `Unknown(String)` catch-all, so a code VoIP.ms returns but hasn't
-  documented is preserved verbatim rather than lost — the variant set is
+  documented is preserved verbatim rather than lost -- the variant set is
   documentation, not a closed contract. `ApiStatus::from_wire` /
   `as_str` round-trip the wire string, `description()` returns the
   documented meaning (`None` for `Unknown`), and `is_documented()`
@@ -398,9 +398,44 @@ Three variants, no more:
   `no_sequences`) are deliberately excluded. To reclassify, edit that array
   and regenerate -- an entry naming a status code absent from
   `tools/api-statuses.json` fails the codegen.
-* `Error::InvalidResponse(String)` — the response was 2xx and JSON but
+* `Error::InvalidResponse(String)` -- the response was 2xx and JSON but
   didn't contain a `status` field. Should be rare; if it happens
   systematically for a method, that's a VoIP.ms-side break.
+* `Error::InvalidParams(TimezoneOffsetError)` -- the parameters could not be
+  converted to their wire form, so no request was sent (see 5a's
+  record-listing offsets).
+
+### Transport-failure classification
+
+**Decision**: `Error::transport()` reduces a failure to a `TransportFailure`
+(`Rejected(StatusCode)` / `Timeout` / `Dns` / `Connect` / `Body` / `Other`),
+and `TransportFailure` answers two questions about it:
+`never_reached_upstream()` (could account state have changed) and
+`retry_outlook()` (is repeating the identical call worth anything, as a
+`RetryOutlook`). Neither type implements `Display`.
+
+**Rationale**: This is knowledge about HTTP and about this API, not about any
+consumer's product, and every consumer of the crate was re-deriving it from
+`Error::Http`'s inner `reqwest::Error` -- one by hand-copying another's
+implementation, which drifted within a review cycle with nothing to catch it.
+Two distinctions only this crate knows are the ones consumers got wrong: an
+allow-list rejection is `Api(ApiStatus::IPNotEnabled)` on a 200 rather than an
+HTTP 403, so it is not a transport failure at all; and reqwest reports a
+resolution failure through the connect error that wraps it, so `is_dns` must be
+read before `is_connect`. The two questions stay separate because a refusal
+answers them differently -- a stale proxy credential answering 401 changed no
+state *and* is futile to repeat, and collapsing them produced a retry loop.
+
+Rendering is deliberately excluded: a model reading a retry decision and a
+person reading a terminal diagnostic want different sentences, so a `Display`
+here would pull that judgment into the wrong crate. This sits alongside
+decision #6 -- the crate classifies, it still does not retry.
+
+**How to apply**: A new `TransportFailure` variant must be added to the arms of
+both `never_reached_upstream` and `retry_outlook` (neither uses a wildcard) and
+to the per-variant tests in `src/error.rs`, so it decides rather than inherits.
+Classification order is part of the contract; the tests pin it, including that
+a DNS failure does not read as `Connect`.
 
 ## Project Structure
 
@@ -423,7 +458,7 @@ voip-ms/
 ├── src/
 │   ├── lib.rs           # Module surface; re-exports generated.rs
 │   ├── client.rs        # Client, ClientBuilder, call()
-│   ├── error.rs         # Error, ApiStatus, Result
+│   ├── error.rs         # Error, ApiStatus, Result, TransportFailure
 │   ├── generated.rs     # 222 *Params + Client methods + *Response (generated)
 │   ├── responses.rs     # Custom serde deserializers for generated.rs
 │   └── types.rs         # Hand-written domain types (Routing, …)
@@ -469,8 +504,8 @@ so callers name the exact compatible version without a separate dependency.
   deserialization. TLS backend is feature-gated. Two things force the patch
   floor rather than a bare `0.13`: the earlier 0.13.x rustls features the TLS
   flags reference were renamed in 0.13.4, and `reqwest::Error::is_dns` --
-  which consumers call on the error inside [`Error::Http`] to classify a
-  failure -- only exists from 0.13.5.
+  which `Error::transport` reads to separate a resolution failure from the
+  connect error wrapping it -- only exists from 0.13.5.
 * **rust_decimal 1.42**: Decimal parsing for money-like response fields.
 * **serde 1.0** + **serde_json 1.0**: Request serialization, response
   deserialization (`serde_json::Value` is the `call_raw` return type).

@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-09-17
+
+### Added
+
+- `Error::transport()` classifies a failed request as a `TransportFailure`, and
+  returns `None` for a failure that is not one. The classification and the two
+  questions that hang off it are properties of HTTP and of the VoIP.ms API, not
+  of any one consumer, and they were being re-derived per consumer -- including
+  one hand-written copy that had already drifted.
+  - `TransportFailure` is `Rejected(reqwest::StatusCode)`, `Timeout`, `Dns`,
+    `Connect`, `Body`, or `Other`. `reqwest` is re-exported, so `StatusCode` in
+    the public API costs callers no new dependency. Classification order is
+    part of the contract: a status is read before the predicates, and `is_dns`
+    before `is_connect`, since reqwest reports a resolution failure through the
+    connect error that wraps it and both predicates answer true.
+  - `TransportFailure::never_reached_upstream()` reports whether the request
+    provably never reached VoIP.ms, so no account state can have changed. A 4xx
+    counts -- the transport refused the request before VoIP.ms could act on it.
+    A 5xx, a timeout, or an unreadable reply do not: VoIP.ms may have acted and
+    the response been lost.
+  - `TransportFailure::retry_outlook()` reports whether repeating the identical
+    call is worth anything, as `RetryOutlook::Worthwhile`, `Futile`,
+    `AfterWaiting`, or `Unknown`. This is a separate question from
+    `never_reached_upstream()`: 429 and 408 are `AfterWaiting`, every other 4xx
+    is `Futile`, and collapsing the two told one consumer that a stale proxy
+    credential answering 401 to every call was safe to retry.
+  - An allow-list rejection stays out of all of this. VoIP.ms answers it on a
+    200 with `ApiStatus::IPNotEnabled` in the envelope, not as an HTTP 403, so
+    `transport()` returns `None` for it -- the distinction consumers kept
+    getting wrong.
+- No `Display` for either type. Each consumer writes its own words: a model
+  reading a retry decision and a person reading a terminal diagnostic want
+  different sentences, and only the reading is shared.
+
+The addition is purely additive. `Error::Http` keeps its shape and its inner
+`reqwest::Error`, and the classification reads only the error's kind, so the
+URL stripping that 0.12.1 added still holds -- covered by a test that classifies
+a real failed request and asserts nothing it exposes carries the password.
+
 ## [0.12.1] - 2026-09-17
 
 ### Security
