@@ -118,14 +118,23 @@ impl TransportFailure {
     /// Whether the request provably never reached VoIP.ms, so no account state
     /// can have changed.
     ///
-    /// A 4xx counts: the transport refused the request before VoIP.ms could act
-    /// on it. `false` is the conservative answer rather than a claim that
-    /// something did happen -- a 5xx, an expired deadline, or an unreadable
-    /// reply each leave open that VoIP.ms acted and the response was lost.
+    /// A 4xx other than 408 counts: the transport refused the request before
+    /// VoIP.ms could act on it. `false` is the conservative answer rather than a
+    /// claim that something did happen -- a 5xx, a 408, an expired deadline, or
+    /// an unreadable reply each leave open that VoIP.ms acted and the response
+    /// was lost.
     pub fn never_reached_upstream(self) -> bool {
         match self {
             Self::Connect | Self::Dns => true,
-            Self::Rejected(status) => status.is_client_error(),
+            // 408 is the one 4xx whose meaning depends on who sent it. RFC 9110
+            // §15.5.9 defines it as the origin giving up on an incomplete
+            // request, which would prove nothing was acted on, but
+            // intermediaries widely return it for a slow *response* -- a 504 in
+            // 408's clothing, where VoIP.ms may well have acted.
+            Self::Rejected(status) => {
+                status.is_client_error() && status != StatusCode::REQUEST_TIMEOUT
+            }
+
             Self::Timeout | Self::Body | Self::Other => false,
         }
     }
@@ -467,6 +476,11 @@ mod tests {
         assert!(!T::Rejected(StatusCode::BAD_GATEWAY).never_reached_upstream());
         assert!(!T::Rejected(StatusCode::SERVICE_UNAVAILABLE).never_reached_upstream());
 
+        // 408 is carved out of that: an intermediary returning it for a slow
+        // response is indistinguishable here from the RFC-correct incomplete
+        // request, so the claim is not provable.
+        assert!(!T::Rejected(StatusCode::REQUEST_TIMEOUT).never_reached_upstream());
+
         assert!(!T::Timeout.never_reached_upstream());
         assert!(!T::Body.never_reached_upstream());
         assert!(!T::Other.never_reached_upstream());
@@ -481,6 +495,8 @@ mod tests {
             T::Rejected(StatusCode::TOO_MANY_REQUESTS).retry_outlook(),
             R::AfterWaiting
         );
+        // 408 answers this question and `never_reached_upstream` differently:
+        // whether it landed is unknown, but "not now" still reads right.
         assert_eq!(
             T::Rejected(StatusCode::REQUEST_TIMEOUT).retry_outlook(),
             R::AfterWaiting
