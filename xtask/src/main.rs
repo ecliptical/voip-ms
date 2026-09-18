@@ -119,6 +119,68 @@ fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
     OFFSET_OPS.iter().find(|o| o.wire == wire)
 }
 
+/// Group [`field_overrides::BASE64_FILE_PARAM_PATHS`] by wire method, so the
+/// emitter can route those methods over the multipart transport and name the
+/// responsible parameter in their docs.
+///
+/// An entry the WSDL has no field for fails the run -- a path left behind by a
+/// docs revision would otherwise silently drop a method back onto GET. The
+/// reverse direction only warns: the base64 reading comes from mined HTML, so
+/// a new hit needs a human to confirm it is a file payload before it joins the
+/// table.
+fn base64_file_params(
+    wsdl: &Wsdl,
+    param_docs: &ParamDocs,
+) -> Result<BTreeMap<String, Vec<String>>, String> {
+    let mut by_op: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for path in field_overrides::BASE64_FILE_PARAM_PATHS {
+        let (op, field) = path
+            .rsplit_once('.')
+            .filter(|(op, field)| !op.is_empty() && !field.is_empty())
+            .ok_or_else(|| {
+                format!("BASE64_FILE_PARAM_PATHS entry `{path}` must be `wireMethod.field`")
+            })?;
+        let declared = wsdl
+            .types
+            .get(&format!("{op}Input"))
+            .is_some_and(|fields| fields.iter().any(|(name, _)| name == field));
+        if !declared {
+            return Err(format!(
+                "BASE64_FILE_PARAM_PATHS entry `{path}` names no input field of `{op}`; \
+                 correct or remove it in xtask/src/field_overrides.rs"
+            ));
+        }
+
+        by_op.entry(op.to_string()).or_default().push(field.into());
+    }
+
+    for (op, fields) in param_docs {
+        for (field, doc) in fields {
+            let listed = by_op.get(op).is_some_and(|fs| fs.contains(field));
+            if !listed && documents_base64(doc) {
+                eprintln!(
+                    "warning: {op}.{field} is documented as base64 but is absent from \
+                     BASE64_FILE_PARAM_PATHS; a file payload does not fit the request \
+                     line a GET puts it on"
+                );
+            }
+        }
+    }
+
+    Ok(by_op)
+}
+
+/// Whether a parameter description documents a base64-encoded value.
+/// Whitespace-insensitive, so `Base 64` and `Base64` both read.
+fn documents_base64(doc: &str) -> bool {
+    let squished: String = doc
+        .to_ascii_lowercase()
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect();
+    squished.contains("base64")
+}
+
 /// Doc emitted on the offset ops' public `timezone` field in place of the
 /// mined upstream text, which describes the numeric wire form ("Numeric: -12
 /// to 13") the public `Tz` field no longer is.
@@ -667,6 +729,7 @@ fn emit(
     enum_decls: &str,
     statuses: &[(String, String)],
     empty_statuses: &BTreeSet<String>,
+    base64_file_params: &BTreeMap<String, Vec<String>>,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -815,6 +878,34 @@ fn emit(
                  /// is [`Error::InvalidParams`](crate::Error::InvalidParams).\n    \
                  pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                      self.call_raw(\"{op}\", &{struct_name}Wire::try_from(params)?).await\n    \
+                 }}\n\n"
+            ));
+            continue;
+        }
+
+        if let Some(fields) = base64_file_params.get(op) {
+            // The base64 payload is many times the 8190-byte request line a GET
+            // would put the query string on, so the whole call travels as form
+            // fields instead.
+            let named = fields
+                .iter()
+                .map(|f| format!("`{f}`"))
+                .collect::<Vec<_>>()
+                .join(" / ");
+            out.push_str(&format!(
+                "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
+                 ///\n    \
+                 /// Sent as a `multipart/form-data` POST: the base64 {named} parameter does\n    \
+                 /// not fit the request line a GET would carry it on.\n    \
+                 pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
+                     self.call_multipart(\"{op}\", params).await\n    \
+                 }}\n\n\
+                 /// Call the `{op}` API method and return the raw JSON envelope.\n    \
+                 ///\n    \
+                 /// Sent as a `multipart/form-data` POST: the base64 {named} parameter does\n    \
+                 /// not fit the request line a GET would carry it on.\n    \
+                 pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
+                     self.call_multipart_raw(\"{op}\", params).await\n    \
                  }}\n\n"
             ));
             continue;
@@ -1279,6 +1370,8 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
+    let base64_file_params = base64_file_params(&wsdl, &param_docs)?;
+
     let enum_decls = emit_enums(&overrides_doc.enums);
     let resolver = field_overrides::Resolver {
         table: &table,
@@ -1294,6 +1387,7 @@ fn cmd_gen() -> Result<(), String> {
         &enum_decls,
         &statuses,
         &empty_statuses,
+        &base64_file_params,
     );
     fs::write(&out_path, &rendered).map_err(|e| format!("write {}: {e}", out_path.display()))?;
     println!(

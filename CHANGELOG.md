@@ -7,8 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-18
+
 ### Fixed
 
+- The four methods that take a base64-encoded file are sent as a
+  `multipart/form-data` POST instead of a GET, which is what makes them usable
+  at all: `set_recording`, `send_fax_message`, `send_mms` (`media2`), and
+  `add_lnp_file`. VoIP.ms's front end caps the request line at 8190 bytes, so a
+  GET left roughly 8 kB for the whole parameter set -- about a third of a
+  second of 8 kHz mono audio for `set_recording`, against 60,428 base64
+  characters for a 2.8 second greeting. `add_lnp_file` is documented "Only
+  accepted through POST request" and could not work over GET at any size.
+  - Every other method is still a GET. The transport is decided per method from
+    the presence of a base64 file parameter, so no call site changes and the
+    218 methods that can stay observable in a log or proxy do.
+  - The POST is `multipart/form-data` specifically.
+    `application/x-www-form-urlencoded` reaches a SOAP handler on `rest.php`
+    and comes back as an XML fault, which is what makes the API look GET-only
+    on a first test.
+  - A multipart call carries the credentials as form fields, so for those four
+    methods the API password no longer appears in the request URL.
 - `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,
   where every other 4xx still answers `true`. The method claims the request
   *provably* never reached VoIP.ms, and 408 does not prove that: RFC 9110
@@ -19,6 +38,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   irreversible call had changed nothing, which invites a double order.
   `retry_outlook()` is unchanged -- 408 stays `AfterWaiting`, since "not now"
   is still the right reading of it.
+
+### Added
+
+- `Client::call_multipart` and `Client::call_multipart_raw`: the multipart-POST
+  counterparts of `Client::call` and `Client::call_raw`, for calling a method
+  with a file payload that this crate hasn't been regenerated for. Same status
+  handling as the GET pair, including how each treats an empty-collection
+  status.
+
+### Changed
+
+- `reqwest`'s `multipart` feature is enabled. It is a default-features-off
+  dependency, so a consumer that names its own `reqwest` features is
+  unaffected.
+
+### Upgrading
+
+Nothing about a call site changes: the four methods keep their signatures and
+their `*Params` structs, and the transport is chosen inside `Client`. A
+consumer pinning this crate exactly moves the pin to `0.13.0` and rebuilds. One
+that derives its own artifacts from this crate's method surface -- a generated
+tool catalog, for instance -- should regenerate them, since those four methods'
+doc comments now name their transport.
 
 ## [0.12.2] - 2026-09-17
 

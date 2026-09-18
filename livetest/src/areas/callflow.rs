@@ -7,12 +7,18 @@
 //!
 //! At `Lifecycle` depth the area runs create -> read -> delete fixtures over the
 //! free, self-contained resources it owns: a callback, a DISA, a ring group, a
-//! time condition, and a queue static member. The static member depends on a
-//! queue, so the fixture creates a throwaway marker-bearing queue to hang it on
-//! and tears the member down before the queue (LIFO). Its
+//! time condition, a queue static member, and a recording. The static member
+//! depends on a queue, so the fixture creates a throwaway marker-bearing queue
+//! to hang it on and tears the member down before the queue (LIFO). Its
 //! [`sweep`](Area::sweep) reclaims marker-bearing leftovers of each.
+//!
+//! The recording fixture is the only file upload in the harness, and so the
+//! only live exercise of the multipart transport: its generated WAV is larger
+//! than the request line a GET fits.
 
 use async_trait::async_trait;
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
@@ -219,6 +225,14 @@ impl Area for Callflow {
             sweep_orphans(
                 report,
                 AREA,
+                "recording",
+                || list_recording_orphans(client),
+                |id| del_recording(client, id),
+            )
+            .await,
+            sweep_orphans(
+                report,
+                AREA,
                 "staticmember-queue",
                 || list_dep_queue_orphans(client),
                 |id| del_queue(client, id),
@@ -238,6 +252,7 @@ impl Area for Callflow {
         ring_group_fixture(ctx, report, &mut scope).await;
         time_condition_fixture(ctx, report, &mut scope).await;
         static_member_fixture(ctx, report, &mut scope).await;
+        recording_fixture(ctx, report, &mut scope).await;
 
         for label in scope.cleanup(ctx.client).await {
             report.record(
@@ -584,6 +599,144 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
     .await;
 }
 
+/// Upload a generated WAV through `setRecording`, read it back through
+/// `getRecordingFile`, and delete it.
+///
+/// The payload is the point: at 8 kHz mono 16-bit, one second of audio is
+/// 16 kB, over 21 kB base64-encoded, many times the 8190-byte request line the
+/// API accepts -- so this is the only live coverage of the multipart transport.
+///
+/// voip.ms normalizes what it stores (a 2.82 s / 45,320-byte upload came back
+/// as 2.58 s / 41,268 bytes), so the read-back asserts the container and never
+/// byte equality. `getRecordingFile` is called directly rather than through
+/// [`read_back`], whose drift diff looks at the response shape and not at the
+/// bytes the shape carries.
+async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
+    let client = ctx.client;
+    let name = ctx.token.short_marker(6);
+    let wav = tone_wav(1);
+
+    let created = client
+        .set_recording(&SetRecordingParams {
+            name: Some(name),
+            file: Some(BASE64.encode(&wav)),
+            ..Default::default()
+        })
+        .await;
+
+    let id = match created {
+        Ok(resp) => match resp.recording {
+            Some(id) => id,
+            None => return fail(report, "fixture:setRecording", "no id returned"),
+        },
+        Err(error) => {
+            return fail(
+                report,
+                "fixture:setRecording",
+                &format!("setRecording: {error}"),
+            );
+        }
+    };
+
+    report.record(AREA, "fixture:setRecording", Outcome::Pass);
+    scope.defer(format!("recording id={id}"), move |client| {
+        Box::pin(async move {
+            tolerate_absent(
+                client
+                    .del_recording(&DelRecordingParams {
+                        recording: Some(id),
+                    })
+                    .await,
+            )
+        })
+    });
+
+    read_back::<_, GetRecordingsResponse>(
+        client,
+        report,
+        AREA,
+        "fixture:getRecordings",
+        &GetRecordingsParams {
+            recording: Some(id.to_string()),
+        },
+        |r| Some(r.recordings.len()),
+    )
+    .await;
+
+    match client
+        .get_recording_file(&GetRecordingFileParams {
+            recording: Some(id.to_string()),
+        })
+        .await
+    {
+        Ok(resp) => match resp.recordings.first().and_then(|r| r.data.as_deref()) {
+            Some(data) => report.record(AREA, "fixture:getRecordingFile", stored_wav(data)),
+            None => fail(report, "fixture:getRecordingFile", "no file data returned"),
+        },
+        Err(error) => fail(
+            report,
+            "fixture:getRecordingFile",
+            &format!("getRecordingFile: {error}"),
+        ),
+    }
+}
+
+/// Whether the round-tripped payload is still a RIFF/WAVE container. What went
+/// up was one, and voip.ms re-encodes to the same format, so anything else
+/// means the upload did not arrive whole.
+fn stored_wav(data: &str) -> Outcome {
+    let bytes = match BASE64.decode(data) {
+        Ok(bytes) => bytes,
+        Err(error) => return Outcome::Fail(format!("stored file is not base64: {error}")),
+    };
+
+    match (bytes.get(..4), bytes.get(8..12)) {
+        (Some(b"RIFF"), Some(b"WAVE")) => Outcome::Pass,
+        _ => Outcome::Fail(format!(
+            "stored file is not a RIFF/WAVE container ({} bytes)",
+            bytes.len()
+        )),
+    }
+}
+
+/// A RIFF/WAVE container holding `seconds` of a 440 Hz tone at 8 kHz mono
+/// 16-bit PCM -- the format voip.ms stores a recording in, so nothing about the
+/// upload depends on its conversion. A tone rather than silence, so a stored
+/// file that lost its payload is still distinguishable from one that kept it.
+fn tone_wav(seconds: u32) -> Vec<u8> {
+    const SAMPLE_RATE: u32 = 8_000;
+    const BYTES_PER_FRAME: u32 = 2;
+    // RIFF header through the `data` chunk id, less the leading `RIFF` tag and
+    // the length field itself -- what the RIFF length counts.
+    const HEADER_LEN: u32 = 36;
+
+    let frames = seconds * SAMPLE_RATE;
+    let data_len = frames * BYTES_PER_FRAME;
+    // The 8 the RIFF length excludes: its own tag and length field.
+    let mut wav = Vec::with_capacity((HEADER_LEN + 8 + data_len) as usize);
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&(HEADER_LEN + data_len).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes()); // fmt chunk length
+    wav.extend_from_slice(&1u16.to_le_bytes()); // format: uncompressed PCM
+    wav.extend_from_slice(&1u16.to_le_bytes()); // channels
+    wav.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
+    wav.extend_from_slice(&(SAMPLE_RATE * BYTES_PER_FRAME).to_le_bytes()); // bytes per second
+    wav.extend_from_slice(&(BYTES_PER_FRAME as u16).to_le_bytes()); // block align
+    wav.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&data_len.to_le_bytes());
+    for frame in 0..frames {
+        let phase = std::f32::consts::TAU * 440.0 * frame as f32 / SAMPLE_RATE as f32;
+        // Quarter scale: loud enough to survive a re-encode, quiet enough not
+        // to clip.
+        let sample = (phase.sin() * f32::from(i16::MAX) / 4.0) as i16;
+        wav.extend_from_slice(&sample.to_le_bytes());
+    }
+
+    wav
+}
+
 fn fail(report: &mut Report, label: &str, error: &str) {
     report.record(AREA, label, Outcome::Fail(error.to_string()));
 }
@@ -682,6 +835,32 @@ async fn del_time_condition(client: &Client, id: u64) -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn list_recording_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
+    let resp: GetRecordingsResponse = client
+        .get_recordings(&GetRecordingsParams::default())
+        .await?;
+    Ok(resp
+        .recordings
+        .into_iter()
+        .filter(|r| owned(&r.description))
+        .filter_map(|r| {
+            r.value.map(|id| Orphan {
+                label: format!("recording id={id}"),
+                id,
+            })
+        })
+        .collect())
+}
+
+async fn del_recording(client: &Client, id: u64) -> anyhow::Result<()> {
+    client
+        .del_recording(&DelRecordingParams {
+            recording: Some(id),
+        })
+        .await?;
+    Ok(())
+}
+
 /// The marker-bearing queues the static-member fixture stands up as scaffolding.
 /// Enumerated here (not left to the `queue` area) so callflow reclaims them --
 /// and, by cascade, any static member left on them -- when run without `queue`.
@@ -706,4 +885,45 @@ async fn del_queue(client: &Client, id: u64) -> anyhow::Result<()> {
         .del_queue(&DelQueueParams { queue: Some(id) })
         .await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tone_wav_is_a_decodable_wave_of_the_expected_size() {
+        let wav = tone_wav(1);
+        // 44-byte header plus one second of 8 kHz 16-bit mono frames.
+        assert_eq!(wav.len(), 44 + 16_000);
+        assert_eq!(&wav[..4], b"RIFF");
+        assert_eq!(&wav[8..12], b"WAVE");
+        assert_eq!(u32::from_le_bytes(wav[24..28].try_into().unwrap()), 8_000);
+        assert_eq!(u16::from_le_bytes(wav[34..36].try_into().unwrap()), 16);
+        assert_eq!(u32::from_le_bytes(wav[40..44].try_into().unwrap()), 16_000);
+        assert!(
+            wav[44..].iter().any(|b| *b != 0),
+            "the tone must carry a signal, not silence"
+        );
+    }
+
+    #[test]
+    fn stored_wav_accepts_a_wave_and_rejects_anything_else() {
+        assert!(matches!(
+            stored_wav(&BASE64.encode(tone_wav(1))),
+            Outcome::Pass
+        ));
+        assert!(matches!(
+            stored_wav(&BASE64.encode(b"not audio at all")),
+            Outcome::Fail(_)
+        ));
+        assert!(matches!(stored_wav("not base64 either!"), Outcome::Fail(_)));
+    }
+
+    #[test]
+    fn a_generated_recording_exceeds_the_request_line_a_get_fits() {
+        // The whole reason the method posts: one second of audio is already
+        // more than twice the 8190-byte request line, before percent-encoding.
+        assert!(BASE64.encode(tone_wav(1)).len() > 2 * 8190);
+    }
 }

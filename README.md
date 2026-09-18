@@ -19,6 +19,11 @@ deserializes the response into a typed `*Response` struct. A `*_raw` variant
 returning `serde_json::Value` is available on every method as an escape
 hatch.
 
+A call is a GET, except `set_recording`, `send_fax_message`, `send_mms`, and
+`add_lnp_file`, whose base64 file parameter does not fit the request line
+VoIP.ms accepts; those are sent as a `multipart/form-data` POST. The client
+picks the transport per method, so nothing about the call site changes.
+
 ## Installation
 
 ```toml
@@ -218,6 +223,11 @@ async fn main() -> voip_ms::Result<()> {
     Ok(())
 }
 ```
+
+If that method takes a base64 file, call
+[`Client::call_multipart_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_multipart_raw)
+instead: it sends the same parameters as a `multipart/form-data` POST, which is
+the only way a payload larger than the request line reaches the API.
 
 ## Error model
 

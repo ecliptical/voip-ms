@@ -17170,13 +17170,19 @@ impl Client {
     /// \- Add an invoice file to a portability process.
     ///
     /// Call the `addLNPFile` API method and deserialize into [`AddLNPFileResponse`].
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn add_lnp_file(&self, params: &AddLNPFileParams) -> Result<AddLNPFileResponse> {
-        self.call("addLNPFile", params).await
+        self.call_multipart("addLNPFile", params).await
     }
 
     /// Call the `addLNPFile` API method and return the raw JSON envelope.
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn add_lnp_file_raw(&self, params: &AddLNPFileParams) -> Result<Value> {
-        self.call_raw("addLNPFile", params).await
+        self.call_multipart_raw("addLNPFile", params).await
     }
 
     /// \- Add one or more numbers to start a portability process.
@@ -20077,28 +20083,40 @@ impl Client {
     /// \- Send a Fax message to a Destination Number.
     ///
     /// Call the `sendFaxMessage` API method and deserialize into [`SendFAXMessageResponse`].
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn send_fax_message(
         &self,
         params: &SendFAXMessageParams,
     ) -> Result<SendFAXMessageResponse> {
-        self.call("sendFaxMessage", params).await
+        self.call_multipart("sendFaxMessage", params).await
     }
 
     /// Call the `sendFaxMessage` API method and return the raw JSON envelope.
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn send_fax_message_raw(&self, params: &SendFAXMessageParams) -> Result<Value> {
-        self.call_raw("sendFaxMessage", params).await
+        self.call_multipart_raw("sendFaxMessage", params).await
     }
 
     /// \- Send a MMS message to a Destination Number.
     ///
     /// Call the `sendMMS` API method and deserialize into [`SendMMSResponse`].
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `media2` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn send_mms(&self, params: &SendMMSParams) -> Result<SendMMSResponse> {
-        self.call("sendMMS", params).await
+        self.call_multipart("sendMMS", params).await
     }
 
     /// Call the `sendMMS` API method and return the raw JSON envelope.
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `media2` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn send_mms_raw(&self, params: &SendMMSParams) -> Result<Value> {
-        self.call_raw("sendMMS", params).await
+        self.call_multipart_raw("sendMMS", params).await
     }
 
     /// \- Send a SMS message to a Destination Number.
@@ -20530,13 +20548,19 @@ impl Client {
     /// \- Adds a new Recording file entry if no Recording ID is provided.
     ///
     /// Call the `setRecording` API method and deserialize into [`SetRecordingResponse`].
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetRecordingResponse> {
-        self.call("setRecording", params).await
+        self.call_multipart("setRecording", params).await
     }
 
     /// Call the `setRecording` API method and return the raw JSON envelope.
+    ///
+    /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
+    /// not fit the request line a GET would carry it on.
     pub async fn set_recording_raw(&self, params: &SetRecordingParams) -> Result<Value> {
-        self.call_raw("setRecording", params).await
+        self.call_multipart_raw("setRecording", params).await
     }
 
     /// \- Updates a specific Ring Group if a ring group code is provided.

@@ -317,8 +317,8 @@ deserializer to `src/responses.rs`.
 
 ### 6. No HTTP-level retry, no auth caching, no rate limiting
 
-**Decision**: `Client::call_raw` is one GET request, one JSON parse, one
-status check. There is no built-in retry, backoff, or rate limiter.
+**Decision**: `Client::call_raw` is one request, one JSON parse, one status
+check. There is no built-in retry, backoff, or rate limiter.
 
 **Rationale**: VoIP.ms's retry semantics depend heavily on which method
 you're calling (`addCharge` is not safely retryable; `getBalance` is).
@@ -326,31 +326,83 @@ Baking in a retry policy would force the wrong default on someone. Users
 who want one can wrap their `Client` in `tower::retry` or compose any
 middleware via a custom `reqwest::Client` passed to `Client::builder`.
 
-### 7. GET, not POST
+### 7. GET, except a method carrying a file
 
-**Decision**: All calls are GET with query parameters.
+**Decision**: A call is a GET with query parameters, unless its parameters
+include a base64-encoded file, in which case it is a `multipart/form-data`
+POST carrying every parameter -- credentials and method name included -- as a
+form field. Four methods qualify: `setRecording`, `sendFaxMessage`, `sendMMS`
+(`media2`), and `addLNPFile`. `Client` decides per method from the generated
+surface; a caller does not choose, and no parameter or builder option
+overrides it.
 
-**Rationale**: VoIP.ms documents and accepts both, but every documented
-example is GET. GET also keeps the request observable in logs/proxies
-during development. The only risk is URL length on the few methods with
-40+ parameters (`createSubAccount`, `setSubAccount`, `setQueue`); none
-of those exceed typical URL limits in practice because most parameters
-are `None` thanks to design decision #3.
+**Rationale**: VoIP.ms documents and accepts both, but every documented example
+is GET, and GET keeps the request observable in logs and proxies during
+development. That observability is worth keeping for the 218 methods that can
+have it, which is why the transport is targeted rather than switched wholesale.
+
+A file parameter cannot have it. VoIP.ms's front end caps the request line at
+8190 bytes (Apache's default `LimitRequestLine`): measured against
+`rest.php`, a request line of about 8182 bytes answers 200 and one of about
+8187 answers 414. After the credentials and the method name that leaves roughly
+8 kB for the percent-encoded parameters, about a third of a second of 8 kHz
+mono 16-bit audio -- a 2.8 second greeting is 60,428 base64 characters, more
+than seven times over. `addLNPFile` is documented "Only accepted through POST
+request", so for it no size works over GET. The risk this decision originally
+weighed, many small parameters on `createSubAccount` / `setSubAccount` /
+`setQueue`, really is mitigated by most of them being `None` (decision #3); one
+large parameter is not, and that is the case the original reasoning did not
+cover.
+
+The POST has to be `multipart/form-data`. `rest.php` hands an
+`application/x-www-form-urlencoded` POST to a SOAP handler, which answers with
+an XML fault -- the trap that makes the API look GET-only on a first test.
+Multipart is accepted at 100 kB and at 8 MB, and a read-only `getBalance` over
+multipart returns `success`, so the API does not restrict the transport to
+upload methods; this crate restricts it to the methods that need it.
+
+Which methods those are is derived from the parameters, not from a second
+document. `tools/server.wsdl` (decision #1) does not record `addLNPFile`'s
+POST-only requirement -- that lives only in the HTML docs -- but every method
+that needs POST has a base64 file parameter and every method with one needs
+POST, so the parameter carries the whole rule. The four paths are listed in
+`BASE64_FILE_PARAM_PATHS` (`xtask/src/field_overrides.rs`), which the generator
+reads to route those methods through `Client::call_multipart` /
+`call_multipart_raw` instead of `call` / `call_raw`. Those two are public for
+the same reason `call_raw` is: a method this crate hasn't been regenerated for
+still needs a way to be called.
+
+**How to apply**: When a new method takes a base64 file parameter, add its
+`"wireMethod.field"` path to `BASE64_FILE_PARAM_PATHS` and regenerate.
+`cargo xtask gen` fails on an entry naming a parameter the WSDL does not
+declare, and warns when a parameter the docs describe as base64 is absent from
+the table. That warning is the tripwire for a fifth method appearing in a docs
+refresh; it warns rather than fails because the reading comes from mined HTML
+and needs a human to confirm the parameter really carries a file.
 
 ## Code Patterns
 
 ### Calling the wire API
 
-The `Client::call_raw` method is the single point that hits the network.
-`Client::call` and `Client::call_at` deserialize its result. All generated
-methods are thin wrappers over `Client::call` (or `Client::call_raw` for
-the `*_raw` variants):
+The private `Client::send` is the single point that hits the network; it takes
+the transport (decision #7) and returns the parsed envelope, and `Client::fetch`
+adds the status classification on top. The public `call`, `call_raw`, and
+`call_at` are the GET forms; `call_multipart` and `call_multipart_raw` are the
+multipart-POST forms. All generated methods are thin wrappers over one of them:
 
 ```rust
 pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {
   self.call("getBalance", params).await
 }
+
+pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetRecordingResponse> {
+  self.call_multipart("setRecording", params).await
+}
 ```
+
+A multipart request's fields are taken from the query string the GET form
+serializes the same parameters into, so the two transports differ in where a
+value rides and never in how it is encoded.
 
 If a regeneration drift is ever needed (e.g. a method needs custom
 encoding), break that one method out of the codegen with an explicit
@@ -504,8 +556,9 @@ so callers name the exact compatible version without a separate dependency.
 * **chrono 0.4** (`serde`): `NaiveDate`/`NaiveDateTime` in typed response
   fields and date-range params; the `serde` feature supplies the params'
   `YYYY-MM-DD` `Serialize`.
-* **reqwest 0.13.5** (`json`, `query`, no default features): HTTP client + JSON
-  deserialization. TLS backend is feature-gated. Two things force the patch
+* **reqwest 0.13.5** (`json`, `multipart`, `query`, no default features): HTTP
+  client + JSON deserialization. `multipart` carries the file-parameter methods
+  (decision #7). TLS backend is feature-gated. Two things force the patch
   floor rather than a bare `0.13`: the earlier 0.13.x rustls features the TLS
   flags reference were renamed in 0.13.4, and `reqwest::Error::is_dns` --
   which `Error::transport` reads to separate a resolution failure from the
