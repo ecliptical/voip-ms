@@ -187,8 +187,17 @@ impl Area for Callflow {
         // leaning on the `queue` area's sweep so callflow is self-contained when
         // run alone (`--areas callflow`). If a queue delete is refused while a
         // member still hangs on it, the failed delete surfaces as a non-clean
-        // sweep that blocks the run -- not a silent leak. The independent
-        // resources' order is otherwise immaterial.
+        // sweep that blocks the run -- not a silent leak.
+        //
+        // A recording is reclaimed last, and not because of anything callflow
+        // creates: unlike the others it is a referenceable resource, named by
+        // `setIVR.recording`, `setMusicOnHold.recordings`, a ring group's
+        // caller announcement, and queue announcements. `delRecording` on a
+        // referenced recording is refused, which would block the run, and the
+        // `ivr` area's fixture claims the account's first recording as its
+        // required input. Deleting the dependents first gives the reclaim its
+        // best chance. The remaining resources are independent of each other
+        // and their order is immaterial.
         for result in [
             sweep_orphans(
                 report,
@@ -225,17 +234,17 @@ impl Area for Callflow {
             sweep_orphans(
                 report,
                 AREA,
-                "recording",
-                || list_recording_orphans(client),
-                |id| del_recording(client, id),
+                "staticmember-queue",
+                || list_dep_queue_orphans(client),
+                |id| del_queue(client, id),
             )
             .await,
             sweep_orphans(
                 report,
                 AREA,
-                "staticmember-queue",
-                || list_dep_queue_orphans(client),
-                |id| del_queue(client, id),
+                "recording",
+                || list_recording_orphans(client),
+                |id| del_recording(client, id),
             )
             .await,
         ] {
@@ -602,9 +611,11 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 /// Upload a generated WAV through `setRecording`, read it back through
 /// `getRecordingFile`, and delete it.
 ///
-/// The payload is the point: at 8 kHz mono 16-bit, one second of audio is
-/// 16 kB, over 21 kB base64-encoded, many times the 8190-byte request line the
+/// The payload is the point: at 8 kHz mono 16-bit, two seconds of audio is
+/// 32 kB, over 42 kB base64-encoded, many times the 8190-byte request line the
 /// API accepts -- so this is the only live coverage of the multipart transport.
+/// Two seconds rather than one keeps what comes back clear of [`stored_wav`]'s
+/// floor even though voip.ms trims on re-encode.
 ///
 /// voip.ms normalizes what it stores (a 2.82 s / 45,320-byte upload came back
 /// as 2.58 s / 41,268 bytes), so the read-back asserts the container and never
@@ -614,7 +625,7 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
     let client = ctx.client;
     let name = ctx.token.short_marker(6);
-    let wav = tone_wav(1);
+    let wav = tone_wav(2);
 
     let created = client
         .set_recording(&SetRecordingParams {
@@ -681,17 +692,32 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
     }
 }
 
-/// Whether the round-tripped payload is still a RIFF/WAVE container. What went
-/// up was one, and voip.ms re-encodes to the same format, so anything else
-/// means the upload did not arrive whole.
+/// Whether the round-tripped payload is a RIFF/WAVE container that is too big
+/// to have come through a request line.
+///
+/// The container alone would pass a truncated upload: a proxy cutting the
+/// request, or a regression putting only part of the payload in the form,
+/// leaves voip.ms storing a short but well-formed WAV. The size floor is what
+/// rules that out, and byte equality cannot stand in for it because voip.ms
+/// re-encodes.
 fn stored_wav(data: &str) -> Outcome {
+    // A GET could have carried at most the 8190-byte request line, credentials
+    // and method name included, so anything above it arrived by a route a GET
+    // had no way to take.
+    const MIN_STORED_BYTES: usize = 8_190;
+
     let bytes = match BASE64.decode(data) {
         Ok(bytes) => bytes,
         Err(error) => return Outcome::Fail(format!("stored file is not base64: {error}")),
     };
 
     match (bytes.get(..4), bytes.get(8..12)) {
-        (Some(b"RIFF"), Some(b"WAVE")) => Outcome::Pass,
+        (Some(b"RIFF"), Some(b"WAVE")) if bytes.len() > MIN_STORED_BYTES => Outcome::Pass,
+        (Some(b"RIFF"), Some(b"WAVE")) => Outcome::Fail(format!(
+            "stored file is a RIFF/WAVE container of only {} bytes, at or under the \
+             {MIN_STORED_BYTES}-byte request line a GET fits: the upload was truncated",
+            bytes.len()
+        )),
         _ => Outcome::Fail(format!(
             "stored file is not a RIFF/WAVE container ({} bytes)",
             bytes.len()
@@ -706,8 +732,8 @@ fn stored_wav(data: &str) -> Outcome {
 fn tone_wav(seconds: u32) -> Vec<u8> {
     const SAMPLE_RATE: u32 = 8_000;
     const BYTES_PER_FRAME: u32 = 2;
-    // RIFF header through the `data` chunk id, less the leading `RIFF` tag and
-    // the length field itself -- what the RIFF length counts.
+    // RIFF header through the `data` chunk's length field, less the leading
+    // `RIFF` tag and the length field itself -- what the RIFF length counts.
     const HEADER_LEN: u32 = 36;
 
     let frames = seconds * SAMPLE_RATE;
@@ -893,14 +919,14 @@ mod tests {
 
     #[test]
     fn tone_wav_is_a_decodable_wave_of_the_expected_size() {
-        let wav = tone_wav(1);
-        // 44-byte header plus one second of 8 kHz 16-bit mono frames.
-        assert_eq!(wav.len(), 44 + 16_000);
+        let wav = tone_wav(2);
+        // 44-byte header plus two seconds of 8 kHz 16-bit mono frames.
+        assert_eq!(wav.len(), 44 + 32_000);
         assert_eq!(&wav[..4], b"RIFF");
         assert_eq!(&wav[8..12], b"WAVE");
         assert_eq!(u32::from_le_bytes(wav[24..28].try_into().unwrap()), 8_000);
         assert_eq!(u16::from_le_bytes(wav[34..36].try_into().unwrap()), 16);
-        assert_eq!(u32::from_le_bytes(wav[40..44].try_into().unwrap()), 16_000);
+        assert_eq!(u32::from_le_bytes(wav[40..44].try_into().unwrap()), 32_000);
         assert!(
             wav[44..].iter().any(|b| *b != 0),
             "the tone must carry a signal, not silence"
@@ -910,7 +936,7 @@ mod tests {
     #[test]
     fn stored_wav_accepts_a_wave_and_rejects_anything_else() {
         assert!(matches!(
-            stored_wav(&BASE64.encode(tone_wav(1))),
+            stored_wav(&BASE64.encode(tone_wav(2))),
             Outcome::Pass
         ));
         assert!(matches!(
@@ -921,9 +947,22 @@ mod tests {
     }
 
     #[test]
+    fn stored_wav_rejects_a_container_small_enough_to_have_been_a_get() {
+        // A header with no frames: well-formed enough to pass the container
+        // check, small enough to have fit in a request line, which is what a
+        // truncated upload looks like once voip.ms stores it.
+        let truncated = tone_wav(0);
+        assert!(truncated.len() < 8_190, "the fixture's premise");
+        assert!(matches!(
+            stored_wav(&BASE64.encode(&truncated)),
+            Outcome::Fail(_)
+        ));
+    }
+
+    #[test]
     fn a_generated_recording_exceeds_the_request_line_a_get_fits() {
-        // The whole reason the method posts: one second of audio is already
+        // The whole reason the method posts: two seconds of audio is already
         // more than twice the 8190-byte request line, before percent-encoding.
-        assert!(BASE64.encode(tone_wav(1)).len() > 2 * 8190);
+        assert!(BASE64.encode(tone_wav(2)).len() > 2 * 8190);
     }
 }

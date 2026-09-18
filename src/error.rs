@@ -38,13 +38,15 @@ pub enum Error {
 
 /// Wraps the error with its request URL stripped.
 ///
-/// The API authenticates by query parameter, so every request URL carries a
-/// live `api_password`, and a `reqwest::Error` renders its URL verbatim from
-/// both `Display` and `Debug` -- `format!("{e}")` on a wrapped error would
-/// print the password. Stripping in the conversion rather than at the call
-/// sites makes that hold for every `?` that produces an [`Error`], including
-/// ones added later. The URL is the only thing dropped: the error's kind,
-/// status, and source chain all survive.
+/// A GET authenticates by query parameter, so its request URL carries a live
+/// `api_password`, and a `reqwest::Error` renders its URL verbatim from both
+/// `Display` and `Debug` -- `format!("{e}")` on a wrapped error would print the
+/// password. Stripping in the conversion rather than at the call sites makes
+/// that hold for every `?` that produces an [`Error`], including ones added
+/// later. The URL is the only thing dropped: the error's kind, status, and
+/// source chain all survive. A multipart POST carries the credentials in the
+/// body instead, which a `reqwest::Error` never renders; stripping is
+/// unconditional so no future transport has to remember to ask for it.
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
         Self::Http(e.without_url())

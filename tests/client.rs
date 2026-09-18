@@ -1530,6 +1530,8 @@ async fn a_base64_file_parameter_travels_as_a_multipart_post() {
         .and(body_string_contains("name=\"method\""))
         .and(body_string_contains("setRecording"))
         .and(body_string_contains("user@example.com"))
+        .and(body_string_contains("name=\"api_password\""))
+        .and(body_string_contains("secret"))
         .and(body_string_contains(payload.clone()))
         .respond_with(
             ResponseTemplate::new(200)
@@ -1641,7 +1643,7 @@ async fn multipart_fields_carry_the_same_wire_forms_as_the_query_string() {
     let body = &server.received_requests().await.unwrap()[0].body;
     let body = String::from_utf8_lossy(body);
     assert!(
-        body.contains("\r\n\r\n1\r\n"),
+        body.contains("name=\"send_email_enabled\"\r\n\r\n1\r\n"),
         "a 1/0 flag keeps its wire form as a form field: {body}"
     );
     assert!(

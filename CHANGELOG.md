@@ -45,13 +45,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   counterparts of `Client::call` and `Client::call_raw`, for calling a method
   with a file payload that this crate hasn't been regenerated for. Same status
   handling as the GET pair, including how each treats an empty-collection
-  status.
+  status. `Client::call_multipart_raw_unchecked` pairs with
+  `call_raw_unchecked` under the `unchecked-raw` feature, so diagnosing an
+  unexpected status on a file method can use the transport that method needs.
 
 ### Changed
 
-- `reqwest`'s `multipart` feature is enabled. It is a default-features-off
-  dependency, so a consumer that names its own `reqwest` features is
-  unaffected.
+- `reqwest`'s `multipart` feature is enabled. Feature selection is additive, so
+  a consumer that names its own `reqwest` features keeps them and gains
+  `multipart` -- and the dependencies it brings -- along with them.
 
 ### Upgrading
 

@@ -387,8 +387,10 @@ and needs a human to confirm the parameter really carries a file.
 The private `Client::send` is the single point that hits the network; it takes
 the transport (decision #7) and returns the parsed envelope, and `Client::fetch`
 adds the status classification on top. The public `call`, `call_raw`, and
-`call_at` are the GET forms; `call_multipart` and `call_multipart_raw` are the
-multipart-POST forms. All generated methods are thin wrappers over one of them:
+`call_at` are the GET forms (as is `call_raw_unchecked`, behind the
+`unchecked-raw` feature); `call_multipart`, `call_multipart_raw`, and
+`call_multipart_raw_unchecked` are their multipart-POST counterparts. All
+generated methods are thin wrappers over one of them:
 
 ```rust
 pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {

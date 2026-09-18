@@ -151,6 +151,19 @@ fn base64_file_params(
             ));
         }
 
+        // The emitter's offset-op branch runs first and routes through the wire
+        // twin over GET, so an op in both tables would quietly keep the
+        // transport that cannot carry its payload -- past both of this
+        // function's checks, since the entry is well-formed and listed. No op
+        // overlaps today; this is what says so.
+        if offset_op(op).is_some() {
+            return Err(format!(
+                "BASE64_FILE_PARAM_PATHS entry `{path}` names an offset op, which `emit` \
+                 routes over GET through its wire twin; reconcile the two transports there \
+                 before listing it"
+            ));
+        }
+
         by_op.entry(op.to_string()).or_default().push(field.into());
     }
 
@@ -892,17 +905,22 @@ fn emit(
                 .map(|f| format!("`{f}`"))
                 .collect::<Vec<_>>()
                 .join(" / ");
+            let noun = if fields.len() == 1 {
+                "parameter"
+            } else {
+                "parameters"
+            };
             out.push_str(&format!(
                 "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
                  ///\n    \
-                 /// Sent as a `multipart/form-data` POST: the base64 {named} parameter does\n    \
+                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} does\n    \
                  /// not fit the request line a GET would carry it on.\n    \
                  pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
                      self.call_multipart(\"{op}\", params).await\n    \
                  }}\n\n\
                  /// Call the `{op}` API method and return the raw JSON envelope.\n    \
                  ///\n    \
-                 /// Sent as a `multipart/form-data` POST: the base64 {named} parameter does\n    \
+                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} does\n    \
                  /// not fit the request line a GET would carry it on.\n    \
                  pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                      self.call_multipart_raw(\"{op}\", params).await\n    \

@@ -273,11 +273,12 @@ Two orthogonal dimensions choose what runs:
   * `probe` -- read-only calls only, with the raw-vs-typed drift diff. Free.
   * `lifecycle` -- also runs free create -> read -> delete fixtures. The
     `callflow` area's recording fixture is the only one that uploads a file:
-    it generates a one-second 8 kHz WAV, creates a recording from it, reads the
+    it generates a two-second 8 kHz WAV, creates a recording from it, reads the
     stored file back, and deletes it. That payload is several times the request
     line a GET fits, so it is the only live exercise of the multipart transport
     (design decision #7). VoIP.ms re-encodes what it stores, so the read-back
-    checks the RIFF/WAVE container, never byte equality.
+    checks the RIFF/WAVE container and a size floor above the request line --
+    never byte equality, which the re-encode rules out.
   * `costly` -- also runs money/irreversible methods. Requires
     `--i-understand-this-costs-money`. Each costly method fires only when its
     own input (e.g. `--order-test-did`, `--sms-dst`, `--payment-amount`) is

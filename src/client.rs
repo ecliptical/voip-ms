@@ -3,6 +3,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use std::fmt;
+use std::sync::LazyLock;
 
 use crate::error::{ApiStatus, Error, Result};
 
@@ -11,7 +12,11 @@ pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
 
 /// A URL built only to be discarded: the multipart form reads the query string
 /// `reqwest` serializes the parameters into, and never sends the request.
-const SCRATCH_URL: &str = "http://form.invalid/";
+/// Parsed once, since a multipart call is the file-upload path and has better
+/// uses for its cycles.
+static SCRATCH_URL: LazyLock<Url> = LazyLock::new(|| {
+    Url::parse("http://form.invalid/").expect("the scratch URL is a literal and must parse")
+});
 
 /// Where a request carries its parameters.
 #[derive(Clone, Copy)]
@@ -94,7 +99,9 @@ impl Client {
     where
         P: Serialize + ?Sized,
     {
-        let scratch = self.get_request(SCRATCH_URL, method, params).build()?;
+        let scratch = self
+            .get_request(SCRATCH_URL.clone(), method, params)
+            .build()?;
         let mut form = multipart::Form::new();
         for (name, value) in scratch.url().query_pairs() {
             form = form.text(name.into_owned(), value.into_owned());
@@ -211,6 +218,19 @@ impl Client {
         P: Serialize + ?Sized,
     {
         self.send(method, params, Transport::Get).await
+    }
+
+    /// The `multipart/form-data` POST counterpart of
+    /// [`Client::call_raw_unchecked`]: the same unclassified envelope, for a
+    /// method whose base64 file parameter does not fit a request line.
+    ///
+    /// Gated behind the `unchecked-raw` feature.
+    #[cfg(feature = "unchecked-raw")]
+    pub async fn call_multipart_raw_unchecked<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        self.send(method, params, Transport::MultipartPost).await
     }
 
     /// Issue a request and deserialize the full JSON response body into `T`.
