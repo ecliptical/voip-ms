@@ -66,10 +66,20 @@ generates `*Params`, from three inputs:
    `apidocs.php`'s `print_r`-style Output blocks (extractor is
    `xtask/src/extract.rs`, invoked via `cargo xtask extract-responses`
    over a saved HTML page).
-3. `tools/api-response-overrides.json` — hand-edited corrections,
-   either per-path scalar retypes or a full shape replacement for the
-   handful of methods the extractor can't parse (`setSIPURI` has no
-   Output block; `getLNPDetails` uses a non-standard PHP dialect).
+3. `tools/api-response-overrides.json` — hand-edited corrections:
+   per-path scalar retypes, per-path scalar `additions`, or a full shape
+   replacement for the handful of methods the extractor can't parse
+   (`setSIPURI` has no Output block; `getLNPDetails` uses a non-standard
+   PHP dialect).
+
+An extractor driven by the docs can only see a documented field, so a
+field VoIP.ms returns but never documents reaches the typed surface
+through `additions` -- a path plus a scalar type, appended to the
+extracted shape (`getCDR`'s `ip` and `useragent`). A full shape
+replacement would also work but freezes the method against later doc
+updates, and the extracted shape stays authoritative for everything
+else. An addition naming a field the extractor already found fails the
+codegen: the docs have caught up and the entry is stale.
 
 The same `extract-responses` pass also mines two doc-comment sources
 into `api-responses.json`: `param_docs` (per-parameter descriptions from

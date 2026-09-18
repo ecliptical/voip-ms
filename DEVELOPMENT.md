@@ -34,13 +34,14 @@ committed inputs:
   description), rendered as the `ApiStatus` enum (one PascalCase variant per
   code + `Unknown(String)`, with `description()`/`is_documented()` lookups).
 * `tools/api-response-overrides.json` — *hand-edited* corrections to the
-  above (per-path scalar retypes, or a full shape replacement for the handful
-  of methods the extractor can't parse). Never edit the generated
+  above (per-path scalar retypes, added scalar fields the docs omit, or a full
+  shape replacement for the handful of methods the extractor can't parse).
+  Never edit the generated
   `api-responses.json` / `api-statuses.json` by hand — fix the override file
   and regenerate. The overrides schema lives in
   [xtask/src/overrides.rs](xtask/src/overrides.rs); see its module docs for
-  the path grammar and the `enums` / `field_types` / `field_type_skip`
-  sections. Boolean-flag field names (typed `bool`, serialized to `1`/`0` or
+  the path grammar and the `enums` / `field_types` / `field_type_skip` /
+  `additions` sections. Boolean-flag field names (typed `bool`, serialized to `1`/`0` or
   `yes`/`no`) are registered in
   [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs), not the JSON.
 
@@ -146,6 +147,13 @@ refresh needs eyes on the diff, not just a green build:
 * **Mis-typed response scalars** — a phone-number field parsed as `integer`,
   a `0/1` flag parsed as `integer`, a date placeholder, etc. Fix via a
   per-path retype in `api-response-overrides.json`.
+* **Undocumented response fields** -- the extractor only sees what the Output
+  block lists, so a field the API returns but the docs omit is invisible to it
+  (`getCDR`'s `ip` and `useragent`, found by diffing a live response against
+  the typed one). Declare it in the `additions` section of
+  `api-response-overrides.json`. If the docs later pick the field up,
+  `cargo xtask gen` fails with "already in the extracted shape" -- delete the
+  now-stale addition.
 * **Unparseable Output blocks** — the extractor warns (`skipping output —
   parse error`). Two methods are known-unparseable and covered by full shape
   replacements in the overrides file (`setSIPURI` has no Output block;

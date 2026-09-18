@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `GetCDRResponseCDR` carries the `ip` and `useragent` fields as
+  `Option<String>`. `getCDR` returns both on the wire, but the docs' Output
+  block does not list them, so the extractor could not see them and they were
+  discarded during deserialization. Both are empty for a call that did not
+  originate from a registered SIP device, and an empty scalar folds to `None`.
+- The response overrides gained an `additions` section, which appends a scalar
+  field to an extracted shape (`{ "path": "cdr[].ip", "type": "string" }`). A
+  docs-driven extractor cannot see an undocumented field by construction, and
+  the alternative -- replacing the whole method's shape by hand -- would freeze
+  it against later doc updates. Declaring a field the docs later pick up fails
+  the codegen, so the stale entry gets deleted.
+
 ## [0.13.0] - 2026-09-21
 
 ### Fixed
