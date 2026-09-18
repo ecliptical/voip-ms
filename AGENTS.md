@@ -424,7 +424,11 @@ HTTP 403, so it is not a transport failure at all; and reqwest reports a
 resolution failure through the connect error that wraps it, so `is_dns` must be
 read before `is_connect`. The two questions stay separate because a refusal
 answers them differently -- a stale proxy credential answering 401 changed no
-state *and* is futile to repeat, and collapsing them produced a retry loop.
+state *and* is futile to repeat, and collapsing them produced a retry loop. That
+split is also why 408 is carved out of `never_reached_upstream`: RFC 9110 defines
+it for an incomplete request, but an intermediary returning it for a slow
+response is a 504 in 408's clothing, so the state claim is unprovable while
+`AfterWaiting` still reads right.
 
 Rendering is deliberately excluded: a model reading a retry decision and a
 person reading a terminal diagnostic want different sentences, so a `Display`

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,
+  where every other 4xx still answers `true`. The method claims the request
+  *provably* never reached VoIP.ms, and 408 does not prove that: RFC 9110
+  §15.5.9 defines it as the origin giving up on an incomplete request, which
+  would be safe, but intermediaries widely return it for a slow *response*,
+  where VoIP.ms may have acted and the reply been lost. A consumer gating an
+  agent's retry advice on this told it that a 408 on a destructive,
+  irreversible call had changed nothing, which invites a double order.
+  `retry_outlook()` is unchanged -- 408 stays `AfterWaiting`, since "not now"
+  is still the right reading of it.
+
 ## [0.12.2] - 2026-09-17
 
 ### Added
