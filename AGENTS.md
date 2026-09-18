@@ -216,6 +216,14 @@ in `xtask/src/field_overrides.rs`:
     derives `Serialize` -- there `timezone` emits the IANA name (what a log
     should show); only the wire twin carries the number, so raw `call_raw`
     users must do their own offset conversion.
+
+    The wire `timezone` is **not** optional: a caller who names no zone gets
+    `TimezoneOffset::UTC`. That is what makes the response side typeable (see
+    decision #8) -- the account's own configured zone, which omitting the
+    parameter selects, is reported by nothing in the API, so a timestamp
+    returned in it can only be guessed at. Confirmed against the live API:
+    `timezone=0` is accepted, and the same range read at `0` and at `-4` comes
+    back shifted by exactly four hours.
 * **Boolean flags** map to `bool`, registered in the `FLAG_01_FIELDS` /
   `FLAG_YES_NO_FIELDS` consts of `xtask/src/field_overrides.rs`. Many
   parameters VoIP.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are
@@ -336,6 +344,50 @@ during development. The only risk is URL length on the few methods with
 40+ parameters (`createSubAccount`, `setSubAccount`, `setQueue`); none
 of those exceed typical URL limits in practice because most parameters
 are `None` thanks to design decision #3.
+
+### 8. Record-listing timestamps are typed with their offset
+
+**Decision**: The six methods that take a `timezone` offset (decision #5a's
+`OFFSET_OPS`) type their response timestamp as
+`chrono::DateTime<chrono::FixedOffset>`, not `chrono::NaiveDateTime`. The typed
+method sends an explicit offset on every call, then attaches it to the wall
+clocks the response reports before deserializing, via `Client::call_zoned` and
+the public `attach_offset`.
+
+**Rationale**: The crate computes the exact offset VoIP.ms will apply and then
+used to discard it, handing back a wall clock a consumer had no way to qualify.
+One downstream consumer read an unqualified `2026-09-18T14:44:11` as UTC and
+reported a registration time that had already passed. The zone is known at the
+call site, so the type can carry it.
+
+It has to be a fixed offset rather than a zone. `TimezoneOffset::at` pins the
+offset at local noon on the start date and VoIP.ms applies that single number
+across the whole range, so a range straddling a DST transition comes back at the
+pre-transition offset on both sides. Rebuilding a `DateTime<Tz>` would apply the
+post-transition offset to values the server never shifted; the fixed offset that
+was sent is the honest type. A single legal range reaches the fold in practice --
+`getCDR` caps a query at 92 days, and 2026-02-01 to 2026-04-30 straddles the
+March change.
+
+Attaching the offset is a step on the JSON, not a `Deserialize` impl that
+assumes one: serde has no access to the request, and a deserializer that read a
+bare wall clock as UTC would reintroduce exactly the invented zone this typing
+removes. So `deserialize_opt_datetime_offset` rejects a value with no offset,
+and `attach_offset` is public because a `call_raw` caller needs the same step
+(`livetest`'s `probe_zoned` is one).
+
+The other 11 `NaiveDateTime` response fields cannot be typed this way. They
+belong to methods with no `timezone` parameter (`getRegistrationStatus`,
+`getDIDsInfo`, `getFAXMessages`, …); their zone is the account's configured one,
+which nothing in the API reports -- the only zone on any response is
+`GetVoicemailsResponseVoicemail::timezone`, a voicemail box's own setting. Typing
+those would mean the crate inventing a zone.
+
+**How to apply**: `cargo xtask gen` derives the fields from the response shapes:
+every `datetime` scalar under an `OFFSET_OPS` method is retyped and its JSON
+path handed to the generated method. An offset op whose response declares no
+timestamp field fails the run -- a docs refresh that drops the field would
+otherwise leave the method sending an offset that qualifies nothing.
 
 ## Code Patterns
 
@@ -502,8 +554,9 @@ Deps whose types appear in the public API (`chrono`, `reqwest`, `rust_decimal`,
 so callers name the exact compatible version without a separate dependency.
 
 * **chrono 0.4** (`serde`): `NaiveDate`/`NaiveDateTime` in typed response
-  fields and date-range params; the `serde` feature supplies the params'
-  `YYYY-MM-DD` `Serialize`.
+  fields and date-range params, and `DateTime<FixedOffset>` for the
+  record-listing timestamps (decision #8); the `serde` feature supplies the
+  params' `YYYY-MM-DD` `Serialize`.
 * **reqwest 0.13.5** (`json`, `query`, no default features): HTTP client + JSON
   deserialization. TLS backend is feature-gated. Two things force the patch
   floor rather than a bare `0.13`: the earlier 0.13.x rustls features the TLS

@@ -25,6 +25,23 @@ macro_rules! probe_list {
     }};
 }
 
+/// Probe a record-listing method whose response timestamps are reported in the
+/// UTC offset the request carried: as [`probe_list!`], with `$timestamps` the
+/// paths [`voip_ms::attach_offset`] takes.
+macro_rules! probe_zoned_list {
+    ($ctx:expr, $report:expr, $area:expr, $wire:literal, $params:ty, $resp:ty, $field:ident, $timestamps:expr) => {{
+        let outcome = $crate::harness::probe_zoned::<$params, $resp>(
+            $ctx.client,
+            $wire,
+            &<$params>::default(),
+            $timestamps,
+            |r| Some(r.$field.len()),
+        )
+        .await;
+        $report.record_probe($area, $wire, outcome);
+    }};
+}
+
 /// Probe a scalar/object (or multi-list) method: call typed-over-raw with
 /// default params; there is no single count to report.
 macro_rules! probe_scalar {
@@ -52,4 +69,4 @@ macro_rules! skip_needs_input {
     }};
 }
 
-pub(crate) use {probe_list, probe_scalar, skip_needs_input};
+pub(crate) use {probe_list, probe_scalar, probe_zoned_list, skip_needs_input};

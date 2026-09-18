@@ -61,6 +61,69 @@ pub fn emit_response_structs(
     out
 }
 
+/// Where one response timestamp lands in the emitted structs, and the path
+/// that reaches its JSON value.
+pub struct TimestampField {
+    /// `"StructName.field"`, the key a per-struct type override is registered
+    /// under.
+    pub struct_path: String,
+    /// The `/`-separated path `crate::attach_offset` takes, with `*` for every
+    /// element of a list.
+    pub json_path: String,
+}
+
+/// Every `datetime` scalar in `op`'s response shape, named the way
+/// [`emit_response_structs`] emits it.
+pub fn timestamp_fields(op: &str, shape: &Shape) -> Vec<TimestampField> {
+    let acronyms = acronyms_sorted();
+    let root = format!("{}Response", camel_to_pascal(op, &acronyms));
+    let mut found = Vec::new();
+    collect_timestamps(&root, "", shape, &mut found);
+    found
+}
+
+fn collect_timestamps(
+    struct_name: &str,
+    json_prefix: &str,
+    shape: &Shape,
+    out: &mut Vec<TimestampField>,
+) {
+    let Shape::Object(fields) = shape else {
+        return;
+    };
+
+    // Mirrors `emit_record`'s dedupe, so a key the `print_r` source repeats
+    // yields the one field the struct actually has.
+    let mut seen = std::collections::HashSet::new();
+    for (fname, sub) in fields {
+        if !seen.insert(fname.as_str()) {
+            continue;
+        }
+
+        let json_path = format!("{json_prefix}/{fname}");
+        match sub {
+            Shape::Scalar {
+                ty: ScalarTy::DateTime,
+                ..
+            } => out.push(TimestampField {
+                struct_path: format!("{struct_name}.{fname}"),
+                json_path,
+            }),
+            Shape::Object(_) => {
+                collect_timestamps(&nested_type_name(struct_name, fname), &json_path, sub, out);
+            }
+
+            Shape::List(inner) => collect_timestamps(
+                &element_type_name(struct_name, fname),
+                &format!("{json_path}/*"),
+                inner,
+                out,
+            ),
+            _ => {}
+        }
+    }
+}
+
 struct Emitter<'a> {
     /// Structs emitted in dependency-friendly order (children appended
     /// before any later sibling that references them).

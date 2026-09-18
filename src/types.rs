@@ -332,12 +332,15 @@ impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 /// 13)". It is a whole- or fractional-hour offset from UTC, not an IANA zone
 /// name -- distinct from the `getTimezones` / voicemail `timezone`, which is a
 /// named zone (`America/New_York`). Passing `-5` returns timestamps in
-/// UTC-05:00; omitting it leaves them in the account's configured timezone.
+/// UTC-05:00; omitting it leaves them in the account's configured timezone,
+/// which no response reports.
 ///
 /// Callers hold a [`chrono_tz::Tz`] on those methods' `timezone` field; the
 /// crate resolves it to this offset at the query's start date via
-/// [`TimezoneOffset::at`] before sending. Construct one directly only to bypass
-/// zone resolution and pin a fixed numeric offset.
+/// [`TimezoneOffset::at`] before sending, and sends [`TimezoneOffset::UTC`] when
+/// the caller names no zone -- so every request carries an offset and every
+/// timestamp those methods report has a known one. Construct one directly only
+/// to bypass zone resolution and pin a fixed numeric offset.
 ///
 /// Wraps a [`Decimal`] constrained to `-12..=13`. [`TimezoneOffset::new`]
 /// rejects out-of-range values so a nonsensical offset never reaches the wire.
@@ -353,6 +356,10 @@ impl TimezoneOffset {
     /// The inclusive range VoIP.ms accepts, in hours from UTC.
     const MIN: i64 = -12;
     const MAX: i64 = 13;
+
+    /// No offset from UTC, what a record-listing call sends when the caller
+    /// names no zone.
+    pub const UTC: Self = Self(Decimal::ZERO);
 
     /// Construct an offset, rejecting a value outside `-12..=13` hours.
     pub fn new(hours: impl Into<Decimal>) -> Result<Self, TimezoneOffsetError> {
@@ -394,6 +401,22 @@ impl TimezoneOffset {
     /// The offset in hours from UTC.
     pub fn hours(&self) -> Decimal {
         self.0
+    }
+
+    /// The same offset as a [`chrono::FixedOffset`], the form that qualifies a
+    /// timestamp reported in it.
+    ///
+    /// Rounded to whole seconds; the `-12..=13` hour bound keeps the result
+    /// inside `FixedOffset`'s own range.
+    pub fn to_fixed_offset(&self) -> chrono::FixedOffset {
+        use rust_decimal::prelude::ToPrimitive;
+
+        let seconds = (self.0 * Decimal::from(3600))
+            .round()
+            .to_i32()
+            .expect("an offset within -12..=13 hours is a whole number of seconds");
+        chrono::FixedOffset::east_opt(seconds)
+            .expect("an offset within -12..=13 hours is within FixedOffset's range")
     }
 }
 
@@ -812,6 +835,29 @@ mod tests {
                 .unwrap()
                 .to_string(),
             "UTC+05:30"
+        );
+    }
+
+    #[test]
+    fn timezone_offset_converts_to_a_fixed_offset() {
+        assert_eq!(
+            TimezoneOffset::UTC.to_fixed_offset(),
+            chrono::FixedOffset::east_opt(0).unwrap()
+        );
+        assert_eq!(
+            TimezoneOffset::try_from(-5).unwrap().to_fixed_offset(),
+            chrono::FixedOffset::west_opt(5 * 3600).unwrap()
+        );
+        // A fractional zone (India, +5:30) keeps its half hour.
+        assert_eq!(
+            TimezoneOffset::new(Decimal::from_str_exact("5.5").unwrap())
+                .unwrap()
+                .to_fixed_offset(),
+            chrono::FixedOffset::east_opt(5 * 3600 + 1800).unwrap()
+        );
+        assert_eq!(
+            TimezoneOffset::try_from(13).unwrap().to_fixed_offset(),
+            chrono::FixedOffset::east_opt(13 * 3600).unwrap()
         );
     }
 

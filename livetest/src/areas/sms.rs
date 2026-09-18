@@ -13,10 +13,10 @@
 
 use async_trait::async_trait;
 
-use crate::areas::probe_macros::probe_list;
+use crate::areas::probe_macros::probe_zoned_list;
 use crate::config::Depth;
 use crate::harness::area::{Area, AreaCtx, CostClass};
-use crate::harness::fixtures::read_back;
+use crate::harness::fixtures::read_back_zoned;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
@@ -39,14 +39,15 @@ impl Area for Sms {
     }
 
     async fn probe(&self, ctx: &AreaCtx<'_>, report: &mut Report) {
-        probe_list!(
+        probe_zoned_list!(
             ctx,
             report,
             AREA,
             "getSMS",
             GetSMSParams,
             GetSMSResponse,
-            sms
+            sms,
+            &["/sms/*/date"]
         );
     }
 
@@ -85,7 +86,7 @@ impl Area for Sms {
             }
         }
 
-        read_back::<_, GetSMSResponse>(
+        read_back_zoned::<_, GetSMSResponse>(
             ctx.client,
             report,
             AREA,
@@ -94,6 +95,7 @@ impl Area for Sms {
                 did: Some(fixture.test_did.clone()),
                 ..Default::default()
             },
+            &["/sms/*/date"],
             |r| Some(r.sms.len()),
         )
         .await;

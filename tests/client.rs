@@ -1442,6 +1442,91 @@ async fn cdr_timezone_resolves_offset_from_date_from() {
 }
 
 #[tokio::test]
+async fn record_listing_without_a_zone_asks_for_utc() {
+    // No zone means UTC rather than the account's own: a request that named no
+    // offset would come back in a zone nothing on the response reports.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .and(query_param("timezone", "0"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [{ "date": "2026-09-16 19:14:35", "seconds": "11" }],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
+    assert_eq!(
+        envelope.cdr[0].date,
+        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap())
+    );
+}
+
+#[tokio::test]
+async fn record_listing_timestamps_carry_the_offset_that_was_sent() {
+    // voip.ms shifts the timestamps by the offset the request carried and then
+    // reports the shifted wall clock without it, so the crate puts it back --
+    // the same record read at -4 and at 0 is the same instant.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .and(query_param("timezone", "-4"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [{ "date": "2026-09-16 15:14:35" }],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetCDRParams {
+        date_from: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 9, 14),
+        date_to: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 9, 17),
+        timezone: Some(voip_ms::chrono_tz::America::New_York),
+        ..Default::default()
+    };
+    let date = client.get_cdr(&params).await.unwrap().cdr[0].date.unwrap();
+    assert_eq!(
+        date,
+        voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T15:14:35-04:00").unwrap()
+    );
+    assert_eq!(date.to_utc().to_string(), "2026-09-16 19:14:35 UTC");
+}
+
+#[tokio::test]
+async fn record_listing_timestamps_qualify_a_single_bare_record() {
+    // VoIP.ms returns a one-row list as a bare object; the timestamp in it is
+    // reached and qualified the same way a list element's is.
+    use voip_ms::GetSMSParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSMS"))
+        .and(query_param("timezone", "0"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "sms": { "id": "111120", "date": "2026-03-30 10:24:16" },
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let envelope = client.get_sms(&GetSMSParams::default()).await.unwrap();
+    assert_eq!(
+        envelope.sms[0].date,
+        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-03-30T10:24:16+00:00").unwrap())
+    );
+}
+
+#[tokio::test]
 async fn record_listing_timezone_without_start_date_errors() {
     // A zone with no start date has no instant to resolve DST at; the call
     // fails before any request is sent.

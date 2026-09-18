@@ -13,7 +13,7 @@ use serde::de::DeserializeOwned;
 
 use crate::harness::area::SweepResult;
 use crate::harness::marker::is_owned_marker;
-use crate::harness::probe::{ProbeOutcome, probe};
+use crate::harness::probe::{ProbeOutcome, probe, probe_zoned};
 use crate::harness::{Outcome, Report};
 use voip_ms::{ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams};
 
@@ -79,7 +79,43 @@ where
     // Class B), so the populated-response drift check never ran.
     let method = label.strip_prefix("fixture:").unwrap_or(label);
     let outcome = probe::<P, T>(client, method, params, count).await;
+    record_read_back(client, report, area, label, method, params, outcome).await
+}
 
+/// [`read_back`] for a record-listing method, whose response reports its
+/// timestamps in the UTC offset the request carried without naming it.
+/// `timestamps` are the paths [`voip_ms::attach_offset`] takes.
+pub async fn read_back_zoned<P, T>(
+    client: &Client,
+    report: &mut Report,
+    area: &str,
+    label: &str,
+    params: &P,
+    timestamps: &[&str],
+    count: impl Fn(&T) -> Option<usize>,
+) -> bool
+where
+    P: Serialize + Sync,
+    T: DeserializeOwned,
+{
+    let method = label.strip_prefix("fixture:").unwrap_or(label);
+    let outcome = probe_zoned::<P, T>(client, method, params, timestamps, count).await;
+    record_read_back(client, report, area, label, method, params, outcome).await
+}
+
+/// Capture a failing read-back's request and envelope, then record it.
+async fn record_read_back<P>(
+    client: &Client,
+    report: &mut Report,
+    area: &str,
+    label: &str,
+    method: &str,
+    params: &P,
+    outcome: ProbeOutcome,
+) -> bool
+where
+    P: Serialize + Sync,
+{
     // Defensive diagnostic: if a read-back still returns an error status,
     // capture the exact request and the raw response envelope so a live run can
     // pin the cause without a second targeted run.

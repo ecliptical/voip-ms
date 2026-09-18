@@ -9,8 +9,8 @@
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
-use voip_ms::{Client, Error};
+use serde_json::{Value, json};
+use voip_ms::{Client, Error, TimezoneOffset, attach_offset};
 
 /// The result of probing one method.
 pub enum ProbeOutcome {
@@ -42,6 +42,70 @@ where
     P: Serialize + Sync,
     T: DeserializeOwned,
 {
+    probe_qualified(client, method, params, |_| {}, count).await
+}
+
+/// Probe a record-listing method the way its typed `Client` method calls it.
+///
+/// `getCDR` and the `getSMS` / `getMMS` family shift their timestamps by the
+/// numeric `timezone` the request carries and then report the shifted wall
+/// clock without it. The typed method sends that offset through a private wire
+/// twin and attaches it back before deserializing, and a call-by-name reaches
+/// neither half: left alone the raw call would ask for the account's own zone
+/// and the typed step would then reject every unqualified timestamp as drift.
+/// Both halves are reproduced here at UTC, the offset every probe in this
+/// harness wants.
+///
+/// `timestamps` are the paths [`voip_ms::attach_offset`] takes.
+pub async fn probe_zoned<P, T>(
+    client: &Client,
+    method: &str,
+    params: &P,
+    timestamps: &[&str],
+    count: impl Fn(&T) -> Option<usize>,
+) -> ProbeOutcome
+where
+    P: Serialize + Sync,
+    T: DeserializeOwned,
+{
+    let offset = TimezoneOffset::UTC;
+    let mut wire = match serde_json::to_value(params) {
+        Ok(Value::Object(fields)) => fields,
+        Ok(other) => {
+            return ProbeOutcome::Transport(format!("params are not an object: {other}"));
+        }
+
+        Err(error) => {
+            return ProbeOutcome::Transport(format!("params do not serialize: {error}"));
+        }
+    };
+
+    wire.insert("timezone".into(), json!(offset));
+    let fixed = offset.to_fixed_offset();
+    probe_qualified(
+        client,
+        method,
+        &Value::Object(wire),
+        |body| attach_offset(body, fixed, timestamps),
+        count,
+    )
+    .await
+}
+
+/// The shared probe body: fetch the raw envelope, let `qualify` complete it,
+/// then deserialize `T` over the result. The raw envelope is what a drift
+/// report shows, so `qualify`'s edits stay out of it.
+async fn probe_qualified<P, T>(
+    client: &Client,
+    method: &str,
+    params: &P,
+    qualify: impl Fn(&mut Value),
+    count: impl Fn(&T) -> Option<usize>,
+) -> ProbeOutcome
+where
+    P: Serialize + Sync,
+    T: DeserializeOwned,
+{
     let raw = match client.call_raw(method, params).await {
         Ok(value) => value,
         // An empty-collection status is the typed path's empty-list case, not a
@@ -65,7 +129,9 @@ where
         Err(e @ Error::InvalidParams(_)) => return ProbeOutcome::Transport(e.to_string()),
     };
 
-    match serde_json::from_value::<T>(raw.clone()) {
+    let mut qualified = raw.clone();
+    qualify(&mut qualified);
+    match serde_json::from_value::<T>(qualified) {
         Ok(typed) => ProbeOutcome::Ok {
             element_count: count(&typed),
         },

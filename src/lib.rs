@@ -60,7 +60,7 @@ mod generated;
 mod responses;
 mod types;
 
-pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL};
+pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL, attach_offset};
 pub use error::{Error, Result, RetryOutlook, TransportFailure};
 pub use generated::*;
 pub use types::{
