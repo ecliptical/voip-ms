@@ -10,6 +10,7 @@
 //!     cargo xtask gen
 
 mod check_flags;
+mod dump_fields;
 mod dump_methods;
 mod extract;
 mod field_overrides;
@@ -1320,6 +1321,43 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
     out
 }
 
+/// Format a file this generator just wrote, so its output is what `cargo fmt
+/// --check` expects and a regen leaves no formatting churn behind. A missing or
+/// failing rustfmt is a warning: the file is already valid Rust.
+pub(crate) fn rustfmt_file(path: &Path) {
+    match Command::new("rustfmt")
+        .args(["--edition", "2024"])
+        .arg(path)
+        .status()
+    {
+        Ok(s) if s.success() => {}
+        Ok(s) => eprintln!("warning: rustfmt exited with {s}; run `cargo fmt` manually"),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            eprintln!("warning: rustfmt not found on PATH; run `cargo fmt` manually");
+        }
+        Err(e) => eprintln!("warning: rustfmt failed ({e}); run `cargo fmt` manually"),
+    }
+}
+
+/// The post-override response shapes, for a tool that needs what `gen` renders
+/// without rendering it. Shares `gen`'s inputs so the two can't disagree.
+pub(crate) fn load_shapes_for_tools() -> Result<BTreeMap<String, Shape>, String> {
+    let root = repo_root();
+    let wsdl_path = root.join("tools").join("server.wsdl");
+    let text =
+        fs::read_to_string(&wsdl_path).map_err(|e| format!("read {}: {e}", wsdl_path.display()))?;
+    let wsdl = wsdl::parse_wsdl(&text)?;
+
+    let overrides_doc = overrides::load(&root.join("tools").join("api-response-overrides.json"))?;
+    overrides_doc.check_version()?;
+
+    load_response_shapes(
+        &root.join("tools").join("api-responses.json"),
+        &overrides_doc,
+        &wsdl,
+    )
+}
+
 fn cmd_gen() -> Result<(), String> {
     let root = repo_root();
     let wsdl_path = root.join("tools").join("server.wsdl");
@@ -1568,18 +1606,7 @@ fn cmd_gen() -> Result<(), String> {
         statuses.len(),
     );
 
-    match Command::new("rustfmt")
-        .args(["--edition", "2024"])
-        .arg(&out_path)
-        .status()
-    {
-        Ok(s) if s.success() => {}
-        Ok(s) => eprintln!("warning: rustfmt exited with {s}; run `cargo fmt` manually"),
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {
-            eprintln!("warning: rustfmt not found on PATH; run `cargo fmt` manually");
-        }
-        Err(e) => eprintln!("warning: rustfmt failed ({e}); run `cargo fmt` manually"),
-    }
+    rustfmt_file(&out_path);
 
     Ok(())
 }
@@ -1742,10 +1769,11 @@ fn main() -> ExitCode {
         "extract-statuses" => cmd_extract_statuses(&rest),
         "check-flags" => check_flags::cmd_check_flags(),
         "dump-methods" => dump_methods::cmd_dump_methods(),
+        "dump-fields" => dump_fields::cmd_dump_fields(),
         other => Err(format!(
             "unknown subcommand `{other}` \
              (expected `gen`, `extract-responses`, `extract-statuses`, \
-             `check-flags`, or `dump-methods`)"
+             `check-flags`, `dump-methods`, or `dump-fields`)"
         )),
     };
 

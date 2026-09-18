@@ -3,6 +3,7 @@
 
 pub mod area;
 pub mod fixtures;
+pub mod keydiff;
 pub mod ledger;
 pub mod marker;
 pub mod probe;
@@ -27,6 +28,12 @@ pub enum Outcome {
     Drift {
         error: String,
         raw_json: String,
+    },
+    /// The fidelity signal: the call succeeded and deserialized, but the
+    /// response carried keys no `*Response` field claims, so the typed surface
+    /// dropped them. Carries the paths in the override file's grammar.
+    Unmodeled {
+        paths: Vec<String>,
     },
 }
 
@@ -59,6 +66,19 @@ impl Report {
                     eprintln!("          {line}");
                 }
             }
+            Outcome::Unmodeled { paths } => {
+                eprintln!(
+                    "[UNMODELED] {area}/{name}: {} response key(s) the typed shape drops",
+                    paths.len()
+                );
+                eprintln!("        declare them in tools/api-response-overrides.json:");
+                eprintln!("          \"{name}\": {{ \"additions\": [");
+                for path in paths {
+                    eprintln!("            {{ \"path\": \"{path}\", \"type\": \"string\" }},");
+                }
+
+                eprintln!("          ] }}");
+            }
         }
 
         self.records.push(Record {
@@ -71,12 +91,19 @@ impl Report {
     /// Fold a [`ProbeOutcome`] into the report under `area`/`method`.
     pub fn record_probe(&mut self, area: &str, method: &str, outcome: ProbeOutcome) {
         let outcome = match outcome {
-            ProbeOutcome::Ok { element_count } => {
+            ProbeOutcome::Ok {
+                element_count,
+                unmodeled,
+            } => {
                 if let Some(n) = element_count {
                     println!("[info] {area}/{method}: {n} element(s)");
                 }
 
-                Outcome::Pass
+                if unmodeled.is_empty() {
+                    Outcome::Pass
+                } else {
+                    Outcome::Unmodeled { paths: unmodeled }
+                }
             }
             ProbeOutcome::Drift { error, raw_json } => Outcome::Drift { error, raw_json },
             ProbeOutcome::ApiError(status) => Outcome::Fail(format!("API error: {status}")),
@@ -94,17 +121,18 @@ impl Report {
                 Outcome::Fail(_) => c.fail += 1,
                 Outcome::Skip(_) => c.skip += 1,
                 Outcome::Drift { .. } => c.drift += 1,
+                Outcome::Unmodeled { .. } => c.unmodeled += 1,
             }
         }
 
         c
     }
 
-    /// Non-zero exit is warranted when anything failed or drifted; skips are
-    /// not failures.
+    /// Non-zero exit is warranted when anything failed, drifted, or came back
+    /// with keys the typed surface drops; skips are not failures.
     pub fn is_failure(&self) -> bool {
         let c = self.counts();
-        c.fail > 0 || c.drift > 0
+        c.fail > 0 || c.drift > 0 || c.unmodeled > 0
     }
 
     /// One machine-readable JSON line for a future CI wrapper to parse without
@@ -113,6 +141,7 @@ impl Report {
         let c = self.counts();
         let mut drifted = String::new();
         let mut failed = String::new();
+        let mut unmodeled = String::new();
         for r in &self.records {
             match &r.outcome {
                 Outcome::Drift { .. } => {
@@ -121,14 +150,25 @@ impl Report {
                 Outcome::Fail(_) => {
                     let _ = write!(failed, "{}\"{}/{}\"", sep(&failed), r.area, r.name);
                 }
+                Outcome::Unmodeled { paths } => {
+                    for path in paths {
+                        let _ = write!(
+                            unmodeled,
+                            "{}\"{}.{path}\"",
+                            sep(&unmodeled),
+                            r.name.strip_prefix("fixture:").unwrap_or(&r.name),
+                        );
+                    }
+                }
                 _ => {}
             }
         }
 
         format!(
-            "{{\"summary\":{{\"pass\":{},\"fail\":{},\"skip\":{},\"drift\":{}}},\
-             \"drifted\":[{drifted}],\"failed\":[{failed}]}}",
-            c.pass, c.fail, c.skip, c.drift
+            "{{\"summary\":{{\"pass\":{},\"fail\":{},\"skip\":{},\"drift\":{},\
+             \"unmodeled\":{}}},\"drifted\":[{drifted}],\"failed\":[{failed}],\
+             \"unmodeled\":[{unmodeled}]}}",
+            c.pass, c.fail, c.skip, c.drift, c.unmodeled
         )
     }
 }
@@ -144,4 +184,5 @@ pub struct Counts {
     pub fail: usize,
     pub skip: usize,
     pub drift: usize,
+    pub unmodeled: usize,
 }

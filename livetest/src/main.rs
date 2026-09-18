@@ -14,6 +14,7 @@
 mod areas;
 mod config;
 mod harness;
+mod response_fields;
 mod wire_methods;
 
 use std::process::ExitCode;

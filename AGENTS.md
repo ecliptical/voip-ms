@@ -81,6 +81,17 @@ updates, and the extracted shape stays authoritative for everything
 else. An addition naming a field the extractor already found fails the
 codegen: the docs have caught up and the entry is stale.
 
+Finding such a field is the live harness's job, not the extractor's.
+Because no `*Response` sets `deny_unknown_fields` (decision 2 depends on
+it), an unmodeled key cannot fail a deserialization, so the raw-vs-typed
+probe is blind to one by construction -- it only fires when the typed
+read *fails*. `cargo xtask dump-fields` therefore emits the modeled key
+paths per method into `livetest/src/response_fields.rs`, and the probe
+diffs every live envelope against them, reporting an `UNMODELED` outcome
+that prints the `additions` entry to paste. The two directions are
+complementary: drift is "the crate can't read what arrived", unmodeled
+is "the crate silently dropped part of it".
+
 The same `extract-responses` pass also mines two doc-comment sources
 into `api-responses.json`: `param_docs` (per-parameter descriptions from
 each method's `Parameters` cell, including `[Required]` markers,
@@ -675,12 +686,14 @@ voip-ms/
 │       ├── main.rs          # CLI, connectivity pre-check, sweep + probe run
 │       ├── config.rs        # Two-dimensional AREA × DEPTH selection; secrets
 │       ├── wire_methods.rs  # 222 wire names (generated: cargo xtask dump-methods)
+│       ├── response_fields.rs # modeled key paths (generated: cargo xtask dump-fields)
 │       ├── areas/           # One module per functional area + the registry
 │       └── harness/         # Report, RAII Scope, ledger, marker, drift probe
 └── xtask/
     ├── Cargo.toml
     └── src/
         ├── main.rs              # WSDL+responses+overrides → src/generated.rs
+        ├── dump_fields.rs       # response shapes → livetest/src/response_fields.rs
         ├── dump_methods.rs      # src/generated.rs → livetest/src/wire_methods.rs
         ├── extract.rs           # apidocs HTML → tools/api-responses.json
         ├── field_overrides.rs   # Field-name → domain-type substitution table

@@ -1,17 +1,19 @@
 //! The `cdr` area: call detail records for the account and, for resellers,
 //! their clients. Both methods require a date window (`date_from`/`date_to`),
-//! which the harness can't supply at probe depth without choosing an arbitrary
-//! range, so both are skipped there. The scope is read-only.
+//! which the harness supplies as a trailing 30 days. The scope is read-only.
 //!
-//! At `Depth::Costly` the area supplies a real trailing-30-day window and
-//! reads `getCDR` back through the typed probe -- a populated response is
-//! where historical drift (e.g. call-date parsing) has lived, and the window
-//! costs nothing to try regardless of whether any other costly fixture placed
-//! a call today. It then reads the same window through `Client::get_cdr`
-//! itself at two named zones, which is the only live exercise of the generated
-//! wire twin, of `TimezoneOffset::at`, and of the offset the typed response
-//! claims. `getResellerCDR` is left skipped: it additionally needs a reseller
-//! client id the harness has no fixture for.
+//! `getCDR` reads that window at every depth. The range is arbitrary, which is
+//! why probe depth once skipped it, but the call is free and read-only, and a
+//! *populated* response is the harness's highest-value one: it is where drift
+//! has historically lived (call-date parsing), and it is the only place the key
+//! diff sees the per-record fields -- two of which (`ip`, `useragent`) reached
+//! production undeclared because nothing ever read a real record.
+//!
+//! At `Depth::Costly` the area then reads the same window through
+//! `Client::get_cdr` itself at two named zones, which is the only live exercise
+//! of the generated wire twin, of `TimezoneOffset::at`, and of the offset the
+//! typed response claims. `getResellerCDR` is left skipped: it additionally
+//! needs a reseller client id the harness has no fixture for.
 
 use async_trait::async_trait;
 
@@ -50,9 +52,24 @@ impl Area for Cdr {
         &["getCDR", "getResellerCDR"]
     }
 
-    async fn probe(&self, _ctx: &AreaCtx<'_>, report: &mut Report) {
-        skip_needs_input!(report, AREA, "getCDR", "requires a date window");
-        skip_needs_input!(report, AREA, "getResellerCDR", "requires a date window");
+    async fn probe(&self, ctx: &AreaCtx<'_>, report: &mut Report) {
+        read_back_zoned::<_, GetCDRResponse>(
+            ctx.client,
+            report,
+            AREA,
+            "getCDR",
+            &window_params(),
+            GET_CDR_TIMESTAMPS,
+            |r| Some(r.cdr.len()),
+        )
+        .await;
+
+        skip_needs_input!(
+            report,
+            AREA,
+            "getResellerCDR",
+            "requires a reseller client id"
+        );
     }
 
     async fn run_fixtures(&self, ctx: &AreaCtx<'_>, report: &mut Report) {
@@ -60,31 +77,9 @@ impl Area for Cdr {
             return;
         }
 
-        let today = voip_ms::chrono::Local::now().date_naive();
-        let date_from = today - voip_ms::chrono::Duration::days(30);
-        let date_to = today;
-        let params = GetCDRParams {
-            date_from: Some(date_from),
-            date_to: Some(date_to),
-            // At least one call-status filter is required or VoIP.ms rejects
-            // the request with `no_callstatus`.
-            answered: Some(true),
-            noanswer: Some(true),
-            busy: Some(true),
-            failed: Some(true),
-            ..Default::default()
-        };
-
-        read_back_zoned::<_, GetCDRResponse>(
-            ctx.client,
-            report,
-            AREA,
-            "fixture:getCDR",
-            &params,
-            GET_CDR_TIMESTAMPS,
-            |r| Some(r.cdr.len()),
-        )
-        .await;
+        // The probe already read this window through the typed probe at every
+        // depth, so what is left here is the part only costly depth adds.
+        let params = window_params();
 
         // One UTC read shared by every zone compared against it, rather than one
         // per zone over identical rows.
@@ -100,12 +95,24 @@ impl Area for Cdr {
 
             report.record(AREA, &format!("fixture:getCDR:{tz}"), outcome);
         }
+    }
+}
 
-        report.record(
-            AREA,
-            "getResellerCDR",
-            Outcome::Skip("requires a reseller client id".to_string()),
-        );
+/// The window every read here uses: a trailing 30 days, with all four call
+/// statuses, since VoIP.ms rejects a request naming none (`no_callstatus`).
+///
+/// The range is arbitrary either way, so both depths share one rather than
+/// asking the same question over two different spans.
+fn window_params() -> GetCDRParams {
+    let today = voip_ms::chrono::Local::now().date_naive();
+    GetCDRParams {
+        date_from: Some(today - voip_ms::chrono::Duration::days(30)),
+        date_to: Some(today),
+        answered: Some(true),
+        noanswer: Some(true),
+        busy: Some(true),
+        failed: Some(true),
+        ..Default::default()
     }
 }
 

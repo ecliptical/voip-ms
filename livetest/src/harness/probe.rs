@@ -6,17 +6,28 @@
 //! that step -- fetch the raw envelope, then attempt the typed deserialization
 //! over it -- so a failure is unambiguously attributable to response-shape
 //! drift (raw ok, typed fails) rather than to the network or a real API error.
+//!
+//! A typed deserialization that *succeeds* still proves nothing about fidelity,
+//! so the same raw envelope also goes through the key diff in
+//! [`super::keydiff`], which reports what the typed shape silently dropped.
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use voip_ms::{Client, Error, TimezoneOffset, attach_offset};
 
+use crate::harness::keydiff;
+use crate::response_fields;
+
 /// The result of probing one method.
 pub enum ProbeOutcome {
     /// Raw succeeded and the typed shape deserialized. `element_count` is set
-    /// when the response's primary payload is a list, for logging.
-    Ok { element_count: Option<usize> },
+    /// when the response's primary payload is a list, for logging;
+    /// `unmodeled` holds the live key paths no `*Response` field claims.
+    Ok {
+        element_count: Option<usize>,
+        unmodeled: Vec<String>,
+    },
     /// Raw succeeded but the typed deserialization failed: a drift bug.
     Drift { error: String, raw_json: String },
     /// The API returned a non-success (non-empty) status -- a real API error,
@@ -180,6 +191,7 @@ where
         Err(Error::Api(status)) if status.is_empty() => {
             return ProbeOutcome::Ok {
                 element_count: Some(0),
+                unmodeled: Vec::new(),
             };
         }
         Err(Error::Api(status)) => return ProbeOutcome::ApiError(status.to_string()),
@@ -194,11 +206,23 @@ where
         Err(e @ Error::InvalidParams(_)) => return ProbeOutcome::Transport(e.to_string()),
     };
 
+    // Against the raw envelope, not the qualified one: `qualify` completes
+    // values the server left bare, and a key it had to add would otherwise read
+    // as one the API sent and the crate drops.
+    //
+    // A method with no typed shape at all has nothing to compare against, so an
+    // empty modeled set must not read as "every key is unmodeled".
+    let unmodeled = match response_fields::modeled_paths(method) {
+        Some(modeled) => keydiff::unmodeled_paths(&raw, modeled),
+        None => Vec::new(),
+    };
+
     let mut qualified = raw.clone();
     qualify(&mut qualified);
     match serde_json::from_value::<T>(qualified) {
         Ok(typed) => ProbeOutcome::Ok {
             element_count: count(&typed),
+            unmodeled,
         },
         Err(error) => ProbeOutcome::Drift {
             error: error.to_string(),
