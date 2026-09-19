@@ -46,7 +46,7 @@ impl Area for Mms {
             GetMMSParams,
             GetMMSResponse,
             sms,
-            &["/sms/*/date"]
+            GET_MMS_TIMESTAMPS
         );
         skip_needs_input!(report, AREA, "getMediaMMS", "requires an MMS id");
     }
@@ -98,7 +98,7 @@ impl Area for Mms {
                 did: Some(fixture.test_did.clone()),
                 ..Default::default()
             },
-            &["/sms/*/date"],
+            GET_MMS_TIMESTAMPS,
             |r| Some(r.sms.len()),
         )
         .await;

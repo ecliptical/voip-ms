@@ -245,9 +245,9 @@ pub(crate) fn tz_param_override() -> FieldOverride {
     }
 }
 
-/// The [`FieldOverride`] typing a record-listing response timestamp as a
-/// zoned `chrono::DateTime`: the wall clock voip.ms reports plus the UTC offset
-/// the request carried, which `Client::call_zoned` attaches before it parses.
+/// The [`FieldOverride`] typing a record-listing response timestamp as a zoned
+/// `chrono::DateTime`: the wall clock voip.ms reports, qualified by the UTC
+/// offset the request carried.
 pub(crate) fn zoned_timestamp_override() -> FieldOverride {
     FieldOverride {
         rust_type: "chrono::DateTime<chrono::FixedOffset>".into(),

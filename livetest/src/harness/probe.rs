@@ -45,47 +45,49 @@ where
     probe_qualified(client, method, params, |_| {}, count).await
 }
 
-/// Probe a record-listing method the way its typed `Client` method calls it.
+/// The params a record-listing call puts on the wire: the public ones plus the
+/// numeric `timezone` its typed `Client` method resolves inside a private wire
+/// twin, which a call-by-name cannot reach.
+///
+/// Returned rather than inserted behind the caller's back so one value is both
+/// sent and reported: a failure capture that printed the public params would
+/// describe a request that was never made.
+pub fn zoned_params(params: &impl Serialize, offset: TimezoneOffset) -> Result<Value, String> {
+    match serde_json::to_value(params) {
+        Ok(Value::Object(mut fields)) => {
+            fields.insert("timezone".into(), json!(offset));
+            Ok(Value::Object(fields))
+        }
+
+        Ok(other) => Err(format!("params are not an object: {other}")),
+        Err(error) => Err(format!("params do not serialize: {error}")),
+    }
+}
+
+/// Probe a record-listing method over params from [`zoned_params`].
 ///
 /// `getCDR` and the `getSMS` / `getMMS` family shift their timestamps by the
 /// numeric `timezone` the request carries and then report the shifted wall
-/// clock without it. The typed method sends that offset through a private wire
-/// twin and attaches it back before deserializing, and a call-by-name reaches
-/// neither half: left alone the raw call would ask for the account's own zone
-/// and the typed step would then reject every unqualified timestamp as drift.
-/// Both halves are reproduced here at UTC, the offset every probe in this
-/// harness wants.
-///
-/// `timestamps` are the paths [`voip_ms::attach_offset`] takes.
-pub async fn probe_zoned<P, T>(
+/// clock without it, so `offset` goes back on before the typed step -- left
+/// alone, every unqualified timestamp would read as drift. `timestamps` are the
+/// paths [`voip_ms::attach_offset`] takes, which the crate emits per method as
+/// `GET_CDR_TIMESTAMPS` and its siblings.
+pub async fn probe_zoned<T>(
     client: &Client,
     method: &str,
-    params: &P,
+    params: &Value,
+    offset: TimezoneOffset,
     timestamps: &[&str],
     count: impl Fn(&T) -> Option<usize>,
 ) -> ProbeOutcome
 where
-    P: Serialize + Sync,
     T: DeserializeOwned,
 {
-    let offset = TimezoneOffset::UTC;
-    let mut wire = match serde_json::to_value(params) {
-        Ok(Value::Object(fields)) => fields,
-        Ok(other) => {
-            return ProbeOutcome::Transport(format!("params are not an object: {other}"));
-        }
-
-        Err(error) => {
-            return ProbeOutcome::Transport(format!("params do not serialize: {error}"));
-        }
-    };
-
-    wire.insert("timezone".into(), json!(offset));
     let fixed = offset.to_fixed_offset();
     probe_qualified(
         client,
         method,
-        &Value::Object(wire),
+        params,
         |body| attach_offset(body, fixed, timestamps),
         count,
     )

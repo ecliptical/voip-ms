@@ -1,8 +1,11 @@
 //! Shared probe macros so each area's `probe()` reads as one line per method.
 //!
-//! Three shapes cover every read-only method:
+//! Four shapes cover every read-only method:
 //!   * [`probe_list!`] -- a response whose payload is a single list; the count
 //!     is that list's length, matching the reference area's original macro.
+//!   * [`probe_zoned_list!`] -- a list whose records carry a timestamp reported
+//!     in the UTC offset the request asked for, which the record-listing areas
+//!     (`cdr`, `sms`, `mms`) use.
 //!   * [`probe_scalar!`] -- a scalar/object response, or one with several lists
 //!     where no single count is meaningful; nothing to count.
 //!   * [`skip_needs_input!`] -- a method whose required input (a resource id, a
@@ -25,20 +28,31 @@ macro_rules! probe_list {
     }};
 }
 
-/// Probe a record-listing method whose response timestamps are reported in the
-/// UTC offset the request carried: as [`probe_list!`], with `$timestamps` the
-/// paths [`voip_ms::attach_offset`] takes.
+/// Probe a record-listing method: as [`probe_list!`], with `$timestamps` the
+/// crate's `*_TIMESTAMPS` const for the method, naming the response timestamps
+/// that come back in the offset the request carried. UTC, so a reported wall
+/// clock is the instant it names.
 macro_rules! probe_zoned_list {
     ($ctx:expr, $report:expr, $area:expr, $wire:literal, $params:ty, $resp:ty, $field:ident, $timestamps:expr) => {{
-        let outcome = $crate::harness::probe_zoned::<$params, $resp>(
-            $ctx.client,
-            $wire,
-            &<$params>::default(),
-            $timestamps,
-            |r| Some(r.$field.len()),
-        )
-        .await;
-        $report.record_probe($area, $wire, outcome);
+        let offset = voip_ms::TimezoneOffset::UTC;
+        match $crate::harness::zoned_params(&<$params>::default(), offset) {
+            Ok(sent) => {
+                let outcome = $crate::harness::probe_zoned::<$resp>(
+                    $ctx.client,
+                    $wire,
+                    &sent,
+                    offset,
+                    $timestamps,
+                    |r| Some(r.$field.len()),
+                )
+                .await;
+                $report.record_probe($area, $wire, outcome);
+            }
+
+            Err(error) => {
+                $report.record($area, $wire, $crate::harness::Outcome::Fail(error));
+            }
+        }
     }};
 }
 

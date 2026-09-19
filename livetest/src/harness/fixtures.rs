@@ -13,9 +13,11 @@ use serde::de::DeserializeOwned;
 
 use crate::harness::area::SweepResult;
 use crate::harness::marker::is_owned_marker;
-use crate::harness::probe::{ProbeOutcome, probe, probe_zoned};
+use crate::harness::probe::{ProbeOutcome, probe, probe_zoned, zoned_params};
 use crate::harness::{Outcome, Report};
-use voip_ms::{ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams};
+use voip_ms::{
+    ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams, TimezoneOffset,
+};
 
 /// Every `(required)` `setQueue` field but the caller-supplied `queue_name`,
 /// filled with values the API accepts, so a fixture only sets its name and the
@@ -85,6 +87,9 @@ where
 /// [`read_back`] for a record-listing method, whose response reports its
 /// timestamps in the UTC offset the request carried without naming it.
 /// `timestamps` are the paths [`voip_ms::attach_offset`] takes.
+///
+/// The read-back is at [`TimezoneOffset::UTC`]; a non-zero offset is the
+/// `cdr` area's typed fixture, which goes through `Client::get_cdr` itself.
 pub async fn read_back_zoned<P, T>(
     client: &Client,
     report: &mut Report,
@@ -99,8 +104,17 @@ where
     T: DeserializeOwned,
 {
     let method = label.strip_prefix("fixture:").unwrap_or(label);
-    let outcome = probe_zoned::<P, T>(client, method, params, timestamps, count).await;
-    record_read_back(client, report, area, label, method, params, outcome).await
+    let offset = TimezoneOffset::UTC;
+    let sent = match zoned_params(params, offset) {
+        Ok(sent) => sent,
+        Err(error) => {
+            report.record(area, label, Outcome::Fail(error));
+            return false;
+        }
+    };
+
+    let outcome = probe_zoned::<T>(client, method, &sent, offset, timestamps, count).await;
+    record_read_back(client, report, area, label, method, &sent, outcome).await
 }
 
 /// Capture a failing read-back's request and envelope, then record it.

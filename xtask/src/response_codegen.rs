@@ -74,12 +74,18 @@ pub struct TimestampField {
 
 /// Every `datetime` scalar in `op`'s response shape, named the way
 /// [`emit_response_structs`] emits it.
-pub fn timestamp_fields(op: &str, shape: &Shape) -> Vec<TimestampField> {
+///
+/// A `datetime` the walk cannot name is an error rather than a silent omission:
+/// the field would still be emitted, as a bare `NaiveDateTime`, and the offset
+/// the request carried would be dropped for it alone -- the miss the
+/// `fields.is_empty()` check in `cmd_gen` cannot see, because some other field
+/// covered it.
+pub fn timestamp_fields(op: &str, shape: &Shape) -> Result<Vec<TimestampField>, String> {
     let acronyms = acronyms_sorted();
     let root = format!("{}Response", camel_to_pascal(op, &acronyms));
     let mut found = Vec::new();
-    collect_timestamps(&root, "", shape, &mut found);
-    found
+    collect_timestamps(&root, "", shape, &mut found)?;
+    Ok(found)
 }
 
 fn collect_timestamps(
@@ -87,9 +93,22 @@ fn collect_timestamps(
     json_prefix: &str,
     shape: &Shape,
     out: &mut Vec<TimestampField>,
-) {
-    let Shape::Object(fields) = shape else {
-        return;
+) -> Result<(), String> {
+    let fields = match shape {
+        Shape::Object(fields) => fields,
+        // A list or map of records is walked through its element shape by the
+        // caller, so anything else here is a leaf with no timestamp to find.
+        Shape::Scalar {
+            ty: ScalarTy::DateTime,
+            ..
+        } => {
+            return Err(format!(
+                "{struct_name} has a timestamp at `{json_prefix}` that is not a field of a \
+                 record, which `attach_offset` has no path form for"
+            ));
+        }
+
+        _ => return Ok(()),
     };
 
     // Mirrors `emit_record`'s dedupe, so a key the `print_r` source repeats
@@ -110,7 +129,7 @@ fn collect_timestamps(
                 json_path,
             }),
             Shape::Object(_) => {
-                collect_timestamps(&nested_type_name(struct_name, fname), &json_path, sub, out);
+                collect_timestamps(&nested_type_name(struct_name, fname), &json_path, sub, out)?;
             }
 
             Shape::List(inner) => collect_timestamps(
@@ -118,10 +137,38 @@ fn collect_timestamps(
                 &format!("{json_path}/*"),
                 inner,
                 out,
-            ),
-            _ => {}
+            )?,
+            // `attach_offset`'s `*` means "every element of a list", and over an
+            // object it means the bare single record VoIP.ms sends in place of a
+            // one-element list -- so it cannot also mean "every value of a map".
+            // No offset op returns a map today; one that did would need the path
+            // syntax extended first, which is a decision, not a default.
+            Shape::Map(inner) => {
+                let mut inside = Vec::new();
+                collect_timestamps(
+                    &element_type_name(struct_name, fname),
+                    &format!("{json_path}/*"),
+                    inner,
+                    &mut inside,
+                )?;
+                if !inside.is_empty() {
+                    return Err(format!(
+                        "{struct_name}.{fname} is a map whose values carry a timestamp \
+                         ({}); `attach_offset` has no path form that reaches it",
+                        inside
+                            .iter()
+                            .map(|f| f.struct_path.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    ));
+                }
+            }
+
+            Shape::Scalar { .. } => {}
         }
     }
+
+    Ok(())
 }
 
 struct Emitter<'a> {

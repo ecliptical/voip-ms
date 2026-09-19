@@ -239,7 +239,18 @@ impl Client {
 /// Each entry is a `/`-separated path into `body` in which a `*` segment stands
 /// for every element of a list -- `/cdr/*/date` reaches the `date` of every
 /// record. A `*` also matches the bare object VoIP.ms returns in place of a
-/// one-element list. A value that already names a zone is left alone.
+/// one-element list. This is not an RFC 6901 JSON pointer, which has no
+/// wildcard; [`Client::call_at`] takes one of those, and the two syntaxes are
+/// not interchangeable.
+///
+/// Each method's paths are a public const, so a raw caller names them rather
+/// than spelling them out: [`GET_CDR_TIMESTAMPS`](crate::GET_CDR_TIMESTAMPS),
+/// [`GET_SMS_TIMESTAMPS`](crate::GET_SMS_TIMESTAMPS), and their reseller and
+/// MMS siblings.
+///
+/// A blank value and one that already names a zone are both left alone -- the
+/// first has no wall clock to qualify and stays the empty placeholder the
+/// deserializers fold to `None`.
 ///
 /// ```
 /// use voip_ms::{attach_offset, chrono::FixedOffset, serde_json::json};
@@ -258,6 +269,7 @@ pub fn attach_offset(body: &mut Value, offset: chrono::FixedOffset, timestamps: 
 fn attach_at(value: &mut Value, path: &str, suffix: &str) {
     let Some((segment, rest)) = path.split_once('/') else {
         if let Some(Value::String(s)) = value.get_mut(path)
+            && !s.trim().is_empty()
             && !names_zone(s)
         {
             s.push_str(suffix);
@@ -548,6 +560,19 @@ mod tests {
         assert_eq!(body["cdr"][0].get("date"), None);
         assert_eq!(body["cdr"][1]["date"], serde_json::Value::Null);
         assert_eq!(body["cdr"][2]["date"], 0);
+    }
+
+    #[test]
+    fn attach_offset_leaves_a_blank_value_alone() {
+        // A blank has no wall clock to qualify. Suffixing it would produce
+        // `-04:00`, which parses as nothing -- and since one bad value fails
+        // the whole response, that would lose every other record too.
+        let mut body = serde_json::json!({
+            "cdr": [{ "date": "" }, { "date": "   " }],
+        });
+        attach_offset(&mut body, west4(), &["/cdr/*/date"]);
+        assert_eq!(body["cdr"][0]["date"], "");
+        assert_eq!(body["cdr"][1]["date"], "   ");
     }
 
     #[test]

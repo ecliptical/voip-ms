@@ -1527,6 +1527,70 @@ async fn record_listing_timestamps_qualify_a_single_bare_record() {
 }
 
 #[tokio::test]
+async fn record_listing_blank_timestamp_does_not_lose_the_response() {
+    // A blank `date` is one record's missing value, not a broken envelope: it
+    // folds to `None` and every other record still deserializes.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [
+                { "date": "", "uniqueid": "1" },
+                { "date": "0000-00-00 00:00:00", "uniqueid": "2" },
+                { "date": "2026-09-16 19:14:35", "uniqueid": "3" },
+            ],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
+    assert_eq!(envelope.cdr.len(), 3);
+    assert_eq!(envelope.cdr[0].date, None);
+    assert_eq!(envelope.cdr[1].date, None);
+    assert_eq!(
+        envelope.cdr[2].date,
+        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap())
+    );
+}
+
+#[tokio::test]
+async fn record_listing_half_hour_zone_stamps_the_offset_it_sent() {
+    // A half-hour zone must survive the round trip intact: the wire carries the
+    // fraction and the reported timestamp is qualified with the same one, so
+    // the instant is the one the caller asked about.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .and(query_param("timezone", "5.50"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [{ "date": "2026-09-17 00:44:35" }],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetCDRParams {
+        date_from: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 9, 16),
+        date_to: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 9, 17),
+        timezone: Some(voip_ms::chrono_tz::Asia::Kolkata),
+        ..Default::default()
+    };
+    let date = client.get_cdr(&params).await.unwrap().cdr[0].date.unwrap();
+    assert_eq!(
+        date,
+        voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-17T00:44:35+05:30").unwrap()
+    );
+    assert_eq!(date.to_utc().to_string(), "2026-09-16 19:14:35 UTC");
+}
+
+#[tokio::test]
 async fn record_listing_timezone_without_start_date_errors() {
     // A zone with no start date has no instant to resolve DST at; the call
     // fails before any request is sent.

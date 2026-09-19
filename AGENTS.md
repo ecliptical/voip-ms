@@ -374,7 +374,28 @@ assumes one: serde has no access to the request, and a deserializer that read a
 bare wall clock as UTC would reintroduce exactly the invented zone this typing
 removes. So `deserialize_opt_datetime_offset` rejects a value with no offset,
 and `attach_offset` is public because a `call_raw` caller needs the same step
-(`livetest`'s `probe_zoned` is one).
+(`livetest`'s `probe_zoned` is one). Each method's paths are public too, as
+`GET_CDR_TIMESTAMPS` and its siblings, emitted by the same codegen pass that
+retypes the fields -- a raw caller reading them out of a generated method body
+would be copying something that moves with the response shape.
+
+`attach_offset` skips a blank value. A blank is one record's missing timestamp,
+which the deserializers fold to `None`; suffixing it produces a string that
+parses as nothing, and since one unparseable value fails the whole envelope,
+that would turn a single missing timestamp into the loss of every record beside
+it.
+
+**Half-hour zones round-trip as themselves.** A zone off the hour resolves to a
+fractional `TimezoneOffset` (`Asia/Kolkata` -> `5.50`, `Asia/Kathmandu` ->
+`5.75`), that fraction goes on the wire, and `to_fixed_offset` qualifies the
+response with the same one, so the two cannot disagree by construction. What no
+local test can show is whether voip.ms honors the fraction or truncates it: the
+live confirmation recorded above covers `0` and `-4` only, and a server that
+read `5.50` as `5` would return records half an hour off the offset the type
+claims. The `cdr` area's `fixture:getCDR:<zone>` reads one window at UTC and at a
+named zone through `Client::get_cdr` and fails if a record's instant moves,
+which is the check that settles it on a live run; it covers a whole-hour and a
+half-hour zone for that reason.
 
 The other 11 `NaiveDateTime` response fields cannot be typed this way. They
 belong to methods with no `timezone` parameter (`getRegistrationStatus`,
@@ -384,10 +405,22 @@ which nothing in the API reports -- the only zone on any response is
 those would mean the crate inventing a zone.
 
 **How to apply**: `cargo xtask gen` derives the fields from the response shapes:
-every `datetime` scalar under an `OFFSET_OPS` method is retyped and its JSON
-path handed to the generated method. An offset op whose response declares no
-timestamp field fails the run -- a docs refresh that drops the field would
-otherwise leave the method sending an offset that qualifies nothing.
+every `datetime` scalar under an `OFFSET_OPS` method is retyped and its path
+emitted as that method's `*_TIMESTAMPS` const. Three things fail the run rather
+than degrade quietly, because each would leave a field silently naive while the
+build stayed green:
+
+* an offset op whose response declares no timestamp at all (a docs refresh that
+  dropped the field);
+* a `datetime` the walk cannot name -- at the root of a response, or inside a
+  map, whose values `attach_offset`'s `*` does not reach, since over an object
+  `*` already means the bare single record VoIP.ms sends for a one-element list.
+  Extending the path syntax is a decision, not a default;
+* a missing response shape for an op that sends an offset.
+
+Note the asymmetry the second case fixes: the "no timestamp at all" check only
+fires when *every* timestamp is missed, so a response that grows a second
+timestamp somewhere unaddressable would otherwise pass.
 
 ## Code Patterns
 

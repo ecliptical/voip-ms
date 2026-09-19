@@ -12,8 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `attach_offset` completes the bare wall clocks in a record-listing envelope
   with the offset the request carried, the step the typed methods take before
   deserializing. Public because a `call_raw` caller needs it too: the raw
-  envelope still reports its timestamps without the offset.
-- `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`.
+  envelope still reports its timestamps without the offset. It takes a
+  `*`-wildcard path, not the RFC 6901 JSON pointer `Client::call_at` takes.
+- `GET_CDR_TIMESTAMPS`, `GET_SMS_TIMESTAMPS`, `GET_MMS_TIMESTAMPS` and their
+  three reseller siblings: the paths `attach_offset` needs for each method,
+  emitted by the same codegen pass that types the fields.
+- `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`. A zone off the
+  hour keeps its fraction through both (`Asia/Kolkata` sends `5.50` and its
+  timestamps come back qualified `+05:30`).
 
 ### Changed
 

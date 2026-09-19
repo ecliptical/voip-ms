@@ -47,7 +47,7 @@ impl Area for Sms {
             GetSMSParams,
             GetSMSResponse,
             sms,
-            &["/sms/*/date"]
+            GET_SMS_TIMESTAMPS
         );
     }
 
@@ -95,7 +95,7 @@ impl Area for Sms {
                 did: Some(fixture.test_did.clone()),
                 ..Default::default()
             },
-            &["/sms/*/date"],
+            GET_SMS_TIMESTAMPS,
             |r| Some(r.sms.len()),
         )
         .await;

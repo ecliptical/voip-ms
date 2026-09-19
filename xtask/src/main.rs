@@ -125,6 +125,41 @@ fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
     OFFSET_OPS.iter().find(|o| o.wire == wire)
 }
 
+/// The public const naming an offset op's response timestamp paths
+/// (`getCDR` -> `GET_CDR_TIMESTAMPS`).
+fn timestamps_const_name(wire: &str, acronyms: &[&'static str]) -> String {
+    format!(
+        "{}_TIMESTAMPS",
+        camel_to_snake(wire, acronyms).to_uppercase()
+    )
+}
+
+/// Emit the per-op `*_TIMESTAMPS` consts. The typed methods pass them to
+/// `Client::call_zoned`; they are public because a `call_raw` caller has to
+/// apply the same offset by hand and would otherwise read the paths out of the
+/// generated method bodies.
+fn emit_timestamp_consts(
+    zoned_timestamps: &BTreeMap<String, Vec<String>>,
+    acronyms: &[&'static str],
+) -> String {
+    let mut out = String::new();
+    for (op, paths) in zoned_timestamps {
+        let rendered = paths
+            .iter()
+            .map(|p| format!("\"{p}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        out.push_str(&format!(
+            "\n/// Paths to the timestamps in a `{op}` response, in the form\n\
+             /// [`attach_offset`](crate::attach_offset) takes.\n\
+             pub const {}: &[&str] = &[{rendered}];\n",
+            timestamps_const_name(op, acronyms),
+        ));
+    }
+
+    out
+}
+
 /// Doc emitted on the offset ops' public `timezone` field in place of the
 /// mined upstream text, which describes the numeric wire form ("Numeric: -12
 /// to 13") the public `Tz` field no longer is.
@@ -691,6 +726,7 @@ fn emit(
 
     out.push_str(enum_decls);
     out.push_str(&emit_statuses(statuses, empty_statuses));
+    out.push_str(&emit_timestamp_consts(zoned_timestamps, &acronyms));
 
     for op in &wsdl.operations {
         let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
@@ -808,13 +844,7 @@ fn emit(
             // Route through the wire twin, resolving `timezone` (a `Tz`) to the
             // numeric UTC offset at the query start date, then put that offset
             // back onto the wall clocks the response reports in it.
-            let paths = zoned_timestamps
-                .get(op)
-                .expect("every offset op has its response timestamps collected")
-                .iter()
-                .map(|p| format!("\"{p}\""))
-                .collect::<Vec<_>>()
-                .join(", ");
+            let paths = timestamps_const_name(op, &acronyms);
             out.push_str(&format!(
                 "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
                  ///\n    \
@@ -826,7 +856,7 @@ fn emit(
                  pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
                      let wire = {struct_name}Wire::try_from(params)?;\n        \
                      let offset = wire.timezone.to_fixed_offset();\n        \
-                     self.call_zoned(\"{op}\", &wire, offset, &[{paths}]).await\n    \
+                     self.call_zoned(\"{op}\", &wire, offset, {paths}).await\n    \
                  }}\n\n\
                  /// Call the `{op}` API method and return the raw JSON envelope.\n    \
                  ///\n    \
@@ -834,8 +864,9 @@ fn emit(
                  /// expects, at the query start date, and defaults to UTC; a zone that\n    \
                  /// cannot be resolved is\n    \
                  /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope\n    \
-                 /// reports its timestamps in that offset without naming it --\n    \
-                 /// [`attach_offset`](crate::attach_offset) puts it back.\n    \
+                 /// reports its timestamps in that offset without naming it:\n    \
+                 /// [`attach_offset`](crate::attach_offset) puts it back, over\n    \
+                 /// [`{paths}`](crate::{paths}).\n    \
                  pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                      self.call_raw(\"{op}\", &{struct_name}Wire::try_from(params)?).await\n    \
                  }}\n\n"
@@ -1299,7 +1330,7 @@ fn cmd_gen() -> Result<(), String> {
                 op.wire
             )
         })?;
-        let fields = response_codegen::timestamp_fields(op.wire, shape);
+        let fields = response_codegen::timestamp_fields(op.wire, shape)?;
         if fields.is_empty() {
             return Err(format!(
                 "{}'s response declares no timestamp field, so the offset it sends \
