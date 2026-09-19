@@ -33,6 +33,16 @@ pub struct Callflow;
 
 const AREA: &str = "callflow";
 
+/// The request line voip.ms accepts, Apache's default `LimitRequestLine`. A GET
+/// cannot carry more than this in total, so it is the size a stored file has to
+/// beat for the multipart transport to be the only way it got there.
+const REQUEST_LINE_BYTES: usize = 8_190;
+
+/// How much of an upload must survive voip.ms's re-encode. The one measurement
+/// on record is a 9% trim (45,320 bytes back as 41,268); half leaves a wide
+/// margin for a lossier pass while still failing a body that arrived cut.
+const MIN_STORED_FRACTION: f32 = 0.5;
+
 #[async_trait(?Send)]
 impl Area for Callflow {
     fn name(&self) -> &'static str {
@@ -189,15 +199,16 @@ impl Area for Callflow {
         // member still hangs on it, the failed delete surfaces as a non-clean
         // sweep that blocks the run -- not a silent leak.
         //
-        // A recording is reclaimed last, and not because of anything callflow
-        // creates: unlike the others it is a referenceable resource, named by
-        // `setIVR.recording`, `setMusicOnHold.recordings`, a ring group's
-        // caller announcement, and queue announcements. `delRecording` on a
-        // referenced recording is refused, which would block the run, and the
-        // `ivr` area's fixture claims the account's first recording as its
-        // required input. Deleting the dependents first gives the reclaim its
-        // best chance. The remaining resources are independent of each other
-        // and their order is immaterial.
+        // A recording is reclaimed last because, unlike the others, it is
+        // referenceable -- `setIVR.recording`, `setMusicOnHold.recordings`, a
+        // ring group's caller announcement, queue announcements -- and
+        // `delRecording` on a referenced recording is refused, which fails the
+        // sweep and aborts the run. No fixture in this area creates such a
+        // reference, so the ordering is defense in depth rather than a fix for
+        // a known case; the cross-area one that did exist is prevented at its
+        // source, by the `ivr` fixture passing over marker-bearing recordings.
+        // The remaining resources are independent and their order is
+        // immaterial.
         for result in [
             sweep_orphans(
                 report,
@@ -612,16 +623,13 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 /// `getRecordingFile`, and delete it.
 ///
 /// The payload is the point: at 8 kHz mono 16-bit, two seconds of audio is
-/// 32 kB, over 42 kB base64-encoded, many times the 8190-byte request line the
-/// API accepts -- so this is the only live coverage of the multipart transport.
-/// Two seconds rather than one keeps what comes back clear of [`stored_wav`]'s
-/// floor even though voip.ms trims on re-encode.
+/// 32 kB, over 42 kB base64-encoded, five times [`REQUEST_LINE_BYTES`] -- so
+/// this is the only live coverage of the multipart transport.
 ///
-/// voip.ms normalizes what it stores (a 2.82 s / 45,320-byte upload came back
-/// as 2.58 s / 41,268 bytes), so the read-back asserts the container and never
-/// byte equality. `getRecordingFile` is called directly rather than through
-/// [`read_back`], whose drift diff looks at the response shape and not at the
-/// bytes the shape carries.
+/// The read-back goes through [`stored_wav`], which is given the uploaded size
+/// so it can judge what came back against it. `getRecordingFile` is called
+/// directly rather than through [`read_back`], whose drift diff looks at the
+/// response shape and not at the bytes the shape carries.
 async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
     let client = ctx.client;
     let name = ctx.token.short_marker(6);
@@ -681,7 +689,11 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
         .await
     {
         Ok(resp) => match resp.recordings.first().and_then(|r| r.data.as_deref()) {
-            Some(data) => report.record(AREA, "fixture:getRecordingFile", stored_wav(data)),
+            Some(data) => report.record(
+                AREA,
+                "fixture:getRecordingFile",
+                stored_wav(data, wav.len()),
+            ),
             None => fail(report, "fixture:getRecordingFile", "no file data returned"),
         },
         Err(error) => fail(
@@ -692,30 +704,37 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
     }
 }
 
-/// Whether the round-tripped payload is a RIFF/WAVE container that is too big
-/// to have come through a request line.
+/// Whether the round-tripped payload is a RIFF/WAVE container that kept most
+/// of what was uploaded.
 ///
-/// The container alone would pass a truncated upload: a proxy cutting the
-/// request, or a regression putting only part of the payload in the form,
-/// leaves voip.ms storing a short but well-formed WAV. The size floor is what
-/// rules that out, and byte equality cannot stand in for it because voip.ms
-/// re-encodes.
-fn stored_wav(data: &str) -> Outcome {
-    // A GET could have carried at most the 8190-byte request line, credentials
-    // and method name included, so anything above it arrived by a route a GET
-    // had no way to take.
-    const MIN_STORED_BYTES: usize = 8_190;
-
+/// Two thresholds, because they answer different questions. `uploaded` scales
+/// the check to the payload, so a body cut anywhere along the way is caught
+/// rather than only one cut below the request line. [`REQUEST_LINE_BYTES`] is
+/// the absolute claim the transport rests on: a stored file larger than a
+/// request line cannot have arrived on one.
+///
+/// Byte equality would subsume both and is not available -- voip.ms re-encodes,
+/// returning 41,268 bytes for a 45,320-byte upload in the measurement this
+/// fixture is built on, a 9% trim. [`MIN_STORED_FRACTION`] sits far enough
+/// below that to leave a re-encode room while still catching a real truncation.
+fn stored_wav(data: &str, uploaded: usize) -> Outcome {
     let bytes = match BASE64.decode(data) {
         Ok(bytes) => bytes,
         Err(error) => return Outcome::Fail(format!("stored file is not base64: {error}")),
     };
 
+    let floor = (uploaded as f32 * MIN_STORED_FRACTION) as usize;
     match (bytes.get(..4), bytes.get(8..12)) {
-        (Some(b"RIFF"), Some(b"WAVE")) if bytes.len() > MIN_STORED_BYTES => Outcome::Pass,
+        (Some(b"RIFF"), Some(b"WAVE"))
+            if bytes.len() > REQUEST_LINE_BYTES && bytes.len() >= floor =>
+        {
+            Outcome::Pass
+        }
         (Some(b"RIFF"), Some(b"WAVE")) => Outcome::Fail(format!(
-            "stored file is a RIFF/WAVE container of only {} bytes, at or under the \
-             {MIN_STORED_BYTES}-byte request line a GET fits: the upload was truncated",
+            "stored file is a RIFF/WAVE container of {} bytes, against a {uploaded}-byte \
+             upload: under either the {floor}-byte floor for a re-encode of it or the \
+             {REQUEST_LINE_BYTES}-byte request line. The upload arrived incomplete, or \
+             voip.ms changed the codec it stores",
             bytes.len()
         )),
         _ => Outcome::Fail(format!(
@@ -935,34 +954,63 @@ mod tests {
 
     #[test]
     fn stored_wav_accepts_a_wave_and_rejects_anything_else() {
+        let wav = tone_wav(2);
         assert!(matches!(
-            stored_wav(&BASE64.encode(tone_wav(2))),
+            stored_wav(&BASE64.encode(&wav), wav.len()),
+            Outcome::Pass
+        ));
+        // A 9% trim, the one re-encode on record, still passes.
+        let trimmed = tone_wav(2)[..(wav.len() as f32 * 0.91) as usize].to_vec();
+        assert!(matches!(
+            stored_wav(&BASE64.encode(&trimmed), wav.len()),
             Outcome::Pass
         ));
         assert!(matches!(
-            stored_wav(&BASE64.encode(b"not audio at all")),
+            stored_wav(&BASE64.encode(b"not audio at all"), wav.len()),
             Outcome::Fail(_)
         ));
-        assert!(matches!(stored_wav("not base64 either!"), Outcome::Fail(_)));
+        assert!(matches!(
+            stored_wav("not base64 either!", wav.len()),
+            Outcome::Fail(_)
+        ));
     }
 
     #[test]
     fn stored_wav_rejects_a_container_small_enough_to_have_been_a_get() {
+        let uploaded = tone_wav(2).len();
+
         // A header with no frames: well-formed enough to pass the container
         // check, small enough to have fit in a request line, which is what a
-        // truncated upload looks like once voip.ms stores it.
-        let truncated = tone_wav(0);
-        assert!(truncated.len() < 8_190, "the fixture's premise");
+        // wholly truncated upload looks like once voip.ms stores it.
+        let stub = tone_wav(0);
+        assert!(stub.len() < REQUEST_LINE_BYTES, "the case's premise");
         assert!(matches!(
-            stored_wav(&BASE64.encode(&truncated)),
+            stored_wav(&BASE64.encode(&stub), uploaded),
+            Outcome::Fail(_)
+        ));
+
+        // A partial cut is the case an absolute floor alone would pass: 40% of
+        // the payload is a valid container well above a request line.
+        let partial = tone_wav(2)[..uploaded * 2 / 5].to_vec();
+        assert!(partial.len() > REQUEST_LINE_BYTES, "the case's premise");
+        assert!(matches!(
+            stored_wav(&BASE64.encode(&partial), uploaded),
             Outcome::Fail(_)
         ));
     }
 
     #[test]
     fn a_generated_recording_exceeds_the_request_line_a_get_fits() {
-        // The whole reason the method posts: two seconds of audio is already
-        // more than twice the 8190-byte request line, before percent-encoding.
-        assert!(BASE64.encode(tone_wav(2)).len() > 2 * 8190);
+        // The whole reason the method posts. Stated against the payload the
+        // fixture actually sends, so trimming the upload back toward a size a
+        // GET could carry fails here rather than going unnoticed.
+        let encoded = BASE64.encode(tone_wav(2)).len();
+        assert!(
+            encoded > REQUEST_LINE_BYTES,
+            "{encoded} base64 chars must not fit a request line"
+        );
+        // Half the payload must still not fit, so the margin cannot quietly
+        // erode to the point where the transport stops being load-bearing.
+        assert!(encoded / 2 > REQUEST_LINE_BYTES);
     }
 }

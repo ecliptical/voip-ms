@@ -374,11 +374,22 @@ still needs a way to be called.
 
 **How to apply**: When a new method takes a base64 file parameter, add its
 `"wireMethod.field"` path to `BASE64_FILE_PARAM_PATHS` and regenerate.
-`cargo xtask gen` fails on an entry naming a parameter the WSDL does not
-declare, and warns when a parameter the docs describe as base64 is absent from
-the table. That warning is the tripwire for a fifth method appearing in a docs
-refresh; it warns rather than fails because the reading comes from mined HTML
-and needs a human to confirm the parameter really carries a file.
+`cargo xtask gen` has three outcomes for that table, all covered by unit tests
+in `xtask/src/main.rs`:
+
+* it **fails** on an entry naming a parameter the WSDL does not declare, since
+  a path left behind by a docs revision would drop the method back onto a GET
+  without a word;
+* it **fails** on an entry naming an op that is also in `OFFSET_OPS`. The
+  emitter routes an offset op through its `*ParamsWire` twin over GET and stops
+  there, so an op in both tables would keep the transport that cannot carry its
+  payload. Nothing overlaps today, and reconciling the wire twin with a
+  multipart body is unexamined work, so the generator refuses rather than
+  guesses;
+* it **warns** when a parameter the docs describe as base64 is absent from the
+  table. That is the tripwire for a fifth method appearing in a docs refresh;
+  it warns rather than fails because the reading comes from mined HTML and
+  needs a human to confirm the parameter really carries a file.
 
 ## Code Patterns
 

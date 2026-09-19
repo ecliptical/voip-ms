@@ -76,8 +76,19 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
     // getRecordings"); a nonexistent id is rejected (`invalid_recording`), so
     // discover one and skip if the account has none. `voicemailsetup` code 1 and
     // a single hangup choice are the conventional defaults.
+    //
+    // Marker-bearing recordings are passed over. The `callflow` area creates
+    // one, and an IVR pointing at it makes it undeletable: `delRecording` on a
+    // referenced recording is refused, `callflow` sweeps before `ivr` in
+    // registry order, and a non-clean sweep aborts the run before `ivr` can
+    // remove the IVR holding the reference. Claiming only recordings the
+    // harness does not own keeps the two areas independent.
     let recording = match client.get_recordings(&GetRecordingsParams::default()).await {
-        Ok(resp) => resp.recordings.into_iter().find_map(|r| r.value),
+        Ok(resp) => resp
+            .recordings
+            .into_iter()
+            .find(|r| !owned(&r.description))
+            .and_then(|r| r.value),
         // `no_recording` deserializes as an empty list on some paths; treat any
         // read failure as "none discoverable" rather than a hard error here.
         Err(_) => None,

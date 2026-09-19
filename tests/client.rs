@@ -1530,8 +1530,12 @@ async fn a_base64_file_parameter_travels_as_a_multipart_post() {
         .and(body_string_contains("name=\"method\""))
         .and(body_string_contains("setRecording"))
         .and(body_string_contains("user@example.com"))
-        .and(body_string_contains("name=\"api_password\""))
-        .and(body_string_contains("secret"))
+        .and(body_string_contains(
+            "name=\"api_username\"\r\n\r\nuser@example.com\r\n",
+        ))
+        .and(body_string_contains(
+            "name=\"api_password\"\r\n\r\nsecret\r\n",
+        ))
         .and(body_string_contains(payload.clone()))
         .respond_with(
             ResponseTemplate::new(200)
@@ -1623,7 +1627,7 @@ async fn multipart_fields_carry_the_same_wire_forms_as_the_query_string() {
     Mock::given(method("POST"))
         .and(path("/api/v1/rest.php"))
         .and(body_string_contains("name=\"send_email_enabled\""))
-        .and(body_string_contains("QQ+/word=="))
+        .and(body_string_contains("name=\"file\"\r\n\r\nQQ+/word==\r\n"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
         .expect(1)
         .mount(&server)
@@ -1678,4 +1682,45 @@ async fn a_base64_response_payload_survives_its_escaped_slashes() {
         .unwrap();
 
     assert_eq!(resp.recordings[0].data.as_deref(), Some("UklGRi//AABXQVZF"));
+}
+
+#[cfg(feature = "unchecked-raw")]
+#[tokio::test]
+async fn the_unchecked_diagnostic_hatch_has_both_transports() {
+    // The pair exists so diagnosing a file method reaches it over the transport
+    // that method needs. Both surface a non-success envelope verbatim rather
+    // than as `Error::Api`, and each must use its own transport to do it.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .and(body_string_contains("name=\"file\"\r\n\r\nQUJD\r\n"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({"status": "invalid_credentials"})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({"status": "invalid_credentials"})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let posted = client
+        .call_multipart_raw_unchecked("setRecording", &json!({ "file": "QUJD" }))
+        .await
+        .expect("an error status is returned in the body, not as Err");
+    assert_eq!(posted["status"], "invalid_credentials");
+
+    let got = client
+        .call_raw_unchecked("getBalance", &GetBalanceParams::default())
+        .await
+        .unwrap();
+    assert_eq!(got["status"], "invalid_credentials");
 }

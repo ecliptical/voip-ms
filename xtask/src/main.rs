@@ -131,9 +131,10 @@ fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
 fn base64_file_params(
     wsdl: &Wsdl,
     param_docs: &ParamDocs,
+    paths: &[&str],
 ) -> Result<BTreeMap<String, Vec<String>>, String> {
     let mut by_op: BTreeMap<String, Vec<String>> = BTreeMap::new();
-    for path in field_overrides::BASE64_FILE_PARAM_PATHS {
+    for path in paths {
         let (op, field) = path
             .rsplit_once('.')
             .filter(|(op, field)| !op.is_empty() && !field.is_empty())
@@ -905,23 +906,25 @@ fn emit(
                 .map(|f| format!("`{f}`"))
                 .collect::<Vec<_>>()
                 .join(" / ");
-            let noun = if fields.len() == 1 {
-                "parameter"
+            // The table allows an op more than one file parameter, so the
+            // sentence has to agree with however many it has.
+            let (noun, verb, pronoun) = if fields.len() == 1 {
+                ("parameter", "does", "it")
             } else {
-                "parameters"
+                ("parameters", "do", "them")
             };
             out.push_str(&format!(
                 "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
                  ///\n    \
-                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} does\n    \
-                 /// not fit the request line a GET would carry it on.\n    \
+                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} {verb}\n    \
+                 /// not fit the request line a GET would carry {pronoun} on.\n    \
                  pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
                      self.call_multipart(\"{op}\", params).await\n    \
                  }}\n\n\
                  /// Call the `{op}` API method and return the raw JSON envelope.\n    \
                  ///\n    \
-                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} does\n    \
-                 /// not fit the request line a GET would carry it on.\n    \
+                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} {verb}\n    \
+                 /// not fit the request line a GET would carry {pronoun} on.\n    \
                  pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                      self.call_multipart_raw(\"{op}\", params).await\n    \
                  }}\n\n"
@@ -1388,7 +1391,8 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
-    let base64_file_params = base64_file_params(&wsdl, &param_docs)?;
+    let base64_file_params =
+        base64_file_params(&wsdl, &param_docs, field_overrides::BASE64_FILE_PARAM_PATHS)?;
 
     let enum_decls = emit_enums(&overrides_doc.enums);
     let resolver = field_overrides::Resolver {
@@ -1605,5 +1609,76 @@ fn main() -> ExitCode {
             eprintln!("error: {e}");
             ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A WSDL with one ordinary op carrying a `file` param and one offset op.
+    fn wsdl_fixture() -> Wsdl {
+        let mut types = std::collections::HashMap::new();
+        types.insert(
+            "setRecordingInput".to_string(),
+            vec![
+                ("file".to_string(), "xsd:string".to_string()),
+                ("name".to_string(), "xsd:string".to_string()),
+            ],
+        );
+        types.insert(
+            "getCDRInput".to_string(),
+            vec![("date_from".to_string(), "xsd:string".to_string())],
+        );
+        Wsdl {
+            operations: vec!["setRecording".to_string(), "getCDR".to_string()],
+            types,
+        }
+    }
+
+    #[test]
+    fn base64_file_params_groups_listed_paths_by_op() {
+        let grouped =
+            base64_file_params(&wsdl_fixture(), &ParamDocs::new(), &["setRecording.file"]).unwrap();
+        assert_eq!(
+            grouped.get("setRecording").map(Vec::as_slice),
+            Some(&["file".to_string()][..])
+        );
+    }
+
+    #[test]
+    fn base64_file_params_rejects_a_path_the_wsdl_does_not_declare() {
+        // A path left behind by a docs revision would otherwise drop the method
+        // back onto a GET without a word.
+        let err = base64_file_params(&wsdl_fixture(), &ParamDocs::new(), &["setRecording.gone"])
+            .unwrap_err();
+        assert!(err.contains("names no input field"), "{err}");
+
+        let err = base64_file_params(&wsdl_fixture(), &ParamDocs::new(), &["nodot"]).unwrap_err();
+        assert!(err.contains("must be `wireMethod.field`"), "{err}");
+    }
+
+    #[test]
+    fn base64_file_params_rejects_an_offset_op() {
+        // `emit` routes an offset op over GET through its wire twin, before the
+        // multipart branch is reached, so the two cannot both hold silently.
+        let err = base64_file_params(&wsdl_fixture(), &ParamDocs::new(), &["getCDR.date_from"])
+            .unwrap_err();
+        assert!(err.contains("names an offset op"), "{err}");
+    }
+
+    #[test]
+    fn documents_base64_reads_the_spellings_the_docs_use() {
+        assert!(documents_base64("Base64 encoded file (required)"));
+        assert!(documents_base64("Base 64 code of the file to be attached"));
+        assert!(documents_base64(
+            "The file must be encoded in Base64, and in one of the following formats"
+        ));
+        assert!(documents_base64(
+            "Base 64 image encode (Example: data:image/png;base64,iVBOR...)"
+        ));
+        assert!(!documents_base64(
+            "Url to media file (Example: 'https://voip.ms/x.jpg')"
+        ));
     }
 }

@@ -51,7 +51,11 @@ jobs:
         with:
           components: rustfmt, clippy, llvm-tools
       - name: Run unit tests
-        run: cargo test
+        # --workspace: the root package is also the workspace root, so a bare
+        # `cargo test` selects it alone and skips livetest's and xtask's tests.
+        # --all-features reaches the `unchecked-raw` surface, which is off by
+        # default and so otherwise never compiled or exercised here.
+        run: cargo test --workspace --all-features
         env:
           RUSTFLAGS: '-Cinstrument-coverage'
           LLVM_PROFILE_FILE: 'target/coverage/%p-%m.profraw'
