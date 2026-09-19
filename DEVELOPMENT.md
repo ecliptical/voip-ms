@@ -91,7 +91,10 @@ cargo xtask check-flags
 
 # 5. Apply any corrections to tools/api-response-overrides.json (NOT the
 #    generated files), then regenerate src/generated.rs. Heed its warnings:
-#    a patch shadowed by a field-name override should be deleted.
+#    a patch shadowed by a field-name override should be deleted, and a
+#    parameter documented as base64 but absent from BASE64_FILE_PARAM_PATHS
+#    in xtask/src/field_overrides.rs is a method that needs the multipart
+#    transport (design decision #7) and will not work over GET.
 cargo xtask gen
 
 # 6. Run the full quality gate — note the doc build, which CI does NOT run.
@@ -127,6 +130,13 @@ refresh needs eyes on the diff, not just a green build:
   area's `methods()` in `livetest/src/areas/`. The completeness gate
   (`cargo test -p livetest`) fails until every wire method is owned by exactly
   one area.
+* **New base64 file parameters** -- a method taking one cannot work over GET
+  (design decision #7). `cargo xtask gen` warns for any parameter whose mined
+  description mentions base64 that is not in `BASE64_FILE_PARAM_PATHS` in
+  [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs). Confirm the
+  parameter really carries a file, add its `"wireMethod.field"` path, and
+  regenerate; the method then routes through `Client::call_multipart`. A stale
+  entry (a parameter the WSDL dropped) fails the run outright.
 * **New status codes** — `api-statuses.json` grows; each new code becomes an
   `ApiStatus` variant. If two codes collapse to the same PascalCase variant,
   `cargo xtask gen` fails loudly with a "duplicate status variant" error —
@@ -200,7 +210,10 @@ The suite has two layers with different jobs.
 		 `None` fields are omitted from the query; and typed deserialization via
 		 `call`/`call_at`/`call_raw` works. It also pins specific documented wire
 		 forms (routing tags, `1`/`0` and `yes`/`no` flags, `-1`/`0000-00-00`
-		 sentinels, enum codes).
+		 sentinels, enum codes) and the per-method transport split: the four
+		 methods with a base64 file parameter POST multipart with nothing in the
+		 URL, every other method stays a GET, and a value's wire form is the same
+		 either way.
 	 * Unit tests in `src/responses.rs` cover every custom (de)serializer,
 		 including the malformed-input error paths.
 
@@ -258,7 +271,15 @@ Two orthogonal dimensions choose what runs:
   `reseller`) are excluded until named, so they run only "once in a while."
 * **Depth** (`--depth probe|lifecycle|costly`, default `probe`):
   * `probe` -- read-only calls only, with the raw-vs-typed drift diff. Free.
-  * `lifecycle` -- also runs free create -> read -> delete fixtures.
+  * `lifecycle` -- also runs free create -> read -> delete fixtures. The
+    `callflow` area's recording fixture is the only one that uploads a file:
+    it generates a two-second 8 kHz WAV, creates a recording from it, reads the
+    stored file back, and deletes it. That payload is several times the request
+    line a GET fits, so it is the only live exercise of the multipart transport
+    (design decision #7). VoIP.ms re-encodes what it stores, so the read-back
+    reads the stored file's duration out of its WAV header and compares that to
+    the seconds uploaded. Neither byte equality nor a byte floor would do: a
+    re-encode to a narrower codec halves the size while losing no audio.
   * `costly` -- also runs money/irreversible methods. Requires
     `--i-understand-this-costs-money`. Each costly method fires only when its
     own input (e.g. `--order-test-did`, `--sms-dst`, `--payment-amount`) is

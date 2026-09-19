@@ -92,9 +92,10 @@ where
     !drifted
 }
 
-/// Dump the exact read-back request (wire method + serialized query params) and
-/// the raw response envelope for a fixture read-back that returned an error
-/// status, so the Class B `invalid_method` case can be diagnosed from a live run.
+/// Dump the exact read-back request (wire method + serialized params) and the
+/// raw response envelope for a fixture read-back that returned an error status,
+/// so the Class B `invalid_method` case can be diagnosed from a live run. The
+/// dump is issued the same way [`probe`] issues the call it is diagnosing.
 async fn capture_read_back_error<P>(
     client: &Client,
     area: &str,
@@ -112,7 +113,16 @@ async fn capture_read_back_error<P>(
         }
     }
 
-    match client.call_raw_unchecked(method, params).await {
+    // Re-issue over the transport the method uses, matching `probe`. Every
+    // read-back today names a `get*` method, so this selects the GET arm on
+    // every run; it is here so the dump cannot diverge from what was sent if
+    // that ever stops being true.
+    let raw = if voip_ms::requires_multipart(method) {
+        client.call_multipart_raw_unchecked(method, params).await
+    } else {
+        client.call_raw_unchecked(method, params).await
+    };
+    match raw {
         Ok(body) => {
             let pretty = serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string());
             eprintln!("[capture]   raw response:");

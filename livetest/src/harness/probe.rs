@@ -28,10 +28,17 @@ pub enum ProbeOutcome {
 
 /// Probe one method by name, given its params and the deserialization target.
 ///
-/// `call_raw` yields the raw JSON envelope; the typed shape `T` is then
-/// deserialized from a clone of that value. `count` extracts an optional
-/// element count from the deserialized value for logging (return `None` for
-/// non-list responses).
+/// The raw JSON envelope is fetched over whichever transport the method
+/// requires; the typed shape `T` is then deserialized from a clone of that
+/// value. `count` extracts an optional element count from the deserialized
+/// value for logging (return `None` for non-list responses).
+///
+/// This is the harness's by-name dispatcher, so it asks
+/// [`voip_ms::requires_multipart`] rather than assuming a GET. No file-carrying
+/// method is probed today -- the read-only phase covers `get*` -- but a GET
+/// would put such a method's payload on a query string voip.ms rejects on
+/// length, and the failure would read as a transport error rather than as the
+/// dispatcher's mistake.
 pub async fn probe<P, T>(
     client: &Client,
     method: &str,
@@ -42,7 +49,14 @@ where
     P: Serialize + Sync,
     T: DeserializeOwned,
 {
-    let raw = match client.call_raw(method, params).await {
+    let request = async {
+        if voip_ms::requires_multipart(method) {
+            client.call_multipart_raw(method, params).await
+        } else {
+            client.call_raw(method, params).await
+        }
+    };
+    let raw = match request.await {
         Ok(value) => value,
         // An empty-collection status is the typed path's empty-list case, not a
         // failure: `call_raw` surfaces it verbatim but the typed `call` folds it
