@@ -1,11 +1,11 @@
 //! Shared probe macros so each area's `probe()` reads as one line per method.
 //!
-//! The macros here:
+//! Each covers one response shape, and an area reaches for the one its method
+//! returns:
 //!   * [`probe_list!`] -- a response whose payload is a single list; the count
 //!     is that list's length, matching the reference area's original macro.
 //!   * [`probe_zoned_list!`] -- the same, for a list whose records carry a
-//!     timestamp reported in the UTC offset the request asked for. `sms` and
-//!     `mms` probe with it.
+//!     timestamp reported in the UTC offset the request asked for.
 //!   * [`probe_scalar!`] -- a scalar/object response, or one with several lists
 //!     where no single count is meaningful; nothing to count.
 //!   * [`skip_needs_input!`] -- a method whose required input (a resource id, a
@@ -13,9 +13,8 @@
 //!     empty account would only ever record an API error. Skipped at probe
 //!     depth with a reason rather than reported as a failure.
 //!
-//! Not every area probes through a macro: `reseller` has its own
-//! `probe_reseller`, which folds `invalid_client` into a Skip, and `cdr` skips
-//! at probe depth and reads back at costly depth instead.
+//! A method needing more than a shape -- an account-capability status to fold,
+//! a date window to supply -- calls the harness directly instead.
 
 /// Probe a list method: call typed-over-raw with default params and count the
 /// single list field.

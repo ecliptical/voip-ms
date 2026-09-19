@@ -24,7 +24,7 @@ use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::config::{Depth, ResellerConfig};
 use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back;
-use crate::harness::probe::{ProbeOutcome, probe, probe_zoned_default};
+use crate::harness::probe::{ProbeOutcome, probe_zoned_default};
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
@@ -259,21 +259,6 @@ fn signup_detail(cfg: &ResellerConfig) -> Option<SignupDetail> {
 
 fn skip_no_input(report: &mut Report, label: &str) {
     report.record(AREA, label, Outcome::Skip("no input".to_string()));
-}
-
-/// Probe a reseller list method, folding `invalid_client` into a Skip.
-async fn probe_reseller<P, T>(
-    ctx: &AreaCtx<'_>,
-    report: &mut Report,
-    method: &str,
-    params: &P,
-    count: impl Fn(&T) -> Option<usize>,
-) where
-    P: Serialize + Sync,
-    T: DeserializeOwned,
-{
-    let outcome = probe::<P, T>(ctx.client, method, params, count).await;
-    record_reseller(report, method, outcome);
 }
 
 /// Probe a reseller *record-listing* method, whose response timestamps come

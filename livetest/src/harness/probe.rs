@@ -63,8 +63,17 @@ pub struct ZonedRequest {
 impl ZonedRequest {
     /// `params` with the numeric `timezone` the wire twin would have set, which
     /// a call-by-name cannot reach.
+    ///
+    /// Params that already name a zone are rejected rather than overwritten:
+    /// silently replacing `Asia/Kolkata` with `offset` would send one zone,
+    /// stamp another, and report a pass for a zone never asked about -- the
+    /// divergence keeping the two halves in one value is here to prevent.
     pub fn new(params: &impl Serialize, offset: TimezoneOffset) -> Result<Self, String> {
         match serde_json::to_value(params) {
+            Ok(Value::Object(fields)) if fields.contains_key("timezone") => Err(format!(
+                "params already name a timezone ({}); pass the zone as the offset instead",
+                fields["timezone"]
+            )),
             Ok(Value::Object(mut fields)) => {
                 fields.insert("timezone".into(), json!(offset));
                 Ok(Self {

@@ -86,18 +86,19 @@ impl Area for Cdr {
         )
         .await;
 
-        // One UTC read for every zone compared against it: the window is the
-        // same one `read_back_zoned` just fetched, and refetching it per zone
-        // would triple a costly run's `getCDR` calls for identical rows.
-        match typed_get_cdr(ctx.client, &params).await {
-            Ok(at_utc) => {
-                for tz in ROUND_TRIP_ZONES {
-                    let outcome = offset_round_trip(ctx.client, &params, &at_utc, *tz).await;
-                    report.record(AREA, &format!("fixture:getCDR:{tz}"), outcome);
-                }
-            }
+        // One UTC read shared by every zone compared against it, rather than one
+        // per zone over identical rows.
+        let at_utc = typed_get_cdr(ctx.client, &params).await;
+        for tz in ROUND_TRIP_ZONES {
+            // Every zone reports under its own key whatever happens, so a
+            // failed UTC read fails these checks rather than removing them --
+            // a vanished key reads as a check that stopped existing.
+            let outcome = match &at_utc {
+                Ok(at_utc) => offset_round_trip(ctx.client, &params, at_utc, *tz).await,
+                Err(outcome) => outcome.clone(),
+            };
 
-            Err(outcome) => report.record(AREA, "fixture:getCDR:UTC", outcome),
+            report.record(AREA, &format!("fixture:getCDR:{tz}"), outcome);
         }
 
         report.record(
@@ -108,8 +109,8 @@ impl Area for Cdr {
     }
 }
 
-/// Read the same window twice through `Client::get_cdr`, at UTC and at `tz`,
-/// and check that a record names the same instant both times.
+/// Read the window at `tz` through `Client::get_cdr` and check that a record
+/// names the same instant it does in `at_utc`.
 ///
 /// The records are the same calls, so the instant cannot move with the zone the
 /// caller asked for. It moves if voip.ms applies an offset other than the one
@@ -169,29 +170,32 @@ async fn offset_round_trip(
     Outcome::Pass
 }
 
-/// `Client::get_cdr`, with a typed-deserialization failure reported as drift
-/// rather than as a plain failure.
+/// `Client::get_cdr`, with a shape mismatch reported as drift rather than as a
+/// plain failure.
 ///
-/// The typed methods collapse a shape mismatch into `Error::InvalidResponse`,
-/// which reads like any other error; every other read in this harness goes
-/// through [`ProbeOutcome`] so that raw-succeeded-typed-failed lands in the
-/// DRIFT bucket with the envelope to paste into an override. Re-fetching the
-/// raw envelope on that one path keeps this read in the same shape.
+/// Every other read in this harness goes through [`ProbeOutcome`] so that
+/// raw-succeeded-typed-failed lands in the DRIFT bucket with the envelope to
+/// paste into an override. The typed method cannot say that on its own:
+/// `Error::InvalidResponse` covers a body that is not JSON and an envelope with
+/// no `status` as well as the shape mismatch, and those two are transport-class
+/// anomalies the probe deliberately keeps out of DRIFT. Re-fetching the raw
+/// envelope separates them -- a raw call that succeeds proves the envelope was
+/// well formed and the typed step is what failed.
 async fn typed_get_cdr(client: &Client, params: &GetCDRParams) -> Result<GetCDRResponse, Outcome> {
-    match client.get_cdr(params).await {
-        Ok(response) => Ok(response),
-        Err(Error::InvalidResponse(error)) => {
-            let raw_json = match client.get_cdr_raw(params).await {
-                Ok(body) => {
-                    serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string())
-                }
+    let error = match client.get_cdr(params).await {
+        Ok(response) => return Ok(response),
+        Err(Error::InvalidResponse(error)) => error,
+        Err(error) => return Err(Outcome::Fail(format!("getCDR: {error}"))),
+    };
 
-                Err(refetch) => format!("(envelope could not be refetched: {refetch})"),
-            };
-
-            Err(Outcome::Drift { error, raw_json })
-        }
-
-        Err(error) => Err(Outcome::Fail(format!("getCDR: {error}"))),
+    match client.get_cdr_raw(params).await {
+        Ok(body) => Err(Outcome::Drift {
+            error,
+            raw_json: serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string()),
+        }),
+        Err(raw_error) => Err(Outcome::Fail(format!(
+            "getCDR returned an envelope the raw path rejects too, so this is not \
+             response-shape drift: typed `{error}`, raw `{raw_error}`"
+        ))),
     }
 }
