@@ -84,11 +84,14 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
     // remove the IVR holding the reference. Claiming only recordings the
     // harness does not own keeps the two areas independent.
     let recording = match client.get_recordings(&GetRecordingsParams::default()).await {
+        // Filtering and extraction stay separate steps: folding them into one
+        // `find` would stop at the first unowned recording and give up if that
+        // one happened to carry no id, with a usable one further down the list.
         Ok(resp) => resp
             .recordings
             .into_iter()
-            .find(|r| !owned(&r.description))
-            .and_then(|r| r.value),
+            .filter(|r| !owned(&r.description))
+            .find_map(|r| r.value),
         // `no_recording` deserializes as an empty list on some paths; treat any
         // read failure as "none discoverable" rather than a hard error here.
         Err(_) => None,

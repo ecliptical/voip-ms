@@ -1527,16 +1527,21 @@ async fn a_base64_file_parameter_travels_as_a_multipart_post() {
         ))
         .and(query_param_is_missing("api_password"))
         .and(query_param_is_missing("method"))
-        .and(body_string_contains("name=\"method\""))
-        .and(body_string_contains("setRecording"))
-        .and(body_string_contains("user@example.com"))
+        // Every field matched as a whole part. A bare substring would hold for
+        // a body that put the value under a different name, which is the
+        // regression these are here to catch.
+        .and(body_string_contains(
+            "name=\"method\"\r\n\r\nsetRecording\r\n",
+        ))
         .and(body_string_contains(
             "name=\"api_username\"\r\n\r\nuser@example.com\r\n",
         ))
         .and(body_string_contains(
             "name=\"api_password\"\r\n\r\nsecret\r\n",
         ))
-        .and(body_string_contains(payload.clone()))
+        .and(body_string_contains(format!(
+            "name=\"file\"\r\n\r\n{payload}\r\n"
+        )))
         .respond_with(
             ResponseTemplate::new(200)
                 .set_body_json(json!({ "status": "success", "recording": 295001 })),
@@ -1723,4 +1728,28 @@ async fn the_unchecked_diagnostic_hatch_has_both_transports() {
         .await
         .unwrap();
     assert_eq!(got["status"], "invalid_credentials");
+}
+
+#[test]
+fn requires_multipart_names_exactly_the_file_carrying_methods() {
+    // Hand-maintained against the generated predicate, the same way the other
+    // drift oracles are: if a regen changes which methods post, that is a wire
+    // contract change and has to be acknowledged here.
+    for method in ["setRecording", "sendFaxMessage", "sendMMS", "addLNPFile"] {
+        assert!(
+            voip_ms::requires_multipart(method),
+            "{method} carries a base64 file and cannot go on a query string"
+        );
+    }
+
+    for method in ["getBalance", "sendSMS", "getRecordingFile", "getCDR"] {
+        assert!(
+            !voip_ms::requires_multipart(method),
+            "{method} has no file parameter and stays a GET"
+        );
+    }
+
+    // An unknown method is not assumed to need it: a caller reaching for a
+    // brand-new wire name gets the default transport, as `call_raw` documents.
+    assert!(!voip_ms::requires_multipart("someBrandNewMethod"));
 }

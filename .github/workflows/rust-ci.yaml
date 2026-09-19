@@ -29,7 +29,9 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run clippy
-        run: cargo clippy --all -- -D warnings
+        # Same selection as the test job, so everything that runs is linted:
+        # --all-targets reaches test code, --features the gated surface.
+        run: cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
 
   coverage:
     name: Run tests with coverage
@@ -53,9 +55,14 @@ jobs:
       - name: Run unit tests
         # --workspace: the root package is also the workspace root, so a bare
         # `cargo test` selects it alone and skips livetest's and xtask's tests.
-        # --all-features reaches the `unchecked-raw` surface, which is off by
-        # default and so otherwise never compiled or exercised here.
-        run: cargo test --workspace --all-features
+        # --features unchecked-raw reaches the gated surface; --all-features
+        # would also switch the TLS backend, since reqwest prefers native-tls
+        # when both it and rustls are on, and the crate ships rustls.
+        #
+        # This also widens what the coverage report below measures: livetest is
+        # an operator harness whose paths only execute against the live API, so
+        # it enters the denominator largely uncovered.
+        run: cargo test --workspace --features unchecked-raw
         env:
           RUSTFLAGS: '-Cinstrument-coverage'
           LLVM_PROFILE_FILE: 'target/coverage/%p-%m.profraw'

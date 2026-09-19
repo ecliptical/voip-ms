@@ -400,7 +400,9 @@ the transport (decision #7) and returns the parsed envelope, and `Client::fetch`
 adds the status classification on top. The public `call`, `call_raw`, and
 `call_at` are the GET forms (as is `call_raw_unchecked`, behind the
 `unchecked-raw` feature); `call_multipart`, `call_multipart_raw`, and
-`call_multipart_raw_unchecked` are their multipart-POST counterparts. All
+`call_multipart_raw_unchecked` are their multipart-POST counterparts.
+`requires_multipart(method)` answers which a given wire method needs, for a
+caller dispatching by name rather than through a generated method. All
 generated methods are thin wrappers over one of them:
 
 ```rust

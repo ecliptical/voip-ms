@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status. `Client::call_multipart_raw_unchecked` pairs with
   `call_raw_unchecked` under the `unchecked-raw` feature, so diagnosing an
   unexpected status on a file method can use the transport that method needs.
+- `requires_multipart(method)`: whether a wire method has to be a POST. The
+  generated methods apply it themselves; it is public for a caller that
+  dispatches by method name and so cannot otherwise tell.
 
 ### Changed
 

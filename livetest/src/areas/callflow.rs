@@ -34,13 +34,20 @@ pub struct Callflow;
 const AREA: &str = "callflow";
 
 /// The request line voip.ms accepts, Apache's default `LimitRequestLine`. A GET
-/// cannot carry more than this in total, so it is the size a stored file has to
-/// beat for the multipart transport to be the only way it got there.
+/// carries its whole request there, so a payload past this could not have been
+/// sent as one. Compared against base64 characters, which is what a query
+/// string would have had to hold.
 const REQUEST_LINE_BYTES: usize = 8_190;
 
-/// How much of an upload must survive voip.ms's re-encode. The one measurement
-/// on record is a 9% trim (45,320 bytes back as 41,268); half leaves a wide
-/// margin for a lossier pass while still failing a body that arrived cut.
+/// Seconds of audio the fixture uploads. Read by the upload itself and by the
+/// tests that assert the payload is too big for a request line, so shrinking it
+/// cannot quietly invalidate them.
+const FIXTURE_SECONDS: u32 = 2;
+
+/// How much of an upload's *duration* must survive voip.ms's re-encode. The one
+/// re-encode on record trimmed 9%; half leaves room for a lossier pass while
+/// still failing a body that arrived cut. Duration rather than bytes, since a
+/// codec change moves the byte count without losing audio.
 const MIN_STORED_FRACTION: f32 = 0.5;
 
 #[async_trait(?Send)]
@@ -633,7 +640,7 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
     let client = ctx.client;
     let name = ctx.token.short_marker(6);
-    let wav = tone_wav(2);
+    let wav = tone_wav(FIXTURE_SECONDS);
 
     let created = client
         .set_recording(&SetRecordingParams {
@@ -692,7 +699,7 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
             Some(data) => report.record(
                 AREA,
                 "fixture:getRecordingFile",
-                stored_wav(data, wav.len()),
+                stored_wav(data, FIXTURE_SECONDS),
             ),
             None => fail(report, "fixture:getRecordingFile", "no file data returned"),
         },
@@ -704,43 +711,80 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
     }
 }
 
-/// Whether the round-tripped payload is a RIFF/WAVE container that kept most
-/// of what was uploaded.
+/// Whether the stored recording still holds the audio that was uploaded.
 ///
-/// Two thresholds, because they answer different questions. `uploaded` scales
-/// the check to the payload, so a body cut anywhere along the way is caught
-/// rather than only one cut below the request line. [`REQUEST_LINE_BYTES`] is
-/// the absolute claim the transport rests on: a stored file larger than a
-/// request line cannot have arrived on one.
+/// Compared as duration, not as bytes. voip.ms re-encodes what it stores, and
+/// how many bytes a given number of seconds occupies is a property of the codec
+/// it picks: a re-encode of this fixture's 16-bit PCM to G.711, the ordinary
+/// telephony codec, halves the byte count while losing no audio at all. A
+/// byte-count floor cannot tell that apart from a request body that arrived cut
+/// in half, so it would fail an intact upload.
 ///
-/// Byte equality would subsume both and is not available -- voip.ms re-encodes,
-/// returning 41,268 bytes for a 45,320-byte upload in the measurement this
-/// fixture is built on, a 9% trim. [`MIN_STORED_FRACTION`] sits far enough
-/// below that to leave a re-encode room while still catching a real truncation.
-fn stored_wav(data: &str, uploaded: usize) -> Outcome {
+/// Catches a truncation that removes more than `1 - `[`MIN_STORED_FRACTION`] of
+/// the audio. A smaller cut passes, which is the price of leaving a re-encode
+/// room to trim -- the one on record took 9% off the duration.
+fn stored_wav(data: &str, uploaded_secs: u32) -> Outcome {
     let bytes = match BASE64.decode(data) {
         Ok(bytes) => bytes,
         Err(error) => return Outcome::Fail(format!("stored file is not base64: {error}")),
     };
 
-    let floor = (uploaded as f32 * MIN_STORED_FRACTION) as usize;
-    match (bytes.get(..4), bytes.get(8..12)) {
-        (Some(b"RIFF"), Some(b"WAVE"))
-            if bytes.len() > REQUEST_LINE_BYTES && bytes.len() >= floor =>
-        {
-            Outcome::Pass
+    let Some(stored_secs) = wav_duration_secs(&bytes) else {
+        return Outcome::Fail(format!(
+            "stored file is not a readable RIFF/WAVE container ({} bytes)",
+            bytes.len()
+        ));
+    };
+
+    let floor = uploaded_secs as f32 * MIN_STORED_FRACTION;
+    if stored_secs >= floor {
+        Outcome::Pass
+    } else {
+        Outcome::Fail(format!(
+            "stored recording is {stored_secs:.2} s against a {uploaded_secs} s upload, \
+             under the {floor:.2} s floor: the upload arrived incomplete"
+        ))
+    }
+}
+
+/// The audio duration a WAV carries, in seconds, or `None` if the bytes are not
+/// a WAV this can read.
+///
+/// Taken from the container rather than from its size. `fmt `'s
+/// average-bytes-per-second field is defined for every WAV format, so dividing
+/// the `data` chunk's length by it yields a duration without assuming which
+/// codec voip.ms stored.
+fn wav_duration_secs(bytes: &[u8]) -> Option<f32> {
+    if bytes.get(..4)? != b"RIFF" || bytes.get(8..12)? != b"WAVE" {
+        return None;
+    }
+
+    let mut bytes_per_sec: Option<u32> = None;
+    let mut data_len: Option<usize> = None;
+    let mut pos = 12;
+    while pos + 8 <= bytes.len() {
+        let id = bytes.get(pos..pos + 4)?;
+        let declared = u32::from_le_bytes(bytes.get(pos + 4..pos + 8)?.try_into().ok()?) as usize;
+        let body = pos + 8;
+        match id {
+            // wFormatTag, nChannels, nSamplesPerSec, then nAvgBytesPerSec.
+            b"fmt " => {
+                let field = bytes.get(body + 8..body + 12)?;
+                bytes_per_sec = Some(u32::from_le_bytes(field.try_into().ok()?));
+            }
+            // A truncated file can declare more than it carries; take what is
+            // actually there, since that is what was received.
+            b"data" => data_len = Some(declared.min(bytes.len().saturating_sub(body))),
+            _ => {}
         }
-        (Some(b"RIFF"), Some(b"WAVE")) => Outcome::Fail(format!(
-            "stored file is a RIFF/WAVE container of {} bytes, against a {uploaded}-byte \
-             upload: under either the {floor}-byte floor for a re-encode of it or the \
-             {REQUEST_LINE_BYTES}-byte request line. The upload arrived incomplete, or \
-             voip.ms changed the codec it stores",
-            bytes.len()
-        )),
-        _ => Outcome::Fail(format!(
-            "stored file is not a RIFF/WAVE container ({} bytes)",
-            bytes.len()
-        )),
+
+        // Chunks are padded to an even length.
+        pos = body + declared + (declared & 1);
+    }
+
+    match (bytes_per_sec, data_len) {
+        (Some(rate), Some(len)) if rate > 0 => Some(len as f32 / rate as f32),
+        _ => None,
     }
 }
 
@@ -936,16 +980,43 @@ async fn del_queue(client: &Client, id: u64) -> anyhow::Result<()> {
 mod tests {
     use super::*;
 
+    /// A G.711 mu-law WAV of `seconds`: same audio, half the bytes of the
+    /// 16-bit PCM the fixture uploads. Stands in for voip.ms re-encoding to the
+    /// ordinary telephony codec, which a byte-count floor would fail.
+    fn mulaw_wav(seconds: u32) -> Vec<u8> {
+        const SAMPLE_RATE: u32 = 8_000;
+        let data_len = seconds * SAMPLE_RATE;
+        let mut wav = Vec::new();
+        wav.extend_from_slice(b"RIFF");
+        wav.extend_from_slice(&(36 + data_len).to_le_bytes());
+        wav.extend_from_slice(b"WAVEfmt ");
+        wav.extend_from_slice(&16u32.to_le_bytes());
+        wav.extend_from_slice(&7u16.to_le_bytes()); // format: G.711 mu-law
+        wav.extend_from_slice(&1u16.to_le_bytes());
+        wav.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
+        wav.extend_from_slice(&SAMPLE_RATE.to_le_bytes()); // one byte per frame
+        wav.extend_from_slice(&1u16.to_le_bytes());
+        wav.extend_from_slice(&8u16.to_le_bytes());
+        wav.extend_from_slice(b"data");
+        wav.extend_from_slice(&data_len.to_le_bytes());
+        wav.extend(std::iter::repeat_n(0x7fu8, data_len as usize));
+        wav
+    }
+
     #[test]
     fn tone_wav_is_a_decodable_wave_of_the_expected_size() {
-        let wav = tone_wav(2);
-        // 44-byte header plus two seconds of 8 kHz 16-bit mono frames.
-        assert_eq!(wav.len(), 44 + 32_000);
+        let wav = tone_wav(FIXTURE_SECONDS);
+        // 44-byte header plus the frames, at 8 kHz 16-bit mono.
+        let frames = FIXTURE_SECONDS * 8_000;
+        assert_eq!(wav.len() as u32, 44 + frames * 2);
         assert_eq!(&wav[..4], b"RIFF");
         assert_eq!(&wav[8..12], b"WAVE");
         assert_eq!(u32::from_le_bytes(wav[24..28].try_into().unwrap()), 8_000);
         assert_eq!(u16::from_le_bytes(wav[34..36].try_into().unwrap()), 16);
-        assert_eq!(u32::from_le_bytes(wav[40..44].try_into().unwrap()), 32_000);
+        assert_eq!(
+            u32::from_le_bytes(wav[40..44].try_into().unwrap()),
+            frames * 2
+        );
         assert!(
             wav[44..].iter().any(|b| *b != 0),
             "the tone must carry a signal, not silence"
@@ -953,64 +1024,80 @@ mod tests {
     }
 
     #[test]
-    fn stored_wav_accepts_a_wave_and_rejects_anything_else() {
-        let wav = tone_wav(2);
-        assert!(matches!(
-            stored_wav(&BASE64.encode(&wav), wav.len()),
-            Outcome::Pass
-        ));
-        // A 9% trim, the one re-encode on record, still passes.
-        let trimmed = tone_wav(2)[..(wav.len() as f32 * 0.91) as usize].to_vec();
-        assert!(matches!(
-            stored_wav(&BASE64.encode(&trimmed), wav.len()),
-            Outcome::Pass
-        ));
-        assert!(matches!(
-            stored_wav(&BASE64.encode(b"not audio at all"), wav.len()),
-            Outcome::Fail(_)
-        ));
-        assert!(matches!(
-            stored_wav("not base64 either!", wav.len()),
-            Outcome::Fail(_)
-        ));
+    fn wav_duration_is_read_from_the_container_not_its_size() {
+        // Two encodings of the same two seconds, one of them half the bytes.
+        let pcm = tone_wav(2);
+        let mulaw = mulaw_wav(2);
+        assert!(mulaw.len() < pcm.len() * 3 / 5, "the case's premise");
+        assert_eq!(wav_duration_secs(&pcm), Some(2.0));
+        assert_eq!(wav_duration_secs(&mulaw), Some(2.0));
+        assert_eq!(wav_duration_secs(b"not a wav at all"), None);
     }
 
     #[test]
-    fn stored_wav_rejects_a_container_small_enough_to_have_been_a_get() {
-        let uploaded = tone_wav(2).len();
-
-        // A header with no frames: well-formed enough to pass the container
-        // check, small enough to have fit in a request line, which is what a
-        // wholly truncated upload looks like once voip.ms stores it.
-        let stub = tone_wav(0);
-        assert!(stub.len() < REQUEST_LINE_BYTES, "the case's premise");
+    fn stored_wav_accepts_an_intact_upload_however_it_was_re_encoded() {
         assert!(matches!(
-            stored_wav(&BASE64.encode(&stub), uploaded),
-            Outcome::Fail(_)
+            stored_wav(&BASE64.encode(tone_wav(FIXTURE_SECONDS)), FIXTURE_SECONDS),
+            Outcome::Pass
         ));
 
-        // A partial cut is the case an absolute floor alone would pass: 40% of
-        // the payload is a valid container well above a request line.
-        let partial = tone_wav(2)[..uploaded * 2 / 5].to_vec();
-        assert!(partial.len() > REQUEST_LINE_BYTES, "the case's premise");
-        assert!(matches!(
-            stored_wav(&BASE64.encode(&partial), uploaded),
-            Outcome::Fail(_)
-        ));
-    }
-
-    #[test]
-    fn a_generated_recording_exceeds_the_request_line_a_get_fits() {
-        // The whole reason the method posts. Stated against the payload the
-        // fixture actually sends, so trimming the upload back toward a size a
-        // GET could carry fails here rather than going unnoticed.
-        let encoded = BASE64.encode(tone_wav(2)).len();
+        // A re-encode to G.711 halves the byte count and loses no audio. This
+        // is the case a byte-count floor failed: it lands within 22 bytes of
+        // half the upload, and under it once any trim is applied.
+        let mulaw = mulaw_wav(FIXTURE_SECONDS);
         assert!(
-            encoded > REQUEST_LINE_BYTES,
-            "{encoded} base64 chars must not fit a request line"
+            mulaw.len() < tone_wav(FIXTURE_SECONDS).len() / 2 + 64,
+            "the case's premise"
         );
-        // Half the payload must still not fit, so the margin cannot quietly
-        // erode to the point where the transport stops being load-bearing.
-        assert!(encoded / 2 > REQUEST_LINE_BYTES);
+        assert!(matches!(
+            stored_wav(&BASE64.encode(&mulaw), FIXTURE_SECONDS),
+            Outcome::Pass
+        ));
+    }
+
+    #[test]
+    fn stored_wav_rejects_a_truncated_upload() {
+        // A header with no frames: a well-formed container carrying nothing,
+        // which is what a wholly cut body looks like once voip.ms stores it.
+        assert!(matches!(
+            stored_wav(&BASE64.encode(tone_wav(0)), FIXTURE_SECONDS),
+            Outcome::Fail(_)
+        ));
+
+        // A partial cut, the case an absolute byte floor passed: a quarter of
+        // the file, still a container far larger than a request line. Its
+        // `data` chunk declares more than remains, which is how a cut body
+        // arrives, so the duration comes from what is actually there.
+        let full = tone_wav(FIXTURE_SECONDS);
+        let partial = full[..full.len() / 4].to_vec();
+        assert!(
+            BASE64.encode(&partial).len() > REQUEST_LINE_BYTES,
+            "the case's premise"
+        );
+        assert!(matches!(
+            stored_wav(&BASE64.encode(&partial), FIXTURE_SECONDS),
+            Outcome::Fail(_)
+        ));
+
+        assert!(matches!(
+            stored_wav(&BASE64.encode(b"not audio at all"), FIXTURE_SECONDS),
+            Outcome::Fail(_)
+        ));
+        assert!(matches!(
+            stored_wav("not base64 either!", FIXTURE_SECONDS),
+            Outcome::Fail(_)
+        ));
+    }
+
+    #[test]
+    fn the_uploaded_recording_could_not_have_been_sent_on_a_request_line() {
+        // The whole reason the method posts, asserted against the payload the
+        // fixture actually sends: both read FIXTURE_SECONDS, so shrinking the
+        // upload toward a size a GET could carry fails here.
+        let encoded = BASE64.encode(tone_wav(FIXTURE_SECONDS)).len();
+        assert!(
+            encoded > 4 * REQUEST_LINE_BYTES,
+            "{encoded} base64 chars must clear the request line by a wide margin"
+        );
     }
 }

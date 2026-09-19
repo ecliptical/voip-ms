@@ -128,11 +128,21 @@ fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
 /// reverse direction only warns: the base64 reading comes from mined HTML, so
 /// a new hit needs a human to confirm it is a file payload before it joins the
 /// table.
+#[derive(Debug)]
+struct Base64FileParams {
+    /// File parameters by wire method, as the emitter consumes them.
+    by_op: BTreeMap<String, Vec<String>>,
+    /// `wireMethod.field` paths the docs describe as base64 that the table does
+    /// not list. A value rather than a printed warning, so it can be asserted
+    /// on; `cmd_gen` is what reports it.
+    unlisted: Vec<String>,
+}
+
 fn base64_file_params(
     wsdl: &Wsdl,
     param_docs: &ParamDocs,
     paths: &[&str],
-) -> Result<BTreeMap<String, Vec<String>>, String> {
+) -> Result<Base64FileParams, String> {
     let mut by_op: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for path in paths {
         let (op, field) = path
@@ -168,20 +178,17 @@ fn base64_file_params(
         by_op.entry(op.to_string()).or_default().push(field.into());
     }
 
+    let mut unlisted = Vec::new();
     for (op, fields) in param_docs {
         for (field, doc) in fields {
             let listed = by_op.get(op).is_some_and(|fs| fs.contains(field));
             if !listed && documents_base64(doc) {
-                eprintln!(
-                    "warning: {op}.{field} is documented as base64 but is absent from \
-                     BASE64_FILE_PARAM_PATHS; a file payload does not fit the request \
-                     line a GET puts it on"
-                );
+                unlisted.push(format!("{op}.{field}"));
             }
         }
     }
 
-    Ok(by_op)
+    Ok(Base64FileParams { by_op, unlisted })
 }
 
 /// Whether a parameter description documents a base64-encoded value.
@@ -864,6 +871,7 @@ fn emit(
         resolver,
     ));
 
+    out.push_str(&emit_requires_multipart(base64_file_params));
     out.push_str("\nimpl Client {\n");
     for op in &wsdl.operations {
         let method = camel_to_snake(op, &acronyms);
@@ -901,30 +909,17 @@ fn emit(
             // The base64 payload is many times the 8190-byte request line a GET
             // would put the query string on, so the whole call travels as form
             // fields instead.
-            let named = fields
-                .iter()
-                .map(|f| format!("`{f}`"))
-                .collect::<Vec<_>>()
-                .join(" / ");
-            // The table allows an op more than one file parameter, so the
-            // sentence has to agree with however many it has.
-            let (noun, verb, pronoun) = if fields.len() == 1 {
-                ("parameter", "does", "it")
-            } else {
-                ("parameters", "do", "them")
-            };
+            let sentence = multipart_doc_sentence(fields);
             out.push_str(&format!(
                 "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
                  ///\n    \
-                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} {verb}\n    \
-                 /// not fit the request line a GET would carry {pronoun} on.\n    \
+                 {sentence}\
                  pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
                      self.call_multipart(\"{op}\", params).await\n    \
                  }}\n\n\
                  /// Call the `{op}` API method and return the raw JSON envelope.\n    \
                  ///\n    \
-                 /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} {verb}\n    \
-                 /// not fit the request line a GET would carry {pronoun} on.\n    \
+                 {sentence}\
                  pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                      self.call_multipart_raw(\"{op}\", params).await\n    \
                  }}\n\n"
@@ -946,6 +941,51 @@ fn emit(
 
     out.push_str("}\n");
     out
+}
+
+/// The `///` lines naming why a method posts, agreeing in number with however
+/// many file parameters it has. The table allows an op more than one; none has
+/// two today, which is why this is a function rather than an inline format.
+fn multipart_doc_sentence(fields: &[String]) -> String {
+    let named = fields
+        .iter()
+        .map(|f| format!("`{f}`"))
+        .collect::<Vec<_>>()
+        .join(" / ");
+    let (noun, verb, pronoun) = if fields.len() == 1 {
+        ("parameter", "does", "it")
+    } else {
+        ("parameters", "do", "them")
+    };
+
+    format!(
+        "/// Sent as a `multipart/form-data` POST: the base64 {named} {noun} {verb}\n    \
+         /// not fit the request line a GET would carry {pronoun} on.\n    "
+    )
+}
+
+/// Emit `requires_multipart`, the public answer to "does this wire method have
+/// to be a multipart POST". The generated `Client` methods already route
+/// themselves; this is for a caller dispatching by method name, which cannot
+/// otherwise know.
+fn emit_requires_multipart(base64_file_params: &BTreeMap<String, Vec<String>>) -> String {
+    let arms = base64_file_params
+        .keys()
+        .map(|op| format!("{op:?}"))
+        .collect::<Vec<_>>()
+        .join(" | ");
+    format!(
+        "\n/// Whether `method` must be sent as a `multipart/form-data` POST rather than\n\
+         /// a GET, because one of its parameters carries a base64-encoded file that\n\
+         /// would overrun the request line a query string rides on.\n\
+         ///\n\
+         /// The generated [`Client`] methods apply this themselves. It is public for a\n\
+         /// caller that dispatches by wire-method name and so has to choose between\n\
+         /// [`Client::call_raw`] and [`Client::call_multipart_raw`] itself.\n\
+         pub fn requires_multipart(method: &str) -> bool {{\n    \
+             matches!(method, {arms})\n\
+         }}\n"
+    )
 }
 
 /// Emit the private `*ParamsWire` twin for an [`OffsetOp`]: the same fields as
@@ -1393,6 +1433,13 @@ fn cmd_gen() -> Result<(), String> {
 
     let base64_file_params =
         base64_file_params(&wsdl, &param_docs, field_overrides::BASE64_FILE_PARAM_PATHS)?;
+    for path in &base64_file_params.unlisted {
+        eprintln!(
+            "warning: {path} is documented as base64 but is absent from \
+             BASE64_FILE_PARAM_PATHS; a file payload does not fit the request \
+             line a GET puts it on"
+        );
+    }
 
     let enum_decls = emit_enums(&overrides_doc.enums);
     let resolver = field_overrides::Resolver {
@@ -1409,7 +1456,7 @@ fn cmd_gen() -> Result<(), String> {
         &enum_decls,
         &statuses,
         &empty_statuses,
-        &base64_file_params,
+        &base64_file_params.by_op,
     );
     fs::write(&out_path, &rendered).map_err(|e| format!("write {}: {e}", out_path.display()))?;
     println!(
@@ -1638,8 +1685,13 @@ mod tests {
 
     #[test]
     fn base64_file_params_groups_listed_paths_by_op() {
-        let grouped =
+        let found =
             base64_file_params(&wsdl_fixture(), &ParamDocs::new(), &["setRecording.file"]).unwrap();
+        assert!(
+            found.unlisted.is_empty(),
+            "nothing is documented as base64 here"
+        );
+        let grouped = found.by_op;
         assert_eq!(
             grouped.get("setRecording").map(Vec::as_slice),
             Some(&["file".to_string()][..])
@@ -1665,6 +1717,36 @@ mod tests {
         let err = base64_file_params(&wsdl_fixture(), &ParamDocs::new(), &["getCDR.date_from"])
             .unwrap_err();
         assert!(err.contains("names an offset op"), "{err}");
+    }
+
+    #[test]
+    fn base64_file_params_reports_a_documented_file_param_absent_from_the_table() {
+        // The tripwire for a fifth method arriving in a docs refresh: reported
+        // as a value, so `cmd_gen`'s warning has something to be a warning
+        // about and this branch is not taken on faith.
+        let mut docs = ParamDocs::new();
+        docs.entry("setRecording".to_string())
+            .or_default()
+            .insert("file".to_string(), "Base64 encoded file".to_string());
+        docs.entry("sendFaxMessage".to_string())
+            .or_default()
+            .insert("file".to_string(), "must be encoded in Base64".to_string());
+
+        // `setRecording.file` is listed, `sendFaxMessage.file` is not.
+        let found = base64_file_params(&wsdl_fixture(), &docs, &["setRecording.file"]).unwrap();
+        assert_eq!(found.unlisted, vec!["sendFaxMessage.file".to_string()]);
+    }
+
+    #[test]
+    fn multipart_doc_sentence_agrees_with_the_number_of_fields() {
+        // The plural branch has no entry to exercise it today: every op in the
+        // table has exactly one file parameter.
+        let one = [String::from("file")];
+        let two = [String::from("media1"), String::from("media2")];
+        assert!(multipart_doc_sentence(&one).contains("`file` parameter does"));
+        assert!(multipart_doc_sentence(&one).contains("carry it on"));
+        assert!(multipart_doc_sentence(&two).contains("`media1` / `media2` parameters do"));
+        assert!(multipart_doc_sentence(&two).contains("carry them on"));
     }
 
     #[test]

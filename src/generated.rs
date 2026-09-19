@@ -17154,6 +17154,20 @@ pub struct UnconnectFAXResponse {
     pub status: Option<String>,
 }
 
+/// Whether `method` must be sent as a `multipart/form-data` POST rather than
+/// a GET, because one of its parameters carries a base64-encoded file that
+/// would overrun the request line a query string rides on.
+///
+/// The generated [`Client`] methods apply this themselves. It is public for a
+/// caller that dispatches by wire-method name and so has to choose between
+/// [`Client::call_raw`] and [`Client::call_multipart_raw`] itself.
+pub fn requires_multipart(method: &str) -> bool {
+    matches!(
+        method,
+        "addLNPFile" | "sendFaxMessage" | "sendMMS" | "setRecording"
+    )
+}
+
 impl Client {
     /// \- Adds a Charge to a specific Reseller Client
     ///
