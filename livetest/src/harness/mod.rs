@@ -8,7 +8,7 @@ pub mod marker;
 pub mod probe;
 pub mod scope;
 
-pub use probe::{ProbeOutcome, probe, probe_zoned, zoned_params};
+pub use probe::{ProbeOutcome, probe, probe_zoned_default};
 
 use std::fmt::Write as _;
 

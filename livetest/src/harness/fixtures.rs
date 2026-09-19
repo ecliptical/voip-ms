@@ -13,7 +13,7 @@ use serde::de::DeserializeOwned;
 
 use crate::harness::area::SweepResult;
 use crate::harness::marker::is_owned_marker;
-use crate::harness::probe::{ProbeOutcome, probe, probe_zoned, zoned_params};
+use crate::harness::probe::{ProbeOutcome, ZonedRequest, probe, probe_zoned};
 use crate::harness::{Outcome, Report};
 use voip_ms::{
     ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams, TimezoneOffset,
@@ -104,17 +104,29 @@ where
     T: DeserializeOwned,
 {
     let method = label.strip_prefix("fixture:").unwrap_or(label);
-    let offset = TimezoneOffset::UTC;
-    let sent = match zoned_params(params, offset) {
-        Ok(sent) => sent,
-        Err(error) => {
-            report.record(area, label, Outcome::Fail(error));
-            return false;
+    match ZonedRequest::new(params, TimezoneOffset::UTC) {
+        Ok(request) => {
+            let outcome = probe_zoned::<T>(client, method, &request, timestamps, count).await;
+            record_read_back(
+                client,
+                report,
+                area,
+                label,
+                method,
+                request.params(),
+                outcome,
+            )
+            .await
         }
-    };
 
-    let outcome = probe_zoned::<T>(client, method, &sent, offset, timestamps, count).await;
-    record_read_back(client, report, area, label, method, &sent, outcome).await
+        // Params that will not serialize are a bug here, not drift in the API,
+        // so this reports like any other non-drift outcome -- including the
+        // drift-free `true`.
+        Err(error) => {
+            let outcome = ProbeOutcome::Transport(error);
+            record_read_back(client, report, area, label, method, params, outcome).await
+        }
+    }
 }
 
 /// Capture a failing read-back's request and envelope, then record it.

@@ -844,6 +844,14 @@ fn emit(
             // Route through the wire twin, resolving `timezone` (a `Tz`) to the
             // numeric UTC offset at the query start date, then put that offset
             // back onto the wall clocks the response reports in it.
+            // Only the const's name is emitted, but the entry is looked up
+            // anyway: a method whose const `emit_timestamp_consts` never wrote
+            // would otherwise surface as an unresolved name inside a 20k-line
+            // generated file, long after the run reported success.
+            assert!(
+                zoned_timestamps.contains_key(op),
+                "{op} is an offset op with no collected response timestamps"
+            );
             let paths = timestamps_const_name(op, &acronyms);
             out.push_str(&format!(
                 "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \

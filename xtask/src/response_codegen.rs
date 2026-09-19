@@ -63,6 +63,7 @@ pub fn emit_response_structs(
 
 /// Where one response timestamp lands in the emitted structs, and the path
 /// that reaches its JSON value.
+#[derive(Debug)]
 pub struct TimestampField {
     /// `"StructName.field"`, the key a per-struct type override is registered
     /// under.
@@ -84,6 +85,20 @@ pub fn timestamp_fields(op: &str, shape: &Shape) -> Result<Vec<TimestampField>, 
     let acronyms = acronyms_sorted();
     let root = format!("{}Response", camel_to_pascal(op, &acronyms));
     let mut found = Vec::new();
+    // A scalar response is emitted as a one-field record (`emit_struct`), so a
+    // bare timestamp at the root is reachable under that field's name.
+    if let Shape::Scalar {
+        ty: ScalarTy::DateTime,
+        ..
+    } = shape
+    {
+        found.push(TimestampField {
+            struct_path: format!("{root}.value"),
+            json_path: "/value".into(),
+        });
+        return Ok(found);
+    }
+
     collect_timestamps(&root, "", shape, &mut found)?;
     Ok(found)
 }
@@ -96,19 +111,32 @@ fn collect_timestamps(
 ) -> Result<(), String> {
     let fields = match shape {
         Shape::Object(fields) => fields,
-        // A list or map of records is walked through its element shape by the
-        // caller, so anything else here is a leaf with no timestamp to find.
+        // Reached only through a collection's element shape, since the root is
+        // handled by `timestamp_fields`. A bare timestamp here is an element of
+        // a list or a value of a map, and `attach_offset`'s path form ends at a
+        // field name, so there is nothing to name it with.
         Shape::Scalar {
             ty: ScalarTy::DateTime,
             ..
         } => {
             return Err(format!(
-                "{struct_name} has a timestamp at `{json_prefix}` that is not a field of a \
-                 record, which `attach_offset` has no path form for"
+                "{struct_name} holds a bare timestamp at `{json_prefix}` rather than one \
+                 under a field, which `attach_offset` has no path form for"
             ));
         }
 
-        _ => return Ok(()),
+        // A collection directly inside another. `attach_offset` would in fact
+        // reach `/x/*/*/date`, but the emitter wraps a nested list in a record
+        // of its own, so the path and the struct it lands on stop agreeing.
+        // Supporting it is a decision about both, not a default.
+        Shape::List(_) | Shape::Map(_) => {
+            return Err(format!(
+                "{struct_name} at `{json_prefix}` nests a collection directly inside another, \
+                 which this walk does not name"
+            ));
+        }
+
+        Shape::Scalar { .. } => return Ok(()),
     };
 
     // Mirrors `emit_record`'s dedupe, so a key the `print_r` source repeats
@@ -145,23 +173,30 @@ fn collect_timestamps(
             // syntax extended first, which is a decision, not a default.
             Shape::Map(inner) => {
                 let mut inside = Vec::new();
-                collect_timestamps(
+                let walked = collect_timestamps(
                     &element_type_name(struct_name, fname),
                     &format!("{json_path}/*"),
                     inner,
                     &mut inside,
-                )?;
-                if !inside.is_empty() {
-                    return Err(format!(
-                        "{struct_name}.{fname} is a map whose values carry a timestamp \
-                         ({}); `attach_offset` has no path form that reaches it",
-                        inside
-                            .iter()
-                            .map(|f| f.struct_path.as_str())
-                            .collect::<Vec<_>>()
-                            .join(", "),
-                    ));
-                }
+                );
+                // Either outcome means the map holds a timestamp: a walk that
+                // named some, or one that failed trying. Both report against the
+                // map, since that is the shape with no path form, not whatever
+                // the recursion happened to be looking at when it gave up.
+                let found = match walked {
+                    Ok(()) if inside.is_empty() => continue,
+                    Ok(()) => inside
+                        .iter()
+                        .map(|f| f.struct_path.clone())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    Err(inner_error) => inner_error,
+                };
+
+                return Err(format!(
+                    "{struct_name}.{fname} is a map whose values carry a timestamp ({found}); \
+                     `attach_offset` has no path form that reaches it"
+                ));
             }
 
             Shape::Scalar { .. } => {}
@@ -463,4 +498,116 @@ fn singularize(s: &str, acronyms: &[&'static str]) -> String {
     }
 
     s.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn datetime() -> Shape {
+        Shape::Scalar {
+            ty: ScalarTy::DateTime,
+            sample: "2026-09-16 15:14:35".into(),
+        }
+    }
+
+    fn text() -> Shape {
+        Shape::Scalar {
+            ty: ScalarTy::String,
+            sample: "success".into(),
+        }
+    }
+
+    fn object(fields: &[(&str, Shape)]) -> Shape {
+        Shape::Object(
+            fields
+                .iter()
+                .map(|(n, s)| ((*n).to_string(), s.clone()))
+                .collect(),
+        )
+    }
+
+    #[test]
+    fn names_a_timestamp_in_a_list_of_records() {
+        let shape = object(&[
+            ("status", text()),
+            (
+                "cdr",
+                Shape::List(Box::new(object(&[("date", datetime())]))),
+            ),
+        ]);
+        let found = timestamp_fields("getCDR", &shape).unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].struct_path, "GetCDRResponseCDR.date");
+        assert_eq!(found[0].json_path, "/cdr/*/date");
+    }
+
+    #[test]
+    fn names_a_timestamp_on_the_response_itself() {
+        let shape = object(&[("status", text()), ("date", datetime())]);
+        let found = timestamp_fields("getCDR", &shape).unwrap();
+        assert_eq!(found[0].struct_path, "GetCDRResponse.date");
+        assert_eq!(found[0].json_path, "/date");
+    }
+
+    #[test]
+    fn names_a_scalar_response_under_the_field_it_is_emitted_as() {
+        // `emit_struct` promotes a scalar response to `{ value: T }`.
+        let found = timestamp_fields("getCDR", &datetime()).unwrap();
+        assert_eq!(found[0].struct_path, "GetCDRResponse.value");
+        assert_eq!(found[0].json_path, "/value");
+    }
+
+    #[test]
+    fn ignores_a_response_with_no_timestamp() {
+        let shape = object(&[
+            ("status", text()),
+            ("media", Shape::List(Box::new(text()))),
+            ("codes", Shape::Map(Box::new(text()))),
+        ]);
+        assert!(timestamp_fields("getCDR", &shape).unwrap().is_empty());
+    }
+
+    // The rest are shapes that must fail the run rather than emit a field the
+    // offset would be silently dropped for.
+
+    #[test]
+    fn rejects_a_timestamp_nested_two_collections_deep() {
+        let shape = object(&[(
+            "x",
+            Shape::List(Box::new(Shape::List(Box::new(object(&[(
+                "date",
+                datetime(),
+            )]))))),
+        )]);
+        let error = timestamp_fields("getCDR", &shape).unwrap_err();
+        assert!(error.contains("nests a collection"), "{error}");
+    }
+
+    #[test]
+    fn rejects_a_list_of_bare_timestamps() {
+        let shape = object(&[("dates", Shape::List(Box::new(datetime())))]);
+        let error = timestamp_fields("getCDR", &shape).unwrap_err();
+        assert!(error.contains("bare timestamp"), "{error}");
+    }
+
+    #[test]
+    fn rejects_a_map_whose_values_carry_a_timestamp() {
+        let shape = object(&[(
+            "byId",
+            Shape::Map(Box::new(object(&[("date", datetime())]))),
+        )]);
+        let error = timestamp_fields("getCDR", &shape).unwrap_err();
+        assert!(
+            error.contains("is a map whose values carry a timestamp"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn rejects_a_map_of_bare_timestamps_naming_the_map() {
+        let shape = object(&[("byId", Shape::Map(Box::new(datetime())))]);
+        let error = timestamp_fields("getCDR", &shape).unwrap_err();
+        assert!(error.contains("byId is a map"), "{error}");
+    }
 }

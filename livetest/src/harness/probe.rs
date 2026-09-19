@@ -45,53 +45,95 @@ where
     probe_qualified(client, method, params, |_| {}, count).await
 }
 
-/// The params a record-listing call puts on the wire: the public ones plus the
-/// numeric `timezone` its typed `Client` method resolves inside a private wire
-/// twin, which a call-by-name cannot reach.
+/// A record-listing request: the params as they go on the wire, and the offset
+/// they ask for.
 ///
-/// Returned rather than inserted behind the caller's back so one value is both
-/// sent and reported: a failure capture that printed the public params would
-/// describe a request that was never made.
-pub fn zoned_params(params: &impl Serialize, offset: TimezoneOffset) -> Result<Value, String> {
-    match serde_json::to_value(params) {
-        Ok(Value::Object(mut fields)) => {
-            fields.insert("timezone".into(), json!(offset));
-            Ok(Value::Object(fields))
-        }
+/// The two are one value because they have to agree. The public params carry an
+/// IANA zone, the wire wants the numeric offset its typed `Client` method
+/// resolves inside a private wire twin, and the response's wall clocks are only
+/// instants once that same offset goes back on. Passing them separately lets a
+/// caller ask for `+05:30` and stamp `+00:00`, which deserializes, passes, and
+/// is wrong by five and a half hours -- the failure this crate's zoned
+/// timestamps exist to rule out.
+pub struct ZonedRequest {
+    params: Value,
+    offset: TimezoneOffset,
+}
 
-        Ok(other) => Err(format!("params are not an object: {other}")),
-        Err(error) => Err(format!("params do not serialize: {error}")),
+impl ZonedRequest {
+    /// `params` with the numeric `timezone` the wire twin would have set, which
+    /// a call-by-name cannot reach.
+    pub fn new(params: &impl Serialize, offset: TimezoneOffset) -> Result<Self, String> {
+        match serde_json::to_value(params) {
+            Ok(Value::Object(mut fields)) => {
+                fields.insert("timezone".into(), json!(offset));
+                Ok(Self {
+                    params: Value::Object(fields),
+                    offset,
+                })
+            }
+
+            Ok(other) => Err(format!("params are not an object: {other}")),
+            Err(error) => Err(format!("params do not serialize: {error}")),
+        }
+    }
+
+    /// The params as sent, for a failure capture that must not describe a
+    /// request that was never made.
+    pub fn params(&self) -> &Value {
+        &self.params
     }
 }
 
-/// Probe a record-listing method over params from [`zoned_params`].
+/// Probe a record-listing method.
 ///
 /// `getCDR` and the `getSMS` / `getMMS` family shift their timestamps by the
 /// numeric `timezone` the request carries and then report the shifted wall
-/// clock without it, so `offset` goes back on before the typed step -- left
-/// alone, every unqualified timestamp would read as drift. `timestamps` are the
-/// paths [`voip_ms::attach_offset`] takes, which the crate emits per method as
-/// `GET_CDR_TIMESTAMPS` and its siblings.
+/// clock without it, so the request's own offset goes back on before the typed
+/// step -- left alone, every unqualified timestamp would read as drift.
+/// `timestamps` are the paths [`voip_ms::attach_offset`] takes, which the crate
+/// emits per method as `GET_CDR_TIMESTAMPS` and its siblings.
 pub async fn probe_zoned<T>(
     client: &Client,
     method: &str,
-    params: &Value,
-    offset: TimezoneOffset,
+    request: &ZonedRequest,
     timestamps: &[&str],
     count: impl Fn(&T) -> Option<usize>,
 ) -> ProbeOutcome
 where
     T: DeserializeOwned,
 {
-    let fixed = offset.to_fixed_offset();
+    let fixed = request.offset.to_fixed_offset();
     probe_qualified(
         client,
         method,
-        params,
+        &request.params,
         |body| attach_offset(body, fixed, timestamps),
         count,
     )
     .await
+}
+
+/// [`probe_zoned`] over default params at UTC: the probe-depth form, where a
+/// record-listing method is called with no filters.
+///
+/// Params that will not serialize are a bug in this harness rather than drift
+/// in the API, so they classify as `Transport` like the other param failure
+/// [`probe`] can hit.
+pub async fn probe_zoned_default<P, T>(
+    client: &Client,
+    method: &str,
+    timestamps: &[&str],
+    count: impl Fn(&T) -> Option<usize>,
+) -> ProbeOutcome
+where
+    P: Serialize + Default,
+    T: DeserializeOwned,
+{
+    match ZonedRequest::new(&P::default(), TimezoneOffset::UTC) {
+        Ok(request) => probe_zoned(client, method, &request, timestamps, count).await,
+        Err(error) => ProbeOutcome::Transport(error),
+    }
 }
 
 /// The shared probe body: fetch the raw envelope, let `qualify` complete it,

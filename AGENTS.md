@@ -412,15 +412,22 @@ build stayed green:
 
 * an offset op whose response declares no timestamp at all (a docs refresh that
   dropped the field);
-* a `datetime` the walk cannot name -- at the root of a response, or inside a
-  map, whose values `attach_offset`'s `*` does not reach, since over an object
-  `*` already means the bare single record VoIP.ms sends for a one-element list.
-  Extending the path syntax is a decision, not a default;
+* a `datetime` the walk cannot name, which is any of: a bare one as a list
+  element or map value, since a path ends at a field name; one inside a map,
+  whose values `attach_offset`'s `*` does not reach, because over an object `*`
+  already means the bare single record VoIP.ms sends for a one-element list; and
+  one under a collection nested directly inside another, where the path
+  `attach_offset` would walk and the struct the emitter wraps it in stop
+  agreeing. Each needs the path form, the emitter, or both extended first, which
+  is a decision rather than a default;
 * a missing response shape for an op that sends an offset.
 
 Note the asymmetry the second case fixes: the "no timestamp at all" check only
 fires when *every* timestamp is missed, so a response that grows a second
-timestamp somewhere unaddressable would otherwise pass.
+timestamp somewhere unaddressable would otherwise pass. A timestamp that *is* a
+whole scalar response is not in that set -- the emitter promotes it to a
+one-field record, so it is named at `/value`. `timestamp_fields` has unit tests
+per branch, because a silent miss here is invisible in the generated output.
 
 ## Code Patterns
 

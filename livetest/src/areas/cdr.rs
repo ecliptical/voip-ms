@@ -21,16 +21,16 @@ use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back_zoned;
 use crate::harness::{Outcome, Report};
 use voip_ms::chrono_tz::Tz;
-use voip_ms::{Client, GET_CDR_TIMESTAMPS, GetCDRParams, GetCDRResponse};
+use voip_ms::{Client, Error, GET_CDR_TIMESTAMPS, GetCDRParams, GetCDRResponse};
 
 pub struct Cdr;
 
 const AREA: &str = "cdr";
 
-/// Zones the offset round-trip is checked at. `America/New_York` is a whole
-/// hour and `Asia/Kolkata` a half hour: the wire carries `-4` for the first and
-/// `5.50` for the second, and only a live run can show whether voip.ms keeps
-/// the half hour or truncates it to `5`.
+/// Zones the offset round-trip is checked at. `America/New_York` is a
+/// whole-hour zone that shifts with DST, so its wire value depends on when the
+/// run happens; `Asia/Kolkata` sits on a half hour, and only a live run can
+/// show whether voip.ms keeps that half hour or truncates it away.
 const ROUND_TRIP_ZONES: &[Tz] = &[
     voip_ms::chrono_tz::America::New_York,
     voip_ms::chrono_tz::Asia::Kolkata,
@@ -86,9 +86,18 @@ impl Area for Cdr {
         )
         .await;
 
-        for tz in ROUND_TRIP_ZONES {
-            let outcome = offset_round_trip(ctx.client, &params, *tz).await;
-            report.record(AREA, &format!("fixture:getCDR:{tz}"), outcome);
+        // One UTC read for every zone compared against it: the window is the
+        // same one `read_back_zoned` just fetched, and refetching it per zone
+        // would triple a costly run's `getCDR` calls for identical rows.
+        match typed_get_cdr(ctx.client, &params).await {
+            Ok(at_utc) => {
+                for tz in ROUND_TRIP_ZONES {
+                    let outcome = offset_round_trip(ctx.client, &params, &at_utc, *tz).await;
+                    report.record(AREA, &format!("fixture:getCDR:{tz}"), outcome);
+                }
+            }
+
+            Err(outcome) => report.record(AREA, "fixture:getCDR:UTC", outcome),
         }
 
         report.record(
@@ -111,19 +120,19 @@ impl Area for Cdr {
 /// Exercising it through the typed method rather than a call-by-name is the
 /// point: this is the only live path through the generated `*ParamsWire`
 /// conversion and the generated timestamp paths.
-async fn offset_round_trip(client: &Client, params: &GetCDRParams, tz: Tz) -> Outcome {
-    let at_utc = match client.get_cdr(params).await {
-        Ok(r) => r,
-        Err(error) => return Outcome::Fail(format!("getCDR at UTC: {error}")),
-    };
-
+async fn offset_round_trip(
+    client: &Client,
+    params: &GetCDRParams,
+    at_utc: &GetCDRResponse,
+    tz: Tz,
+) -> Outcome {
     let zoned = GetCDRParams {
         timezone: Some(tz),
         ..params.clone()
     };
-    let at_zone = match client.get_cdr(&zoned).await {
+    let at_zone = match typed_get_cdr(client, &zoned).await {
         Ok(r) => r,
-        Err(error) => return Outcome::Fail(format!("getCDR at {tz}: {error}")),
+        Err(outcome) => return outcome,
     };
 
     let mut compared = 0;
@@ -158,4 +167,31 @@ async fn offset_round_trip(client: &Client, params: &GetCDRParams, tz: Tz) -> Ou
     }
 
     Outcome::Pass
+}
+
+/// `Client::get_cdr`, with a typed-deserialization failure reported as drift
+/// rather than as a plain failure.
+///
+/// The typed methods collapse a shape mismatch into `Error::InvalidResponse`,
+/// which reads like any other error; every other read in this harness goes
+/// through [`ProbeOutcome`] so that raw-succeeded-typed-failed lands in the
+/// DRIFT bucket with the envelope to paste into an override. Re-fetching the
+/// raw envelope on that one path keeps this read in the same shape.
+async fn typed_get_cdr(client: &Client, params: &GetCDRParams) -> Result<GetCDRResponse, Outcome> {
+    match client.get_cdr(params).await {
+        Ok(response) => Ok(response),
+        Err(Error::InvalidResponse(error)) => {
+            let raw_json = match client.get_cdr_raw(params).await {
+                Ok(body) => {
+                    serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string())
+                }
+
+                Err(refetch) => format!("(envelope could not be refetched: {refetch})"),
+            };
+
+            Err(Outcome::Drift { error, raw_json })
+        }
+
+        Err(error) => Err(Outcome::Fail(format!("getCDR: {error}"))),
+    }
 }
