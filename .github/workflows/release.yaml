@@ -39,10 +39,13 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
 
       - name: Run tests
-        run: cargo test --workspace --all-targets
+        run: cargo test --workspace --all-targets --features unchecked-raw
+
+      - name: Check the non-default TLS backend
+        run: cargo check --no-default-features --features native-tls
 
       - name: Verify publishability (dry run)
         run: cargo publish --locked --dry-run

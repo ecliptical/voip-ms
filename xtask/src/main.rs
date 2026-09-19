@@ -119,15 +119,7 @@ fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
     OFFSET_OPS.iter().find(|o| o.wire == wire)
 }
 
-/// Group [`field_overrides::BASE64_FILE_PARAM_PATHS`] by wire method, so the
-/// emitter can route those methods over the multipart transport and name the
-/// responsible parameter in their docs.
-///
-/// An entry the WSDL has no field for fails the run -- a path left behind by a
-/// docs revision would otherwise silently drop a method back onto GET. The
-/// reverse direction only warns: the base64 reading comes from mined HTML, so
-/// a new hit needs a human to confirm it is a file payload before it joins the
-/// table.
+/// What [`base64_file_params`] read out of the table and the mined docs.
 #[derive(Debug)]
 struct Base64FileParams {
     /// File parameters by wire method, as the emitter consumes them.
@@ -138,6 +130,16 @@ struct Base64FileParams {
     unlisted: Vec<String>,
 }
 
+/// Group `paths` by wire method, so the emitter can route those methods over
+/// the multipart transport and name the responsible parameter in their docs.
+///
+/// Two conditions fail the run: a path the WSDL has no field for, since one
+/// left behind by a docs revision would silently drop a method back onto GET,
+/// and a path naming an offset op, whose wire twin the emitter sends over GET
+/// before the multipart branch is reached. A parameter the docs call base64
+/// that the table omits is returned in [`Base64FileParams::unlisted`] rather
+/// than failing, because that reading comes from mined HTML and wants a human
+/// to confirm it is really a file.
 fn base64_file_params(
     wsdl: &Wsdl,
     param_docs: &ParamDocs,
@@ -969,6 +971,16 @@ fn multipart_doc_sentence(fields: &[String]) -> String {
 /// themselves; this is for a caller dispatching by method name, which cannot
 /// otherwise know.
 fn emit_requires_multipart(base64_file_params: &BTreeMap<String, Vec<String>>) -> String {
+    if base64_file_params.is_empty() {
+        // `matches!(method, )` does not parse, and a failing rustfmt is only a
+        // warning, so an empty table would otherwise write a file that does not
+        // compile and exit 0.
+        return "\n/// Whether `method` must be sent as a `multipart/form-data` POST rather than\n\
+                /// a GET. No method carries a base64 file parameter, so nothing does.\n\
+                pub fn requires_multipart(_method: &str) -> bool {\n    false\n}\n"
+            .to_string();
+    }
+
     let arms = base64_file_params
         .keys()
         .map(|op| format!("{op:?}"))

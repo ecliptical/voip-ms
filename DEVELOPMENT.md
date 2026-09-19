@@ -277,8 +277,9 @@ Two orthogonal dimensions choose what runs:
     stored file back, and deletes it. That payload is several times the request
     line a GET fits, so it is the only live exercise of the multipart transport
     (design decision #7). VoIP.ms re-encodes what it stores, so the read-back
-    checks the RIFF/WAVE container and a size floor above the request line --
-    never byte equality, which the re-encode rules out.
+    reads the stored file's duration out of its WAV header and compares that to
+    the seconds uploaded. Neither byte equality nor a byte floor would do: a
+    re-encode to a narrower codec halves the size while losing no audio.
   * `costly` -- also runs money/irreversible methods. Requires
     `--i-understand-this-costs-money`. Each costly method fires only when its
     own input (e.g. `--order-test-did`, `--sms-dst`, `--payment-amount`) is

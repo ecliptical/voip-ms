@@ -629,12 +629,12 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 /// Upload a generated WAV through `setRecording`, read it back through
 /// `getRecordingFile`, and delete it.
 ///
-/// The payload is the point: at 8 kHz mono 16-bit, two seconds of audio is
-/// 32 kB, over 42 kB base64-encoded, five times [`REQUEST_LINE_BYTES`] -- so
-/// this is the only live coverage of the multipart transport.
+/// The payload is the point: at 8 kHz mono 16-bit, [`FIXTURE_SECONDS`] of
+/// audio base64-encodes to several times [`REQUEST_LINE_BYTES`], so this is the
+/// only live coverage of the multipart transport.
 ///
-/// The read-back goes through [`stored_wav`], which is given the uploaded size
-/// so it can judge what came back against it. `getRecordingFile` is called
+/// The read-back goes through [`stored_wav`], which is given the uploaded
+/// duration to judge what came back against. `getRecordingFile` is called
 /// directly rather than through [`read_back`], whose drift diff looks at the
 /// response shape and not at the bytes the shape carries.
 async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
@@ -731,7 +731,9 @@ fn stored_wav(data: &str, uploaded_secs: u32) -> Outcome {
 
     let Some(stored_secs) = wav_duration_secs(&bytes) else {
         return Outcome::Fail(format!(
-            "stored file is not a readable RIFF/WAVE container ({} bytes)",
+            "stored file is not a RIFF/WAVE container this can read ({} bytes): \
+             malformed, cut before the `fmt ` chunk, or a chunk layout \
+             `wav_duration_secs` does not walk",
             bytes.len()
         ));
     };
@@ -742,7 +744,8 @@ fn stored_wav(data: &str, uploaded_secs: u32) -> Outcome {
     } else {
         Outcome::Fail(format!(
             "stored recording is {stored_secs:.2} s against a {uploaded_secs} s upload, \
-             under the {floor:.2} s floor: the upload arrived incomplete"
+             under the {floor:.2} s floor. The upload arrived incomplete, or voip.ms \
+             re-encoded more aggressively than this floor allows"
         ))
     }
 }

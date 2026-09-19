@@ -29,9 +29,14 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run clippy
-        # Same selection as the test job, so everything that runs is linted:
-        # --all-targets reaches test code, --features the gated surface.
+        # Same selection as the test job, so everything that runs is linted.
         run: cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
+      - name: Check the non-default TLS backend
+        # `native-tls` ships but is not the default, so nothing else builds it.
+        # It cannot go in the test job: enabled alongside the default rustls,
+        # reqwest picks native-tls, so the tests would exercise a stack the
+        # crate does not ship, and it drags OpenSSL in.
+        run: cargo check --no-default-features --features native-tls
 
   coverage:
     name: Run tests with coverage
@@ -55,9 +60,10 @@ jobs:
       - name: Run unit tests
         # --workspace: the root package is also the workspace root, so a bare
         # `cargo test` selects it alone and skips livetest's and xtask's tests.
-        # --features unchecked-raw reaches the gated surface; --all-features
-        # would also switch the TLS backend, since reqwest prefers native-tls
-        # when both it and rustls are on, and the crate ships rustls.
+        # `unchecked-raw` is named for the reader rather than out of necessity
+        # -- livetest already requires it, so any --workspace build unifies it
+        # on -- and --all-features is deliberately not used, since it would
+        # switch the TLS backend to native-tls.
         #
         # This also widens what the coverage report below measures: livetest is
         # an operator harness whose paths only execute against the live API, so
