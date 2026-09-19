@@ -12,10 +12,10 @@
 
 use async_trait::async_trait;
 
-use crate::areas::probe_macros::{probe_list, skip_needs_input};
+use crate::areas::probe_macros::{probe_zoned_list, skip_needs_input};
 use crate::config::Depth;
 use crate::harness::area::{Area, AreaCtx, CostClass};
-use crate::harness::fixtures::read_back;
+use crate::harness::fixtures::{read_back, read_back_zoned};
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
@@ -38,14 +38,15 @@ impl Area for Mms {
     }
 
     async fn probe(&self, ctx: &AreaCtx<'_>, report: &mut Report) {
-        probe_list!(
+        probe_zoned_list!(
             ctx,
             report,
             AREA,
             "getMMS",
             GetMMSParams,
             GetMMSResponse,
-            sms
+            sms,
+            GET_MMS_TIMESTAMPS
         );
         skip_needs_input!(report, AREA, "getMediaMMS", "requires an MMS id");
     }
@@ -88,7 +89,7 @@ impl Area for Mms {
 
         report.record(AREA, "fixture:sendMMS", Outcome::Pass);
 
-        read_back::<_, GetMMSResponse>(
+        read_back_zoned::<_, GetMMSResponse>(
             ctx.client,
             report,
             AREA,
@@ -97,6 +98,7 @@ impl Area for Mms {
                 did: Some(fixture.test_did.clone()),
                 ..Default::default()
             },
+            GET_MMS_TIMESTAMPS,
             |r| Some(r.sms.len()),
         )
         .await;

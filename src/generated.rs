@@ -4155,6 +4155,30 @@ impl<'de> serde::Deserialize<'de> for ApiStatus {
     }
 }
 
+/// Paths to the timestamps in a `getCDR` response, in the form
+/// [`attach_offset`](crate::attach_offset) takes.
+pub const GET_CDR_TIMESTAMPS: &[&str] = &["/cdr/*/date"];
+
+/// Paths to the timestamps in a `getMMS` response, in the form
+/// [`attach_offset`](crate::attach_offset) takes.
+pub const GET_MMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+
+/// Paths to the timestamps in a `getResellerCDR` response, in the form
+/// [`attach_offset`](crate::attach_offset) takes.
+pub const GET_RESELLER_CDR_TIMESTAMPS: &[&str] = &["/cdr/*/date"];
+
+/// Paths to the timestamps in a `getResellerMMS` response, in the form
+/// [`attach_offset`](crate::attach_offset) takes.
+pub const GET_RESELLER_MMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+
+/// Paths to the timestamps in a `getResellerSMS` response, in the form
+/// [`attach_offset`](crate::attach_offset) takes.
+pub const GET_RESELLER_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+
+/// Paths to the timestamps in a `getSMS` response, in the form
+/// [`attach_offset`](crate::attach_offset) takes.
+pub const GET_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+
 /// \- Adds a Charge to a specific Reseller Client
 ///
 /// Parameters for [`Client::add_charge`] (wire method `addCharge`).
@@ -5529,8 +5553,8 @@ pub struct GetCDRParams {
     pub failed: Option<bool>,
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
-    /// at the query start date (DST-aware). Omit to keep timestamps in the
-    /// account's configured time zone. (required)
+    /// at the query start date (DST-aware). Omit for UTC -- the request always
+    /// carries an offset, and the reported timestamps carry it back. (required)
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -5575,8 +5599,7 @@ struct GetCDRParamsWire {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     failed: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    timezone: Option<crate::TimezoneOffset>,
+    timezone: crate::TimezoneOffset,
     #[serde(skip_serializing_if = "Option::is_none")]
     calltype: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -5594,9 +5617,9 @@ impl TryFrom<&GetCDRParams> for GetCDRParamsWire {
                 let start = p
                     .date_from
                     .ok_or(crate::types::TimezoneOffsetError::MissingStartDate)?;
-                Some(crate::TimezoneOffset::at(tz, start)?)
+                crate::TimezoneOffset::at(tz, start)?
             }
-            None => None,
+            None => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             date_from: p.date_from,
@@ -6333,8 +6356,8 @@ pub struct GetMMSParams {
     pub limit: Option<String>,
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
-    /// at the query start date (DST-aware). Omit to keep timestamps in the
-    /// account's configured time zone.
+    /// at the query start date (DST-aware). Omit for UTC -- the request always
+    /// carries an offset, and the reported timestamps carry it back.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -6364,8 +6387,7 @@ struct GetMMSParamsWire {
     contact: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    timezone: Option<crate::TimezoneOffset>,
+    timezone: crate::TimezoneOffset,
     #[serde(skip_serializing_if = "Option::is_none")]
     all_messages: Option<u64>,
 }
@@ -6383,9 +6405,9 @@ impl TryFrom<&GetMMSParams> for GetMMSParamsWire {
                     .trim()
                     .parse::<chrono::NaiveDate>()
                     .map_err(|_| crate::types::TimezoneOffsetError::InvalidStartDate)?;
-                Some(crate::TimezoneOffset::at(tz, start)?)
+                crate::TimezoneOffset::at(tz, start)?
             }
-            None => None,
+            None => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             mms: p.mms,
@@ -6673,8 +6695,8 @@ pub struct GetResellerCDRParams {
     pub failed: Option<bool>,
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
-    /// at the query start date (DST-aware). Omit to keep timestamps in the
-    /// account's configured time zone. (required)
+    /// at the query start date (DST-aware). Omit for UTC -- the request always
+    /// carries an offset, and the reported timestamps carry it back. (required)
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -6721,8 +6743,7 @@ struct GetResellerCDRParamsWire {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     failed: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    timezone: Option<crate::TimezoneOffset>,
+    timezone: crate::TimezoneOffset,
     #[serde(skip_serializing_if = "Option::is_none")]
     calltype: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -6740,9 +6761,9 @@ impl TryFrom<&GetResellerCDRParams> for GetResellerCDRParamsWire {
                 let start = p
                     .date_from
                     .ok_or(crate::types::TimezoneOffsetError::MissingStartDate)?;
-                Some(crate::TimezoneOffset::at(tz, start)?)
+                crate::TimezoneOffset::at(tz, start)?
             }
-            None => None,
+            None => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             date_from: p.date_from,
@@ -6793,8 +6814,8 @@ pub struct GetResellerMMSParams {
     pub limit: Option<String>,
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
-    /// at the query start date (DST-aware). Omit to keep timestamps in the
-    /// account's configured time zone.
+    /// at the query start date (DST-aware). Omit for UTC -- the request always
+    /// carries an offset, and the reported timestamps carry it back.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -6826,8 +6847,7 @@ struct GetResellerMMSParamsWire {
     contact: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    timezone: Option<crate::TimezoneOffset>,
+    timezone: crate::TimezoneOffset,
     #[serde(skip_serializing_if = "Option::is_none")]
     all_messages: Option<u64>,
 }
@@ -6845,9 +6865,9 @@ impl TryFrom<&GetResellerMMSParams> for GetResellerMMSParamsWire {
                     .trim()
                     .parse::<chrono::NaiveDate>()
                     .map_err(|_| crate::types::TimezoneOffsetError::InvalidStartDate)?;
-                Some(crate::TimezoneOffset::at(tz, start)?)
+                crate::TimezoneOffset::at(tz, start)?
             }
-            None => None,
+            None => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             mms: p.mms,
@@ -6898,8 +6918,8 @@ pub struct GetResellerSMSParams {
     pub limit: Option<String>,
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
-    /// at the query start date (DST-aware). Omit to keep timestamps in the
-    /// account's configured time zone.
+    /// at the query start date (DST-aware). Omit for UTC -- the request always
+    /// carries an offset, and the reported timestamps carry it back.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -6931,8 +6951,7 @@ struct GetResellerSMSParamsWire {
     contact: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    timezone: Option<crate::TimezoneOffset>,
+    timezone: crate::TimezoneOffset,
     #[serde(skip_serializing_if = "Option::is_none")]
     all_messages: Option<u64>,
 }
@@ -6950,9 +6969,9 @@ impl TryFrom<&GetResellerSMSParams> for GetResellerSMSParamsWire {
                     .trim()
                     .parse::<chrono::NaiveDate>()
                     .map_err(|_| crate::types::TimezoneOffsetError::InvalidStartDate)?;
-                Some(crate::TimezoneOffset::at(tz, start)?)
+                crate::TimezoneOffset::at(tz, start)?
             }
-            None => None,
+            None => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             sms: p.sms,
@@ -7045,8 +7064,8 @@ pub struct GetSMSParams {
     pub limit: Option<String>,
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
-    /// at the query start date (DST-aware). Omit to keep timestamps in the
-    /// account's configured time zone.
+    /// at the query start date (DST-aware). Omit for UTC -- the request always
+    /// carries an offset, and the reported timestamps carry it back.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -7076,8 +7095,7 @@ struct GetSMSParamsWire {
     contact: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    timezone: Option<crate::TimezoneOffset>,
+    timezone: crate::TimezoneOffset,
     #[serde(skip_serializing_if = "Option::is_none")]
     all_messages: Option<u64>,
 }
@@ -7095,9 +7113,9 @@ impl TryFrom<&GetSMSParams> for GetSMSParamsWire {
                     .trim()
                     .parse::<chrono::NaiveDate>()
                     .map_err(|_| crate::types::TimezoneOffsetError::InvalidStartDate)?;
-                Some(crate::TimezoneOffset::at(tz, start)?)
+                crate::TimezoneOffset::at(tz, start)?
             }
-            None => None,
+            None => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             sms: p.sms,
@@ -10760,9 +10778,9 @@ pub struct GetBalanceManagementResponse {
 pub struct GetCDRResponseCDR {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -13792,9 +13810,9 @@ pub struct GetMMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
     #[serde(default, deserialize_with = "deserialize_opt_message_type")]
     pub r#type: Option<MessageType>,
     #[serde(
@@ -14767,9 +14785,9 @@ pub struct GetResellerBalanceResponse {
 pub struct GetResellerCDRResponseCDR {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -14851,9 +14869,9 @@ pub struct GetResellerMMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
     #[serde(default, deserialize_with = "deserialize_opt_message_type")]
     pub r#type: Option<MessageType>,
     #[serde(
@@ -14897,9 +14915,9 @@ pub struct GetResellerSMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
     #[serde(default, deserialize_with = "deserialize_opt_message_type")]
     pub r#type: Option<MessageType>,
     #[serde(
@@ -15101,9 +15119,9 @@ pub struct GetSMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
     #[serde(default, deserialize_with = "deserialize_opt_message_type")]
     pub r#type: Option<MessageType>,
     #[serde(
@@ -17961,18 +17979,26 @@ impl Client {
     /// Call the `getCDR` API method and deserialize into [`GetCDRResponse`].
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The reported
+    /// timestamps carry that offset.
     pub async fn get_cdr(&self, params: &GetCDRParams) -> Result<GetCDRResponse> {
-        self.call("getCDR", &GetCDRParamsWire::try_from(params)?)
+        let wire = GetCDRParamsWire::try_from(params)?;
+        let offset = wire.timezone.to_fixed_offset();
+        self.call_zoned("getCDR", &wire, offset, GET_CDR_TIMESTAMPS)
             .await
     }
 
     /// Call the `getCDR` API method and return the raw JSON envelope.
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
+    /// reports its timestamps in that offset without naming it:
+    /// [`attach_offset`](crate::attach_offset) puts it back, over
+    /// [`GET_CDR_TIMESTAMPS`](crate::GET_CDR_TIMESTAMPS).
     pub async fn get_cdr_raw(&self, params: &GetCDRParams) -> Result<Value> {
         self.call_raw("getCDR", &GetCDRParamsWire::try_from(params)?)
             .await
@@ -18912,18 +18938,26 @@ impl Client {
     /// Call the `getMMS` API method and deserialize into [`GetMMSResponse`].
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The reported
+    /// timestamps carry that offset.
     pub async fn get_mms(&self, params: &GetMMSParams) -> Result<GetMMSResponse> {
-        self.call("getMMS", &GetMMSParamsWire::try_from(params)?)
+        let wire = GetMMSParamsWire::try_from(params)?;
+        let offset = wire.timezone.to_fixed_offset();
+        self.call_zoned("getMMS", &wire, offset, GET_MMS_TIMESTAMPS)
             .await
     }
 
     /// Call the `getMMS` API method and return the raw JSON envelope.
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
+    /// reports its timestamps in that offset without naming it:
+    /// [`attach_offset`](crate::attach_offset) puts it back, over
+    /// [`GET_MMS_TIMESTAMPS`](crate::GET_MMS_TIMESTAMPS).
     pub async fn get_mms_raw(&self, params: &GetMMSParams) -> Result<Value> {
         self.call_raw("getMMS", &GetMMSParamsWire::try_from(params)?)
             .await
@@ -19245,24 +19279,29 @@ impl Client {
     /// Call the `getResellerCDR` API method and deserialize into [`GetResellerCDRResponse`].
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The reported
+    /// timestamps carry that offset.
     pub async fn get_reseller_cdr(
         &self,
         params: &GetResellerCDRParams,
     ) -> Result<GetResellerCDRResponse> {
-        self.call(
-            "getResellerCDR",
-            &GetResellerCDRParamsWire::try_from(params)?,
-        )
-        .await
+        let wire = GetResellerCDRParamsWire::try_from(params)?;
+        let offset = wire.timezone.to_fixed_offset();
+        self.call_zoned("getResellerCDR", &wire, offset, GET_RESELLER_CDR_TIMESTAMPS)
+            .await
     }
 
     /// Call the `getResellerCDR` API method and return the raw JSON envelope.
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
+    /// reports its timestamps in that offset without naming it:
+    /// [`attach_offset`](crate::attach_offset) puts it back, over
+    /// [`GET_RESELLER_CDR_TIMESTAMPS`](crate::GET_RESELLER_CDR_TIMESTAMPS).
     pub async fn get_reseller_cdr_raw(&self, params: &GetResellerCDRParams) -> Result<Value> {
         self.call_raw(
             "getResellerCDR",
@@ -19277,24 +19316,29 @@ impl Client {
     /// Call the `getResellerMMS` API method and deserialize into [`GetResellerMMSResponse`].
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The reported
+    /// timestamps carry that offset.
     pub async fn get_reseller_mms(
         &self,
         params: &GetResellerMMSParams,
     ) -> Result<GetResellerMMSResponse> {
-        self.call(
-            "getResellerMMS",
-            &GetResellerMMSParamsWire::try_from(params)?,
-        )
-        .await
+        let wire = GetResellerMMSParamsWire::try_from(params)?;
+        let offset = wire.timezone.to_fixed_offset();
+        self.call_zoned("getResellerMMS", &wire, offset, GET_RESELLER_MMS_TIMESTAMPS)
+            .await
     }
 
     /// Call the `getResellerMMS` API method and return the raw JSON envelope.
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
+    /// reports its timestamps in that offset without naming it:
+    /// [`attach_offset`](crate::attach_offset) puts it back, over
+    /// [`GET_RESELLER_MMS_TIMESTAMPS`](crate::GET_RESELLER_MMS_TIMESTAMPS).
     pub async fn get_reseller_mms_raw(&self, params: &GetResellerMMSParams) -> Result<Value> {
         self.call_raw(
             "getResellerMMS",
@@ -19309,24 +19353,29 @@ impl Client {
     /// Call the `getResellerSMS` API method and deserialize into [`GetResellerSMSResponse`].
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The reported
+    /// timestamps carry that offset.
     pub async fn get_reseller_sms(
         &self,
         params: &GetResellerSMSParams,
     ) -> Result<GetResellerSMSResponse> {
-        self.call(
-            "getResellerSMS",
-            &GetResellerSMSParamsWire::try_from(params)?,
-        )
-        .await
+        let wire = GetResellerSMSParamsWire::try_from(params)?;
+        let offset = wire.timezone.to_fixed_offset();
+        self.call_zoned("getResellerSMS", &wire, offset, GET_RESELLER_SMS_TIMESTAMPS)
+            .await
     }
 
     /// Call the `getResellerSMS` API method and return the raw JSON envelope.
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
+    /// reports its timestamps in that offset without naming it:
+    /// [`attach_offset`](crate::attach_offset) puts it back, over
+    /// [`GET_RESELLER_SMS_TIMESTAMPS`](crate::GET_RESELLER_SMS_TIMESTAMPS).
     pub async fn get_reseller_sms_raw(&self, params: &GetResellerSMSParams) -> Result<Value> {
         self.call_raw(
             "getResellerSMS",
@@ -19403,18 +19452,26 @@ impl Client {
     /// Call the `getSMS` API method and deserialize into [`GetSMSResponse`].
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The reported
+    /// timestamps carry that offset.
     pub async fn get_sms(&self, params: &GetSMSParams) -> Result<GetSMSResponse> {
-        self.call("getSMS", &GetSMSParamsWire::try_from(params)?)
+        let wire = GetSMSParamsWire::try_from(params)?;
+        let offset = wire.timezone.to_fixed_offset();
+        self.call_zoned("getSMS", &wire, offset, GET_SMS_TIMESTAMPS)
             .await
     }
 
     /// Call the `getSMS` API method and return the raw JSON envelope.
     ///
     /// A `timezone` zone is resolved to the numeric UTC offset the wire
-    /// expects, at the query start date; a zone that cannot be resolved
-    /// is [`Error::InvalidParams`](crate::Error::InvalidParams).
+    /// expects, at the query start date, and defaults to UTC; a zone that
+    /// cannot be resolved is
+    /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
+    /// reports its timestamps in that offset without naming it:
+    /// [`attach_offset`](crate::attach_offset) puts it back, over
+    /// [`GET_SMS_TIMESTAMPS`](crate::GET_SMS_TIMESTAMPS).
     pub async fn get_sms_raw(&self, params: &GetSMSParams) -> Result<Value> {
         self.call_raw("getSMS", &GetSMSParamsWire::try_from(params)?)
             .await

@@ -216,6 +216,14 @@ in `xtask/src/field_overrides.rs`:
     derives `Serialize` -- there `timezone` emits the IANA name (what a log
     should show); only the wire twin carries the number, so raw `call_raw`
     users must do their own offset conversion.
+
+    The wire `timezone` is **not** optional: a caller who names no zone gets
+    `TimezoneOffset::UTC`. That is what makes the response side typeable (see
+    decision #8) -- the account's own configured zone, which omitting the
+    parameter selects, is reported by nothing in the API, so a timestamp
+    returned in it can only be guessed at. Confirmed against the live API:
+    `timezone=0` is accepted, and the same range read at `0` and at `-4` comes
+    back shifted by exactly four hours.
 * **Boolean flags** map to `bool`, registered in the `FLAG_01_FIELDS` /
   `FLAG_YES_NO_FIELDS` consts of `xtask/src/field_overrides.rs`. Many
   parameters VoIP.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are
@@ -336,6 +344,98 @@ during development. The only risk is URL length on the few methods with
 40+ parameters (`createSubAccount`, `setSubAccount`, `setQueue`); none
 of those exceed typical URL limits in practice because most parameters
 are `None` thanks to design decision #3.
+
+### 8. Record-listing timestamps are typed with their offset
+
+**Decision**: The six methods that take a `timezone` offset (decision #5a's
+`OFFSET_OPS`) type their response timestamp as
+`chrono::DateTime<chrono::FixedOffset>`, not `chrono::NaiveDateTime`. The typed
+method sends an explicit offset on every call, then attaches it to the wall
+clocks the response reports before deserializing, via `Client::call_zoned` and
+the public `attach_offset`.
+
+**Rationale**: The crate computes the exact offset VoIP.ms will apply and then
+used to discard it, handing back a wall clock a consumer had no way to qualify.
+One downstream consumer read an unqualified `2026-09-18T14:44:11` as UTC and
+reported a registration time that had already passed. The zone is known at the
+call site, so the type can carry it.
+
+It has to be a fixed offset rather than a zone. `TimezoneOffset::at` pins the
+offset at local noon on the start date and VoIP.ms applies that single number
+across the whole range, so a range straddling a DST transition comes back at the
+pre-transition offset on both sides. Rebuilding a `DateTime<Tz>` would apply the
+post-transition offset to values the server never shifted; the fixed offset that
+was sent is the honest type. A single legal range reaches the fold in practice --
+`getCDR` caps a query at 92 days, and 2026-02-01 to 2026-04-30 straddles the
+March change.
+
+Attaching the offset is a step on the JSON, not a `Deserialize` impl that
+assumes one: serde has no access to the request, and a deserializer that read a
+bare wall clock as UTC would reintroduce exactly the invented zone this typing
+removes. So `deserialize_opt_datetime_offset` rejects a value with no offset,
+and `attach_offset` is public because a `call_raw` caller needs the same step
+(`livetest`'s `probe_zoned` is one). Each method's paths are public too, as
+`GET_CDR_TIMESTAMPS` and its siblings, emitted by the same codegen pass that
+retypes the fields -- a raw caller reading them out of a generated method body
+would be copying something that moves with the response shape.
+
+`attach_offset` skips a blank value. A blank is one record's missing timestamp,
+which the deserializers fold to `None`; suffixing it produces a string that
+parses as nothing, and since one unparseable value fails the whole envelope,
+that would turn a single missing timestamp into the loss of every record beside
+it.
+
+**Half-hour zones round-trip as themselves.** A zone off the hour resolves to a
+fractional `TimezoneOffset` (`Asia/Kolkata` -> `5.50`, `Asia/Kathmandu` ->
+`5.75`), that fraction goes on the wire, and `to_fixed_offset` qualifies the
+response with the same one, so the two cannot disagree by construction. What no
+local test can show is whether voip.ms honors the fraction or truncates it: the
+live confirmation recorded above covers `0` and `-4` only, and a server that
+read `5.50` as `5` would return records half an hour off the offset the type
+claims. The `cdr` area's `fixture:getCDR:<zone>` reads one window at UTC and at a
+named zone through `Client::get_cdr` and fails if a record's instant moves,
+which is the check that settles it on a live run; it covers a whole-hour and a
+half-hour zone for that reason.
+
+The other 11 `NaiveDateTime` response fields cannot be typed this way. They
+belong to methods with no `timezone` parameter (`getRegistrationStatus`,
+`getDIDsInfo`, `getFAXMessages`, …); their zone is the account's configured one,
+which nothing in the API reports -- the only zone on any response is
+`GetVoicemailsResponseVoicemail::timezone`, a voicemail box's own setting. Typing
+those would mean the crate inventing a zone.
+
+**How to apply**: `cargo xtask gen` derives the fields from the response shapes:
+every `datetime` scalar under an `OFFSET_OPS` method is retyped and its path
+emitted as that method's `*_TIMESTAMPS` const. Three things fail the run rather
+than degrade quietly, because each would leave a field silently naive while the
+build stayed green:
+
+* an offset op whose response declares no timestamp at all (a docs refresh that
+  dropped the field);
+* a `datetime` the walk cannot name, which is any of: a bare one as a list
+  element or map value, since a path ends at a field name; one inside a map,
+  whose values `attach_offset`'s `*` does not reach, because over an object `*`
+  already means the bare single record VoIP.ms sends for a one-element list; and
+  one under a collection nested directly inside another, where the path
+  `attach_offset` would walk and the struct the emitter wraps it in stop
+  agreeing. Each needs the path form, the emitter, or both extended first, which
+  is a decision rather than a default. The guards ask whether the shape holds a
+  timestamp before refusing, so a nested list of strings is not an error;
+* a missing response shape for an op that sends an offset.
+
+Note the asymmetry the second case fixes: the "no timestamp at all" check only
+fires when *every* timestamp is missed, so a response that grows a second
+timestamp somewhere unaddressable would otherwise pass.
+
+A response that is not a record is not in that set. `emit_struct` promotes one
+into a one-field record (`value`, `items`, `entries`), `timestamp_fields`
+synthesizes the same field so the two name one thing, and that field goes
+through the override table like any other -- all three halves have to line up,
+since a walk that names a field the emitter types from the raw shape is worse
+than one that refuses: `call_zoned` then rewrites a value the generated
+deserializer rejects, and every typed call fails at runtime on a build that
+reported success. The tests cover the emitted type, not just the walk, for that
+reason.
 
 ## Code Patterns
 
@@ -502,8 +602,9 @@ Deps whose types appear in the public API (`chrono`, `reqwest`, `rust_decimal`,
 so callers name the exact compatible version without a separate dependency.
 
 * **chrono 0.4** (`serde`): `NaiveDate`/`NaiveDateTime` in typed response
-  fields and date-range params; the `serde` feature supplies the params'
-  `YYYY-MM-DD` `Serialize`.
+  fields and date-range params, and `DateTime<FixedOffset>` for the
+  record-listing timestamps (decision #8); the `serde` feature supplies the
+  params' `YYYY-MM-DD` `Serialize`.
 * **reqwest 0.13.5** (`json`, `query`, no default features): HTTP client + JSON
   deserialization. TLS backend is feature-gated. Two things force the patch
   floor rather than a bare `0.13`: the earlier 0.13.x rustls features the TLS

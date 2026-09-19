@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `attach_offset` completes the bare wall clocks in a record-listing envelope
+  with the offset the request carried, the step the typed methods take before
+  deserializing. Public because a `call_raw` caller needs it too: the raw
+  envelope still reports its timestamps without the offset. It takes a
+  `*`-wildcard path, not the RFC 6901 JSON pointer `Client::call_at` takes.
+- `GET_CDR_TIMESTAMPS`, `GET_SMS_TIMESTAMPS`, `GET_MMS_TIMESTAMPS` and their
+  three reseller siblings: the paths `attach_offset` needs for each method,
+  emitted by the same codegen pass that types the fields.
+- `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`. A zone off the
+  hour keeps its fraction through both (`Asia/Kolkata` sends `5.50` and its
+  timestamps come back qualified `+05:30`).
+
+### Changed
+
+- **Breaking**: the six record-listing methods report their timestamps with the
+  UTC offset the call asked for. `GetCDRResponseCDR::date`,
+  `GetResellerCDRResponseCDR::date`, `GetSMSResponseSMS::date`,
+  `GetMMSResponseSMS::date`, `GetResellerSMSResponseSMS::date`, and
+  `GetResellerMMSResponseSMS::date` are now
+  `Option<chrono::DateTime<chrono::FixedOffset>>` instead of
+  `Option<chrono::NaiveDateTime>`. The crate already computed the offset VoIP.ms
+  would apply and then dropped it, so a caller who passed a `timezone` got back
+  a wall clock with no way to recover the zone. A consumer read one as UTC and
+  reported a time that had already passed.
+  - The type is a fixed offset, not a zone. VoIP.ms takes one number for the
+    whole range, so a range straddling a DST transition comes back at the
+    pre-transition offset throughout; a `DateTime<Tz>` would shift the far side
+    by an offset the server never applied.
+- **Breaking**: those methods send an explicit `timezone` on every call,
+  defaulting to `TimezoneOffset::UTC` when the caller names no zone. Omitting it
+  selects the account's configured zone, which nothing in the API reports -- a
+  timestamp returned in it could only be guessed at. A caller who relied on the
+  account default now gets UTC and should pass the zone it was set to.
+
 ### Fixed
 
 - `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,

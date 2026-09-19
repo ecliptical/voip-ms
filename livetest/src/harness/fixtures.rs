@@ -13,9 +13,11 @@ use serde::de::DeserializeOwned;
 
 use crate::harness::area::SweepResult;
 use crate::harness::marker::is_owned_marker;
-use crate::harness::probe::{ProbeOutcome, probe};
+use crate::harness::probe::{ProbeOutcome, ZonedRequest, probe, probe_zoned};
 use crate::harness::{Outcome, Report};
-use voip_ms::{ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams};
+use voip_ms::{
+    ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams, TimezoneOffset,
+};
 
 /// Every `(required)` `setQueue` field but the caller-supplied `queue_name`,
 /// filled with values the API accepts, so a fixture only sets its name and the
@@ -79,7 +81,67 @@ where
     // Class B), so the populated-response drift check never ran.
     let method = label.strip_prefix("fixture:").unwrap_or(label);
     let outcome = probe::<P, T>(client, method, params, count).await;
+    record_read_back(client, report, area, label, method, params, outcome).await
+}
 
+/// [`read_back`] for a record-listing method, whose response reports its
+/// timestamps in the UTC offset the request carried without naming it.
+/// `timestamps` are the paths [`voip_ms::attach_offset`] takes.
+///
+/// The read-back is at [`TimezoneOffset::UTC`]; a non-zero offset is the
+/// `cdr` area's typed fixture, which goes through `Client::get_cdr` itself.
+pub async fn read_back_zoned<P, T>(
+    client: &Client,
+    report: &mut Report,
+    area: &str,
+    label: &str,
+    params: &P,
+    timestamps: &[&str],
+    count: impl Fn(&T) -> Option<usize>,
+) -> bool
+where
+    P: Serialize + Sync,
+    T: DeserializeOwned,
+{
+    let method = label.strip_prefix("fixture:").unwrap_or(label);
+    match ZonedRequest::new(params, TimezoneOffset::UTC) {
+        Ok(request) => {
+            let outcome = probe_zoned::<T>(client, method, &request, timestamps, count).await;
+            record_read_back(
+                client,
+                report,
+                area,
+                label,
+                method,
+                request.params(),
+                outcome,
+            )
+            .await
+        }
+
+        // Params that will not serialize are a bug here, not drift in the API,
+        // so this reports like any other non-drift outcome -- including the
+        // drift-free `true`.
+        Err(error) => {
+            let outcome = ProbeOutcome::Transport(error);
+            record_read_back(client, report, area, label, method, params, outcome).await
+        }
+    }
+}
+
+/// Capture a failing read-back's request and envelope, then record it.
+async fn record_read_back<P>(
+    client: &Client,
+    report: &mut Report,
+    area: &str,
+    label: &str,
+    method: &str,
+    params: &P,
+    outcome: ProbeOutcome,
+) -> bool
+where
+    P: Serialize + Sync,
+{
     // Defensive diagnostic: if a read-back still returns an error status,
     // capture the exact request and the raw response envelope so a live run can
     // pin the cause without a second targeted run.
