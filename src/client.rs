@@ -1,18 +1,42 @@
-use reqwest::Url;
+use reqwest::{IntoUrl, Url, multipart};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use std::fmt;
+use std::sync::LazyLock;
 
 use crate::error::{ApiStatus, Error, Result};
 
 /// Default base URL for the VoIP.ms REST API.
 pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
 
+/// A URL built only to be discarded: the multipart form reads the query string
+/// `reqwest` serializes the parameters into, and never sends the request.
+static SCRATCH_URL: LazyLock<Url> = LazyLock::new(|| {
+    Url::parse("http://form.invalid/").expect("the scratch URL is a literal and must parse")
+});
+
+/// Where a request carries its parameters.
+#[derive(Clone, Copy)]
+enum Transport {
+    /// A GET with the parameters on the query string.
+    Get,
+    /// A POST with the parameters as `multipart/form-data` fields. Required
+    /// for a base64 file payload, which overruns the 8190-byte request line
+    /// the API's front end accepts. `application/x-www-form-urlencoded` is not
+    /// an alternative: `rest.php` hands one to a SOAP handler, which answers
+    /// with an XML fault.
+    MultipartPost,
+}
+
 /// Async client for the VoIP.ms REST API.
 ///
 /// Clients are cheap to clone; the underlying [`reqwest::Client`] uses an
 /// internal connection pool that is shared across clones.
+///
+/// A call is a GET carrying its parameters on the query string, except one
+/// whose parameters include a base64-encoded file, which is a
+/// `multipart/form-data` POST.
 #[derive(Clone)]
 pub struct Client {
     http: reqwest::Client,
@@ -48,36 +72,82 @@ impl Client {
         }
     }
 
-    /// Issue the GET request for `method` and return the parsed JSON body
-    /// together with its classified status, without rejecting empty-collection
-    /// statuses. The two callers differ only in how they treat that case.
-    async fn fetch<P>(&self, method: &str, params: &P) -> Result<(Value, Option<ApiStatus>)>
+    /// The GET form of a request to `url`: credentials, `method`, and `params`
+    /// on the query string.
+    fn get_request<U, P>(&self, url: U, method: &str, params: &P) -> reqwest::RequestBuilder
     where
+        U: IntoUrl,
         P: Serialize + ?Sized,
     {
-        let response = self
-            .http
-            .get(self.base_url.clone())
+        self.http
+            .get(url)
             .query(&[
                 ("api_username", self.api_username.as_str()),
                 ("api_password", self.api_password.as_str()),
                 ("method", method),
             ])
             .query(params)
-            .send()
-            .await?
-            .error_for_status()?;
+    }
 
-        let text = response.text().await?;
+    /// The request's parameters as multipart fields, read back out of the query
+    /// string the GET form serializes them into. The two transports differ in
+    /// where a value rides, not in how it is encoded, and a parameter no
+    /// `Serialize` can put on a query string fails here as it would there.
+    fn multipart_form<P>(&self, method: &str, params: &P) -> Result<multipart::Form>
+    where
+        P: Serialize + ?Sized,
+    {
+        let scratch = self
+            .get_request(SCRATCH_URL.clone(), method, params)
+            .build()?;
+        let mut form = multipart::Form::new();
+        for (name, value) in scratch.url().query_pairs() {
+            form = form.text(name.into_owned(), value.into_owned());
+        }
+
+        Ok(form)
+    }
+
+    /// Issue the request for `method` over `transport` and return its parsed
+    /// JSON body, without classifying the `status` field.
+    async fn send<P>(&self, method: &str, params: &P, transport: Transport) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        let request = match transport {
+            Transport::Get => self.get_request(self.base_url.clone(), method, params),
+            Transport::MultipartPost => self
+                .http
+                .post(self.base_url.clone())
+                .multipart(self.multipart_form(method, params)?),
+        };
+
+        let text = request.send().await?.error_for_status()?.text().await?;
         // Some methods (e.g. delConference) answer a successful call with an
         // empty body instead of a `{"status":"success"}` envelope; treat that
         // as success rather than a JSON parse error.
-        let body: Value = if text.trim().is_empty() {
-            json!({ "status": "success" })
-        } else {
-            serde_json::from_str(&text)
-                .map_err(|e| Error::InvalidResponse(format!("response body is not JSON: {e}")))?
-        };
+        if text.trim().is_empty() {
+            return Ok(json!({ "status": "success" }));
+        }
+
+        serde_json::from_str(&text)
+            .map_err(|e| Error::InvalidResponse(format!("response body is not JSON: {e}")))
+    }
+
+    /// Issue the request for `method` over `transport` and return the parsed
+    /// JSON body together with its classified status, without rejecting
+    /// empty-collection statuses. Callers differ only in how they treat that
+    /// case.
+    async fn fetch<P>(
+        &self,
+        method: &str,
+        params: &P,
+        transport: Transport,
+    ) -> Result<(Value, Option<ApiStatus>)>
+    where
+        P: Serialize + ?Sized,
+    {
+        let body = self.send(method, params, transport).await?;
         let empty = check_status(&body)?;
         Ok((body, empty))
     }
@@ -99,7 +169,28 @@ impl Client {
     where
         P: Serialize + ?Sized,
     {
-        let (body, empty) = self.fetch(method, params).await?;
+        let (body, empty) = self.fetch(method, params, Transport::Get).await?;
+        if let Some(status) = empty {
+            return Err(Error::Api(status));
+        }
+        Ok(body)
+    }
+
+    /// Issue a `multipart/form-data` POST for `method` and return the full
+    /// JSON response body as a [`serde_json::Value`].
+    ///
+    /// The multipart counterpart of [`Client::call_raw`], with the same
+    /// verbatim contract on the `status` field. Every parameter travels as a
+    /// form field -- credentials and `method` included -- so nothing is bounded
+    /// by the 8190-byte request line the API's front end accepts, which a
+    /// base64 file payload overruns many times over. The multipart encoding is
+    /// not interchangeable with `application/x-www-form-urlencoded`: `rest.php`
+    /// hands one of those to a SOAP handler and answers with an XML fault.
+    pub async fn call_multipart_raw<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        let (body, empty) = self.fetch(method, params, Transport::MultipartPost).await?;
         if let Some(status) = empty {
             return Err(Error::Api(status));
         }
@@ -124,26 +215,20 @@ impl Client {
     where
         P: Serialize + ?Sized,
     {
-        let response = self
-            .http
-            .get(self.base_url.clone())
-            .query(&[
-                ("api_username", self.api_username.as_str()),
-                ("api_password", self.api_password.as_str()),
-                ("method", method),
-            ])
-            .query(params)
-            .send()
-            .await?
-            .error_for_status()?;
+        self.send(method, params, Transport::Get).await
+    }
 
-        let text = response.text().await?;
-        if text.trim().is_empty() {
-            return Ok(json!({ "status": "success" }));
-        }
-
-        serde_json::from_str(&text)
-            .map_err(|e| Error::InvalidResponse(format!("response body is not JSON: {e}")))
+    /// The `multipart/form-data` POST counterpart of
+    /// [`Client::call_raw_unchecked`]: the same unclassified envelope, for a
+    /// method whose base64 file parameter does not fit a request line.
+    ///
+    /// Gated behind the `unchecked-raw` feature.
+    #[cfg(feature = "unchecked-raw")]
+    pub async fn call_multipart_raw_unchecked<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        self.send(method, params, Transport::MultipartPost).await
     }
 
     /// Issue a request and deserialize the full JSON response body into `T`.
@@ -157,7 +242,23 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (body, _empty) = self.fetch(method, params).await?;
+        let (body, _empty) = self.fetch(method, params, Transport::Get).await?;
+        serde_json::from_value(body)
+            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
+    }
+
+    /// Issue a `multipart/form-data` POST for `method` and deserialize the full
+    /// JSON response body into `T`.
+    ///
+    /// The multipart counterpart of [`Client::call`], with the same handling of
+    /// an empty-collection status. See [`Client::call_multipart_raw`] for what
+    /// the transport changes and why a base64 file payload needs it.
+    pub async fn call_multipart<P, T>(&self, method: &str, params: &P) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let (body, _empty) = self.fetch(method, params, Transport::MultipartPost).await?;
         serde_json::from_value(body)
             .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
     }
@@ -176,7 +277,7 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (body, empty) = self.fetch(method, params).await?;
+        let (body, empty) = self.fetch(method, params, Transport::Get).await?;
         let subtree = match body.pointer(pointer) {
             Some(v) => v.clone(),
             None if empty.is_some() => Value::Null,

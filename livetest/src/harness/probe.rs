@@ -28,10 +28,16 @@ pub enum ProbeOutcome {
 
 /// Probe one method by name, given its params and the deserialization target.
 ///
-/// `call_raw` yields the raw JSON envelope; the typed shape `T` is then
-/// deserialized from a clone of that value. `count` extracts an optional
-/// element count from the deserialized value for logging (return `None` for
-/// non-list responses).
+/// The raw JSON envelope is fetched over whichever transport the method
+/// requires; the typed shape `T` is then deserialized from a clone of that
+/// value. `count` extracts an optional element count from the deserialized
+/// value for logging (return `None` for non-list responses).
+///
+/// Asks [`voip_ms::requires_multipart`] rather than assuming a GET. Nothing
+/// routed here is in the multipart table today -- that is the invariant to
+/// check when adding a probe, not the method's prefix -- and a file method sent
+/// as a GET would fail on request-line length, reading as a transport error
+/// rather than as this function's mistake.
 pub async fn probe<P, T>(
     client: &Client,
     method: &str,
@@ -42,12 +48,18 @@ where
     P: Serialize + Sync,
     T: DeserializeOwned,
 {
-    let raw = match client.call_raw(method, params).await {
+    let request = if voip_ms::requires_multipart(method) {
+        client.call_multipart_raw(method, params).await
+    } else {
+        client.call_raw(method, params).await
+    };
+    let raw = match request {
         Ok(value) => value,
         // An empty-collection status is the typed path's empty-list case, not a
-        // failure: `call_raw` surfaces it verbatim but the typed `call` folds it
-        // into an empty response. Mirror the typed semantics so an empty account
-        // never reads as an API error -- there is simply nothing to deserialize.
+        // failure: both raw forms surface it verbatim, where the typed `call`
+        // folds it into an empty response. Mirror the typed semantics so an
+        // empty account never reads as an API error -- there is simply nothing
+        // to deserialize.
         Err(Error::Api(status)) if status.is_empty() => {
             return ProbeOutcome::Ok {
                 element_count: Some(0),

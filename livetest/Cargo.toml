@@ -13,6 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 voip-ms = { path = "..", features = ["unchecked-raw"] }
+base64 = "0.23"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 reqwest = { version = "0.13.4", default-features = false, features = ["json", "query", "rustls", "socks"] }
 serde = { version = "1.0", features = ["derive"] }

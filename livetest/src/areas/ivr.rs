@@ -76,8 +76,18 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
     // getRecordings"); a nonexistent id is rejected (`invalid_recording`), so
     // discover one and skip if the account has none. `voicemailsetup` code 1 and
     // a single hangup choice are the conventional defaults.
+    //
+    // Marker-bearing recordings are passed over: `callflow` creates one, and
+    // an IVR referencing it makes `delRecording` refuse, which fails that
+    // area's sweep and aborts the run before `ivr`'s sweep can free it.
     let recording = match client.get_recordings(&GetRecordingsParams::default()).await {
-        Ok(resp) => resp.recordings.into_iter().find_map(|r| r.value),
+        // Separate steps on purpose: one `find` would stop at the first
+        // unowned recording and give up if it carried no id.
+        Ok(resp) => resp
+            .recordings
+            .into_iter()
+            .filter(|r| !owned(&r.description))
+            .find_map(|r| r.value),
         // `no_recording` deserializes as an empty list on some paths; treat any
         // read failure as "none discoverable" rather than a hard error here.
         Err(_) => None,
