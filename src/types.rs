@@ -37,7 +37,7 @@ use std::str::FromStr;
 /// * `did:5551234567` → [`Routing::Did`]
 /// * `phone:5551234567` → [`Routing::Phone`]
 /// * `none:` → [`Routing::None`]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Routing {
     /// No routing (wire: `none:`).
     None,
@@ -226,7 +226,7 @@ impl<'de> Deserialize<'de> for Routing {
 /// sentinel. [`Seconds`] serializes the sentinel as `none`; [`WaitTime`] as
 /// `unlimited` (the word `maximum_wait_time` documents). Both deserialize
 /// tolerantly: a number, a numeric string, or either sentinel word.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Seconds {
     /// A concrete number of seconds.
     Value(u64),
@@ -238,7 +238,7 @@ pub enum Seconds {
 ///
 /// Like [`Seconds`] but serializes the unbounded case as `unlimited`, the word
 /// `maximum_wait_time` documents.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WaitTime {
     /// A concrete number of seconds.
     Value(u64),
@@ -250,7 +250,7 @@ pub enum WaitTime {
 ///
 /// `getConference` reports `max_members` as a count or the word `Unlimited`
 /// when the conference has no cap.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MaxMembers {
     /// A concrete member cap.
     Value(u64),
@@ -359,7 +359,7 @@ impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 ///
 /// Serializes as a bare number (`-5`, `5.5`); deserializes tolerantly from a
 /// JSON number or a numeric string.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TimezoneOffset(Decimal);
 
 impl TimezoneOffset {
@@ -511,56 +511,6 @@ impl Serialize for TimezoneOffset {
     }
 }
 
-impl<'de> Deserialize<'de> for TimezoneOffset {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct OffsetVisitor;
-
-        impl<'de> Visitor<'de> for OffsetVisitor {
-            type Value = TimezoneOffset;
-
-            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                f.write_str("a UTC-offset number in hours between -12 and 13")
-            }
-
-            fn visit_i64<E>(self, v: i64) -> Result<TimezoneOffset, E>
-            where
-                E: DeError,
-            {
-                TimezoneOffset::try_from(v).map_err(E::custom)
-            }
-
-            fn visit_u64<E>(self, v: u64) -> Result<TimezoneOffset, E>
-            where
-                E: DeError,
-            {
-                let v = i64::try_from(v).map_err(|_| E::custom("timezone offset out of range"))?;
-                TimezoneOffset::try_from(v).map_err(E::custom)
-            }
-
-            fn visit_f64<E>(self, v: f64) -> Result<TimezoneOffset, E>
-            where
-                E: DeError,
-            {
-                let d = Decimal::try_from(v)
-                    .map_err(|_| E::custom("timezone offset is not a valid number"))?;
-                TimezoneOffset::new(d).map_err(E::custom)
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<TimezoneOffset, E>
-            where
-                E: DeError,
-            {
-                TimezoneOffset::from_str(v).map_err(E::custom)
-            }
-        }
-
-        deserializer.deserialize_any(OffsetVisitor)
-    }
-}
-
 /// A named time zone as VoIP.ms reports it: a parsed [`chrono_tz::Tz`] when
 /// the bundled IANA database recognizes the name, or the verbatim wire string
 /// when it does not.
@@ -571,7 +521,7 @@ impl<'de> Deserialize<'de> for TimezoneOffset {
 /// preserving them beats failing the whole response. Parsing never fails --
 /// an unrecognized name lands in [`TimezoneName::Unrecognized`] and
 /// round-trips unchanged.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TimezoneName {
     /// A zone the bundled IANA database recognizes.
     Known(chrono_tz::Tz),
@@ -616,15 +566,6 @@ impl FromStr for TimezoneName {
 impl From<chrono_tz::Tz> for TimezoneName {
     fn from(tz: chrono_tz::Tz) -> Self {
         TimezoneName::Known(tz)
-    }
-}
-
-impl Serialize for TimezoneName {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(self.name())
     }
 }
 
@@ -813,23 +754,26 @@ mod tests {
         );
     }
 
+    /// The offset only ever goes out, on the `*ParamsWire` twin, so parsing
+    /// one is `FromStr`'s job rather than a `Deserialize` impl's.
     #[test]
-    fn timezone_offset_deserializes_number_and_string() {
-        // Number, integer string, and fractional string all parse.
+    fn timezone_offset_parses_integer_and_fractional_strings() {
         assert_eq!(
-            serde_json::from_str::<TimezoneOffset>("-5").unwrap(),
+            "-5".parse::<TimezoneOffset>().unwrap(),
             TimezoneOffset::try_from(-5).unwrap()
         );
         assert_eq!(
-            serde_json::from_str::<TimezoneOffset>("\"-5\"").unwrap(),
-            TimezoneOffset::try_from(-5).unwrap()
-        );
-        assert_eq!(
-            serde_json::from_str::<TimezoneOffset>("\"5.5\"").unwrap(),
+            " 5.5 ".parse::<TimezoneOffset>().unwrap(),
             TimezoneOffset::new(Decimal::from_str_exact("5.5").unwrap()).unwrap()
         );
-        // Out-of-range fails at deserialize time.
-        assert!(serde_json::from_str::<TimezoneOffset>("99").is_err());
+        assert_eq!(
+            "99".parse::<TimezoneOffset>(),
+            Err(TimezoneOffsetError::OutOfRange(Decimal::from(99)))
+        );
+        assert_eq!(
+            "abc".parse::<TimezoneOffset>(),
+            Err(TimezoneOffsetError::NotNumeric)
+        );
     }
 
     #[test]
@@ -923,14 +867,14 @@ mod tests {
         assert_eq!(legacy.to_string(), "Asia/Beijing");
     }
 
+    /// Nothing writes a zone name -- only `getTimezones` and `getVoicemails`
+    /// report one -- so the type reads and never serializes.
     #[test]
-    fn timezone_name_round_trips_through_serde() {
+    fn timezone_name_deserializes_known_and_legacy() {
         for name in ["America/New_York", "US/Pacific-New"] {
-            let parsed: TimezoneName = name.parse().unwrap();
-            let json = serde_json::to_string(&parsed).unwrap();
-            assert_eq!(json, format!("\"{name}\""));
-            let back: TimezoneName = serde_json::from_str(&json).unwrap();
-            assert_eq!(back, parsed);
+            let back: TimezoneName = serde_json::from_str(&format!("\"{name}\"")).unwrap();
+            assert_eq!(back, name.parse::<TimezoneName>().unwrap());
+            assert_eq!(back.name(), name);
         }
     }
 

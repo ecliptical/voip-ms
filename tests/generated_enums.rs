@@ -14,8 +14,9 @@ use voip_ms::*;
 fn call_pickup_behavior_wire_roundtrips() {
     for w in ["1", "2", "3", "4"] {
         assert_eq!(CallPickupBehavior::from_wire(w).as_wire(), w);
-        let v = serde_json::to_value(CallPickupBehavior::from_wire(w)).unwrap();
-        let back: CallPickupBehavior = serde_json::from_value(v).unwrap();
+        // Read-only enum: no `*Params` field writes one, so it carries
+        // `Deserialize` alone and the wire string is fed in directly.
+        let back: CallPickupBehavior = serde_json::from_value(serde_json::json!(w)).unwrap();
         assert_eq!(back, CallPickupBehavior::from_wire(w));
     }
 
@@ -26,8 +27,8 @@ fn call_pickup_behavior_wire_roundtrips() {
 fn call_pickup_behavior_unknown_preserved() {
     let u = CallPickupBehavior::from_wire("zzz_unknown");
     assert_eq!(u.as_wire(), "zzz_unknown");
-    let v = serde_json::to_value(&u).unwrap();
-    let back: CallPickupBehavior = serde_json::from_value(v).unwrap();
+    let back: CallPickupBehavior =
+        serde_json::from_value(serde_json::json!("zzz_unknown")).unwrap();
     assert_eq!(back, u);
 }
 
@@ -35,9 +36,9 @@ fn call_pickup_behavior_unknown_preserved() {
 fn dialing_mode_wire_roundtrips() {
     for w in ["0", "1", "2"] {
         assert_eq!(DialingMode::from_wire(w).as_wire(), w);
-        let v = serde_json::to_value(DialingMode::from_wire(w)).unwrap();
-        let back: DialingMode = serde_json::from_value(v).unwrap();
-        assert_eq!(back, DialingMode::from_wire(w));
+        // Write-only enum: no `*Response` field reads one, so it carries
+        // `Serialize` alone and the wire string is checked where it lands.
+        assert_eq!(serde_json::to_value(DialingMode::from_wire(w)).unwrap(), w);
     }
 
     assert_eq!(DialingMode::from_wire("0").to_string(), "0");
@@ -47,9 +48,7 @@ fn dialing_mode_wire_roundtrips() {
 fn dialing_mode_unknown_preserved() {
     let u = DialingMode::from_wire("zzz_unknown");
     assert_eq!(u.as_wire(), "zzz_unknown");
-    let v = serde_json::to_value(&u).unwrap();
-    let back: DialingMode = serde_json::from_value(v).unwrap();
-    assert_eq!(back, u);
+    assert_eq!(serde_json::to_value(&u).unwrap(), "zzz_unknown");
 }
 
 #[test]
@@ -326,9 +325,9 @@ fn ring_strategy_unknown_preserved() {
 fn search_type_wire_roundtrips() {
     for w in ["starts", "contains", "ends"] {
         assert_eq!(SearchType::from_wire(w).as_wire(), w);
-        let v = serde_json::to_value(SearchType::from_wire(w)).unwrap();
-        let back: SearchType = serde_json::from_value(v).unwrap();
-        assert_eq!(back, SearchType::from_wire(w));
+        // Write-only enum: no `*Response` field reads one, so it carries
+        // `Serialize` alone and the wire string is checked where it lands.
+        assert_eq!(serde_json::to_value(SearchType::from_wire(w)).unwrap(), w);
     }
 
     assert_eq!(SearchType::from_wire("starts").to_string(), "starts");
@@ -338,9 +337,7 @@ fn search_type_wire_roundtrips() {
 fn search_type_unknown_preserved() {
     let u = SearchType::from_wire("zzz_unknown");
     assert_eq!(u.as_wire(), "zzz_unknown");
-    let v = serde_json::to_value(&u).unwrap();
-    let back: SearchType = serde_json::from_value(v).unwrap();
-    assert_eq!(back, u);
+    assert_eq!(serde_json::to_value(&u).unwrap(), "zzz_unknown");
 }
 
 #[test]
@@ -389,9 +386,9 @@ fn transcription_format_unknown_preserved() {
 fn vanity_type_wire_roundtrips() {
     for w in ["8**", "800", "833", "844", "855", "866", "877", "888"] {
         assert_eq!(VanityType::from_wire(w).as_wire(), w);
-        let v = serde_json::to_value(VanityType::from_wire(w)).unwrap();
-        let back: VanityType = serde_json::from_value(v).unwrap();
-        assert_eq!(back, VanityType::from_wire(w));
+        // Write-only enum: no `*Response` field reads one, so it carries
+        // `Serialize` alone and the wire string is checked where it lands.
+        assert_eq!(serde_json::to_value(VanityType::from_wire(w)).unwrap(), w);
     }
 
     assert_eq!(VanityType::from_wire("8**").to_string(), "8**");
@@ -401,9 +398,7 @@ fn vanity_type_wire_roundtrips() {
 fn vanity_type_unknown_preserved() {
     let u = VanityType::from_wire("zzz_unknown");
     assert_eq!(u.as_wire(), "zzz_unknown");
-    let v = serde_json::to_value(&u).unwrap();
-    let back: VanityType = serde_json::from_value(v).unwrap();
-    assert_eq!(back, u);
+    assert_eq!(serde_json::to_value(&u).unwrap(), "zzz_unknown");
 }
 
 #[test]

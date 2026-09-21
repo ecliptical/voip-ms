@@ -37,6 +37,7 @@ pub fn emit_response_structs(
     method_names: &[String],
     responses: &BTreeMap<String, Shape>,
     resolver: &Resolver,
+    enums_used: &mut std::collections::BTreeSet<String>,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -47,7 +48,7 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new(resolver, root.clone());
+        let mut emitter = Emitter::new(resolver, root.clone(), enums_used);
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -226,6 +227,9 @@ struct Emitter<'a> {
     /// before any later sibling that references them).
     structs: Vec<String>,
     resolver: &'a Resolver<'a>,
+    /// Every substituted type a response field lands on, so the generator can
+    /// emit each declared enum's reader only where one is read.
+    enums_used: &'a mut std::collections::BTreeSet<String>,
     /// The method's top-level response struct. Its `status` is the envelope's
     /// own, typed [`crate::ApiStatus`]; a nested struct's same-named field
     /// (a fax's, a port's) is unrelated and keeps its inferred type.
@@ -233,10 +237,15 @@ struct Emitter<'a> {
 }
 
 impl<'a> Emitter<'a> {
-    fn new(resolver: &'a Resolver<'a>, root: String) -> Self {
+    fn new(
+        resolver: &'a Resolver<'a>,
+        root: String,
+        enums_used: &'a mut std::collections::BTreeSet<String>,
+    ) -> Self {
         Self {
             structs: Vec::new(),
             resolver,
+            enums_used,
             root,
         }
     }
@@ -281,6 +290,7 @@ impl<'a> Emitter<'a> {
                     Some(o) => o.rust_type.clone(),
                     None => self.scalar_rust_type(shape),
                 };
+                self.enums_used.insert(inner_ty.clone());
                 let deser = match override_ {
                     Some(o) => o.response_deserializer.as_deref(),
                     None => scalar_deserializer(shape),
@@ -354,6 +364,7 @@ impl<'a> Emitter<'a> {
                 Some(o) => o.rust_type.clone(),
                 None => self.field_type(name, fname, sub),
             };
+            self.enums_used.insert(rust_ty.clone());
             let deser = match override_ {
                 Some(o) => o.response_deserializer.as_deref(),
                 None => field_deserializer(sub),
@@ -721,7 +732,12 @@ mod tests {
             skip: &skip,
         };
         let responses = BTreeMap::from([("getCDR".to_string(), shape.clone())]);
-        emit_response_structs(&["getCDR".to_string()], &responses, &resolver)
+        emit_response_structs(
+            &["getCDR".to_string()],
+            &responses,
+            &resolver,
+            &mut Default::default(),
+        )
     }
 
     // The walk naming a field is only half of it: the emitter has to apply the

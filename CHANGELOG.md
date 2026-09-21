@@ -261,6 +261,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   crate owns, and a failure surfaced as `Error::InvalidResponse`, a variant
   about HTTP bodies. The default URL is parsed once into a `LazyLock`, and
   `Client::new` no longer documents a panic.
+- **Breaking**: every type carries only the traits something reaches it
+  through, rather than the full conventional set.
+  - `Hash` is gone from `ApiStatus`, `Routing`, `Seconds`, `WaitTime`,
+    `MaxMembers`, `TimezoneOffset`, `TimezoneName`, `TransportFailure`,
+    `RetryOutlook`, and the 19 wire enums, as are `PartialOrd` / `Ord` on
+    `TimezoneOffset`. Nothing hashed or ordered any of them.
+  - The unused serde direction is gone with it: `ApiStatus` no longer
+    implements `Serialize`, `TimezoneName` no longer implements `Serialize`
+    (nothing writes a zone name; only `getTimezones` and `getVoicemails`
+    report one), and `TimezoneOffset` no longer implements `Deserialize` (it
+    only ever goes out, on the private wire twin). A generated wire enum now
+    carries only the direction a field reaches it through, so
+    `CallPickupBehavior` reads, and `DialingMode`, `SearchType` and
+    `VanityType` write.
+  - That also retires the 19 `#[allow(dead_code)]` attributes the generator
+    emitted to hide the readers nothing called. An `allow` covering generated
+    code is the shape of the problem rather than a fix for it.
+  - Each is additive to restore, so a consumer who needs one can ask.
 - **Breaking**: `Error::InvalidParams` carries a `ParamsError` rather than a
   `TimezoneOffsetError`. The variant name was general and its payload
   specific, so the next parameter check had nowhere to go.

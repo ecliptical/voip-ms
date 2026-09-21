@@ -379,11 +379,18 @@ in `xtask/src/field_overrides.rs`:
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
   sections. The generator emits the enum type (deriving `Debug`, `Clone`,
-  `PartialEq`, `Eq`, `Hash` -- not `Copy`, since the `Unknown(String)`
-  catch-all holds a `String`), `as_wire` / `from_wire`, `Display`,
-  `Serialize`, `Deserialize`, plus a per-enum
-  `deserialize_opt_*` helper, and substitutes the field's type in
-  every `*Params` and `*Response` struct that has that field. Used
+  `PartialEq`, `Eq` -- not `Copy`, since the `Unknown(String)` catch-all holds
+  a `String`), `as_wire` / `from_wire`, `Display`, and substitutes the field's
+  type in every `*Params` and `*Response` struct that has that field.
+
+  **Only the serde direction a field reaches it through is emitted**, tracked
+  in `EnumSides` while the structs render: `Serialize` for an enum some
+  `*Params` writes, `Deserialize` plus its `deserialize_opt_*` helper for one
+  some `*Response` reads, both for the 15 that are both. Emitting both
+  unconditionally meant every helper needed an `#[allow(dead_code)]` to hide
+  the three nothing called, which is the shape of the problem rather than a
+  fix for it. The same rule retired `ApiStatus`'s `Serialize`,
+  `TimezoneName`'s `Serialize`, and `TimezoneOffset`'s `Deserialize`. Used
   for `DtmfMode`, `Nat`, `EmailAttachmentFormat`,
   `TranscriptionFormat`, `PlayInstructions`, `RingStrategy`,
   `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`,

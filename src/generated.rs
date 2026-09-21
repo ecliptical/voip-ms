@@ -18,7 +18,7 @@ use crate::error::Result;
 pub struct NoParams {}
 
 /// Sub-account call-pickup permissions.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallPickupBehavior {
     /// Can pick up and be picked up.
     PickUpAndBePickedUp,
@@ -70,12 +70,6 @@ impl std::str::FromStr for CallPickupBehavior {
     }
 }
 
-impl serde::Serialize for CallPickupBehavior {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
-        s.serialize_str(self.as_wire())
-    }
-}
-
 impl<'de> serde::Deserialize<'de> for CallPickupBehavior {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
@@ -83,7 +77,6 @@ impl<'de> serde::Deserialize<'de> for CallPickupBehavior {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_call_pickup_behavior<'de, D>(
     d: D,
 ) -> std::result::Result<Option<CallPickupBehavior>, D::Error>
@@ -102,7 +95,7 @@ where
 }
 
 /// Outgoing-call dialing mode for a sub-account.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DialingMode {
     /// Use the main account setting.
     MainAccount,
@@ -154,33 +147,8 @@ impl serde::Serialize for DialingMode {
     }
 }
 
-impl<'de> serde::Deserialize<'de> for DialingMode {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = crate::responses::deserialize_enum_wire_string(d)?;
-        Ok(DialingMode::from_wire(&s))
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) fn deserialize_opt_dialing_mode<'de, D>(
-    d: D,
-) -> std::result::Result<Option<DialingMode>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(DialingMode::from_wire(t))
-        }
-    }))
-}
-
 /// DID billing model.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DidBillingType {
     PerMinute,
     Flat,
@@ -235,7 +203,6 @@ impl<'de> serde::Deserialize<'de> for DidBillingType {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_did_billing_type<'de, D>(
     d: D,
 ) -> std::result::Result<Option<DidBillingType>, D::Error>
@@ -254,7 +221,7 @@ where
 }
 
 /// DTMF transport mode for SIP sub-accounts.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DtmfMode {
     Auto,
     Rfc2833,
@@ -315,7 +282,6 @@ impl<'de> serde::Deserialize<'de> for DtmfMode {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_dtmf_mode<'de, D>(
     d: D,
 ) -> std::result::Result<Option<DtmfMode>, D::Error>
@@ -334,7 +300,7 @@ where
 }
 
 /// Voicemail email attachment format.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EmailAttachmentFormat {
     /// GSM-compressed WAV.
     Wav49,
@@ -398,7 +364,6 @@ impl<'de> serde::Deserialize<'de> for EmailAttachmentFormat {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_email_attachment_format<'de, D>(
     d: D,
 ) -> std::result::Result<Option<EmailAttachmentFormat>, D::Error>
@@ -417,7 +382,7 @@ where
 }
 
 /// When to include estimated hold time in queue position announcements.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EstimatedHoldTimeAnnounce {
     Yes,
     No,
@@ -476,7 +441,6 @@ impl<'de> serde::Deserialize<'de> for EstimatedHoldTimeAnnounce {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_estimated_hold_time_announce<'de, D>(
     d: D,
 ) -> std::result::Result<Option<EstimatedHoldTimeAnnounce>, D::Error>
@@ -495,7 +459,7 @@ where
 }
 
 /// Type of service location for an LNP port.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LocationType {
     Residential,
     Business,
@@ -550,7 +514,6 @@ impl<'de> serde::Deserialize<'de> for LocationType {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_location_type<'de, D>(
     d: D,
 ) -> std::result::Result<Option<LocationType>, D::Error>
@@ -569,7 +532,7 @@ where
 }
 
 /// Direction of an SMS / MMS message: a filter on requests, the direction on results.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MessageType {
     Received,
     Sent,
@@ -624,7 +587,6 @@ impl<'de> serde::Deserialize<'de> for MessageType {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_message_type<'de, D>(
     d: D,
 ) -> std::result::Result<Option<MessageType>, D::Error>
@@ -643,7 +605,7 @@ where
 }
 
 /// Asterisk NAT handling mode.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Nat {
     Yes,
     No,
@@ -704,7 +666,6 @@ impl<'de> serde::Deserialize<'de> for Nat {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_nat<'de, D>(d: D) -> std::result::Result<Option<Nat>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -721,7 +682,7 @@ where
 }
 
 /// Voicemail playback instruction mode.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayInstructions {
     /// Skip instructions on unread messages.
     SkipUnread,
@@ -778,7 +739,6 @@ impl<'de> serde::Deserialize<'de> for PlayInstructions {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_play_instructions<'de, D>(
     d: D,
 ) -> std::result::Result<Option<PlayInstructions>, D::Error>
@@ -797,7 +757,7 @@ where
 }
 
 /// Whether callers may join, or are kept in, a queue with no available members. Used by both `join_when_empty` and `leave_when_empty`.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum QueueEmptyBehavior {
     /// Callers may join / remain with no members.
     Yes,
@@ -858,7 +818,6 @@ impl<'de> serde::Deserialize<'de> for QueueEmptyBehavior {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_queue_empty_behavior<'de, D>(
     d: D,
 ) -> std::result::Result<Option<QueueEmptyBehavior>, D::Error>
@@ -877,7 +836,7 @@ where
 }
 
 /// Sort order for selected recordings.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecordingSort {
     Alpha,
     Random,
@@ -932,7 +891,6 @@ impl<'de> serde::Deserialize<'de> for RecordingSort {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_recording_sort<'de, D>(
     d: D,
 ) -> std::result::Result<Option<RecordingSort>, D::Error>
@@ -951,7 +909,7 @@ where
 }
 
 /// Order in which ring-group members are attempted.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RingGroupOrder {
     /// Try members in declared order.
     Follow,
@@ -1007,7 +965,6 @@ impl<'de> serde::Deserialize<'de> for RingGroupOrder {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_ring_group_order<'de, D>(
     d: D,
 ) -> std::result::Result<Option<RingGroupOrder>, D::Error>
@@ -1026,7 +983,7 @@ where
 }
 
 /// Queue ring strategy. Mirrors Asterisk's queue strategy options.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RingStrategy {
     RingAll,
     LeastRecent,
@@ -1090,7 +1047,6 @@ impl<'de> serde::Deserialize<'de> for RingStrategy {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_ring_strategy<'de, D>(
     d: D,
 ) -> std::result::Result<Option<RingStrategy>, D::Error>
@@ -1109,7 +1065,7 @@ where
 }
 
 /// How a DID / toll-free search string is matched.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SearchType {
     Starts,
     Contains,
@@ -1160,33 +1116,8 @@ impl serde::Serialize for SearchType {
     }
 }
 
-impl<'de> serde::Deserialize<'de> for SearchType {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = crate::responses::deserialize_enum_wire_string(d)?;
-        Ok(SearchType::from_wire(&s))
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) fn deserialize_opt_search_type<'de, D>(
-    d: D,
-) -> std::result::Result<Option<SearchType>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(SearchType::from_wire(t))
-        }
-    }))
-}
-
 /// Carrier for outgoing calls to toll-free numbers.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TollFreeCarrier {
     /// Use the main account setting.
     MainAccount,
@@ -1249,7 +1180,6 @@ impl<'de> serde::Deserialize<'de> for TollFreeCarrier {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_toll_free_carrier<'de, D>(
     d: D,
 ) -> std::result::Result<Option<TollFreeCarrier>, D::Error>
@@ -1268,7 +1198,7 @@ where
 }
 
 /// Voicemail transcription output format.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TranscriptionFormat {
     Text,
     Html,
@@ -1323,7 +1253,6 @@ impl<'de> serde::Deserialize<'de> for TranscriptionFormat {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_transcription_format<'de, D>(
     d: D,
 ) -> std::result::Result<Option<TranscriptionFormat>, D::Error>
@@ -1342,7 +1271,7 @@ where
 }
 
 /// Toll-free prefix to search for a vanity number.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VanityType {
     /// Any toll-free prefix.
     Any,
@@ -1409,33 +1338,8 @@ impl serde::Serialize for VanityType {
     }
 }
 
-impl<'de> serde::Deserialize<'de> for VanityType {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
-        let s = crate::responses::deserialize_enum_wire_string(d)?;
-        Ok(VanityType::from_wire(&s))
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) fn deserialize_opt_vanity_type<'de, D>(
-    d: D,
-) -> std::result::Result<Option<VanityType>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(VanityType::from_wire(t))
-        }
-    }))
-}
-
 /// Voicemail message folder.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VoicemailFolder {
     Inbox,
     Old,
@@ -1502,7 +1406,6 @@ impl<'de> serde::Deserialize<'de> for VoicemailFolder {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn deserialize_opt_voicemail_folder<'de, D>(
     d: D,
 ) -> std::result::Result<Option<VoicemailFolder>, D::Error>
@@ -1542,7 +1445,7 @@ where
 /// assert_eq!(unknown.description(), None);
 /// assert!(!unknown.is_documented());
 /// ```
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum ApiStatus {
     /// `success` -- The request succeeded
     #[default]
@@ -4316,12 +4219,6 @@ impl From<String> for ApiStatus {
 impl From<&str> for ApiStatus {
     fn from(s: &str) -> Self {
         ApiStatus::from_wire(s)
-    }
-}
-
-impl serde::Serialize for ApiStatus {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
-        s.serialize_str(self.as_str())
     }
 }
 
