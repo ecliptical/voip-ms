@@ -18,6 +18,8 @@
 //! * `obj.sub` -- nested field
 //! * `list[]` -- refers to the element template of a list
 //! * `list[].field` -- field within a list element
+//! * `map.*` -- the value template of a dynamic-key map, whose own keys are
+//!   data rather than schema
 //!
 //! Patches only retype scalars, and additions only create them. To
 //! restructure a subtree, use a full shape replacement on the whole method.
@@ -28,6 +30,10 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use crate::extract::{ScalarTy, Shape};
+
+/// The path segment naming a dynamic-key map's value template, matching what
+/// `dump-fields` emits and the live harness reports.
+const MAP_WILDCARD: &str = "*";
 
 #[derive(Debug, Deserialize)]
 pub struct OverridesDoc {
@@ -266,6 +272,10 @@ fn resolve<'a>(
                 .map(|slot| &mut slot.1)
                 .ok_or_else(|| format!("override path `{full_path}` field `{name}` not found"))?,
             (Seg::Element, Shape::List(inner)) => inner.as_mut(),
+            // `*` addresses a dynamic-key map's value template. Its keys are
+            // data, so this is the only way to name a position inside one --
+            // and the live harness reports findings under a map that way.
+            (Seg::Field(name), Shape::Map(value)) if name == MAP_WILDCARD => value.as_mut(),
             (Seg::Field(_), _) => {
                 return Err(format!(
                     "override path `{full_path}` expected object at `{seg:?}`"
@@ -399,6 +409,37 @@ mod tests {
     fn addition_under_a_missing_parent_is_an_error() {
         let err = apply(Some(cdr_shape()), &addition("calls[].ip")).unwrap_err();
         assert!(err.contains("field `calls` not found"), "{err}");
+    }
+
+    /// A finding under a dynamic-key map is reported as `map.*.field`, so that
+    /// path has to be one an addition can actually use.
+    #[test]
+    fn addition_reaches_a_maps_value_template() {
+        let shape = Shape::Object(vec![(
+            "list_status".to_string(),
+            Shape::Map(Box::new(Shape::Object(vec![(
+                "label".to_string(),
+                Shape::Scalar {
+                    ty: ScalarTy::String,
+                    sample: "Active".to_string(),
+                },
+            )]))),
+        )]);
+
+        let applied = apply(Some(shape), &addition("list_status.*.added"))
+            .unwrap()
+            .unwrap();
+        let Shape::Object(top) = &applied else {
+            panic!("expected object")
+        };
+        let Shape::Map(value) = &top[0].1 else {
+            panic!("expected map")
+        };
+        let Shape::Object(fields) = value.as_ref() else {
+            panic!("expected object")
+        };
+        let names: Vec<&str> = fields.iter().map(|(k, _)| k.as_str()).collect();
+        assert_eq!(names, ["label", "added"]);
     }
 
     #[test]

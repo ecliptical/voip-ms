@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- `GetCDRResponseCDR` carries the `ip` and `useragent` fields as
-  `Option<String>`. `getCDR` returns both on the wire, but the docs' Output
+- **Breaking**: `GetCDRResponseCDR` carries the `ip` and `useragent` fields as
+  `Option<String>`. The struct is generated without `#[non_exhaustive]` and all
+  its fields are public, so a downstream struct literal or an exhaustive
+  destructure without `..` stops compiling.
+  `getCDR` returns both on the wire, but the docs' Output
   block does not list them, so the extractor could not see them and they were
   discarded during deserialization. A live check identified them: `ip` is the
   originating client's public address and `useragent` its SIP User-Agent. Two
@@ -27,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     necessarily a complete User-Agent. That, and an address voip.ms is equally
     free to clip, is why both stay `String` rather than `IpAddr` or a parsed
     agent: a strict parse would fail the whole response.
+
+### Added
+
 - The live harness diffs every raw response against the key paths the typed
   surface models, and reports an `unmodeled` outcome for a key no `*Response`
   field claims. The existing raw-vs-typed probe could never have found `ip` and

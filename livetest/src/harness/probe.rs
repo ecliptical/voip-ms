@@ -211,10 +211,10 @@ where
     // as one the API sent and the crate drops.
     //
     // A method with no typed shape at all has nothing to compare against, so an
-    // empty modeled set must not read as "every key is unmodeled".
+    // absent *or empty* modeled set must not read as "every key is unmodeled".
     let unmodeled = match response_fields::modeled_paths(method) {
-        Some(modeled) => keydiff::unmodeled_paths(&raw, modeled),
-        None => Vec::new(),
+        Some(modeled) if !modeled.is_empty() => keydiff::unmodeled_paths(&raw, modeled),
+        _ => Vec::new(),
     };
 
     let mut qualified = raw.clone();

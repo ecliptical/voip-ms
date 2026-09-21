@@ -1443,18 +1443,25 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
-    // A patch whose leaf field has a field-name override is dead weight: the
-    // override supplies both the Rust type and the deserializer, so the
-    // patched scalar type is never consulted. Warn so the entry gets removed
+    // A patch or addition whose leaf field has a field-name override is dead
+    // weight: the override supplies both the Rust type and the deserializer, so
+    // the declared scalar type is never consulted. Warn so the entry gets fixed
     // (unless a `field_type_skip` on that field name keeps some struct on the
-    // inferred/patched type, in which case the patch may still be live).
+    // inferred/patched type, in which case the entry may still be live). An
+    // addition goes through the same resolver as any other scalar field, so it
+    // is shadowed in exactly the same way.
     let skipped_fields: BTreeSet<&str> = field_type_skip
         .iter()
         .filter_map(|entry| entry.rsplit_once('.').map(|(_, f)| f))
         .collect();
     for (method, mo) in &overrides_doc.methods {
-        for patch in &mo.patches {
-            let leaf = patch.path.rsplit('.').next().unwrap_or(&patch.path);
+        let declared = mo
+            .patches
+            .iter()
+            .map(|patch| ("patch", &patch.path))
+            .chain(mo.additions.iter().map(|add| ("addition", &add.path)));
+        for (kind, path) in declared {
+            let leaf = path.rsplit('.').next().unwrap_or(path);
             // A path ending in `[]` retypes a list *element*, which the
             // field-name table never touches.
             if leaf.ends_with("[]") {
@@ -1462,9 +1469,8 @@ fn cmd_gen() -> Result<(), String> {
             }
             if table.get(leaf).is_some() && !skipped_fields.contains(leaf) {
                 eprintln!(
-                    "warning: {method}: patch `{}` is shadowed by the \
-                     field-name override for `{leaf}`; remove it",
-                    patch.path,
+                    "warning: {method}: {kind} `{path}` is shadowed by the \
+                     field-name override for `{leaf}`; its declared type is ignored",
                 );
             }
         }
@@ -1607,6 +1613,10 @@ fn cmd_gen() -> Result<(), String> {
     );
 
     rustfmt_file(&out_path);
+
+    // From the same shapes, so the harness's key-diff table can't fall behind
+    // the structs it describes.
+    dump_fields::write_table(&responses)?;
 
     Ok(())
 }

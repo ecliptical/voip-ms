@@ -12,6 +12,7 @@
 //! construction. They use the override file's path grammar (`cdr[].ip`), which
 //! makes a reported key paste straight into an `additions` entry.
 
+use std::collections::BTreeMap;
 use std::fs;
 
 use crate::extract::Shape;
@@ -24,10 +25,32 @@ const OUT_REL: &str = "livetest/src/response_fields.rs";
 const MAP_WILDCARD: &str = "*";
 
 pub fn cmd_dump_fields() -> Result<(), String> {
-    let shapes = crate::load_shapes_for_tools()?;
+    write_table(&crate::load_shapes_for_tools()?)
+}
 
+/// Emit the table from shapes already in hand.
+///
+/// `cargo xtask gen` calls this with the shapes it just rendered `*Response`
+/// from, so the two files cannot describe different surfaces. Leaving it to a
+/// second command made the documented fix workflow -- paste an `additions`
+/// entry, regenerate -- the thing that desynchronized them: the crate would
+/// model the new field while the harness kept reporting it on every run.
+pub fn write_table(shapes: &BTreeMap<String, Shape>) -> Result<(), String> {
     let mut table: Vec<(String, Vec<String>)> = Vec::new();
-    for (method, shape) in &shapes {
+    for (method, shape) in shapes {
+        // The key diff compares against an object envelope's keys. A root list
+        // yields paths starting `[].x`, which cover nothing, and a root scalar
+        // yields none at all, which the probe would have to read as "no shape".
+        // `response_codegen` has arms for both, so this is reachable the day one
+        // appears: fail here rather than emit a table that silently misreports.
+        if !matches!(shape, Shape::Object(_)) {
+            return Err(format!(
+                "{method}: response shape root is not an object, which the live \
+                 harness's key diff assumes; teach `dump-fields` and `keydiff` \
+                 this shape before regenerating"
+            ));
+        }
+
         let mut paths = Vec::new();
         collect(shape, "", &mut paths);
         paths.sort();

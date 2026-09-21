@@ -77,8 +77,9 @@ impl Area for Cdr {
             return;
         }
 
-        // The probe already read this window through the typed probe at every
-        // depth, so what is left here is the part only costly depth adds.
+        // The probe already read a window like this at every depth, so what is
+        // left here is the part only costly depth adds. Every read below shares
+        // this one value, so the zones are compared over identical rows.
         let params = window_params();
 
         // One UTC read shared by every zone compared against it, rather than one
@@ -98,11 +99,14 @@ impl Area for Cdr {
     }
 }
 
-/// The window every read here uses: a trailing 30 days, with all four call
-/// statuses, since VoIP.ms rejects a request naming none (`no_callstatus`).
+/// A trailing 30 days ending today, with all four call statuses, since VoIP.ms
+/// rejects a request naming none (`no_callstatus`).
 ///
-/// The range is arbitrary either way, so both depths share one rather than
-/// asking the same question over two different spans.
+/// Each caller gets its own window from the clock at that moment, so a run
+/// crossing local midnight between the probe and the costly fixtures reads two
+/// spans a day apart. That costs nothing here: the probe's read and the
+/// round-trip's reads are each self-contained, and the round-trip compares zones
+/// within one window it holds for the duration.
 fn window_params() -> GetCDRParams {
     let today = voip_ms::chrono::Local::now().date_naive();
     GetCDRParams {

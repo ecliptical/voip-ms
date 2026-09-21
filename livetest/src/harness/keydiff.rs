@@ -12,44 +12,61 @@
 //! absent from the response -- is normal: VoIP.ms omits fields an account has
 //! no data for, so it would report on every run and mean nothing.
 
+use std::collections::BTreeSet;
+
 use serde_json::Value;
 
 /// Live key paths the modeled set does not cover, sorted and deduplicated.
 ///
 /// `modeled` is one method's entry from the generated `RESPONSE_FIELDS` table,
-/// in the override file's path grammar.
+/// in the override file's path grammar. Each reported path is in that grammar
+/// too, so it pastes into an `additions` entry.
 pub fn unmodeled_paths(raw: &Value, modeled: &[&str]) -> Vec<String> {
-    let mut live = Vec::new();
-    collect(raw, "", &mut live);
-    live.sort();
-    live.dedup();
-    live.retain(|path| !modeled.iter().any(|spec| covers(spec, path)));
-    live
+    let mut live = BTreeSet::new();
+    collect(raw, &mut String::new(), &mut live);
+    live.iter()
+        .filter(|path| !modeled.iter().any(|spec| covers(spec, path)))
+        .map(|path| normalize(path, modeled))
+        .collect::<BTreeSet<String>>()
+        .into_iter()
+        .collect()
 }
 
 /// Walk the live envelope into the dotted path of every key it carries, with
 /// `[]` marking a list element -- the same grammar the modeled table uses.
-fn collect(value: &Value, prefix: &str, out: &mut Vec<String>) {
+///
+/// Every element of a list shares one path, since the crate models a list by one
+/// element template and a key in the tenth row is as unmodeled as in the first.
+/// The path is built in one reused buffer and cloned only for a path not yet
+/// seen: the largest responses here repeat the same handful of keys over
+/// thousands of rows, and formatting each row's keys afresh to discard them
+/// again is the bulk of the work this function would otherwise do.
+fn collect(value: &Value, path: &mut String, out: &mut BTreeSet<String>) {
     match value {
         Value::Object(map) => {
             for (key, inner) in map {
-                let path = if prefix.is_empty() {
-                    key.clone()
-                } else {
-                    format!("{prefix}.{key}")
-                };
+                let restore = path.len();
+                if !path.is_empty() {
+                    path.push('.');
+                }
 
-                out.push(path.clone());
-                collect(inner, &path, out);
+                path.push_str(key);
+                if !out.contains(path.as_str()) {
+                    out.insert(path.clone());
+                }
+
+                collect(inner, path, out);
+                path.truncate(restore);
             }
         }
-        // Every element shares one path: the crate models a list by one element
-        // template, and a key in the tenth row is as unmodeled as in the first.
         Value::Array(items) => {
-            let path = format!("{prefix}[]");
+            let restore = path.len();
+            path.push_str("[]");
             for item in items {
-                collect(item, &path, out);
+                collect(item, path, out);
             }
+
+            path.truncate(restore);
         }
         _ => {}
     }
@@ -68,12 +85,51 @@ fn covers(spec: &str, live: &str) -> bool {
     }
 }
 
-/// One segment, where a `*` name stands for any key of a dynamic-key map. The
-/// `[]` suffixes still have to agree: a list position is schema, not data.
+/// One segment, where a `*` name stands for any key of a dynamic-key map.
+///
+/// The live segment may carry fewer `[]` than the spec: voip.ms collapses a
+/// one-element list to the bare element, which is why every generated list field
+/// deserializes through `deserialize_vec_from_single_or_seq`. An account holding
+/// exactly one DID, message, or conference therefore reports `x.field` against a
+/// modeled `x[].field`, and reading that as unmodeled would fail the run on
+/// every such account. More `[]` than the spec is a genuine mismatch, since a
+/// list where the crate models a scalar leaves its keys unread.
 fn segment_covers(spec: &str, live: &str) -> bool {
     let (spec_name, spec_brackets) = split_brackets(spec);
     let (live_name, live_brackets) = split_brackets(live);
-    spec_brackets == live_brackets && (spec_name == "*" || spec_name == live_name)
+    (spec_name == "*" || spec_name == live_name) && spec_brackets.ends_with(live_brackets)
+}
+
+/// Put a live path back into the modeled grammar: a segment sitting where some
+/// modeled path carries a `*` is a map key, which is data rather than schema.
+///
+/// Without this a new field under a dynamic-key map reports once per key the
+/// account happens to hold (`list_status.ACT.foo`, `list_status.REJ.foo`, …),
+/// and none of those is a path `cargo xtask gen` accepts.
+fn normalize(path: &str, modeled: &[&str]) -> String {
+    let mut segments: Vec<&str> = path.split('.').collect();
+    for spec in modeled {
+        let spec_segments: Vec<&str> = spec.split('.').collect();
+        if spec_segments.len() > segments.len() {
+            continue;
+        }
+
+        if !spec_segments
+            .iter()
+            .zip(&segments)
+            .all(|(s, l)| segment_covers(s, l))
+        {
+            continue;
+        }
+
+        for (slot, spec_segment) in segments.iter_mut().zip(&spec_segments) {
+            if split_brackets(spec_segment).0 == "*" {
+                *slot = spec_segment;
+            }
+        }
+    }
+
+    segments.join(".")
 }
 
 fn split_brackets(segment: &str) -> (&str, &str) {
@@ -107,7 +163,8 @@ mod tests {
         "cdr[].uniqueid",
     ];
 
-    /// One record with the key set a live `getCDR` returns, per issue #21.
+    /// One record with the key set a live `getCDR` returns, including the two
+    /// the docs' Output block omits.
     fn live_cdr() -> Value {
         json!({
             "status": "success",
@@ -162,6 +219,46 @@ mod tests {
             "cdr": [{ "uniqueid": "1" }, { "uniqueid": "2", "ip": "203.0.113.7" }]
         });
         assert_eq!(unmodeled_paths(&rows, CDR_BEFORE), ["cdr[].ip"]);
+    }
+
+    /// voip.ms collapses a one-element list to the bare element, so an account
+    /// holding exactly one row reports `cdr.x` where the table models `cdr[].x`.
+    /// Reading that as unmodeled failed the run on every single-row account.
+    #[test]
+    fn a_one_element_list_arriving_unwrapped_is_not_unmodeled() {
+        let folded = json!({
+            "status": "success",
+            "cdr": { "uniqueid": "1", "date": "2026-09-21 17:40:40" }
+        });
+        assert!(unmodeled_paths(&folded, CDR_BEFORE).is_empty());
+    }
+
+    /// The reverse is a real mismatch: a list where the crate models a scalar
+    /// leaves the element's keys unread.
+    #[test]
+    fn a_list_where_the_table_models_a_scalar_is_reported() {
+        let nested = json!({ "status": "success", "cdr": [{ "uniqueid": [{ "x": "1" }] }] });
+        assert_eq!(unmodeled_paths(&nested, CDR_BEFORE), ["cdr[].uniqueid[].x"]);
+    }
+
+    /// A new field under a dynamic-key map is one schema finding, not one per
+    /// key the account happens to hold, and it has to paste into the overrides.
+    #[test]
+    fn a_new_field_under_a_map_reports_once_in_the_override_grammar() {
+        let catalog = json!({
+            "status": "success",
+            "list_status": {
+                "ACT": { "label": "Active", "added": "x" },
+                "REJ": { "label": "Rejected", "added": "y" }
+            }
+        });
+        let modeled = [
+            "status",
+            "list_status",
+            "list_status.*",
+            "list_status.*.label",
+        ];
+        assert_eq!(unmodeled_paths(&catalog, &modeled), ["list_status.*.added"]);
     }
 
     #[test]

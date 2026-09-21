@@ -72,11 +72,22 @@ impl Report {
                     paths.len()
                 );
                 eprintln!("        declare them in tools/api-response-overrides.json:");
-                eprintln!("          \"{name}\": {{ \"additions\": [");
-                for path in paths {
-                    eprintln!("            {{ \"path\": \"{path}\", \"type\": \"string\" }},");
-                }
-
+                // Keyed by the wire method, not the report label: an overrides
+                // entry named `fixture:getX` is skipped as an unknown method, so
+                // pasting it would look applied and change nothing.
+                eprintln!("          \"{}\": {{ \"additions\": [", wire_method(name));
+                let entries: Vec<String> = paths
+                    .iter()
+                    .map(|path| {
+                        format!(
+                            "            {{ \"path\": {}, \"type\": \"string\" }}",
+                            quote(path)
+                        )
+                    })
+                    .collect();
+                // Separated, not terminated: serde_json rejects a trailing comma,
+                // and this block exists to be pasted verbatim.
+                eprintln!("{}", entries.join(",\n"));
                 eprintln!("          ] }}");
             }
         }
@@ -152,11 +163,14 @@ impl Report {
                 }
                 Outcome::Unmodeled { paths } => {
                     for path in paths {
+                        // Quoted through serde: a path segment is a live
+                        // response key, so it can carry a `"` or a `\` that
+                        // would otherwise break the line a CI wrapper parses.
                         let _ = write!(
                             unmodeled,
-                            "{}\"{}.{path}\"",
+                            "{}{}",
                             sep(&unmodeled),
-                            r.name.strip_prefix("fixture:").unwrap_or(&r.name),
+                            quote(&format!("{}.{path}", wire_method(&r.name))),
                         );
                     }
                 }
@@ -175,6 +189,19 @@ impl Report {
 
 fn sep(buf: &str) -> &'static str {
     if buf.is_empty() { "" } else { "," }
+}
+
+/// The wire method behind a report key. A fixture read-back is reported under
+/// `fixture:getX` but calls `getX`, and only the latter names anything the
+/// overrides file or a CI wrapper can act on.
+fn wire_method(name: &str) -> &str {
+    name.strip_prefix("fixture:").unwrap_or(name)
+}
+
+/// A JSON string literal for `value`, escaping whatever a live response key
+/// happens to contain.
+fn quote(value: &str) -> String {
+    serde_json::to_string(value).unwrap_or_else(|_| format!("{value:?}"))
 }
 
 /// Tally of outcomes by kind.

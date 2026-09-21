@@ -176,8 +176,8 @@ async fn confirm_connectivity(client: &voip_ms::Client) -> Result<()> {
 fn print_summary(report: &Report) {
     let c = report.counts();
     println!(
-        "\n== summary == pass={} fail={} skip={} drift={}",
-        c.pass, c.fail, c.skip, c.drift
+        "\n== summary == pass={} fail={} skip={} drift={} unmodeled={}",
+        c.pass, c.fail, c.skip, c.drift, c.unmodeled
     );
     println!("{}", report.summary_json());
 
@@ -186,6 +186,17 @@ fn print_summary(report: &Report) {
             "\n{} response-shape drift(s) detected -- fix via tools/api-response-overrides.json \
              and regenerate (see DEVELOPMENT.md).",
             c.drift
+        );
+    }
+
+    // Its own trailer: an unmodeled key also exits non-zero, and without this
+    // the run reports fail=0 drift=0 and leaves the reason to the JSON line.
+    if c.unmodeled > 0 {
+        eprintln!(
+            "\n{} method(s) returned keys the typed surface drops -- declare them in the \
+             `additions` section of tools/api-response-overrides.json and regenerate \
+             (see DEVELOPMENT.md).",
+            c.unmodeled
         );
     }
 }

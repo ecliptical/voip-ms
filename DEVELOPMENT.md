@@ -36,7 +36,7 @@ committed inputs:
 * `tools/api-response-overrides.json` — *hand-edited* corrections to the
   above (per-path scalar retypes, added scalar fields the docs omit, or a full
   shape replacement for the handful of methods the extractor can't parse).
-  Never edit the generated `api-responses.json` / `api-statuses.json` by hand —
+  Never edit the generated `api-responses.json` / `api-statuses.json` by hand --
   fix the override file and regenerate. The overrides schema lives in
   [xtask/src/overrides.rs](xtask/src/overrides.rs); see its module docs for
   the path grammar and the `enums` / `field_types` / `field_type_skip` /
@@ -97,10 +97,11 @@ cargo xtask check-flags
 #    transport (design decision #7) and will not work over GET.
 cargo xtask gen
 
-# 5b. Refresh the tables the live harness compiles in (method names, and the
-#     response key paths its key diff compares against).
+# 5b. Refresh the wire-method list the live harness compiles in. Its key-path
+#     table comes out of `gen` above, from the same shapes, so the two cannot
+#     describe different surfaces; `cargo xtask dump-fields` rebuilds it alone
+#     if you need it.
 cargo xtask dump-methods
-cargo xtask dump-fields
 
 # 6. Run the full quality gate — the same selection CI uses, plus the doc
 #    build, which CI does NOT run.
@@ -132,9 +133,9 @@ refresh needs eyes on the diff, not just a green build:
   produce a single-letter token (`getDIDsInfo` → `get_di_ds_info`). Fix by
   adding the acronym to the `ACRONYMS` const in
   [xtask/src/main.rs](xtask/src/main.rs) and regenerating. A new method also
-  needs a home in the `livetest` harness: run `cargo xtask dump-methods` and
-  `cargo xtask dump-fields` to refresh `livetest/src/wire_methods.rs` and
-  `livetest/src/response_fields.rs`, then assign the method to exactly one
+  needs a home in the `livetest` harness: run `cargo xtask dump-methods` to
+  refresh `livetest/src/wire_methods.rs` (`gen` already refreshed
+  `livetest/src/response_fields.rs`), then assign the method to exactly one
   area's `methods()` in `livetest/src/areas/`. The completeness gate
   (`cargo test -p livetest`) fails until every wire method is owned by exactly
   one area.

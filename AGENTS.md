@@ -66,7 +66,7 @@ generates `*Params`, from three inputs:
    `apidocs.php`'s `print_r`-style Output blocks (extractor is
    `xtask/src/extract.rs`, invoked via `cargo xtask extract-responses`
    over a saved HTML page).
-3. `tools/api-response-overrides.json` — hand-edited corrections:
+3. `tools/api-response-overrides.json` -- hand-edited corrections:
    per-path scalar retypes, per-path scalar `additions`, or a full shape
    replacement for the handful of methods the extractor can't parse
    (`setSIPURI` has no Output block; `getLNPDetails` uses a non-standard
@@ -85,10 +85,12 @@ Finding such a field is the live harness's job, not the extractor's.
 Because no `*Response` sets `deny_unknown_fields` (decision 2 depends on
 it), an unmodeled key cannot fail a deserialization, so the raw-vs-typed
 probe is blind to one by construction -- it only fires when the typed
-read *fails*. `cargo xtask dump-fields` therefore emits the modeled key
-paths per method into `livetest/src/response_fields.rs`, and the probe
-diffs every live envelope against them, reporting an `UNMODELED` outcome
-that prints the `additions` entry to paste. The two directions are
+read *fails*. `cargo xtask gen` therefore also emits the modeled key paths
+per method into `livetest/src/response_fields.rs` -- from the shapes it
+just rendered the structs from, so the table cannot fall behind them --
+and the probe diffs every live envelope against them, reporting an
+`UNMODELED` outcome that prints the `additions` entry to paste.
+`cargo xtask dump-fields` rebuilds that table on its own when needed. The two directions are
 complementary: drift is "the crate can't read what arrived", unmodeled
 is "the crate silently dropped part of it".
 
@@ -693,7 +695,7 @@ voip-ms/
     ├── Cargo.toml
     └── src/
         ├── main.rs              # WSDL+responses+overrides → src/generated.rs
-        ├── dump_fields.rs       # response shapes → livetest/src/response_fields.rs
+        ├── dump_fields.rs       # response shapes → livetest/src/response_fields.rs (also run by gen)
         ├── dump_methods.rs      # src/generated.rs → livetest/src/wire_methods.rs
         ├── extract.rs           # apidocs HTML → tools/api-responses.json
         ├── field_overrides.rs   # Field-name → domain-type substitution table
