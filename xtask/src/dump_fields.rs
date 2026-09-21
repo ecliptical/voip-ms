@@ -28,13 +28,6 @@ pub fn cmd_dump_fields() -> Result<(), String> {
     write_table(&crate::load_shapes_for_tools()?)
 }
 
-/// Emit the table from shapes already in hand.
-///
-/// `cargo xtask gen` calls this with the shapes it just rendered `*Response`
-/// from, so the two files cannot describe different surfaces. Leaving it to a
-/// second command made the documented fix workflow -- paste an `additions`
-/// entry, regenerate -- the thing that desynchronized them: the crate would
-/// model the new field while the harness kept reporting it on every run.
 /// Reject a shape this emitter cannot describe, before anything is written.
 ///
 /// The key diff compares against an object envelope's keys. A root list yields
@@ -60,6 +53,13 @@ pub fn validate_roots(shapes: &BTreeMap<String, Shape>) -> Result<(), String> {
     Ok(())
 }
 
+/// Emit the table from shapes already in hand.
+///
+/// `cargo xtask gen` calls this with the shapes it just rendered `*Response`
+/// from, so the two files cannot describe different surfaces. Leaving it to a
+/// second command made the documented fix workflow -- paste an `additions`
+/// entry, regenerate -- the thing that desynchronized them: the crate would
+/// model the new field while the harness kept reporting it on every run.
 pub fn write_table(shapes: &BTreeMap<String, Shape>) -> Result<(), String> {
     validate_roots(shapes)?;
 
