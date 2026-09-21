@@ -100,36 +100,47 @@ fn segment_covers(spec: &str, live: &str) -> bool {
     (spec_name == "*" || spec_name == live_name) && spec_brackets.ends_with(live_brackets)
 }
 
-/// Put a live path back into the modeled grammar: a segment sitting where some
-/// modeled path carries a `*` is a map key, which is data rather than schema.
+/// Put a live path back into the modeled grammar, position by position.
 ///
-/// Without this a new field under a dynamic-key map reports once per key the
-/// account happens to hold (`list_status.ACT.foo`, `list_status.REJ.foo`, …),
-/// and none of those is a path `cargo xtask gen` accepts.
+/// A live path names what one account happens to hold, and two things about it
+/// are data rather than schema: a dynamic-key map's key, and whether voip.ms
+/// folded a one-element list down to the bare element. Reporting either verbatim
+/// yields a path `cargo xtask gen` rejects -- `list_status.ACT.foo` for the
+/// first, `cdr.ip` where the table models `cdr[].ip` for the second -- so the
+/// same undeclared field would print differently, and paste or not, depending on
+/// how much data the account holds.
+///
+/// Wherever a modeled path covers the live one this far, its segment names the
+/// position's schema form, `*` and `[]` included, so that segment is adopted
+/// whole.
+///
+/// Several modeled paths can cover one position -- `cdr` names the field and
+/// `cdr[].uniqueid` its element -- and the most bracketed of them wins, because
+/// folding only ever drops a `[]` that the schema has.
 fn normalize(path: &str, modeled: &[&str]) -> String {
-    let mut segments: Vec<&str> = path.split('.').collect();
-    for spec in modeled {
-        let spec_segments: Vec<&str> = spec.split('.').collect();
-        if spec_segments.len() > segments.len() {
-            continue;
-        }
-
-        if !spec_segments
+    let live: Vec<&str> = path.split('.').collect();
+    let mut out = live.clone();
+    for (position, slot) in out.iter_mut().enumerate() {
+        let covering = modeled
             .iter()
-            .zip(&segments)
-            .all(|(s, l)| segment_covers(s, l))
-        {
-            continue;
-        }
+            .filter_map(|spec| {
+                let spec_segments: Vec<&str> = spec.split('.').collect();
+                let covers_prefix = spec_segments.len() > position
+                    && spec_segments
+                        .iter()
+                        .zip(&live)
+                        .take(position + 1)
+                        .all(|(s, l)| segment_covers(s, l));
+                covers_prefix.then(|| spec_segments[position])
+            })
+            .max_by_key(|segment| split_brackets(segment).1.len());
 
-        for (slot, spec_segment) in segments.iter_mut().zip(&spec_segments) {
-            if split_brackets(spec_segment).0 == "*" {
-                *slot = spec_segment;
-            }
+        if let Some(segment) = covering {
+            *slot = segment;
         }
     }
 
-    segments.join(".")
+    out.join(".")
 }
 
 fn split_brackets(segment: &str) -> (&str, &str) {
@@ -231,6 +242,20 @@ mod tests {
             "cdr": { "uniqueid": "1", "date": "2026-09-21 17:40:40" }
         });
         assert!(unmodeled_paths(&folded, CDR_BEFORE).is_empty());
+    }
+
+    /// The folded form must not change what a finding is called: the same
+    /// undeclared field has to print the path the overrides accept whether the
+    /// account holds one row or a thousand. `overrides::tests::
+    /// addition_appends_to_a_list_element` is the other half, pinning that
+    /// `cdr[].ip` applies.
+    #[test]
+    fn a_finding_on_a_folded_list_reports_the_list_path() {
+        let folded = json!({
+            "status": "success",
+            "cdr": { "uniqueid": "1", "ip": "203.0.113.7" }
+        });
+        assert_eq!(unmodeled_paths(&folded, CDR_BEFORE), ["cdr[].ip"]);
     }
 
     /// The reverse is a real mismatch: a list where the crate models a scalar

@@ -90,9 +90,9 @@ per method into `livetest/src/response_fields.rs` -- from the shapes it
 just rendered the structs from, so the table cannot fall behind them --
 and the probe diffs every live envelope against them, reporting an
 `UNMODELED` outcome that prints the `additions` entry to paste.
-`cargo xtask dump-fields` rebuilds that table on its own when needed. The two directions are
-complementary: drift is "the crate can't read what arrived", unmodeled
-is "the crate silently dropped part of it".
+`cargo xtask dump-fields` rebuilds that table on its own when needed.
+The two directions are complementary: drift is "the crate can't read
+what arrived", unmodeled is "the crate silently dropped part of it".
 
 The same `extract-responses` pass also mines two doc-comment sources
 into `api-responses.json`: `param_docs` (per-parameter descriptions from
@@ -688,7 +688,7 @@ voip-ms/
 │       ├── main.rs          # CLI, connectivity pre-check, sweep + probe run
 │       ├── config.rs        # Two-dimensional AREA × DEPTH selection; secrets
 │       ├── wire_methods.rs  # 222 wire names (generated: cargo xtask dump-methods)
-│       ├── response_fields.rs # modeled key paths (generated: cargo xtask dump-fields)
+│       ├── response_fields.rs # modeled key paths (generated: cargo xtask gen)
 │       ├── areas/           # One module per functional area + the registry
 │       └── harness/         # Report, RAII Scope, ledger, marker, drift probe
 └── xtask/

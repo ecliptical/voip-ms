@@ -37,11 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   surface models, and reports an `unmodeled` outcome for a key no `*Response`
   field claims. The existing raw-vs-typed probe could never have found `ip` and
   `useragent`: it fires only when a typed read *fails*, and an unknown key
-  deserializes away without failing anything. `cargo xtask dump-fields` emits
-  the modeled paths into `livetest/src/response_fields.rs`, and the report
-  prints the `additions` entry to paste. `getCDR` also moved to probe depth, so
-  a read-only run sees a populated record -- the only place the per-record
-  fields are visible at all.
+  deserializes away without failing anything. `cargo xtask gen` emits the
+  modeled paths into `livetest/src/response_fields.rs` alongside the structs and
+  from the same shapes (`cargo xtask dump-fields` rebuilds that file alone), and
+  the report prints the `additions` entry to paste. `getCDR` also moved to probe
+  depth, so a read-only run sees a populated record -- the only place the
+  per-record fields are visible at all.
 - The response overrides gained an `additions` section, which appends a scalar
   field to an extracted shape (`{ "path": "cdr[].ip", "type": "string" }`). A
   docs-driven extractor cannot see an undocumented field by construction, and

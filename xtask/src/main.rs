@@ -1404,6 +1404,10 @@ fn cmd_gen() -> Result<(), String> {
     overrides_doc.check_version()?;
 
     let responses = load_response_shapes(&responses_path, &overrides_doc, &wsdl)?;
+    // Before anything is written: this run emits the harness's key-path table
+    // from these same shapes, and a shape that table cannot describe must stop
+    // the run rather than half-finish it.
+    dump_fields::validate_roots(&responses)?;
     let param_docs = load_param_docs(&responses_path)?;
     let method_docs = load_method_docs(&responses_path)?;
 

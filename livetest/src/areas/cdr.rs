@@ -102,11 +102,9 @@ impl Area for Cdr {
 /// A trailing 30 days ending today, with all four call statuses, since VoIP.ms
 /// rejects a request naming none (`no_callstatus`).
 ///
-/// Each caller gets its own window from the clock at that moment, so a run
-/// crossing local midnight between the probe and the costly fixtures reads two
-/// spans a day apart. That costs nothing here: the probe's read and the
-/// round-trip's reads are each self-contained, and the round-trip compares zones
-/// within one window it holds for the duration.
+/// The window comes from the clock at the moment of the call, so two calls can
+/// name spans a day apart. Comparing reads requires one returned value, not two
+/// calls.
 fn window_params() -> GetCDRParams {
     let today = voip_ms::chrono::Local::now().date_naive();
     GetCDRParams {
