@@ -4,7 +4,9 @@ use voip_ms::{
     ApiStatus, Client, Error, GetBalanceParams, GetCDRParams, GetConferenceParams,
     GetSubAccountsParams, GetSubAccountsResponse, MaxMembers,
 };
-use wiremock::matchers::{method, path, query_param, query_param_is_missing};
+use wiremock::matchers::{
+    body_string_contains, header_regex, method, path, query_param, query_param_is_missing,
+};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 /// Build a `Client` pointed at a mock server's REST endpoint.
@@ -1654,4 +1656,249 @@ async fn named_zone_timezone_serializes_as_iana_name() {
         envelope.timezones[1].value,
         Some(TimezoneName::Unrecognized("Asia/Beijing".into()))
     );
+}
+
+#[tokio::test]
+async fn a_base64_file_parameter_travels_as_a_multipart_post() {
+    // 60 kB of base64 is more than seven times the 8190-byte request line
+    // voip.ms accepts, so the call cannot be a GET. Every field moves into the
+    // body -- including the credentials, which no longer ride in the URL.
+    use voip_ms::SetRecordingParams;
+
+    let (server, client) = fixture().await;
+    let payload = "QUJD".repeat(15_000);
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .and(header_regex(
+            "content-type",
+            "^multipart/form-data; boundary=",
+        ))
+        .and(query_param_is_missing("api_password"))
+        .and(query_param_is_missing("method"))
+        // Every field matched as a whole part. A bare substring would hold for
+        // a body that put the value under a different name, which is the
+        // regression these are here to catch.
+        .and(body_string_contains(
+            "name=\"method\"\r\n\r\nsetRecording\r\n",
+        ))
+        .and(body_string_contains(
+            "name=\"api_username\"\r\n\r\nuser@example.com\r\n",
+        ))
+        .and(body_string_contains(
+            "name=\"api_password\"\r\n\r\nsecret\r\n",
+        ))
+        .and(body_string_contains(format!(
+            "name=\"file\"\r\n\r\n{payload}\r\n"
+        )))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success", "recording": 295001 })),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let resp = client
+        .set_recording(&SetRecordingParams {
+            name: Some("greeting".into()),
+            file: Some(payload),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(resp.recording, Some(295001));
+}
+
+#[tokio::test]
+async fn every_file_carrying_method_posts_and_the_rest_do_not() {
+    // The four methods with a base64 file parameter, and one without to pin the
+    // contrast: transport is decided per method, not per payload size.
+    use voip_ms::{AddLNPFileParams, SendFAXMessageParams, SendMMSParams, SetRecordingParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(4)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    client
+        .set_recording(&SetRecordingParams {
+            file: Some("QUJD".into()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    client
+        .send_fax_message(&SendFAXMessageParams {
+            file: Some("QUJD".into()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    client
+        .send_mms(&SendMMSParams {
+            media2: Some("QUJD".into()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    client
+        .add_lnp_file(&AddLNPFileParams {
+            portid: Some(1),
+            file: Some("QUJD".into()),
+        })
+        .await
+        .unwrap();
+    client
+        .get_balance(&GetBalanceParams::default())
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn multipart_fields_carry_the_same_wire_forms_as_the_query_string() {
+    // The transport moves where a value rides, not how it is encoded: a `1`/`0`
+    // flag is still `1`, a `None` is still absent, and a `+` inside a base64
+    // payload survives the round trip through the query string the form is
+    // built from.
+    use voip_ms::SendFAXMessageParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .and(body_string_contains("name=\"send_email_enabled\""))
+        .and(body_string_contains("name=\"file\"\r\n\r\nQQ+/word==\r\n"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let resp = client
+        .send_fax_message_raw(&SendFAXMessageParams {
+            to_number: Some("5551234567".into()),
+            send_email_enabled: Some(true),
+            file: Some("QQ+/word==".into()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(resp["status"], "success");
+    let body = &server.received_requests().await.unwrap()[0].body;
+    let body = String::from_utf8_lossy(body);
+    assert!(
+        body.contains("name=\"send_email_enabled\"\r\n\r\n1\r\n"),
+        "a 1/0 flag keeps its wire form as a form field: {body}"
+    );
+    assert!(
+        !body.contains("from_name"),
+        "a None field is omitted, as it is from the query string: {body}"
+    );
+}
+
+#[tokio::test]
+async fn a_base64_response_payload_survives_its_escaped_slashes() {
+    // voip.ms escapes `/` as `\/` inside a JSON string, which base64 is full
+    // of. Nothing in this crate unescapes it by hand -- serde does.
+    use voip_ms::GetRecordingFileParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getRecordingFile"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(
+            r#"{"status":"success","recordings":[{"value":295001,"data":"UklGRi\/\/AABXQVZF"}]}"#,
+        ))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let resp = client
+        .get_recording_file(&GetRecordingFileParams {
+            recording: Some("295001".into()),
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(resp.recordings[0].data.as_deref(), Some("UklGRi//AABXQVZF"));
+}
+
+#[cfg(feature = "unchecked-raw")]
+#[tokio::test]
+async fn the_unchecked_diagnostic_hatch_has_both_transports() {
+    // The pair exists so diagnosing a file method reaches it over the transport
+    // that method needs. Both surface a non-success envelope verbatim rather
+    // than as `Error::Api`, and each must use its own transport to do it.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .and(body_string_contains("name=\"file\"\r\n\r\nQUJD\r\n"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({"status": "invalid_credentials"})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({"status": "invalid_credentials"})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let posted = client
+        .call_multipart_raw_unchecked("setRecording", &json!({ "file": "QUJD" }))
+        .await
+        .expect("an error status is returned in the body, not as Err");
+    assert_eq!(posted["status"], "invalid_credentials");
+
+    let got = client
+        .call_raw_unchecked("getBalance", &GetBalanceParams::default())
+        .await
+        .unwrap();
+    assert_eq!(got["status"], "invalid_credentials");
+}
+
+#[test]
+fn requires_multipart_names_exactly_the_file_carrying_methods() {
+    // Hand-maintained against the generated predicate, the same way the other
+    // drift oracles are: if a regen changes which methods post, that is a wire
+    // contract change and has to be acknowledged here.
+    for method in ["setRecording", "sendFaxMessage", "sendMMS", "addLNPFile"] {
+        assert!(
+            voip_ms::requires_multipart(method),
+            "{method} carries a base64 file and cannot go on a query string"
+        );
+    }
+
+    for method in ["getBalance", "sendSMS", "getRecordingFile", "getCDR"] {
+        assert!(
+            !voip_ms::requires_multipart(method),
+            "{method} has no file parameter and stays a GET"
+        );
+    }
+
+    // An unknown method is not assumed to need it: a caller reaching for a
+    // brand-new wire name gets the default transport, as `call_raw` documents.
+    assert!(!voip_ms::requires_multipart("someBrandNewMethod"));
 }

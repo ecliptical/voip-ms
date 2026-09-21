@@ -319,6 +319,21 @@ const PHONE_STRING_FIELDS: &[&str] = &[
 /// wire value may still be a bare number.
 const ID_STRING_FIELDS: &[&str] = &["uniqueid"];
 
+/// Params whose value is a base64-encoded file, keyed `"wireMethod.field"`.
+/// A method with one of these is sent as a `multipart/form-data` POST; every
+/// other method is a GET.
+///
+/// A GET would put the value on a query string, which the 8190-byte request
+/// line (Apache's default `LimitRequestLine`) leaves roughly 8 kB of -- about a
+/// third of a second of 8 kHz mono audio for `setRecording`. `addLNPFile` is
+/// documented "Only accepted through POST request", so no size works for it.
+pub(crate) const BASE64_FILE_PARAM_PATHS: &[&str] = &[
+    "addLNPFile.file",
+    "sendFaxMessage.file",
+    "sendMMS.media2",
+    "setRecording.file",
+];
+
 /// Date-range filter params, documented uniformly as `'YYYY-MM-DD'`
 /// (`Example: '2010-11-30'`). Typed [`chrono::NaiveDate`], whose own
 /// `Serialize` emits exactly that wire form, instead of the WSDL's

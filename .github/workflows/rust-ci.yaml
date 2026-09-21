@@ -29,7 +29,14 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run clippy
-        run: cargo clippy --all -- -D warnings
+        # Same selection as the test job, so everything that runs is linted.
+        run: cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
+      - name: Check the non-default TLS backend
+        # `native-tls` ships but is not the default, so nothing else builds it.
+        # It cannot go in the test job: enabled alongside the default rustls,
+        # reqwest picks native-tls, so the tests would exercise a stack the
+        # crate does not ship, and it drags OpenSSL in.
+        run: cargo check --no-default-features --features native-tls
 
   coverage:
     name: Run tests with coverage
@@ -51,10 +58,17 @@ jobs:
         with:
           components: rustfmt, clippy, llvm-tools
       - name: Run unit tests
-        # --workspace, because the root package is also the workspace root and a
-        # bare `cargo test` builds only its own targets: the xtask codegen tests
-        # never ran, and the generator is where a silent wrong emit hides.
-        run: cargo test --workspace
+        # --workspace: the root package is also the workspace root, so a bare
+        # `cargo test` selects it alone and skips livetest's and xtask's tests.
+        # `unchecked-raw` is named for the reader rather than out of necessity
+        # -- livetest already requires it, so any --workspace build unifies it
+        # on -- and --all-features is deliberately not used, since it would
+        # switch the TLS backend to native-tls.
+        #
+        # This also widens what the coverage report below measures: livetest is
+        # an operator harness whose paths only execute against the live API, so
+        # it enters the denominator largely uncovered.
+        run: cargo test --workspace --features unchecked-raw
         env:
           RUSTFLAGS: '-Cinstrument-coverage'
           LLVM_PROFILE_FILE: 'target/coverage/%p-%m.profraw'

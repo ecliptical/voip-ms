@@ -7,8 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-18
+
+### Fixed
+
+- The four methods that take a base64-encoded file are sent as a
+  `multipart/form-data` POST instead of a GET, which is what makes them usable
+  at all: `set_recording`, `send_fax_message`, `send_mms` (`media2`), and
+  `add_lnp_file`. VoIP.ms's front end caps the request line at 8190 bytes, so a
+  GET left roughly 8 kB for the whole parameter set -- about a third of a
+  second of 8 kHz mono audio for `set_recording`, against 60,428 base64
+  characters for a 2.8 second greeting. `add_lnp_file` is documented "Only
+  accepted through POST request" and could not work over GET at any size.
+  - Every other method is still a GET. The transport is decided per method from
+    the presence of a base64 file parameter, so no call site changes and the
+    218 methods that can stay observable in a log or proxy do.
+  - The POST is `multipart/form-data` specifically.
+    `application/x-www-form-urlencoded` reaches a SOAP handler on `rest.php`
+    and comes back as an XML fault, which is what makes the API look GET-only
+    on a first test.
+  - A multipart call carries the credentials as form fields, so for those four
+    methods the API password no longer appears in the request URL.
+- `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,
+  where every other 4xx still answers `true`. The method claims the request
+  *provably* never reached VoIP.ms, and 408 does not prove that: RFC 9110
+  §15.5.9 defines it as the origin giving up on an incomplete request, which
+  would be safe, but intermediaries widely return it for a slow *response*,
+  where VoIP.ms may have acted and the reply been lost. A consumer gating an
+  agent's retry advice on this told it that a 408 on a destructive,
+  irreversible call had changed nothing, which invites a double order.
+  `retry_outlook()` is unchanged -- 408 stays `AfterWaiting`, since "not now"
+  is still the right reading of it.
+
 ### Added
 
+- `Client::call_multipart` and `Client::call_multipart_raw`: the multipart-POST
+  counterparts of `Client::call` and `Client::call_raw`, for calling a method
+  with a file payload that this crate hasn't been regenerated for. Same status
+  handling as the GET pair, including how each treats an empty-collection
+  status. `Client::call_multipart_raw_unchecked` pairs with
+  `call_raw_unchecked` under the `unchecked-raw` feature, so diagnosing an
+  unexpected status on a file method can use the transport that method needs.
+- `requires_multipart(method)`: whether a wire method has to be a POST. The
+  generated methods apply it themselves; it is public for a caller that
+  dispatches by method name and so cannot otherwise tell.
 - `attach_offset` completes the bare wall clocks in a record-listing envelope
   with the offset the request carried, the step the typed methods take before
   deserializing. Public because a `call_raw` caller needs it too: the raw
@@ -23,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `reqwest`'s `multipart` feature is enabled. Feature selection is additive, so
+  a consumer that names its own `reqwest` features keeps them and gains
+  `multipart` -- and the dependencies it brings -- along with them.
 - **Breaking**: the six record-listing methods report their timestamps with the
   UTC offset the call asked for. `GetCDRResponseCDR::date`,
   `GetResellerCDRResponseCDR::date`, `GetSMSResponseSMS::date`,
@@ -43,18 +88,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   timestamp returned in it could only be guessed at. A caller who relied on the
   account default now gets UTC and should pass the zone it was set to.
 
-### Fixed
+### Upgrading
 
-- `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,
-  where every other 4xx still answers `true`. The method claims the request
-  *provably* never reached VoIP.ms, and 408 does not prove that: RFC 9110
-  §15.5.9 defines it as the origin giving up on an incomplete request, which
-  would be safe, but intermediaries widely return it for a slow *response*,
-  where VoIP.ms may have acted and the reply been lost. A consumer gating an
-  agent's retry advice on this told it that a 408 on a destructive,
-  irreversible call had changed nothing, which invites a double order.
-  `retry_outlook()` is unchanged -- 408 stays `AfterWaiting`, since "not now"
-  is still the right reading of it.
+The multipart change asks nothing of a call site: the four methods keep their
+signatures and their `*Params` structs, and the transport is chosen inside
+`Client`. A consumer that derives its own artifacts from this crate's method
+surface -- a generated tool catalog, for instance -- should regenerate them,
+since those four methods' doc comments now name their transport.
+
+The timestamp change does ask something. Code reading `date` off any of the six
+record-listing responses now holds a `DateTime<FixedOffset>`: call
+`.naive_local()` for the previous wall-clock value, or keep the offset and drop
+whatever local re-zoning stood in for it. Code that passed no `timezone` and
+relied on the account's configured zone now receives UTC, and should pass the
+zone that account is set to.
 
 ## [0.12.2] - 2026-09-17
 
