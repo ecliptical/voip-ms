@@ -24,7 +24,7 @@ use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::config::{Depth, ResellerConfig};
 use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back;
-use crate::harness::probe::{ProbeOutcome, probe};
+use crate::harness::probe::{ProbeOutcome, probe_zoned_default};
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
@@ -80,19 +80,19 @@ impl Area for Reseller {
             packages
         );
         skip_needs_input!(report, AREA, "getResellerBalance", "requires a client id");
-        probe_reseller::<_, GetResellerMMSResponse>(
+        probe_reseller_zoned::<GetResellerMMSParams, GetResellerMMSResponse>(
             ctx,
             report,
             "getResellerMMS",
-            &GetResellerMMSParams::default(),
+            GET_RESELLER_MMS_TIMESTAMPS,
             |r| Some(r.sms.len()),
         )
         .await;
-        probe_reseller::<_, GetResellerSMSResponse>(
+        probe_reseller_zoned::<GetResellerSMSParams, GetResellerSMSResponse>(
             ctx,
             report,
             "getResellerSMS",
-            &GetResellerSMSParams::default(),
+            GET_RESELLER_SMS_TIMESTAMPS,
             |r| Some(r.sms.len()),
         )
         .await;
@@ -261,22 +261,31 @@ fn skip_no_input(report: &mut Report, label: &str) {
     report.record(AREA, label, Outcome::Skip("no input".to_string()));
 }
 
-/// Probe a reseller list method, folding `invalid_client` into a Skip. That
-/// status here means the run account is not a reseller (issue #18) -- an
-/// account-capability limitation, not a code or drift defect -- so the whole
-/// reseller area is inapplicable rather than failing. Any other outcome (drift,
-/// a different API error, transport) is recorded verbatim.
-async fn probe_reseller<P, T>(
+/// Probe a reseller *record-listing* method, whose response timestamps come
+/// back in the UTC offset the request carried. `getResellerSMS` and
+/// `getResellerMMS` are two of the six methods that take that offset, so
+/// probing them like a plain list would ask for the account's own zone and then
+/// read every unqualified timestamp as drift.
+async fn probe_reseller_zoned<P, T>(
     ctx: &AreaCtx<'_>,
     report: &mut Report,
     method: &str,
-    params: &P,
+    timestamps: &[&str],
     count: impl Fn(&T) -> Option<usize>,
 ) where
-    P: Serialize + Sync,
+    P: Serialize + Default,
     T: DeserializeOwned,
 {
-    let outcome = probe::<P, T>(ctx.client, method, params, count).await;
+    let outcome = probe_zoned_default::<P, T>(ctx.client, method, timestamps, count).await;
+    record_reseller(report, method, outcome);
+}
+
+/// Record a reseller probe, folding `invalid_client` into a Skip. That status
+/// here means the run account is not a reseller (issue #18) -- an
+/// account-capability limitation, not a code or drift defect -- so the whole
+/// reseller area is inapplicable rather than failing. Any other outcome (drift,
+/// a different API error, transport) is recorded verbatim.
+fn record_reseller(report: &mut Report, method: &str, outcome: ProbeOutcome) {
     if let ProbeOutcome::ApiError(status) = &outcome
         && status == &ApiStatus::InvalidClient.to_string()
     {

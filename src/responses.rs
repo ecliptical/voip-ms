@@ -19,7 +19,7 @@
 //! call sites can also reference them via the `crate::responses::*`
 //! module path.
 
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 use rust_decimal::Decimal;
 use serde::de::Error as DeError;
@@ -235,6 +235,42 @@ where
                 return Ok(None);
             }
             NaiveDateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S")
+                .map(Some)
+                .map_err(|e| D::Error::custom(format!("invalid datetime {s}: {e}")))
+        }
+        Some(other) => Err(D::Error::custom(format!(
+            "expected datetime string, got {other}"
+        ))),
+    }
+}
+
+/// Deserialize a timestamp that names its UTC offset.
+///
+/// The record-listing methods (`getCDR`, `getSMS`, …) report a wall clock in
+/// the offset the request asked for but leave the offset off the value;
+/// [`crate::attach_offset`] puts it back before this parses it. A value with no
+/// offset is rejected rather than read as UTC -- an unqualified timestamp
+/// silently taken for an absolute one is the whole failure this typing exists
+/// to prevent.
+pub(crate) fn deserialize_opt_datetime_offset<'de, D>(
+    deserializer: D,
+) -> Result<Option<DateTime<FixedOffset>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) => {
+            let trimmed = s.trim();
+            // The placeholder carries the offset too once attached, so it is
+            // recognized by its date rather than by the whole string.
+            if trimmed.is_empty() || trimmed.starts_with("0000-00-00") {
+                return Ok(None);
+            }
+
+            DateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S%:z")
+                .or_else(|_| DateTime::parse_from_rfc3339(trimmed))
                 .map(Some)
                 .map_err(|e| D::Error::custom(format!("invalid datetime {s}: {e}")))
         }
@@ -597,6 +633,28 @@ mod tests {
             )
         );
         assert!(call(json!("2024-03-15")).is_err());
+        assert!(call(json!(0)).is_err());
+    }
+
+    #[test]
+    fn opt_datetime_offset_requires_a_zone() {
+        let call = deserialize_opt_datetime_offset::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        // The placeholder is recognized by its date: the offset is attached to
+        // it like any other value.
+        assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00 00:00:00-04:00")).unwrap(), None);
+        assert_eq!(
+            call(json!("2024-03-15 08:30:00-04:00")).unwrap(),
+            Some(DateTime::parse_from_rfc3339("2024-03-15T08:30:00-04:00").unwrap())
+        );
+        assert_eq!(
+            call(json!("2024-03-15T08:30:00Z")).unwrap(),
+            Some(DateTime::parse_from_rfc3339("2024-03-15T08:30:00+00:00").unwrap())
+        );
+        // An unqualified wall clock is rejected rather than read as UTC.
+        assert!(call(json!("2024-03-15 08:30:00")).is_err());
         assert!(call(json!(0)).is_err());
     }
 

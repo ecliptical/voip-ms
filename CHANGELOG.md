@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.13.0] - 2026-09-18
+## [0.13.0] - 2026-09-21
 
 ### Fixed
 
@@ -51,21 +51,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `requires_multipart(method)`: whether a wire method has to be a POST. The
   generated methods apply it themselves; it is public for a caller that
   dispatches by method name and so cannot otherwise tell.
+- `attach_offset` completes the bare wall clocks in a record-listing envelope
+  with the offset the request carried, the step the typed methods take before
+  deserializing. Public because a `call_raw` caller needs it too: the raw
+  envelope still reports its timestamps without the offset. It takes a
+  `*`-wildcard path, not the RFC 6901 JSON pointer `Client::call_at` takes.
+- `GET_CDR_TIMESTAMPS`, `GET_SMS_TIMESTAMPS`, `GET_MMS_TIMESTAMPS` and their
+  three reseller siblings: the paths `attach_offset` needs for each method,
+  emitted by the same codegen pass that types the fields.
+- `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`. A zone off the
+  hour keeps its fraction through both (`Asia/Kolkata` sends `5.50` and its
+  timestamps come back qualified `+05:30`).
 
 ### Changed
 
 - `reqwest`'s `multipart` feature is enabled. Feature selection is additive, so
   a consumer that names its own `reqwest` features keeps them and gains
   `multipart` -- and the dependencies it brings -- along with them.
+- **Breaking**: the six record-listing methods report their timestamps with the
+  UTC offset the call asked for. `GetCDRResponseCDR::date`,
+  `GetResellerCDRResponseCDR::date`, `GetSMSResponseSMS::date`,
+  `GetMMSResponseSMS::date`, `GetResellerSMSResponseSMS::date`, and
+  `GetResellerMMSResponseSMS::date` are now
+  `Option<chrono::DateTime<chrono::FixedOffset>>` instead of
+  `Option<chrono::NaiveDateTime>`. The crate already computed the offset VoIP.ms
+  would apply and then dropped it, so a caller who passed a `timezone` got back
+  a wall clock with no way to recover the zone. A consumer read one as UTC and
+  reported a time that had already passed.
+  - The type is a fixed offset, not a zone. VoIP.ms takes one number for the
+    whole range, so a range straddling a DST transition comes back at the
+    pre-transition offset throughout; a `DateTime<Tz>` would shift the far side
+    by an offset the server never applied.
+- **Breaking**: those methods send an explicit `timezone` on every call,
+  defaulting to `TimezoneOffset::UTC` when the caller names no zone. Omitting it
+  selects the account's configured zone, which nothing in the API reports -- a
+  timestamp returned in it could only be guessed at. A caller who relied on the
+  account default now gets UTC and should pass the zone it was set to.
 
 ### Upgrading
 
-Nothing about a call site changes: the four methods keep their signatures and
-their `*Params` structs, and the transport is chosen inside `Client`. A
-consumer pinning this crate exactly moves the pin to `0.13.0` and rebuilds. One
-that derives its own artifacts from this crate's method surface -- a generated
-tool catalog, for instance -- should regenerate them, since those four methods'
-doc comments now name their transport.
+The multipart change asks nothing of a call site: the four methods keep their
+signatures and their `*Params` structs, and the transport is chosen inside
+`Client`. A consumer that derives its own artifacts from this crate's method
+surface -- a generated tool catalog, for instance -- should regenerate them,
+since those four methods' doc comments now name their transport.
+
+The timestamp change does ask something. Code reading `date` off any of the six
+record-listing responses now holds a `DateTime<FixedOffset>`: call
+`.naive_local()` for the previous wall-clock value, or keep the offset and drop
+whatever local re-zoning stood in for it. Code that passed no `timezone` and
+relied on the account's configured zone now receives UTC, and should pass the
+zone that account is set to.
 
 ## [0.12.2] - 2026-09-17
 
