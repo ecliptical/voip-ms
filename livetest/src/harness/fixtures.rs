@@ -94,10 +94,9 @@ where
 
 /// Dump the exact read-back request (wire method + serialized params) and the
 /// raw response envelope for a fixture read-back that returned an error status,
-/// so the Class B `invalid_method` case can be diagnosed from a live run. It
-/// goes out over the same transport [`probe`] used, but unchecked, so a
-/// non-success envelope comes back in the body instead of as an error -- which
-/// is the whole point of dumping it.
+/// so the Class B `invalid_method` case can be diagnosed from a live run. Sent
+/// over the transport [`probe`] used, but unchecked, so a non-success envelope
+/// arrives in the body rather than as an error.
 async fn capture_read_back_error<P>(
     client: &Client,
     area: &str,
@@ -115,10 +114,8 @@ async fn capture_read_back_error<P>(
         }
     }
 
-    // Re-issue over the transport the method uses, the same choice `probe`
-    // made. No method reaching here is in the multipart table, so this takes
-    // the GET arm on every run; it is here so the dump cannot diverge from
-    // what was sent if that stops being true.
+    // The same choice `probe` made, so the dump cannot diverge from what was
+    // sent. Nothing reaching here is in the multipart table today.
     let raw = if voip_ms::requires_multipart(method) {
         client.call_multipart_raw_unchecked(method, params).await
     } else {

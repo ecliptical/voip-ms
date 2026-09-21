@@ -130,16 +130,12 @@ struct Base64FileParams {
     unlisted: Vec<String>,
 }
 
-/// Group `paths` by wire method, so the emitter can route those methods over
-/// the multipart transport and name the responsible parameter in their docs.
+/// Group `paths` by wire method for the emitter, failing on one the WSDL has no
+/// field for or one naming an offset op.
 ///
-/// Two conditions fail the run: a path the WSDL has no field for, since one
-/// left behind by a docs revision would silently drop a method back onto GET,
-/// and a path naming an offset op, whose wire twin the emitter sends over GET
-/// before the multipart branch is reached. A parameter the docs call base64
-/// that the table omits is returned in [`Base64FileParams::unlisted`] rather
-/// than failing, because that reading comes from mined HTML and wants a human
-/// to confirm it is really a file.
+/// A parameter the docs call base64 that `paths` omits is returned in
+/// [`Base64FileParams::unlisted`] rather than failing: that reading comes from
+/// mined HTML and wants a human to confirm it is really a file.
 fn base64_file_params(
     wsdl: &Wsdl,
     param_docs: &ParamDocs,
@@ -164,11 +160,8 @@ fn base64_file_params(
             ));
         }
 
-        // The emitter's offset-op branch runs first and routes through the wire
-        // twin over GET, so an op in both tables would quietly keep the
-        // transport that cannot carry its payload -- past both of this
-        // function's checks, since the entry is well-formed and listed. No op
-        // overlaps today; this is what says so.
+        // Neither check above catches this: the entry is well-formed and
+        // listed, and `emit` would silently keep the GET.
         if offset_op(op).is_some() {
             return Err(format!(
                 "BASE64_FILE_PARAM_PATHS entry `{path}` names an offset op, which `emit` \
@@ -966,10 +959,7 @@ fn multipart_doc_sentence(fields: &[String]) -> String {
     )
 }
 
-/// Emit `requires_multipart`, the public answer to "does this wire method have
-/// to be a multipart POST". The generated `Client` methods already route
-/// themselves; this is for a caller dispatching by method name, which cannot
-/// otherwise know.
+/// Emit the public `requires_multipart` predicate over the table's keys.
 fn emit_requires_multipart(base64_file_params: &BTreeMap<String, Vec<String>>) -> String {
     if base64_file_params.is_empty() {
         // `matches!(method, )` does not parse, and a failing rustfmt is only a

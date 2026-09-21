@@ -313,15 +313,10 @@ const ID_STRING_FIELDS: &[&str] = &["uniqueid"];
 /// A method with one of these is sent as a `multipart/form-data` POST; every
 /// other method is a GET.
 ///
-/// The query string a GET puts the value on is bounded by the 8190-byte
-/// request line the API's front end accepts (Apache's default
-/// `LimitRequestLine`), which leaves roughly 8 kB for the whole parameter set
-/// -- about a third of a second of 8 kHz mono audio for `setRecording`.
-/// `addLNPFile` is documented "Only accepted through POST request", so no
-/// size makes it work over GET.
-///
-/// `cargo xtask gen` fails on an entry naming a param the WSDL does not have,
-/// and warns when a param the docs describe as base64 is missing from here.
+/// A GET would put the value on a query string, which the 8190-byte request
+/// line (Apache's default `LimitRequestLine`) leaves roughly 8 kB of -- about a
+/// third of a second of 8 kHz mono audio for `setRecording`. `addLNPFile` is
+/// documented "Only accepted through POST request", so no size works for it.
 pub(crate) const BASE64_FILE_PARAM_PATHS: &[&str] = &[
     "addLNPFile.file",
     "sendFaxMessage.file",

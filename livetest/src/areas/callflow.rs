@@ -33,21 +33,16 @@ pub struct Callflow;
 
 const AREA: &str = "callflow";
 
-/// The request line voip.ms accepts, Apache's default `LimitRequestLine`. A GET
-/// carries its whole request there, so a payload past this could not have been
-/// sent as one. Compared against base64 characters, which is what a query
-/// string would have had to hold.
+/// Apache's default `LimitRequestLine`, which voip.ms runs. A GET carries its
+/// whole request there, so a payload past this could not have been sent as one.
+/// Compared against base64 characters, the form a query string would hold.
 const REQUEST_LINE_BYTES: usize = 8_190;
 
-/// Seconds of audio the fixture uploads. Read by the upload itself and by the
-/// tests that assert the payload is too big for a request line, so shrinking it
-/// cannot quietly invalidate them.
+/// Seconds of audio the fixture uploads.
 const FIXTURE_SECONDS: u32 = 2;
 
-/// How much of an upload's *duration* must survive voip.ms's re-encode. The one
-/// re-encode on record trimmed 9%; half leaves room for a lossier pass while
-/// still failing a body that arrived cut. Duration rather than bytes, since a
-/// codec change moves the byte count without losing audio.
+/// How much of an upload's duration must survive voip.ms's re-encode. The one
+/// re-encode on record trimmed 9%.
 const MIN_STORED_FRACTION: f32 = 0.5;
 
 #[async_trait(?Send)]
@@ -207,15 +202,11 @@ impl Area for Callflow {
         // sweep that blocks the run -- not a silent leak.
         //
         // A recording is reclaimed last because, unlike the others, it is
-        // referenceable -- `setIVR.recording`, `setMusicOnHold.recordings`, a
-        // ring group's caller announcement, queue announcements -- and
-        // `delRecording` on a referenced recording is refused, which fails the
-        // sweep and aborts the run. No fixture in this area creates such a
-        // reference, so the ordering is defense in depth rather than a fix for
-        // a known case; the cross-area one that did exist is prevented at its
-        // source, by the `ivr` fixture passing over marker-bearing recordings.
-        // The remaining resources are independent and their order is
-        // immaterial.
+        // referenceable (`setIVR.recording`, `setMusicOnHold.recordings`, ring
+        // group and queue announcements) and a refused `delRecording` aborts
+        // the run. Nothing here creates such a reference, so this is defense in
+        // depth; the cross-area case is prevented in `ivr`. The rest are
+        // independent and their order is immaterial.
         for result in [
             sweep_orphans(
                 report,
@@ -713,16 +704,10 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
 
 /// Whether the stored recording still holds the audio that was uploaded.
 ///
-/// Compared as duration, not as bytes. voip.ms re-encodes what it stores, and
-/// how many bytes a given number of seconds occupies is a property of the codec
-/// it picks: a re-encode of this fixture's 16-bit PCM to G.711, the ordinary
-/// telephony codec, halves the byte count while losing no audio at all. A
-/// byte-count floor cannot tell that apart from a request body that arrived cut
-/// in half, so it would fail an intact upload.
-///
-/// Catches a truncation that removes more than `1 - `[`MIN_STORED_FRACTION`] of
-/// the audio. A smaller cut passes, which is the price of leaving a re-encode
-/// room to trim -- the one on record took 9% off the duration.
+/// Compared as duration: voip.ms re-encodes, and bytes per second is a property
+/// of the codec it picks, so a narrower one halves the size while losing no
+/// audio. Catches a cut removing more than `1 - `[`MIN_STORED_FRACTION`] of the
+/// duration; a smaller one passes, which is what leaves the re-encode room.
 fn stored_wav(data: &str, uploaded_secs: u32) -> Outcome {
     let bytes = match BASE64.decode(data) {
         Ok(bytes) => bytes,
@@ -750,13 +735,9 @@ fn stored_wav(data: &str, uploaded_secs: u32) -> Outcome {
     }
 }
 
-/// The audio duration a WAV carries, in seconds, or `None` if the bytes are not
-/// a WAV this can read.
-///
-/// Taken from the container rather than from its size. `fmt `'s
-/// average-bytes-per-second field is defined for every WAV format, so dividing
-/// the `data` chunk's length by it yields a duration without assuming which
-/// codec voip.ms stored.
+/// The audio duration a WAV carries, or `None` if the bytes are not a WAV this
+/// can read. `fmt `'s average-bytes-per-second field is defined for every WAV
+/// format, so dividing the `data` chunk by it assumes no codec.
 fn wav_duration_secs(bytes: &[u8]) -> Option<f32> {
     if bytes.get(..4)? != b"RIFF" || bytes.get(8..12)? != b"WAVE" {
         return None;

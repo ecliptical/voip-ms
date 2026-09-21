@@ -33,14 +33,11 @@ pub enum ProbeOutcome {
 /// value. `count` extracts an optional element count from the deserialized
 /// value for logging (return `None` for non-list responses).
 ///
-/// This is the harness's by-name dispatcher, so it asks
-/// [`voip_ms::requires_multipart`] rather than assuming a GET. No method
-/// currently routed here is in the multipart table -- that, not the `get`
-/// prefix, is the invariant: the read-only phase also probes `e911AddressTypes`
-/// and the `search*` methods, and a read-back names `e911Info`. A file method
-/// sent as a GET would put its payload on a query string voip.ms rejects on
-/// length, and the failure would read as a transport error rather than as the
-/// dispatcher's mistake.
+/// Asks [`voip_ms::requires_multipart`] rather than assuming a GET. Nothing
+/// routed here is in the multipart table today -- that is the invariant to
+/// check when adding a probe, not the method's prefix -- and a file method sent
+/// as a GET would fail on request-line length, reading as a transport error
+/// rather than as this function's mistake.
 pub async fn probe<P, T>(
     client: &Client,
     method: &str,

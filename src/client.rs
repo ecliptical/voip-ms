@@ -11,8 +11,7 @@ use crate::error::{ApiStatus, Error, Result};
 pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
 
 /// A URL built only to be discarded: the multipart form reads the query string
-/// `reqwest` serializes the parameters into, and never sends the request. It is
-/// a literal with nothing per-call about it, so it is parsed once.
+/// `reqwest` serializes the parameters into, and never sends the request.
 static SCRATCH_URL: LazyLock<Url> = LazyLock::new(|| {
     Url::parse("http://form.invalid/").expect("the scratch URL is a literal and must parse")
 });
