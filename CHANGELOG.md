@@ -12,8 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GetCDRResponseCDR` carries the `ip` and `useragent` fields as
   `Option<String>`. `getCDR` returns both on the wire, but the docs' Output
   block does not list them, so the extractor could not see them and they were
-  discarded during deserialization. Both are empty for a call that did not
-  originate from a registered SIP device, and an empty scalar folds to `None`.
+  discarded during deserialization. A live check identified them: `ip` is the
+  originating client's public address and `useragent` its SIP User-Agent. Two
+  SIP clients calling from one sub-account within the same minute reported
+  distinct agents and a shared public address, so the pair describes the client,
+  not the account.
+  - An outbound call from a registered client carries both whether it connects
+    or not: a 19-second billed call and a 0-second failure reported the same
+    pair. They remain best-effort, though -- an inbound row, an internal echo
+    test, and two outbound attempts the record cannot be told apart from ones
+    that populated carried neither. An empty scalar folds to `None`, and a
+    consumer cannot read an empty `ip` as "no device placed this call".
+  - The observed `useragent` arrived truncated mid-token, so the value is not
+    necessarily a complete User-Agent. That, and an address voip.ms is equally
+    free to clip, is why both stay `String` rather than `IpAddr` or a parsed
+    agent: a strict parse would fail the whole response.
 - The live harness diffs every raw response against the key paths the typed
   surface models, and reports an `unmodeled` outcome for a key no `*Response`
   field claims. The existing raw-vs-typed probe could never have found `ip` and
