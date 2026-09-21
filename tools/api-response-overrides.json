@@ -260,6 +260,12 @@
         { "path": "dids[]", "type": "string" }
       ]
     },
+    "getCDR": {
+      "additions": [
+        { "path": "cdr[].ip",        "type": "string" },
+        { "path": "cdr[].useragent", "type": "string" }
+      ]
+    },
     "setSIPURI": {
       "shape": {
         "kind": "object",

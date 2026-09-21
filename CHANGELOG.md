@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: `GetCDRResponseCDR` carries the `ip` and `useragent` fields as
+  `Option<String>`. The struct is generated without `#[non_exhaustive]` and all
+  its fields are public, so a downstream struct literal or an exhaustive
+  destructure without `..` stops compiling.
+  `getCDR` returns both on the wire, but the docs' Output
+  block does not list them, so the extractor could not see them and they were
+  discarded during deserialization. A live check identified them: `ip` is the
+  originating client's public address and `useragent` its SIP User-Agent. Two
+  SIP clients calling from one sub-account within the same minute reported
+  distinct agents and a shared public address, so the pair describes the client,
+  not the account.
+  - An outbound call from a registered client carries both whether it connects
+    or not: a 19-second billed call and a 0-second failure reported the same
+    pair. They remain best-effort, though -- an inbound row, an internal echo
+    test, and two outbound attempts the record cannot be told apart from ones
+    that populated carried neither. An empty scalar folds to `None`, and a
+    consumer cannot read an empty `ip` as "no device placed this call".
+  - The observed `useragent` arrived truncated mid-token, so the value is not
+    necessarily a complete User-Agent. That, and an address voip.ms is equally
+    free to clip, is why both stay `String` rather than `IpAddr` or a parsed
+    agent: a strict parse would fail the whole response.
+
+### Added
+
+- The live harness diffs every raw response against the key paths the typed
+  surface models, and reports an `unmodeled` outcome for a key no `*Response`
+  field claims. The existing raw-vs-typed probe could never have found `ip` and
+  `useragent`: it fires only when a typed read *fails*, and an unknown key
+  deserializes away without failing anything. `cargo xtask gen` emits the
+  modeled paths into `livetest/src/response_fields.rs` alongside the structs and
+  from the same shapes (`cargo xtask dump-fields` rebuilds that file alone), and
+  the report prints the `additions` entry to paste. `getCDR` also moved to probe
+  depth, so a read-only run sees a populated record -- the only place the
+  per-record fields are visible at all.
+- The response overrides gained an `additions` section, which appends a scalar
+  field to an extracted shape (`{ "path": "cdr[].ip", "type": "string" }`). A
+  docs-driven extractor cannot see an undocumented field by construction, and
+  the alternative -- replacing the whole method's shape by hand -- would freeze
+  it against later doc updates. Declaring a field the docs later pick up fails
+  the codegen, so the stale entry gets deleted.
+
 ## [0.13.0] - 2026-09-21
 
 ### Fixed

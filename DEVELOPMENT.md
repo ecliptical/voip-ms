@@ -34,14 +34,14 @@ committed inputs:
   description), rendered as the `ApiStatus` enum (one PascalCase variant per
   code + `Unknown(String)`, with `description()`/`is_documented()` lookups).
 * `tools/api-response-overrides.json` — *hand-edited* corrections to the
-  above (per-path scalar retypes, or a full shape replacement for the handful
-  of methods the extractor can't parse). Never edit the generated
-  `api-responses.json` / `api-statuses.json` by hand — fix the override file
-  and regenerate. The overrides schema lives in
+  above (per-path scalar retypes, added scalar fields the docs omit, or a full
+  shape replacement for the handful of methods the extractor can't parse).
+  Never edit the generated `api-responses.json` / `api-statuses.json` by hand --
+  fix the override file and regenerate. The overrides schema lives in
   [xtask/src/overrides.rs](xtask/src/overrides.rs); see its module docs for
-  the path grammar and the `enums` / `field_types` / `field_type_skip`
-  sections. Boolean-flag field names (typed `bool`, serialized to `1`/`0` or
-  `yes`/`no`) are registered in
+  the path grammar and the `enums` / `field_types` / `field_type_skip` /
+  `additions` sections. Boolean-flag field names (typed `bool`, serialized to
+  `1`/`0` or `yes`/`no`) are registered in
   [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs), not the JSON.
 
 ### Reference documents
@@ -97,6 +97,12 @@ cargo xtask check-flags
 #    transport (design decision #7) and will not work over GET.
 cargo xtask gen
 
+# 5b. Refresh the wire-method list the live harness compiles in. Its key-path
+#     table comes out of `gen` above, from the same shapes, so the two cannot
+#     describe different surfaces; `cargo xtask dump-fields` rebuilds it alone
+#     if you need it.
+cargo xtask dump-methods
+
 # 6. Run the full quality gate — the same selection CI uses, plus the doc
 #    build, which CI does NOT run.
 cargo fmt --all -- --check
@@ -128,7 +134,8 @@ refresh needs eyes on the diff, not just a green build:
   adding the acronym to the `ACRONYMS` const in
   [xtask/src/main.rs](xtask/src/main.rs) and regenerating. A new method also
   needs a home in the `livetest` harness: run `cargo xtask dump-methods` to
-  refresh `livetest/src/wire_methods.rs`, then assign the method to exactly one
+  refresh `livetest/src/wire_methods.rs` (`gen` already refreshed
+  `livetest/src/response_fields.rs`), then assign the method to exactly one
   area's `methods()` in `livetest/src/areas/`. The completeness gate
   (`cargo test -p livetest`) fails until every wire method is owned by exactly
   one area.
@@ -146,6 +153,13 @@ refresh needs eyes on the diff, not just a green build:
 * **Mis-typed response scalars** — a phone-number field parsed as `integer`,
   a `0/1` flag parsed as `integer`, a date placeholder, etc. Fix via a
   per-path retype in `api-response-overrides.json`.
+* **Undocumented response fields** -- the extractor only sees what the Output
+  block lists, so a field the API returns but the docs omit is invisible to it
+  (`getCDR`'s `ip` and `useragent`, found by diffing a live response against
+  the typed one). Declare it in the `additions` section of
+  `api-response-overrides.json`. If the docs later pick the field up,
+  `cargo xtask gen` fails with "already in the extracted shape" -- delete the
+  now-stale addition.
 * **Unparseable Output blocks** — the extractor warns (`skipping output —
   parse error`). Two methods are known-unparseable and covered by full shape
   replacements in the overrides file (`setSIPURI` has no Output block;
@@ -330,8 +344,28 @@ LIVETEST_API_BASIC_USERNAME=... LIVETEST_API_BASIC_PASSWORD=... \
 cargo run -p livetest -- --all-areas
 ```
 
-The run prints per-method `pass` / `fail` / `skip` / `drift` lines and a final
-JSON summary; it exits non-zero if anything failed or drifted.
+The run prints per-method `pass` / `fail` / `skip` / `drift` / `unmodeled` lines
+and a final JSON summary; it exits non-zero if anything failed, drifted, or came
+back unmodeled.
+
+### What the harness checks, in both directions
+
+Each probed method is checked twice against the same raw envelope:
+
+* **drift** -- the typed `*Response` could not deserialize what arrived. The
+  crate is broken for that method until an override fixes the shape.
+* **unmodeled** -- the response carried keys no `*Response` field claims, so the
+  typed surface dropped them. This needs its own check precisely because it
+  cannot fail a deserialization: the generated structs carry no
+  `deny_unknown_fields`, which is what keeps a VoIP.ms addition from breaking
+  every caller. `getCDR`'s `ip` and `useragent` were dropped this way from the
+  first release until someone diffed a raw response by hand.
+
+An `unmodeled` line prints the `additions` entry to paste into
+`tools/api-response-overrides.json`, so the finding is also the fix. Only a
+*populated* response can show per-record fields -- a method the account has no
+data for passes trivially, which is why breadth of account data matters more
+here than breadth of methods.
 
 ### CI
 

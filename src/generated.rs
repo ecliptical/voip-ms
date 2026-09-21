@@ -10841,6 +10841,16 @@ pub struct GetCDRResponseCDR {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub call_logs: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub ip: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub useragent: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]

@@ -10,6 +10,7 @@
 //!     cargo xtask gen
 
 mod check_flags;
+mod dump_fields;
 mod dump_methods;
 mod extract;
 mod field_overrides;
@@ -1320,6 +1321,43 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
     out
 }
 
+/// Format a file this generator just wrote, so its output is what `cargo fmt
+/// --check` expects and a regen leaves no formatting churn behind. A missing or
+/// failing rustfmt is a warning: the file is already valid Rust.
+pub(crate) fn rustfmt_file(path: &Path) {
+    match Command::new("rustfmt")
+        .args(["--edition", "2024"])
+        .arg(path)
+        .status()
+    {
+        Ok(s) if s.success() => {}
+        Ok(s) => eprintln!("warning: rustfmt exited with {s}; run `cargo fmt` manually"),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            eprintln!("warning: rustfmt not found on PATH; run `cargo fmt` manually");
+        }
+        Err(e) => eprintln!("warning: rustfmt failed ({e}); run `cargo fmt` manually"),
+    }
+}
+
+/// The post-override response shapes, for a tool that needs what `gen` renders
+/// without rendering it. Shares `gen`'s inputs so the two can't disagree.
+pub(crate) fn load_shapes_for_tools() -> Result<BTreeMap<String, Shape>, String> {
+    let root = repo_root();
+    let wsdl_path = root.join("tools").join("server.wsdl");
+    let text =
+        fs::read_to_string(&wsdl_path).map_err(|e| format!("read {}: {e}", wsdl_path.display()))?;
+    let wsdl = wsdl::parse_wsdl(&text)?;
+
+    let overrides_doc = overrides::load(&root.join("tools").join("api-response-overrides.json"))?;
+    overrides_doc.check_version()?;
+
+    load_response_shapes(
+        &root.join("tools").join("api-responses.json"),
+        &overrides_doc,
+        &wsdl,
+    )
+}
+
 fn cmd_gen() -> Result<(), String> {
     let root = repo_root();
     let wsdl_path = root.join("tools").join("server.wsdl");
@@ -1366,6 +1404,10 @@ fn cmd_gen() -> Result<(), String> {
     overrides_doc.check_version()?;
 
     let responses = load_response_shapes(&responses_path, &overrides_doc, &wsdl)?;
+    // Before anything is written: this run emits the harness's key-path table
+    // from these same shapes, and a shape that table cannot describe must stop
+    // the run rather than half-finish it.
+    dump_fields::validate_roots(&responses)?;
     let param_docs = load_param_docs(&responses_path)?;
     let method_docs = load_method_docs(&responses_path)?;
 
@@ -1405,18 +1447,25 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
-    // A patch whose leaf field has a field-name override is dead weight: the
-    // override supplies both the Rust type and the deserializer, so the
-    // patched scalar type is never consulted. Warn so the entry gets removed
+    // A patch or addition whose leaf field has a field-name override is dead
+    // weight: the override supplies both the Rust type and the deserializer, so
+    // the declared scalar type is never consulted. Warn so the entry gets fixed
     // (unless a `field_type_skip` on that field name keeps some struct on the
-    // inferred/patched type, in which case the patch may still be live).
+    // inferred/patched type, in which case the entry may still be live). An
+    // addition goes through the same resolver as any other scalar field, so it
+    // is shadowed in exactly the same way.
     let skipped_fields: BTreeSet<&str> = field_type_skip
         .iter()
         .filter_map(|entry| entry.rsplit_once('.').map(|(_, f)| f))
         .collect();
     for (method, mo) in &overrides_doc.methods {
-        for patch in &mo.patches {
-            let leaf = patch.path.rsplit('.').next().unwrap_or(&patch.path);
+        let declared = mo
+            .patches
+            .iter()
+            .map(|patch| ("patch", &patch.path))
+            .chain(mo.additions.iter().map(|add| ("addition", &add.path)));
+        for (kind, path) in declared {
+            let leaf = path.rsplit('.').next().unwrap_or(path);
             // A path ending in `[]` retypes a list *element*, which the
             // field-name table never touches.
             if leaf.ends_with("[]") {
@@ -1424,9 +1473,8 @@ fn cmd_gen() -> Result<(), String> {
             }
             if table.get(leaf).is_some() && !skipped_fields.contains(leaf) {
                 eprintln!(
-                    "warning: {method}: patch `{}` is shadowed by the \
-                     field-name override for `{leaf}`; remove it",
-                    patch.path,
+                    "warning: {method}: {kind} `{path}` is shadowed by the \
+                     field-name override for `{leaf}`; its declared type is ignored",
                 );
             }
         }
@@ -1568,18 +1616,11 @@ fn cmd_gen() -> Result<(), String> {
         statuses.len(),
     );
 
-    match Command::new("rustfmt")
-        .args(["--edition", "2024"])
-        .arg(&out_path)
-        .status()
-    {
-        Ok(s) if s.success() => {}
-        Ok(s) => eprintln!("warning: rustfmt exited with {s}; run `cargo fmt` manually"),
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {
-            eprintln!("warning: rustfmt not found on PATH; run `cargo fmt` manually");
-        }
-        Err(e) => eprintln!("warning: rustfmt failed ({e}); run `cargo fmt` manually"),
-    }
+    rustfmt_file(&out_path);
+
+    // From the same shapes, so the harness's key-diff table can't fall behind
+    // the structs it describes.
+    dump_fields::write_table(&responses)?;
 
     Ok(())
 }
@@ -1742,10 +1783,11 @@ fn main() -> ExitCode {
         "extract-statuses" => cmd_extract_statuses(&rest),
         "check-flags" => check_flags::cmd_check_flags(),
         "dump-methods" => dump_methods::cmd_dump_methods(),
+        "dump-fields" => dump_fields::cmd_dump_fields(),
         other => Err(format!(
             "unknown subcommand `{other}` \
              (expected `gen`, `extract-responses`, `extract-statuses`, \
-             `check-flags`, or `dump-methods`)"
+             `check-flags`, `dump-methods`, or `dump-fields`)"
         )),
     };
 

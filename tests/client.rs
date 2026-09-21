@@ -1360,6 +1360,45 @@ async fn typed_get_cdr_decodes_alphanumeric_uniqueid() {
 }
 
 #[tokio::test]
+async fn typed_get_cdr_decodes_ip_and_useragent() {
+    // `ip` and `useragent` are on the wire but absent from the docs' Output
+    // block, so they reach the generated struct through an `additions` entry in
+    // the overrides rather than the extractor. Most rows send them as `""`,
+    // which folds to `None` like any other unset scalar. The populated values
+    // here are the shape a live outbound call from a registered softphone
+    // returned, truncated User-Agent included -- neither is guaranteed well
+    // formed, which is why both stay `String` rather than becoming `IpAddr` or
+    // a parsed agent.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [
+                {
+                    "uniqueid": "128238059",
+                    "ip": "203.0.113.7",
+                    "useragent": "VoIP_ms Softphone/0.0.6 (build 2335157"
+                },
+                { "uniqueid": "128238060", "ip": "", "useragent": "" }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
+    assert_eq!(envelope.cdr[0].ip.as_deref(), Some("203.0.113.7"));
+    assert_eq!(
+        envelope.cdr[0].useragent.as_deref(),
+        Some("VoIP_ms Softphone/0.0.6 (build 2335157")
+    );
+    assert_eq!(envelope.cdr[1].ip, None);
+    assert_eq!(envelope.cdr[1].useragent, None);
+}
+
+#[tokio::test]
 async fn typed_get_conference_decodes_unlimited_max_members() {
     // getConference reports an uncapped conference's max_members as the word
     // `Unlimited`; the earlier `u64` typing failed to deserialize it.
