@@ -731,9 +731,9 @@ fn stored_wav(data: &str, uploaded_secs: u32) -> Outcome {
 
     let Some(stored_secs) = wav_duration_secs(&bytes) else {
         return Outcome::Fail(format!(
-            "stored file is not a RIFF/WAVE container this can read ({} bytes): \
-             malformed, cut before the `fmt ` chunk, or a chunk layout \
-             `wav_duration_secs` does not walk",
+            "no duration could be read from the stored file ({} bytes): not a RIFF/WAVE \
+             container, cut before its `fmt ` or `data` chunk, or carrying a zero \
+             byte rate",
             bytes.len()
         ));
     };

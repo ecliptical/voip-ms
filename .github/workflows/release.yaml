@@ -42,7 +42,9 @@ jobs:
         run: cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
 
       - name: Run tests
-        run: cargo test --workspace --all-targets --features unchecked-raw
+        # No --all-targets: it drops doctests, and rust-ci runs them. The tag
+        # build must not be a weaker gate than the PR that produced it.
+        run: cargo test --workspace --features unchecked-raw
 
       - name: Check the non-default TLS backend
         run: cargo check --no-default-features --features native-tls

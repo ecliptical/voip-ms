@@ -97,10 +97,12 @@ cargo xtask check-flags
 #    transport (design decision #7) and will not work over GET.
 cargo xtask gen
 
-# 6. Run the full quality gate — note the doc build, which CI does NOT run.
+# 6. Run the full quality gate — the same selection CI uses, plus the doc
+#    build, which CI does NOT run.
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace --all-targets
+cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
+cargo test --workspace --features unchecked-raw
+cargo check --no-default-features --features native-tls
 RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
   cargo doc --no-deps
 
@@ -342,15 +344,24 @@ the credentials and server auth held as secrets.
 
 * `rust-ci.yaml` runs on pull requests and pushes to `main`:
 	* `cargo fmt --all -- --check`
-	* `cargo clippy --all -- -D warnings`
-	* `cargo test` with coverage instrumentation
+	* `cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings`
+	* `cargo check --no-default-features --features native-tls` -- the only
+		build of the non-default TLS backend, kept out of the test job because
+		reqwest picks native-tls when both stacks are on
+	* `cargo test --workspace --features unchecked-raw` with coverage
+		instrumentation. `--workspace` matters: the root package is also the
+		workspace root, so a bare `cargo test` silently skips livetest and xtask.
+		It also puts livetest in the coverage denominator, where most of it
+		cannot execute without the live API
 	* coverage summary posted to pull requests via
 		`ecliptical/covdir-report-action`
 * `dependabot-automerge.yaml` auto-approves and auto-merges safe Cargo
 	updates from Dependabot.
 * `release.yaml` runs on `v*` tags:
 	* validates tag version against Cargo.toml
-	* runs fmt, clippy, tests, and publish dry-run checks
+	* runs the same gate as `rust-ci.yaml`, plus a publish dry run. Keep the
+		two in step: a tag build that is weaker than the PR gate publishes what
+		the PR gate would have caught
 	* publishes to crates.io with `CRATES_IO_TOKEN`
 	* creates a GitHub release from the tag
 

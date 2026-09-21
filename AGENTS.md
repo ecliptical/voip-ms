@@ -523,7 +523,7 @@ voip-ms/
 ├── .github/
 │   ├── dependabot.yml   # Weekly cargo + actions updates
 │   └── workflows/
-│       ├── rust-ci.yaml              # fmt, clippy, test, coverage
+│       ├── rust-ci.yaml              # fmt, clippy, TLS check, test, coverage
 │       ├── dependabot-automerge.yaml # auto-merge safe Cargo updates
 │       └── release.yaml              # tag-validated publish + GitHub release
 ├── src/
