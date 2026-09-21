@@ -76,9 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   timestamps come back qualified `+05:30`).
 - Every generated `*Params` and `*Response` struct derives `PartialEq` and
   `Eq`, so a test can compare a whole response and a consumer can dedupe or
-  diff records without writing them out field by field. Each family keeps the
-  one serde direction it uses; the opposite direction on each was considered
-  for this release and dropped, since no consumer asked for it.
+  diff records without writing them out field by field.
 - `NoParams`, the parameters of a method that takes none. Public so a caller
   reaching one of the eight parameterless methods by wire name through
   `Client::call_raw` has something to serialize.

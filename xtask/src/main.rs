@@ -1018,12 +1018,6 @@ fn emit(
          use crate::error::Result;\n\
          \n\
          /// The parameters of a method that takes none.\n\
-         ///\n\
-         /// A method with an empty `*Params` struct would make every call site\n\
-         /// write it out, so the generated method takes no argument and sends\n\
-         /// this instead. It is public for a caller reaching one of those\n\
-         /// methods by wire name through [`Client::call_raw`], which still\n\
-         /// needs something to serialize.\n\
          #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]\n\
          pub struct NoParams {}\n",
     );
