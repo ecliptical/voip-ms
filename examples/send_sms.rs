@@ -61,10 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .await?;
 
-    println!(
-        "status: {}",
-        response.status.as_deref().unwrap_or("(missing)")
-    );
+    println!("status: {}", response.status);
 
     Ok(())
 }

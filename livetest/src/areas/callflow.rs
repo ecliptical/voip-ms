@@ -408,7 +408,7 @@ async fn ring_group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut 
         .set_ring_group(&SetRingGroupParams {
             name: Some(name),
             members: Some(format!("account:{sub_account}")),
-            voicemail: Some("0".into()),
+            voicemail: Some(0),
             ..Default::default()
         })
         .await;
@@ -569,7 +569,7 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
         .set_static_member(&SetStaticMemberParams {
             queue: Some(queue_id),
             member_name: Some(member_name),
-            member: Some("15555550101".to_string()),
+            member: Some(15555550101),
             priority: Some(1),
             ..Default::default()
         })
@@ -609,7 +609,7 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
         AREA,
         "fixture:getStaticMembers",
         &GetStaticMembersParams {
-            queue: Some(queue_id.to_string()),
+            queue: Some(queue_id),
             ..Default::default()
         },
         |r| Some(r.members.len()),
@@ -674,7 +674,7 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
         AREA,
         "fixture:getRecordings",
         &GetRecordingsParams {
-            recording: Some(id.to_string()),
+            recording: Some(id),
         },
         |r| Some(r.recordings.len()),
     )
@@ -682,7 +682,7 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
 
     match client
         .get_recording_file(&GetRecordingFileParams {
-            recording: Some(id.to_string()),
+            recording: Some(id),
         })
         .await
     {

@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .get_voicemails(&GetVoicemailsParams::default())
         .await?;
 
-    let status = response.status.as_deref().unwrap_or("(missing)");
+    let status = response.status;
     println!("status: {status}");
 
     let voicemails = response.voicemails;

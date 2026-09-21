@@ -47,7 +47,7 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new(resolver);
+        let mut emitter = Emitter::new(resolver, root.clone());
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -214,18 +214,33 @@ fn collect_timestamps(
     Ok(())
 }
 
+/// The derives every generated `*Response` struct carries.
+///
+/// `Serialize` is there so a consumer fronting this crate with another
+/// interface can turn a typed response back into JSON; the `deserialize_with`
+/// helpers are one-directional and do not affect it. `PartialEq`/`Eq` let a
+/// whole response be compared, deduped, or diffed without writing it out field
+/// by field.
+const RESPONSE_DERIVES: &str =
+    "#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]\n";
+
 struct Emitter<'a> {
     /// Structs emitted in dependency-friendly order (children appended
     /// before any later sibling that references them).
     structs: Vec<String>,
     resolver: &'a Resolver<'a>,
+    /// The method's top-level response struct. Its `status` is the envelope's
+    /// own, typed [`crate::ApiStatus`]; a nested struct's same-named field
+    /// (a fax's, a port's) is unrelated and keeps its inferred type.
+    root: String,
 }
 
 impl<'a> Emitter<'a> {
-    fn new(resolver: &'a Resolver<'a>) -> Self {
+    fn new(resolver: &'a Resolver<'a>, root: String) -> Self {
         Self {
             structs: Vec::new(),
             resolver,
+            root,
         }
     }
 
@@ -250,8 +265,7 @@ impl<'a> Emitter<'a> {
                 // whole shape for the same reason.
                 let items_ty = self.field_type(name, "items", shape);
                 let body = format!(
-                    "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
-                     pub struct {name} {{\n    \
+                    "{RESPONSE_DERIVES}pub struct {name} {{\n    \
                          #[serde(default, deserialize_with = \"crate::responses::deserialize_vec_from_single_or_seq\")]\n    \
                          pub items: {items_ty},\n\
                      }}\n",
@@ -276,8 +290,7 @@ impl<'a> Emitter<'a> {
                 };
                 let attrs = render_field_attrs(deser);
                 let body = format!(
-                    "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
-                     pub struct {name} {{\n\
+                    "{RESPONSE_DERIVES}pub struct {name} {{\n\
                          {attrs}    pub value: Option<{inner_ty}>,\n\
                      }}\n",
                 );
@@ -288,8 +301,7 @@ impl<'a> Emitter<'a> {
             Shape::Map(_) => {
                 let map_ty = self.field_type(name, "entries", shape);
                 let body = format!(
-                    "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
-                     pub struct {name} {{\n    \
+                    "{RESPONSE_DERIVES}pub struct {name} {{\n    \
                          #[serde(default, deserialize_with = \"crate::responses::deserialize_map_from_object\")]\n    \
                          pub entries: {map_ty},\n\
                      }}\n",
@@ -316,10 +328,26 @@ impl<'a> Emitter<'a> {
 
         let acronyms = acronyms_sorted();
         let mut body = String::new();
-        body.push_str("#[derive(Debug, Clone, Default, serde::Deserialize)]\n");
+        body.push_str(RESPONSE_DERIVES);
         body.push_str(&format!("pub struct {name} {{\n"));
         for (fname, sub) in deduped {
-            let rust_ident = crate::rust_field_ident(fname, &acronyms);
+            // The envelope's own status, which `Client::fetch` has already
+            // classified by the time a typed call returns. Typed rather than
+            // left a raw string so a caller reads which case it is -- `success`
+            // or an empty-collection code -- instead of parsing it again. It is
+            // not optional: `check_status` has already required the field.
+            if name == self.root && fname == "status" {
+                body.push_str(
+                    "    /// The status VoIP.ms reported for the call: \
+                     [`ApiStatus::Success`],\n    \
+                     /// or the empty-collection code\n    \
+                     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.\n",
+                );
+                body.push_str("    pub status: ApiStatus,\n");
+                continue;
+            }
+
+            let rust_ident = crate::field_ident(name, fname, &acronyms);
             // The name-based table only applies to scalar-shaped fields: a
             // substituted scalar type can never stand in for a list/object.
             let override_ = self

@@ -260,6 +260,16 @@ pub enum MaxMembers {
 
 macro_rules! impl_seconds {
     ($name:ident, $unlimited_wire:literal, $expecting:literal) => {
+        impl $name {
+            /// The count, or `None` for the unbounded sentinel.
+            pub fn as_u64(&self) -> Option<u64> {
+                match self {
+                    $name::Value(v) => Some(*v),
+                    $name::Unlimited => None,
+                }
+            }
+        }
+
         impl From<u64> for $name {
             fn from(v: u64) -> Self {
                 $name::Value(v)
@@ -753,6 +763,18 @@ mod tests {
             serde_json::from_str::<WaitTime>("\"unlimited\"").unwrap(),
             WaitTime::Unlimited
         );
+    }
+
+    /// Reading the count is the common thing to do with one of these, and a
+    /// caller should not have to match to do it.
+    #[test]
+    fn seconds_like_types_expose_their_count() {
+        assert_eq!(Seconds::Value(30).as_u64(), Some(30));
+        assert_eq!(Seconds::Unlimited.as_u64(), None);
+        assert_eq!(WaitTime::Value(45).as_u64(), Some(45));
+        assert_eq!(WaitTime::Unlimited.as_u64(), None);
+        assert_eq!(MaxMembers::Value(40).as_u64(), Some(40));
+        assert_eq!(MaxMembers::Unlimited.as_u64(), None);
     }
 
     #[test]

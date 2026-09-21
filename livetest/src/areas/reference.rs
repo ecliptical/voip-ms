@@ -10,8 +10,8 @@
 use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
-use crate::harness::Report;
 use crate::harness::area::{Area, AreaCtx, CostClass};
+use crate::harness::{NoParams, Report};
 use voip_ms::*;
 
 pub struct Reference;
@@ -90,7 +90,7 @@ impl Area for Reference {
             report,
             AREA,
             "getCallAccounts",
-            GetCallAccountsParams,
+            NoParams,
             GetCallAccountsResponse,
             accounts
         );
@@ -99,7 +99,7 @@ impl Area for Reference {
             report,
             AREA,
             "getCallBilling",
-            GetCallBillingParams,
+            NoParams,
             GetCallBillingResponse,
             call_billing
         );
@@ -251,7 +251,7 @@ impl Area for Reference {
             report,
             AREA,
             "getProvinces",
-            GetProvincesParams,
+            NoParams,
             GetProvincesResponse,
             provinces
         );
@@ -281,7 +281,7 @@ impl Area for Reference {
             report,
             AREA,
             "getStates",
-            GetStatesParams,
+            NoParams,
             GetStatesResponse,
             states
         );

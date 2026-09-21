@@ -26,8 +26,8 @@ use config::{Cli, Config, Depth};
 use harness::area::AreaCtx;
 use harness::ledger::{self, Ledger};
 use harness::marker::RunToken;
-use harness::{ProbeOutcome, Report, probe};
-use voip_ms::{GetIPParams, GetIPResponse};
+use harness::{NoParams, ProbeOutcome, Report, probe};
+use voip_ms::GetIPResponse;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -150,8 +150,7 @@ async fn run() -> Result<bool> {
 /// before any real work.
 async fn confirm_connectivity(client: &voip_ms::Client) -> Result<()> {
     let outcome =
-        probe::<GetIPParams, GetIPResponse>(client, "getIP", &GetIPParams::default(), |_| None)
-            .await;
+        probe::<NoParams, GetIPResponse>(client, "getIP", &NoParams::default(), |_| None).await;
 
     match outcome {
         ProbeOutcome::Ok { .. } => {

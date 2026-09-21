@@ -133,9 +133,7 @@ async fn group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
         Box::pin(async move {
             tolerate_absent(
                 client
-                    .del_phonebook_group(&DelPhonebookGroupParams {
-                        group: Some(id.to_string()),
-                    })
+                    .del_phonebook_group(&DelPhonebookGroupParams { group: Some(id) })
                     .await,
             )
         })
@@ -249,9 +247,7 @@ async fn list_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
 
 async fn del_group(client: &Client, id: u64) -> anyhow::Result<()> {
     client
-        .del_phonebook_group(&DelPhonebookGroupParams {
-            group: Some(id.to_string()),
-        })
+        .del_phonebook_group(&DelPhonebookGroupParams { group: Some(id) })
         .await?;
     Ok(())
 }

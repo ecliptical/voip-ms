@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .await?;
 
-    let status = response.status.as_deref().unwrap_or("(missing)");
+    let status = response.status;
     println!("status: {status}");
 
     let cdr = response.cdr;

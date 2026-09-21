@@ -115,9 +115,14 @@ pub fn cmd_check_flags() -> Result<(), String> {
     Ok(())
 }
 
-/// Classify a param description as boolean-like: `yes/no` toggles, or value
-/// lists offering exactly `1=`/`0=` (a `2=`/`3=` alternative means a real
-/// enum, not a flag). Whitespace-insensitive, so `1 = Enable` matches too.
+/// Classify a param description as boolean-like: `yes/no` toggles, the bare
+/// `Boolean: 1/0` the docs also use, or value lists offering exactly
+/// `1=`/`0=` (a `2=`/`3=` alternative means a real enum, not a flag).
+/// Whitespace-insensitive, so `1 = Enable` matches too.
+///
+/// The `Boolean: 1/0` spelling names no value, so the `1=`/`0=` rule cannot
+/// see it. That is how `cnam` and `sip_traffic` stayed integers while every
+/// neighboring flag was a `bool`.
 fn flag_kind(doc: &str) -> Option<&'static str> {
     let squished: String = doc
         .to_ascii_lowercase()
@@ -126,6 +131,10 @@ fn flag_kind(doc: &str) -> Option<&'static str> {
         .collect();
     if squished.contains("yes/no") {
         return Some("yes/no");
+    }
+
+    if squished.contains("boolean:1/0") || squished.contains("boolean:0/1") {
+        return Some("1/0");
     }
 
     if squished.contains("1=")
@@ -149,5 +158,35 @@ fn collect_field_names(shape: &Shape, out: &mut BTreeSet<String>) {
         }
         Shape::List(inner) | Shape::Map(inner) => collect_field_names(inner, out),
         Shape::Scalar { .. } => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::flag_kind;
+
+    #[test]
+    fn reads_the_spellings_the_docs_use() {
+        assert_eq!(flag_kind("CNAM for the DID (Boolean: 1/0)"), Some("1/0"));
+        assert_eq!(
+            flag_kind("Encrypted SIP Traffic (Boolean: 1/0)"),
+            Some("1/0")
+        );
+        assert_eq!(
+            flag_kind("Enable SMS (1 = Enable / 0 = Disable)"),
+            Some("1/0")
+        );
+        assert_eq!(flag_kind("Record calls (yes/no)"), Some("yes/no"));
+
+        // A third value makes it an enum, and a plain description is neither.
+        assert_eq!(flag_kind("Mode (0 = off / 1 = on / 2 = auto)"), None);
+        assert_eq!(flag_kind("Destination Number (Example: 5551234568)"), None);
+        // `getSMS`'s `type` names what each side means, so it reads as the
+        // direction enum it is rather than as a flag.
+        assert_eq!(
+            flag_kind("Filter SMSs by Type (Boolean: 1 = received / 0 = sent)"),
+            Some("1/0"),
+            "the 1=/0= rule still fires; the field_type_override is what excludes it"
+        );
     }
 }

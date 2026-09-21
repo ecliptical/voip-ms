@@ -508,3 +508,30 @@ fn known_codes_have_descriptions() {
         assert!(status.description().is_some(), "no description for {code}");
     }
 }
+
+/// `success` is not in the error-code table -- it is not an error -- but a
+/// typed response's `status` reports it, so it is a variant rather than an
+/// `Unknown` that reads like a code the crate failed to recognize.
+#[test]
+fn success_is_a_variant_of_its_own() {
+    let status = ApiStatus::from_wire("success");
+    assert_eq!(status, ApiStatus::Success);
+    assert_eq!(status.as_str(), "success");
+    assert!(status.is_documented());
+    assert!(status.description().is_some());
+    assert!(!status.is_empty_collection());
+    assert_eq!(ApiStatus::default(), ApiStatus::Success);
+}
+
+/// `.parse()` reaches the same place `from_wire` does, for a caller generic
+/// over `FromStr`.
+#[test]
+fn parsing_matches_from_wire() {
+    for &code in KNOWN_CODES.iter().chain(["success", "made_up"].iter()) {
+        assert_eq!(
+            code.parse::<ApiStatus>().expect("parsing never fails"),
+            ApiStatus::from_wire(code),
+            "parse disagrees with from_wire for {code}"
+        );
+    }
+}

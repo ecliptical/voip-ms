@@ -103,6 +103,12 @@ cargo xtask gen
 #     if you need it.
 cargo xtask dump-methods
 
+# 5c. Audit the emitted surface for a field typed one way to read and another
+#     to write. Advisory: a real finding gets a field-name entry in
+#     xtask/src/field_overrides.rs and a regen; a pair meant to differ goes in
+#     the command's DELIBERATE list with the reason.
+cargo xtask check-types
+
 # 6. Run the full quality gate — the same selection CI uses, plus the doc
 #    build, which CI does NOT run.
 cargo fmt --all -- --check

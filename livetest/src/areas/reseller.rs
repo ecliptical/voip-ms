@@ -105,7 +105,7 @@ impl Area for Reseller {
 
         let cfg = &ctx.config.reseller;
 
-        client_id_reads(ctx, report, cfg.client_id.as_deref()).await;
+        client_id_reads(ctx, report, cfg.client_id).await;
 
         // signupClient is the one mutator wired here; it is gated and creates
         // the client inactive.
@@ -126,7 +126,7 @@ impl Area for Reseller {
 
 /// The per-client reads. Each fires only when `--reseller-client-id` is
 /// supplied, otherwise records skip (no input).
-async fn client_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, client_id: Option<&str>) {
+async fn client_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, client_id: Option<u64>) {
     let Some(client) = client_id else {
         for label in [
             "fixture:getClientPackages",
@@ -145,7 +145,7 @@ async fn client_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, client_id: Opti
         AREA,
         "fixture:getClientPackages",
         &GetClientPackagesParams {
-            client: Some(client.to_string()),
+            client: Some(client),
         },
         |r| Some(r.packages.len()),
     )
@@ -157,7 +157,7 @@ async fn client_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, client_id: Opti
         AREA,
         "fixture:getClientThreshold",
         &GetClientThresholdParams {
-            client: Some(client.to_string()),
+            client: Some(client),
         },
         |r| r.threshold_information.as_ref().map(|_| 1),
     )
@@ -169,7 +169,7 @@ async fn client_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, client_id: Opti
         AREA,
         "fixture:getResellerBalance",
         &GetResellerBalanceParams {
-            client: Some(client.to_string()),
+            client: Some(client),
         },
         |r| r.balance.as_ref().map(|_| 1),
     )

@@ -24,7 +24,7 @@ use crate::config::Depth;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
 use crate::harness::fixtures::{read_back, tolerate_absent};
 use crate::harness::scope::Scope;
-use crate::harness::{Outcome, Report};
+use crate::harness::{NoParams, Outcome, Report};
 use voip_ms::*;
 
 pub struct Dids;
@@ -124,7 +124,7 @@ impl Area for Dids {
             report,
             AREA,
             "getVPRIs",
-            GetVPRIsParams,
+            NoParams,
             GetVPRIsResponse,
             vpri
         );
@@ -325,7 +325,7 @@ async fn order_fixture_did(ctx: &AreaCtx<'_>, report: &mut Report) {
             routing: Some(Routing::None),
             pop: Some(pop),
             dialtime: Some(60),
-            cnam: Some(0),
+            cnam: Some(false),
             billing_type: Some(DidBillingType::PerMinute),
             ..Default::default()
         })
@@ -427,7 +427,7 @@ async fn find_purchasable_did(ctx: &AreaCtx<'_>) -> voip_ms::Result<Option<Strin
         .client
         .search_dids_can(&SearchDIDsCANParams {
             province: Some(ctx.config.did_search_province.clone()),
-            r#type: Some(SearchType::Contains),
+            search_type: Some(SearchType::Contains),
             query: Some(ctx.config.did_search_query.clone()),
         })
         .await?;

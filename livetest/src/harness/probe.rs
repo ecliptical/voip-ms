@@ -19,6 +19,14 @@ use voip_ms::{Client, Error, TimezoneOffset, attach_offset};
 use crate::harness::keydiff;
 use crate::response_fields;
 
+/// The parameters of a method that takes none.
+///
+/// The crate emits no `*Params` struct for those eight methods -- their
+/// generated `Client` method takes no argument -- but the probe calls by wire
+/// name and still needs something to serialize.
+#[derive(Debug, Default, Serialize)]
+pub struct NoParams {}
+
 /// The result of probing one method.
 pub enum ProbeOutcome {
     /// Raw succeeded and the typed shape deserialized. `element_count` is set
@@ -188,7 +196,7 @@ where
         // folds it into an empty response. Mirror the typed semantics so an
         // empty account never reads as an API error -- there is simply nothing
         // to deserialize.
-        Err(Error::Api(status)) if status.is_empty() => {
+        Err(Error::Api(status)) if status.is_empty_collection() => {
             return ProbeOutcome::Ok {
                 element_count: Some(0),
                 unmodeled: Vec::new(),

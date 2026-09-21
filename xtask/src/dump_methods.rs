@@ -38,9 +38,10 @@ pub fn cmd_dump_methods() -> Result<(), String> {
     Ok(())
 }
 
-/// Collect the wire string passed to `self.call_raw("...", ..)` in each
-/// `*_raw` method of the `impl Client` block. The `_raw` variant is unique per
-/// operation, so it names every method once with no `call`/`call_raw` doubling.
+/// Collect the wire string passed to `self.call_raw("...", ..)` (or its
+/// multipart counterpart) in each `*_raw` method of the `impl Client` block.
+/// The `_raw` variant is unique per operation, so it names every method once
+/// with no `call`/`call_raw` doubling.
 fn wire_methods(file: &syn::File) -> Vec<String> {
     let mut out = Vec::new();
     for item in &file.items {
@@ -84,10 +85,16 @@ fn first_call_raw_literal(stmts: &[Stmt]) -> Option<String> {
 }
 
 /// Descend `<expr>.await` / `<recv>.call_raw("wire", ..)` to the wire literal.
+///
+/// Both raw forms count: a method carrying a base64 file is emitted over
+/// `call_multipart_raw` (design decision #7), and reading only `call_raw`
+/// silently dropped those four from the list the completeness gate partitions.
 fn call_raw_literal(expr: &Expr) -> Option<String> {
     match expr {
         Expr::Await(await_) => call_raw_literal(&await_.base),
-        Expr::MethodCall(call) if call.method == "call_raw" => {
+        Expr::MethodCall(call)
+            if call.method == "call_raw" || call.method == "call_multipart_raw" =>
+        {
             call.args.iter().find_map(string_literal)
         }
         Expr::MethodCall(call) => call_raw_literal(&call.receiver),

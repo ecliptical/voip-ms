@@ -16,7 +16,8 @@ use crate::harness::marker::is_owned_marker;
 use crate::harness::probe::{ProbeOutcome, ZonedRequest, probe, probe_zoned};
 use crate::harness::{Outcome, Report};
 use voip_ms::{
-    ApiStatus, Client, Error, QueueEmptyBehavior, RingStrategy, SetQueueParams, TimezoneOffset,
+    ApiStatus, Client, Error, EstimatedHoldTimeAnnounce, QueueEmptyBehavior, RingStrategy,
+    SetQueueParams, TimezoneOffset,
 };
 
 /// Every `(required)` `setQueue` field but the caller-supplied `queue_name`,
@@ -33,8 +34,8 @@ pub fn required_queue_params(queue_number: u64) -> SetQueueParams {
     SetQueueParams {
         queue_number: Some(queue_number),
         queue_language: Some("en".into()),
-        priority_weight: Some("1".into()),
-        report_hold_time_agent: Some("yes".into()),
+        priority_weight: Some(1),
+        report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Yes),
         join_when_empty: Some(QueueEmptyBehavior::Yes),
         leave_when_empty: Some(QueueEmptyBehavior::No),
         ring_strategy: Some(RingStrategy::RingAll),
@@ -210,7 +211,7 @@ pub fn owned(field: &Option<String>) -> bool {
 }
 
 /// Fold a teardown `del_*` result so a delete of an already-absent resource
-/// counts as success: an "absent" status ([`ApiStatus::is_empty`], e.g.
+/// counts as success: an "absent" status ([`ApiStatus::is_empty_collection`], e.g.
 /// `no_conference`, or an `invalid_*` "not a valid <resource> ID" code) means
 /// the object the teardown targets is gone, which is the teardown's goal.
 ///
@@ -227,7 +228,7 @@ pub fn tolerate_absent<T>(result: Result<T, Error>) -> anyhow::Result<()> {
 }
 
 /// Whether a `del_*` error status means the target is already gone: an
-/// empty-collection status ([`ApiStatus::is_empty`], e.g. `no_conference`) or
+/// empty-collection status ([`ApiStatus::is_empty_collection`], e.g. `no_conference`) or
 /// an `invalid_<resource>` code, which VoIP.ms returns for a delete addressing
 /// a non-existent id (e.g. `invalid_conference` -- "This is not a valid
 /// Conference ID"). Scoped to a teardown deleting an id the harness itself
@@ -237,7 +238,7 @@ pub fn tolerate_absent<T>(result: Result<T, Error>) -> anyhow::Result<()> {
 /// real auth failure that must stay a teardown failure -- so it is excluded even
 /// though it shares the `invalid_` prefix.
 fn is_absent(status: &ApiStatus) -> bool {
-    if status.is_empty() {
+    if status.is_empty_collection() {
         return true;
     }
 
@@ -272,7 +273,7 @@ where
         // failure: `getPhonebookGroups`-style methods return e.g.
         // `no_phonebook_group` for an empty account, which the typed `call`
         // path turns into `Error::Api` whenever the status isn't registered
-        // in `ApiStatus::is_empty` (undocumented codes decode as `Unknown`
+        // in `ApiStatus::is_empty_collection` (undocumented codes decode as `Unknown`
         // and can't be proven empty). Mirror the probe path's handling here,
         // and defensively extend it to any `Unknown` status that *looks*
         // like the same "no_*" empty-collection convention, so an
@@ -339,7 +340,7 @@ where
 /// Areas' `list_*_orphans` helpers call a typed `get_*` method and propagate
 /// its error via `?`, which erases the concrete [`voip_ms::Error`] into
 /// [`anyhow::Error`]; downcast it back to check. Documented empty-collection
-/// codes are caught by [`ApiStatus::is_empty`]. Undocumented ones (e.g.
+/// codes are caught by [`ApiStatus::is_empty_collection`]. Undocumented ones (e.g.
 /// `no_phonebook_group`, missing from the API's own status table) decode as
 /// `Unknown` and can't be proven empty that way, so also treat any `Unknown`
 /// status whose wire code follows the same `no_*` convention as empty --
@@ -348,7 +349,8 @@ where
 fn is_empty_like(error: &anyhow::Error) -> bool {
     match error.downcast_ref::<Error>() {
         Some(Error::Api(status)) => {
-            status.is_empty() || matches!(status, ApiStatus::Unknown(s) if s.starts_with("no_"))
+            status.is_empty_collection()
+                || matches!(status, ApiStatus::Unknown(s) if s.starts_with("no_"))
         }
         _ => false,
     }

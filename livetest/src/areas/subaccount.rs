@@ -15,7 +15,7 @@ use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
 use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
-use crate::harness::{Outcome, Report};
+use crate::harness::{NoParams, Outcome, Report};
 use voip_ms::*;
 
 pub struct Subaccount;
@@ -54,7 +54,7 @@ impl Area for Subaccount {
             report,
             AREA,
             "getLocations",
-            GetLocationsParams,
+            NoParams,
             GetLocationsResponse,
             locations
         );

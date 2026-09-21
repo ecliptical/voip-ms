@@ -426,3 +426,30 @@ fn voicemail_folder_unknown_preserved() {
     let back: VoicemailFolder = serde_json::from_value(v).unwrap();
     assert_eq!(back, u);
 }
+
+/// Every wire enum parses from a string as well as from a wire value, so a
+/// caller generic over `FromStr` reaches the same variant `from_wire` does.
+/// Sampled across the enums rather than repeated per enum: the impl is one
+/// emitter branch, so one representative of each shape (string-coded,
+/// integer-coded, unrecognized) covers it.
+#[test]
+fn wire_enums_parse_from_str() {
+    assert_eq!(
+        "INBOX".parse::<VoicemailFolder>().unwrap(),
+        VoicemailFolder::from_wire("INBOX")
+    );
+    assert_eq!(
+        "2".parse::<CallPickupBehavior>().unwrap(),
+        CallPickupBehavior::from_wire("2")
+    );
+    assert_eq!(
+        "starts".parse::<SearchType>().unwrap(),
+        SearchType::from_wire("starts")
+    );
+    // Unrecognized values are preserved rather than rejected, so the parse
+    // cannot fail.
+    assert_eq!(
+        "zzz_unknown".parse::<VoicemailFolder>().unwrap(),
+        VoicemailFolder::Unknown("zzz_unknown".to_string())
+    );
+}

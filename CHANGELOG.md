@@ -5,51 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Changed
-
-- **Breaking**: `GetCDRResponseCDR` carries the `ip` and `useragent` fields as
-  `Option<String>`. The struct is generated without `#[non_exhaustive]` and all
-  its fields are public, so a downstream struct literal or an exhaustive
-  destructure without `..` stops compiling.
-  `getCDR` returns both on the wire, but the docs' Output
-  block does not list them, so the extractor could not see them and they were
-  discarded during deserialization. A live check identified them: `ip` is the
-  originating client's public address and `useragent` its SIP User-Agent. Two
-  SIP clients calling from one sub-account within the same minute reported
-  distinct agents and a shared public address, so the pair describes the client,
-  not the account.
-  - An outbound call from a registered client carries both whether it connects
-    or not: a 19-second billed call and a 0-second failure reported the same
-    pair. They remain best-effort, though -- an inbound row, an internal echo
-    test, and two outbound attempts the record cannot be told apart from ones
-    that populated carried neither. An empty scalar folds to `None`, and a
-    consumer cannot read an empty `ip` as "no device placed this call".
-  - The observed `useragent` arrived truncated mid-token, so the value is not
-    necessarily a complete User-Agent. That, and an address voip.ms is equally
-    free to clip, is why both stay `String` rather than `IpAddr` or a parsed
-    agent: a strict parse would fail the whole response.
-
-### Added
-
-- The live harness diffs every raw response against the key paths the typed
-  surface models, and reports an `unmodeled` outcome for a key no `*Response`
-  field claims. The existing raw-vs-typed probe could never have found `ip` and
-  `useragent`: it fires only when a typed read *fails*, and an unknown key
-  deserializes away without failing anything. `cargo xtask gen` emits the
-  modeled paths into `livetest/src/response_fields.rs` alongside the structs and
-  from the same shapes (`cargo xtask dump-fields` rebuilds that file alone), and
-  the report prints the `additions` entry to paste. `getCDR` also moved to probe
-  depth, so a read-only run sees a populated record -- the only place the
-  per-record fields are visible at all.
-- The response overrides gained an `additions` section, which appends a scalar
-  field to an extracted shape (`{ "path": "cdr[].ip", "type": "string" }`). A
-  docs-driven extractor cannot see an undocumented field by construction, and
-  the alternative -- replacing the whole method's shape by hand -- would freeze
-  it against later doc updates. Declaring a field the docs later pick up fails
-  the codegen, so the stale entry gets deleted.
-
 ## [0.13.0] - 2026-09-21
 
 ### Fixed
@@ -81,6 +36,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   irreversible call had changed nothing, which invites a double order.
   `retry_outlook()` is unchanged -- 408 stays `AfterWaiting`, since "not now"
   is still the right reading of it.
+- `cargo xtask check-flags` recognizes the `(Boolean: 1/0)` spelling the docs
+  use alongside `1 = Enable / 0 = Disable`. The bare form names no value, so
+  the `1=`/`0=` rule could not see it, and the audit reported "ok" while `cnam`,
+  `sip_traffic`, and `setMusicOnHold`'s `volume` stayed integers.
+- `cargo xtask dump-methods` reads `call_multipart_raw` as well as `call_raw`,
+  so the four file-carrying methods stay in the wire-method list the live
+  harness's completeness gate partitions. It has read only `call_raw` since
+  before those methods moved to a POST in this release, so re-running it would
+  have dropped them.
+- A `NaiveDateTime` response field parses the ISO `T` separator as well as the
+  space the wire uses. Without it a `*Response` did not survive a round trip
+  through its own new `Serialize`, which writes the ISO form.
+- The README's snippets compile. They named `SendSmsParams` (the type is
+  `SendSMSParams`), pinned `voip-ms = "0.3"`, and claimed every `*Params` and
+  `*Response` field is `Option<T>`, which stopped being true in 0.6.0. They are
+  now compiled as doctests, so a call site shown there cannot drift from the
+  surface again.
 
 ### Added
 
@@ -105,12 +77,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`. A zone off the
   hour keeps its fraction through both (`Asia/Kolkata` sends `5.50` and its
   timestamps come back qualified `+05:30`).
+- Every generated `*Params` and `*Response` struct derives `PartialEq` and
+  `Eq`, so a test can compare a whole response and a consumer can dedupe or
+  diff records without writing them out field by field.
+- Every `*Response` derives `Serialize` and every `*Params` derives
+  `Deserialize`. A consumer fronting this crate with another interface -- a
+  tool server, a CLI printing JSON, a cache -- can now move a typed value in
+  both directions instead of keeping mirror structs or dropping to `*_raw`.
+  The flag and named-zone params read back through the counterpart of the
+  serializer that writes them, so `1`/`0`, `yes`/`no`, and an IANA zone name
+  round-trip.
+- A `new` constructor on each `*Params` struct with between one and six fields
+  the docs mark `(required)`, taking exactly those. Every field stays `Option`
+  and struct-update syntax still works; the constructor only spares a caller
+  from reading the API docs to learn which fields the method needs. Structs
+  with more required fields than that (`AddLNPPortParams` has 12) get none: an
+  unlabeled argument list that long reads worse than the struct literal. The
+  offset ops' `timezone` is excluded -- the docs mark it required and the crate
+  defaults it to UTC.
+- An `examples/call_raw.rs` that calls any wire method by name with
+  `key=value` parameters and prints the envelope. The typed methods answer what
+  a value *is*; this answers what VoIP.ms actually sent, which is what settles a
+  field whose documentation and response sample disagree. It picks the
+  transport with `requires_multipart` and prints a non-`success` status rather
+  than raising it, so an error envelope reads as easily as a successful one.
+- `Client::api_username()`, so a consumer holding several clients (a reseller
+  plus its sub-accounts) can label a log line from the client rather than
+  carrying the username beside it. `Debug` already printed it.
+- `FromStr` on `ApiStatus` and on every generated wire enum, infallible because
+  each has an `Unknown` catch-all. `ApiStatus` also gained a `Success` variant:
+  a typed response's `status` reports it, and it was previously the one status
+  that landed in `Unknown`.
+- `Seconds::as_u64`, `WaitTime::as_u64`, and `MaxMembers::as_u64`: the count,
+  or `None` for the unbounded sentinel, so reading it does not need a match.
+- `serde` is re-exported from the crate root. AGENTS.md and the 0.3.0 entry
+  both said it already was; it was not, and the README's `call_at` example
+  needed a separate dependency to compile.
+- `cargo xtask check-types` reports a field a method family types one way to
+  read and another way to write. It parses the emitted surface, so it describes
+  what shipped rather than what the inputs say. It reports nothing today:
+  every pair it found is corrected below, and the four meant to differ carry
+  their reason in its `DELIBERATE` list.
+- The live harness diffs every raw response against the key paths the typed
+  surface models, and reports an `unmodeled` outcome for a key no `*Response`
+  field claims. The existing raw-vs-typed probe could never have found `ip` and
+  `useragent`: it fires only when a typed read *fails*, and an unknown key
+  deserializes away without failing anything. `cargo xtask gen` emits the
+  modeled paths into `livetest/src/response_fields.rs` alongside the structs and
+  from the same shapes (`cargo xtask dump-fields` rebuilds that file alone), and
+  the report prints the `additions` entry to paste. `getCDR` also moved to probe
+  depth, so a read-only run sees a populated record -- the only place the
+  per-record fields are visible at all.
+- The response overrides gained an `additions` section, which appends a scalar
+  field to an extracted shape (`{ "path": "cdr[].ip", "type": "string" }`). A
+  docs-driven extractor cannot see an undocumented field by construction, and
+  the alternative -- replacing the whole method's shape by hand -- would freeze
+  it against later doc updates. Declaring a field the docs later pick up fails
+  the codegen, so the stale entry gets deleted.
 
 ### Changed
 
 - `reqwest`'s `multipart` feature is enabled. Feature selection is additive, so
   a consumer that names its own `reqwest` features keeps them and gains
   `multipart` -- and the dependencies it brings -- along with them.
+- `Error::Api`'s `Display` renders the documented meaning beside the code:
+  `API status: did_in_use (DID Number is already in use)`. An undocumented code
+  still renders alone. `as_str()` and `ApiStatus`'s own `Display` are unchanged.
+- `src/generated.rs` carries `#![allow(clippy::upper_case_acronyms)]`. The type
+  names keep VoIP.ms's acronym casing (`GetDIDsInfoParams`, `SendSMSResponse`),
+  which is deliberate but departs from C-CASE, so clippy reported this crate's
+  types against a consumer's own build.
 - **Breaking**: the six record-listing methods report their timestamps with the
   UTC offset the call asked for. `GetCDRResponseCDR::date`,
   `GetResellerCDRResponseCDR::date`, `GetSMSResponseSMS::date`,
@@ -130,6 +166,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selects the account's configured zone, which nothing in the API reports -- a
   timestamp returned in it could only be guessed at. A caller who relied on the
   account default now gets UTC and should pass the zone it was set to.
+- **Breaking**: `GetCDRResponseCDR` carries the `ip` and `useragent` fields as
+  `Option<String>`. The struct is generated without `#[non_exhaustive]` and all
+  its fields are public, so a downstream struct literal or an exhaustive
+  destructure without `..` stops compiling.
+  `getCDR` returns both on the wire, but the docs' Output
+  block does not list them, so the extractor could not see them and they were
+  discarded during deserialization. A live check identified them: `ip` is the
+  originating client's public address and `useragent` its SIP User-Agent. Two
+  SIP clients calling from one sub-account within the same minute reported
+  distinct agents and a shared public address, so the pair describes the client,
+  not the account.
+  - An outbound call from a registered client carries both whether it connects
+    or not: a 19-second billed call and a 0-second failure reported the same
+    pair. They remain best-effort, though -- an inbound row, an internal echo
+    test, and two outbound attempts the record cannot be told apart from ones
+    that populated carried neither. An empty scalar folds to `None`, and a
+    consumer cannot read an empty `ip` as "no device placed this call".
+  - The observed `useragent` arrived truncated mid-token, so the value is not
+    necessarily a complete User-Agent. That, and an address voip.ms is equally
+    free to clip, is why both stay `String` rather than `IpAddr` or a parsed
+    agent: a strict parse would fail the whole response.
+- **Breaking**: `status` on every `*Response` is `ApiStatus` rather than
+  `Option<String>`. By the time a typed call returns, the crate has already
+  parsed the status and decided whether it is `success` or an empty-collection
+  code, so handing back the raw string made the caller parse it again. The
+  field is required, not optional: a response missing `status` is already an
+  `Error::InvalidResponse` before deserialization. A record's own `status` (a
+  fax's, a port's, an e911 record's) is unrelated and keeps its string type.
+- **Breaking**: `ApiStatus::is_empty()` is `ApiStatus::is_empty_collection()`.
+  On an enum, `is_empty` reads as "this status is blank", and it shadowed the
+  `is_empty` a `Vec<ApiStatus>` has. The meaning is unchanged: the code says
+  the requested collection has no entries.
+- **Breaking**: every field a method family typed one way to read and another
+  way to write now shares one type. The response side was
+  inferred from the docs' sample output and the param side declared by the
+  WSDL, and each side was internally consistent, so nothing caught the
+  disagreement; a caller who listed a record and then updated it converted
+  each field by hand. `cargo xtask check-types` is the tripwire from here on.
+  - **Record ids become `u64`** on the write side, matching what every
+    response already reported: `callback`, `call_hunting`, `client`,
+    `conference`, `disa`, `filtering`, `forwarding`, `group`, `ivr`,
+    `mailbox`, `member`, `phonebook`, `queue`, `recording`, `ring_group`,
+    `sipuri`, `timecondition`, `voicemail`, plus `canada_routing`,
+    `internal_dialtime`, `internal_extension`, `internal_voicemail`,
+    `priority_weight`, `reseller_client`, `reseller_package`, the four
+    recording slots (`agent_announcement`, `caller_announcement`,
+    `voice_announcement`, `unavailable_message_recording`), and
+    `setConference`'s 20 `sound_*` prompts. `reseller_nextbilling` becomes
+    `Option<chrono::NaiveDate>`.
+    - The recording slots are `u64` although some are documented as a code
+      *or* the word `none`. Confirmed against the live API on a ring group:
+      `none` and `0` are interchangeable going in, and the read side reports
+      `0` either way, so `Some(0)` clears the slot and nothing is lost.
+  - **Identifiers an all-digit doc sample made look numeric become `String`**
+    on the read side: `zip`, `password`, `security_code`, `dtmf_digits`, and
+    `callerid_prefix`. Each lost information as a number -- a US ZIP of
+    `02134`, a voicemail PIN of `0123`, a dial string carrying `*` or `#`, and
+    the `MIA [555]` prefix `getDIDsInfo` actually reports. The same sample
+    artifact made four fax/e-mail `id` fields strings where their own params
+    are integers; those become `u64` (`getEmailToFax`, `getFaxFolders`,
+    `getFaxMessages`, `getFaxNumbersInfo`).
+  - `cnam` and `sip_traffic` are documented `(Boolean: 1/0)` and were spread
+    across `Option<u64>` and `Option<String>` on ten param structs that did not
+    agree with each other. `Some(1)` becomes `Some(true)`; the `1`/`0` wire form
+    comes from the serializer, as it does for every other flag.
+  - `setForwarding`'s `pause` is `Option<rust_decimal::Decimal>`: it is
+    documented "0 to 10 in increments of 0.5", which the previous `String`
+    obscured and a `u64` could not hold.
+  - `setQueue`'s `maximum_callers` is `Option<WaitTime>`, documented "1 to 60
+    or 'unlimited'" -- the count or the sentinel, the same shape
+    `maximum_wait_time` already had.
+  - `report_hold_time_agent` is `Option<EstimatedHoldTimeAnnounce>` on both
+    sides. Its `yes` sample made the extractor read it as a boolean, but
+    `getReportEstimatedHoldTime` also offers `once`, which a `bool` drops.
+  - `setMusicOnHold`'s `volume` is `Option<bool>`, the `1`/`0` quiet toggle the
+    docs describe. `getMusicOnHold`'s same-named field stays `String` and is
+    *not* that flag: it reports the rendition the toggle produced (`mp3` or
+    `quietmp3`), which a live read settled -- the docs' `mp3` sample looked
+    like a misaligned column and is not.
+  - Three fields are deliberately left divergent, each recorded with its
+    reason: `client` on `getClients` and `getDIDsInfo` (documented to accept an
+    e-mail address or a sub-account name as well as the id), `recording` on the
+    call-hunting pair (whose response reports the system name `default`), and
+    `volume` above.
+- **Breaking**: the 25 fields named `r#type` have descriptive names. The
+  DID and toll-free searches take `search_type`, `searchVanity` takes
+  `vanity_type`, the SMS and MMS params and responses take `direction` (as do
+  `getCallRecording` and `getCallRecordings`), a porting attachment's is
+  `file_type`, `getTransactionHistory`'s is `transaction_type`,
+  `getDIDCountries`'s is `international_type`, and the five reference-data
+  lookups take `code`. The wire name is unchanged.
+- **Breaking**: the eight methods the WSDL declares no parameters for take no
+  argument: `get_call_accounts`, `get_call_billing`, `get_ip`,
+  `get_lnp_list_status`, `get_locations`, `get_provinces`, `get_states`, and
+  `get_vpris`, each with its `*_raw` twin. Their empty `*Params` structs are
+  gone. Should one grow a parameter upstream, the method gains an argument,
+  which the generator makes visible as the breaking change it is.
+- **Breaking**: `ClientBuilder::build()` returns `Client` rather than
+  `Result<Client>`. Its only fallible step was parsing a string literal this
+  crate owns, and a failure surfaced as `Error::InvalidResponse`, a variant
+  about HTTP bodies. The default URL is parsed once into a `LazyLock`, and
+  `Client::new` no longer documents a panic.
+- **Breaking**: `Error::InvalidParams` carries a `ParamsError` rather than a
+  `TimezoneOffsetError`. The variant name was general and its payload
+  specific, so the next parameter check had nowhere to go.
+  `ParamsError::Timezone` holds the previous payload, and `?` converts through
+  both hops, so the next kind of validation is additive.
 
 ### Upgrading
 
@@ -145,6 +288,24 @@ record-listing responses now holds a `DateTime<FixedOffset>`: call
 whatever local re-zoning stood in for it. Code that passed no `timezone` and
 relied on the account's configured zone now receives UTC, and should pass the
 zone that account is set to.
+
+The rest is mechanical and the compiler finds all of it:
+
+| Was | Is |
+|---|---|
+| `builder.build()?` | `builder.build()` |
+| `status.is_empty()` | `status.is_empty_collection()` |
+| `resp.status.as_deref() == Some("success")` | `resp.status == ApiStatus::Success` |
+| `client.get_ip(&GetIPParams {})` | `client.get_ip()` |
+| `SearchDIDsUSAParams { r#type, .. }` | `SearchDIDsUSAParams { search_type, .. }` |
+| `GetSMSResponseSMS::r#type` | `GetSMSResponseSMS::direction` |
+| `cnam: Some(1)` | `cnam: Some(true)` |
+| `queue: Some("32208".into())` | `queue: Some(32208)` (and every other record id) |
+| `pause: Some("1.5".into())` | `pause: Some(Decimal::from_str_exact("1.5")?)` |
+| `maximum_callers: Some("10".into())` | `maximum_callers: Some(WaitTime::Value(10))` |
+| `report_hold_time_agent: Some("yes".into())` | `report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Yes)` |
+| `client.zip` as `u64` | `client.zip` as `String` (and `password`, `security_code`, `dtmf_digits`, `callerid_prefix`) |
+| `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))` |
 
 ## [0.12.2] - 2026-09-17
 
@@ -781,7 +942,21 @@ a real failed request and asserts nothing it exposes carries the password.
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[Unreleased]: https://github.com/ecliptical/voip-ms/compare/v0.3.1...HEAD
+[0.13.0]: https://github.com/ecliptical/voip-ms/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.2
+[0.12.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.1
+[0.12.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.0
+[0.11.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.11.0
+[0.10.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.10.2
+[0.10.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.10.1
+[0.10.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.10.0
+[0.9.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.9.0
+[0.8.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.8.0
+[0.7.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.7.0
+[0.6.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.6.0
+[0.5.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.5.0
+[0.4.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.4.0
+[0.3.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.3.2
 [0.3.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.3.1
 [0.3.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.3.0
 [0.1.3]: https://github.com/ecliptical/voip-ms/releases/tag/v0.1.3
