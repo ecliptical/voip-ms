@@ -429,13 +429,19 @@ timestamp somewhere unaddressable would otherwise pass.
 
 A response that is not a record is not in that set. `emit_struct` promotes one
 into a one-field record (`value`, `items`, `entries`), `timestamp_fields`
-synthesizes the same field so the two name one thing, and that field goes
-through the override table like any other -- all three halves have to line up,
-since a walk that names a field the emitter types from the raw shape is worse
-than one that refuses: `call_zoned` then rewrites a value the generated
-deserializer rejects, and every typed call fails at runtime on a build that
-reported success. The tests cover the emitted type, not just the walk, for that
-reason.
+synthesizes the same field, and that field goes through the override table like
+any other.
+
+All three have to agree on the *name*, not just on the shape, and twice now they
+have not: a promoted `value` the emitter typed from the raw shape because its
+arm never consulted the resolver, and an `items` element the walk singularized
+to `Item` while the emitter called it `Items`. Both emitted a bare
+`NaiveDateTime` under a path `call_zoned` rewrites, so every typed call on that
+method failed at runtime on a generator run that reported success -- quieter, and
+so worse, than the refusal each replaced. Whatever names an element struct must
+be one function called from both sides (`element_type_name`), and the tests
+assert the emitted type rather than the walk's return value, because the walk
+agreeing with itself is exactly what both failures looked like.
 
 ## Code Patterns
 

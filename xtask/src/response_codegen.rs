@@ -147,7 +147,7 @@ fn collect_timestamps(
             ..
         } => {
             return Err(format!(
-                "{struct_name} holds a bare timestamp at `{json_prefix}/*` rather than one \
+                "{struct_name} holds a bare timestamp at `{json_prefix}` rather than one \
                  under a field, which `attach_offset` has no path form for"
             ));
         }
@@ -158,7 +158,7 @@ fn collect_timestamps(
         // Supporting it is a decision about both, not a default.
         Shape::List(_) | Shape::Map(_) if holds_timestamp(shape) => {
             return Err(format!(
-                "{struct_name} at `{json_prefix}/*` nests a collection holding a timestamp \
+                "{struct_name} at `{json_prefix}` nests a collection holding a timestamp \
                  directly inside another, which this walk does not name"
             ));
         }
@@ -240,13 +240,20 @@ impl<'a> Emitter<'a> {
     fn emit_struct(&mut self, name: &str, shape: &Shape) {
         match shape {
             Shape::Object(fields) => self.emit_record(name, fields),
-            Shape::List(inner) => {
-                let inner_ty = self.field_type(name, "items", inner);
+            Shape::List(_) => {
+                // The whole list goes to `field_type`, not its element, so the
+                // element struct is named by `element_type_name` -- the one rule
+                // `timestamp_fields` also follows. Naming it from the element
+                // here instead took the `Object` branch and produced `Items`
+                // against the walk's `Item`, so an override registered on the
+                // walk's name reached nothing. The `Map` arm below passes the
+                // whole shape for the same reason.
+                let items_ty = self.field_type(name, "items", shape);
                 let body = format!(
                     "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
                      pub struct {name} {{\n    \
                          #[serde(default, deserialize_with = \"crate::responses::deserialize_vec_from_single_or_seq\")]\n    \
-                         pub items: Vec<{inner_ty}>,\n\
+                         pub items: {items_ty},\n\
                      }}\n",
                 );
 
@@ -587,6 +594,26 @@ mod tests {
     }
 
     #[test]
+    fn rejects_a_list_of_bare_timestamps_at_the_path_they_sit_on() {
+        let shape = object(&[("dates", Shape::List(Box::new(datetime())))]);
+        let error = timestamp_fields("getCDR", &shape).unwrap_err();
+        assert!(error.contains("at `/dates/*`"), "{error}");
+    }
+
+    #[test]
+    fn rejects_a_nested_collection_at_the_path_it_sits_on() {
+        let shape = object(&[(
+            "x",
+            Shape::List(Box::new(Shape::List(Box::new(object(&[(
+                "date",
+                datetime(),
+            )]))))),
+        )]);
+        let error = timestamp_fields("getCDR", &shape).unwrap_err();
+        assert!(error.contains("at `/x/*`"), "{error}");
+    }
+
+    #[test]
     fn ignores_a_response_with_no_timestamp() {
         let shape = object(&[
             ("status", text()),
@@ -700,6 +727,28 @@ mod tests {
         let emitted = emit_with_override(&datetime(), &found[0].struct_path);
         assert!(
             emitted.contains("pub value: Option<chrono::DateTime<chrono::FixedOffset>>"),
+            "{emitted}"
+        );
+        assert!(
+            emitted.contains("deserialize_opt_datetime_offset"),
+            "{emitted}"
+        );
+    }
+
+    #[test]
+    fn emits_the_override_on_a_promoted_list_response() {
+        // The struct the walk names has to be the struct the emitter emits: a
+        // singularized `Item` against an emitted `Items` resolves to neither,
+        // and the field keeps the raw type while `call_zoned` rewrites under it.
+        let shape = Shape::List(Box::new(object(&[("date", datetime())])));
+        let found = timestamp_fields("getCDR", &shape).unwrap();
+        let emitted = emit_with_override(&shape, &found[0].struct_path);
+        assert!(
+            emitted.contains("pub items: Vec<GetCDRResponseItem>"),
+            "{emitted}"
+        );
+        assert!(
+            emitted.contains("pub date: Option<chrono::DateTime<chrono::FixedOffset>>"),
             "{emitted}"
         );
         assert!(

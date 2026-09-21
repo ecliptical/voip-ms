@@ -51,7 +51,10 @@ jobs:
         with:
           components: rustfmt, clippy, llvm-tools
       - name: Run unit tests
-        run: cargo test
+        # --workspace, because the root package is also the workspace root and a
+        # bare `cargo test` builds only its own targets: the xtask codegen tests
+        # never ran, and the generator is where a silent wrong emit hides.
+        run: cargo test --workspace
         env:
           RUSTFLAGS: '-Cinstrument-coverage'
           LLVM_PROFILE_FILE: 'target/coverage/%p-%m.profraw'

@@ -193,9 +193,18 @@ async fn typed_get_cdr(client: &Client, params: &GetCDRParams) -> Result<GetCDRR
             error,
             raw_json: serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string()),
         }),
-        Err(raw_error) => Err(Outcome::Fail(format!(
+        // The raw path rejecting the envelope too is what rules drift out. Any
+        // other refetch failure answers nothing -- a timeout on the second
+        // request says only that the second request timed out -- so it must not
+        // read as "this is not drift" and send the operator elsewhere.
+        Err(Error::InvalidResponse(raw_error)) => Err(Outcome::Fail(format!(
             "getCDR returned an envelope the raw path rejects too, so this is not \
              response-shape drift: typed `{error}`, raw `{raw_error}`"
+        ))),
+        Err(raw_error) => Err(Outcome::Fail(format!(
+            "getCDR failed to deserialize and the refetch that would classify it \
+             did not complete, so drift is neither shown nor ruled out: typed \
+             `{error}`, refetch `{raw_error}`"
         ))),
     }
 }
