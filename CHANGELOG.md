@@ -261,13 +261,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   crate owns, and a failure surfaced as `Error::InvalidResponse`, a variant
   about HTTP bodies. The default URL is parsed once into a `LazyLock`, and
   `Client::new` no longer documents a panic.
-- **Breaking**: every type carries only the traits something reaches it
-  through, rather than the full conventional set.
-  - `Hash` is gone from `ApiStatus`, `Routing`, `Seconds`, `WaitTime`,
-    `MaxMembers`, `TimezoneOffset`, `TimezoneName`, `TransportFailure`,
-    `RetryOutlook`, and the 19 wire enums, as are `PartialOrd` / `Ord` on
-    `TimezoneOffset`. Nothing hashed or ordered any of them.
-  - The unused serde direction is gone with it: `ApiStatus` no longer
+- **Breaking**: a type no longer carries a serde direction or a `Default`
+  that nothing reaches. Both kinds cost something to keep: a serde impl is a
+  wire contract that has to stay correct, and a `Default` manufactures a
+  value. The purely structural derives (`Hash`, `PartialOrd`/`Ord`,
+  `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`) cost nothing and are
+  unchanged, so a consumer can still key a map by `ApiStatus` or sort a
+  `TimezoneOffset`.
+  - `ApiStatus` no longer
     implements `Serialize`, `TimezoneName` no longer implements `Serialize`
     (nothing writes a zone name; only `getTimezones` and `getVoicemails`
     report one), and `TimezoneOffset` no longer implements `Deserialize` (it

@@ -95,7 +95,7 @@ impl Error {
 
 /// How a request to the VoIP.ms API failed beneath the API itself: the HTTP
 /// exchange, or the connection that would have carried it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TransportFailure {
     /// VoIP.ms, or an edge in front of it, answered with an error status.
     Rejected(StatusCode),
@@ -186,7 +186,7 @@ impl TransportFailure {
 /// A separate question from [`TransportFailure::never_reached_upstream`], and a
 /// refusal answers the two differently: a stale proxy credential answering 401
 /// changed no state and is still futile to repeat.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RetryOutlook {
     /// Transient: the same call may well work.
     Worthwhile,

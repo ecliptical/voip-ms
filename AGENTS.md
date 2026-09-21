@@ -123,10 +123,18 @@ by whether the struct is the method's root.
 Each family carries the one serde direction it uses -- `*Params` derive
 `Serialize`, `*Response` derive `Deserialize` -- plus `PartialEq` and `Eq`,
 which are independent of serde and let a whole value be compared, deduped, or
-diffed. A derive nothing reaches is a surface the crate would still have to
-keep working, so the rule is to emit only what something uses; `check-types`
-and the `is_copy_ty` table are the two places that depend on a specific trait
-being there.
+diffed.
+
+The rule for what else a type carries is what the trait costs, not whether
+something uses it today. A serde impl is a wire contract that has to stay
+correct, and a `Default` manufactures a value that may be wrong, so neither is
+emitted without a caller. The purely structural derives (`Hash`,
+`PartialOrd`/`Ord`, `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`) claim nothing
+beyond what the compiler derives and stay on every type that can carry them,
+so a consumer can key a map by `ApiStatus` or sort a `TimezoneOffset` without
+asking. Three places depend on a specific trait being present and will fail
+the build if one is dropped: `check-types`, the `is_copy_ty` table, and the
+probe macros' `Default` bound on a params type.
 
 `*Params` derive `Default`, which is what makes the struct-update idiom of
 decision 3 work. `*Response` do not: a response is received, never built, and

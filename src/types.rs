@@ -37,7 +37,7 @@ use std::str::FromStr;
 /// * `did:5551234567` → [`Routing::Did`]
 /// * `phone:5551234567` → [`Routing::Phone`]
 /// * `none:` → [`Routing::None`]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Routing {
     /// No routing (wire: `none:`).
     None,
@@ -226,7 +226,7 @@ impl<'de> Deserialize<'de> for Routing {
 /// sentinel. [`Seconds`] serializes the sentinel as `none`; [`WaitTime`] as
 /// `unlimited` (the word `maximum_wait_time` documents). Both deserialize
 /// tolerantly: a number, a numeric string, or either sentinel word.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Seconds {
     /// A concrete number of seconds.
     Value(u64),
@@ -238,7 +238,7 @@ pub enum Seconds {
 ///
 /// Like [`Seconds`] but serializes the unbounded case as `unlimited`, the word
 /// `maximum_wait_time` documents.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WaitTime {
     /// A concrete number of seconds.
     Value(u64),
@@ -250,7 +250,7 @@ pub enum WaitTime {
 ///
 /// `getConference` reports `max_members` as a count or the word `Unlimited`
 /// when the conference has no cap.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MaxMembers {
     /// A concrete member cap.
     Value(u64),
@@ -359,7 +359,7 @@ impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 ///
 /// Serializes as a bare number (`-5`, `5.5`); deserializes tolerantly from a
 /// JSON number or a numeric string.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TimezoneOffset(Decimal);
 
 impl TimezoneOffset {
@@ -521,7 +521,7 @@ impl Serialize for TimezoneOffset {
 /// preserving them beats failing the whole response. Parsing never fails --
 /// an unrecognized name lands in [`TimezoneName::Unrecognized`] and
 /// round-trips unchanged.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TimezoneName {
     /// A zone the bundled IANA database recognizes.
     Known(chrono_tz::Tz),
