@@ -32,12 +32,6 @@ pub enum ProbeOutcome {
 /// requires; the typed shape `T` is then deserialized from a clone of that
 /// value. `count` extracts an optional element count from the deserialized
 /// value for logging (return `None` for non-list responses).
-///
-/// Asks [`voip_ms::requires_multipart`] rather than assuming a GET. Nothing
-/// routed here is in the multipart table today -- that is the invariant to
-/// check when adding a probe, not the method's prefix -- and a file method sent
-/// as a GET would fail on request-line length, reading as a transport error
-/// rather than as this function's mistake.
 pub async fn probe<P, T>(
     client: &Client,
     method: &str,
@@ -151,9 +145,15 @@ where
     }
 }
 
-/// The shared probe body: fetch the raw envelope, let `qualify` complete it,
-/// then deserialize `T` over the result. The raw envelope is what a drift
-/// report shows, so `qualify`'s edits stay out of it.
+/// The shared probe body, reached by every probe here: fetch the raw envelope,
+/// let `qualify` complete it, then deserialize `T` over the result. The raw
+/// envelope is what a drift report shows, so `qualify`'s edits stay out of it.
+///
+/// The fetch asks [`voip_ms::requires_multipart`] rather than assuming a GET.
+/// Nothing routed through any probe is in the multipart table today -- that is
+/// the invariant to check when adding one, not the method's prefix -- and a
+/// file method sent as a GET would fail on request-line length, reading as a
+/// transport error rather than as this function's mistake.
 async fn probe_qualified<P, T>(
     client: &Client,
     method: &str,

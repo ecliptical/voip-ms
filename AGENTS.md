@@ -497,6 +497,16 @@ be one function called from both sides (`element_type_name`), and the tests
 assert the emitted type rather than the walk's return value, because the walk
 agreeing with itself is exactly what both failures looked like.
 
+Naming the element through `element_type_name` costs one shape: a response that
+is a list of lists. `emit_struct` hands the whole list to `field_type`, so the
+inner list becomes an element struct of its own (`{ items: Vec<T> }`) where the
+wire has a bare array, and serde rejects it. That shape is unsupported by
+construction now rather than by accident, which is the trade that makes the root
+case agree with the field case. Nothing returns one -- `src/generated.rs` has no
+`pub items:` field at all, so no response is a top-level list -- and a docs
+refresh that produced one would need both the emitter and the walk taught about
+it together.
+
 ## Code Patterns
 
 ### Calling the wire API
