@@ -45,9 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   harness's completeness gate partitions. It has read only `call_raw` since
   before those methods moved to a POST in this release, so re-running it would
   have dropped them.
-- A `NaiveDateTime` response field parses the ISO `T` separator as well as the
-  space the wire uses. Without it a `*Response` did not survive a round trip
-  through its own new `Serialize`, which writes the ISO form.
 - The README's snippets compile. They named `SendSmsParams` (the type is
   `SendSMSParams`), pinned `voip-ms = "0.3"`, and claimed every `*Params` and
   `*Response` field is `Option<T>`, which stopped being true in 0.6.0. They are
@@ -79,14 +76,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   timestamps come back qualified `+05:30`).
 - Every generated `*Params` and `*Response` struct derives `PartialEq` and
   `Eq`, so a test can compare a whole response and a consumer can dedupe or
-  diff records without writing them out field by field.
-- Every `*Response` derives `Serialize` and every `*Params` derives
-  `Deserialize`. A consumer fronting this crate with another interface -- a
-  tool server, a CLI printing JSON, a cache -- can now move a typed value in
-  both directions instead of keeping mirror structs or dropping to `*_raw`.
-  The flag and named-zone params read back through the counterpart of the
-  serializer that writes them, so `1`/`0`, `yes`/`no`, and an IANA zone name
-  round-trip.
+  diff records without writing them out field by field. Each family keeps the
+  one serde direction it uses; the opposite direction on each was considered
+  for this release and dropped, since no consumer asked for it.
+- `NoParams`, the parameters of a method that takes none. Public so a caller
+  reaching one of the eight parameterless methods by wire name through
+  `Client::call_raw` has something to serialize.
 - A `new` constructor on each `*Params` struct with between one and six fields
   the docs mark `(required)`, taking exactly those. Every field stays `Option`
   and struct-update syntax still works; the constructor only spares a caller
@@ -116,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cargo xtask check-types` reports a field a method family types one way to
   read and another way to write. It parses the emitted surface, so it describes
   what shipped rather than what the inputs say. It reports nothing today:
-  every pair it found is corrected below, and the four meant to differ carry
+  every pair it found is corrected below, and the three meant to differ carry
   their reason in its `DELIBERATE` list.
 - The live harness diffs every raw response against the key paths the typed
   surface models, and reports an `unmodeled` outcome for a key no `*Response`
@@ -305,7 +300,7 @@ The rest is mechanical and the compiler finds all of it:
 | `maximum_callers: Some("10".into())` | `maximum_callers: Some(WaitTime::Value(10))` |
 | `report_hold_time_agent: Some("yes".into())` | `report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Yes)` |
 | `client.zip` as `u64` | `client.zip` as `String` (and `password`, `security_code`, `dtmf_digits`, `callerid_prefix`) |
-| `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))` |
+| `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))`, and `ParamsError` is `#[non_exhaustive]`, so a `match` on it needs a wildcard arm |
 
 ## [0.12.2] - 2026-09-17
 

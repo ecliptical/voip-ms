@@ -34,12 +34,6 @@ pub struct FieldOverride {
     /// via this `skip_serializing_if` path. Used for true-only flags
     /// (`test`) where `false` carries no meaning distinct from absent.
     pub param_skip_if: Option<String>,
-    /// Optional `deserialize_with` path for param use, the counterpart of
-    /// [`FieldOverride::param_serializer`]. A `*Params` struct derives
-    /// `Deserialize` so a consumer can accept parameters as JSON, and a field
-    /// whose wire form comes from a `serialize_with` needs the matching reader
-    /// or the two directions disagree.
-    pub param_deserializer: Option<String>,
     /// Optional `deserialize_with` path for response use. The
     /// referenced function must accept `Option<T>` and treat empty /
     /// absent inputs as `None`.
@@ -255,7 +249,6 @@ pub(crate) fn tz_param_override() -> FieldOverride {
     FieldOverride {
         rust_type: "chrono_tz::Tz".into(),
         param_serializer: Some("crate::responses::serialize_opt_tz".into()),
-        param_deserializer: Some("crate::responses::deserialize_opt_tz".into()),
         ..Default::default()
     }
 }
@@ -376,6 +369,11 @@ const DATE_FIELDS: &[&str] = &["date_from", "date_to", "reseller_nextbilling"];
 /// ring group: `none` and `0` are interchangeable on the way in, and the read
 /// side reports `0` either way, so `u64` loses nothing and `Some(0)` clears
 /// the slot.
+///
+/// `mailbox` is here rather than in [`IDENTIFIER_STRING_FIELDS`] although
+/// `createVoicemail` documents its `digits` as "Example: 01". Confirmed live:
+/// creating a box with `digits=01` yields mailbox `1`, so voip.ms normalizes
+/// the leading zero away and there is none to preserve.
 const U64_FIELDS: &[&str] = &[
     "agent_announcement",
     "call_hunting",
@@ -483,14 +481,12 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let flag_01 = FieldOverride {
         rust_type: "bool".into(),
         param_serializer: Some("crate::responses::serialize_opt_flag_01".into()),
-        param_deserializer: Some(tolerant_bool.into()),
         response_deserializer: Some(tolerant_bool.into()),
         ..Default::default()
     };
     let flag_yes_no = FieldOverride {
         rust_type: "bool".into(),
         param_serializer: Some("crate::responses::serialize_opt_flag_yes_no".into()),
-        param_deserializer: Some(tolerant_bool.into()),
         response_deserializer: Some(tolerant_bool.into()),
         ..Default::default()
     };
@@ -501,7 +497,6 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         rust_type: "bool".into(),
         param_serializer: Some("crate::responses::serialize_flag_01".into()),
         param_skip_if: Some("crate::responses::is_false".into()),
-        param_deserializer: Some("crate::responses::deserialize_flag_01".into()),
         ..Default::default()
     };
     // Seconds / WaitTime carry their own Serialize, like Routing -- no

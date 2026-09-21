@@ -9,9 +9,10 @@
 //! * a flag-table entry matching no known param or response field -- dead
 //!   weight left behind by a docs revision.
 //!
-//! Purely advisory: findings need human judgment (some 0/1-valued params are
-//! enums, not flags), so the command reports and exits successfully either
-//! way. Run it after each `extract-responses` refresh.
+//! Reports and exits successfully by default, since a finding needs human
+//! judgment (some 0/1-valued params are enums, not flags). `--deny` makes any
+//! finding a non-zero exit, which is how CI holds the tables at zero. Run it
+//! after each `extract-responses` refresh.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -20,7 +21,8 @@ use crate::extract::Shape;
 use crate::field_overrides::{FLAG_01_FIELDS, FLAG_YES_NO_FIELDS, Table};
 use crate::{CLIENT_FIELDS, acronyms_sorted, camel_to_pascal, overrides, repo_root, wsdl};
 
-pub fn cmd_check_flags() -> Result<(), String> {
+pub fn cmd_check_flags(args: &[String]) -> Result<(), String> {
+    let deny = args.iter().any(|a| a == "--deny");
     let root = repo_root();
     let wsdl_path = root.join("tools").join("server.wsdl");
     let responses_path = root.join("tools").join("api-responses.json");
@@ -110,6 +112,15 @@ pub fn cmd_check_flags() -> Result<(), String> {
         for name in &dead {
             println!("  {name}");
         }
+    }
+
+    if deny {
+        return Err(format!(
+            "{} flag candidate(s) and {} stale entr(ies); type each as a flag or an \
+             enum, or remove the entry",
+            candidates.len(),
+            dead.len(),
+        ));
     }
 
     Ok(())

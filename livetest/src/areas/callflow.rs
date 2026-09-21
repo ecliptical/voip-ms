@@ -565,14 +565,11 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
     });
 
     let member_name = ctx.token.marker(5);
+    // `member` is the id of an *existing* static member, and leaving it unset
+    // is what asks for a new one. The fixture used to pass a phone number
+    // there, which named no member and belongs in `account` if anywhere.
     let created = client
-        .set_static_member(&SetStaticMemberParams {
-            queue: Some(queue_id),
-            member_name: Some(member_name),
-            member: Some(15555550101),
-            priority: Some(1),
-            ..Default::default()
-        })
+        .set_static_member(&SetStaticMemberParams::new(queue_id, member_name, 1))
         .await;
 
     let member_id = match created {

@@ -4,8 +4,8 @@
 //! The VoIP.ms API frequently returns numbers, booleans, dates, and
 //! decimals as JSON strings (and occasionally as JSON numbers for the
 //! same field across different methods). These helpers normalize both
-//! forms — and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
-//! placeholders as `None` — into Rust types.
+//! forms -- and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
+//! placeholders as `None` -- into Rust types.
 //!
 //! A few `bool` params also need a serializer: VoIP.ms rejects the
 //! `true`/`false` a bare `bool` would emit, expecting `1`/`0` or
@@ -234,12 +234,7 @@ where
             if trimmed.is_empty() || trimmed == "0000-00-00 00:00:00" {
                 return Ok(None);
             }
-            // The wire form is space-separated. The `T` fallback is what makes
-            // a `*Response` survive a round trip through its own `Serialize`,
-            // which writes the ISO form -- a consumer caching a typed response
-            // reads back what it wrote.
             NaiveDateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S")
-                .or_else(|_| trimmed.parse::<NaiveDateTime>())
                 .map(Some)
                 .map_err(|e| D::Error::custom(format!("invalid datetime {s}: {e}")))
         }
@@ -493,44 +488,6 @@ where
     }
 }
 
-/// Read an optional named-zone param back from its IANA name, the counterpart
-/// of [`serialize_opt_tz`]. Absent, null, and empty all read as `None`; an
-/// unrecognized name is an error, because a param must name a zone the crate
-/// can resolve before it reaches the wire.
-pub(crate) fn deserialize_opt_tz<'de, D>(deserializer: D) -> Result<Option<Tz>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            if trimmed.is_empty() {
-                return Ok(None);
-            }
-
-            trimmed
-                .parse::<Tz>()
-                .map(Some)
-                .map_err(|e| D::Error::custom(format!("invalid IANA time zone {s}: {e}")))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected IANA timezone string, got {other}"
-        ))),
-    }
-}
-
-/// Read a `1`/`0` flag param back into a plain `bool`, the counterpart of
-/// [`serialize_flag_01`]. An absent field is `false`, the same value the
-/// serializer leaves off the wire.
-pub(crate) fn deserialize_flag_01<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Ok(deserialize_opt_bool_from_string_number_or_yn(deserializer)?.unwrap_or(false))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -668,16 +625,6 @@ mod tests {
         assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
         assert_eq!(
             call(json!("2024-03-15 08:30:00")).unwrap(),
-            Some(
-                NaiveDate::from_ymd_opt(2024, 3, 15)
-                    .unwrap()
-                    .and_hms_opt(8, 30, 0)
-                    .unwrap()
-            )
-        );
-        // The ISO separator too, which is what `Serialize` writes back.
-        assert_eq!(
-            call(json!("2024-03-15T08:30:00")).unwrap(),
             Some(
                 NaiveDate::from_ymd_opt(2024, 3, 15)
                     .unwrap()

@@ -2962,63 +2962,6 @@ fn unconnect_fax_params_roundtrips() {
     assert!(v2.is_object());
 }
 
-/// A consumer fronting this crate with another interface accepts parameters
-/// as JSON, so `*Params` reads back from what it wrote -- including the
-/// fields whose wire form comes from a `serialize_with` (a `1`/`0` flag, a
-/// `yes`/`no` flag, an IANA zone name) rather than from their own `Serialize`.
-#[test]
-fn params_deserialize_from_what_they_serialize() {
-    let sent = SetSubAccountParams {
-        id: Some(1234),
-        description: Some("desk phone".into()),
-        // `1`/`0` on the wire.
-        sip_traffic: Some(true),
-        // A name-overridden numeric id, aligned with the response side.
-        reseller_client: Some(561115),
-        reseller_nextbilling: Some(voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap()),
-        ..Default::default()
-    };
-
-    let json = serde_json::to_value(&sent).unwrap();
-    assert_eq!(json["sip_traffic"], "1", "the flag travels as 1/0");
-    assert_eq!(json["reseller_nextbilling"], "2026-12-31");
-
-    let back: SetSubAccountParams = serde_json::from_value(json).unwrap();
-    assert_eq!(back, sent);
-}
-
-/// A `yes`/`no` flag and a named zone read back the same way.
-#[test]
-fn yes_no_flags_and_named_zones_round_trip() {
-    let sent = SetVoicemailParams {
-        mailbox: Some(101),
-        say_time: Some(false),
-        timezone: Some(voip_ms::chrono_tz::America::New_York),
-        ..Default::default()
-    };
-
-    let json = serde_json::to_value(&sent).unwrap();
-    assert_eq!(json["say_time"], "no");
-    assert_eq!(json["timezone"], "America/New_York");
-
-    let back: SetVoicemailParams = serde_json::from_value(json).unwrap();
-    assert_eq!(back, sent);
-}
-
-/// A params struct reads from an object naming only the fields it sets; the
-/// rest default, mirroring what the serializer skips.
-#[test]
-fn params_deserialize_from_a_sparse_object() {
-    let back: SetSubAccountParams = serde_json::from_value(serde_json::json!({ "id": 7 })).unwrap();
-    assert_eq!(
-        back,
-        SetSubAccountParams {
-            id: Some(7),
-            ..Default::default()
-        }
-    );
-}
-
 /// The generated constructor sets exactly the fields the docs mark required
 /// and leaves every other at its default, so struct-update syntax still works
 /// on top of it.
@@ -3050,4 +2993,20 @@ fn the_offset_ops_constructor_does_not_ask_for_a_timezone() {
     let params = GetCDRParams::new(day, day);
     assert_eq!(params.date_from, Some(day));
     assert_eq!(params.timezone, None);
+}
+
+/// A whole params struct compares, which is what lets a test assert one
+/// outright instead of field by field.
+#[test]
+fn a_whole_params_struct_compares() {
+    let built = SendSMSParams::new("5551234567", "5557654321", "hello");
+    assert_eq!(
+        built,
+        SendSMSParams {
+            did: Some("5551234567".into()),
+            dst: Some("5557654321".into()),
+            message: Some("hello".into()),
+        }
+    );
+    assert_ne!(built, SendSMSParams::default());
 }

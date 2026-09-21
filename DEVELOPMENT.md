@@ -104,9 +104,10 @@ cargo xtask gen
 cargo xtask dump-methods
 
 # 5c. Audit the emitted surface for a field typed one way to read and another
-#     to write. Advisory: a real finding gets a field-name entry in
+#     to write. A real finding gets a field-name entry in
 #     xtask/src/field_overrides.rs and a regen; a pair meant to differ goes in
-#     the command's DELIBERATE list with the reason.
+#     the command's DELIBERATE list with the reason. CI runs this and
+#     check-flags with --deny, so a finding left here fails the build.
 cargo xtask check-types
 
 # 6. Run the full quality gate — the same selection CI uses, plus the doc
@@ -209,7 +210,12 @@ Publishing is automated via [.github/workflows/release.yaml](.github/workflows/r
    existing heading in place.** Renaming files the outgoing release's notes
    under the new number and drops the previous version from the file entirely,
    which is how v0.12.0's notes went missing and had to be restored.
-3. Push a tag in the form vX.Y.Z.
+3. Point the version's link reference at its release tag. An unreleased
+   version's entry compares against `HEAD`
+   (`[0.13.0]: .../compare/v0.12.2...HEAD`); once the tag exists it becomes
+   `[0.13.0]: .../releases/tag/v0.13.0`, like every entry below it. Left alone
+   it keeps moving with `main` and stops naming the release.
+4. Push a tag in the form vX.Y.Z.
 
 ```bash
 git tag v0.1.1

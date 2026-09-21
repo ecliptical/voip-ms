@@ -141,10 +141,9 @@ async fn main() -> voip_ms::Result<()> {
 }
 ```
 
-`*Response` structs derive `Serialize` and `PartialEq`, and `*Params` derive
-`Deserialize` and `PartialEq`, so a consumer fronting this crate with another
-interface -- a tool server, a CLI printing JSON, a cache -- can move whole
-values across it without keeping mirror structs.
+Both families derive `PartialEq` and `Eq`, so a test can assert a whole
+response and a consumer can dedupe or diff records without writing them out
+field by field.
 
 ### Picking a nested field with a JSON pointer
 

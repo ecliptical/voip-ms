@@ -20,7 +20,7 @@ use crate::areas::probe_macros::{probe_scalar, skip_needs_input};
 use crate::config::{Depth, PortingConfig};
 use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back;
-use crate::harness::{NoParams, Outcome, Report};
+use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
 pub struct Porting;

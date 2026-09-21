@@ -216,13 +216,10 @@ fn collect_timestamps(
 
 /// The derives every generated `*Response` struct carries.
 ///
-/// `Serialize` is there so a consumer fronting this crate with another
-/// interface can turn a typed response back into JSON; the `deserialize_with`
-/// helpers are one-directional and do not affect it. `PartialEq`/`Eq` let a
-/// whole response be compared, deduped, or diffed without writing it out field
-/// by field.
+/// `PartialEq`/`Eq` let a whole response be compared, deduped, or diffed
+/// without writing it out field by field.
 const RESPONSE_DERIVES: &str =
-    "#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]\n";
+    "#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]\n";
 
 struct Emitter<'a> {
     /// Structs emitted in dependency-friendly order (children appended

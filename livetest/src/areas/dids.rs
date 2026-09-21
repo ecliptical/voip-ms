@@ -24,7 +24,7 @@ use crate::config::Depth;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
 use crate::harness::fixtures::{read_back, tolerate_absent};
 use crate::harness::scope::Scope;
-use crate::harness::{NoParams, Outcome, Report};
+use crate::harness::{Outcome, Report};
 use voip_ms::*;
 
 pub struct Dids;

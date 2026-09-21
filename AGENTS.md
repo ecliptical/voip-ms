@@ -120,13 +120,12 @@ nested record's same-named field (a fax's, a port's, an e911 record's) is
 unrelated and keeps its inferred type; `response_codegen.rs` distinguishes them
 by whether the struct is the method's root.
 
-Both generated families carry both serde directions and both equality traits:
-`*Params` derive `Serialize + Deserialize + PartialEq + Eq`, `*Response` the
-same. A consumer fronting this crate with another interface (a tool server, a
-CLI printing JSON, a cache) needs to move a typed value in both directions, and
-a test or a cache needs to compare one whole. A param whose wire form comes
-from a `param_serializer` also carries the matching `param_deserializer`, or
-the two directions would disagree.
+Each family carries the one serde direction it uses -- `*Params` derive
+`Serialize`, `*Response` derive `Deserialize` -- plus `PartialEq` and `Eq`,
+which are independent of serde and let a whole value be compared, deduped, or
+diffed. The opposite direction on each was considered for 0.13 and dropped: no
+consumer asked for it, and a derive the crate does not use is a surface it
+would still have to keep working.
 
 **Rationale**: The WSDL declares a single generic `arrayResponse` type
 for all 222 operations — there is no machine-readable response schema.
@@ -367,13 +366,15 @@ in `xtask/src/field_overrides.rs`:
   is the documented `1`/`0` quiet toggle, the response reports the rendition it
   produced (`mp3` / `quietmp3`).
 
-  Three questions the documents could not settle were answered against the
+  Four questions the documents could not settle were answered against the
   live API rather than guessed, using `cargo run --example call_raw`:
   `getReportEstimatedHoldTime` really does offer `once` beside `yes`/`no`, so
   `report_hold_time_agent` is the enum and not the `bool` its sample implied;
   a recording slot accepts `none` and `0` interchangeably and always reports
-  `0`, so `u64` loses nothing; and `volume=1` stores the quiet rendition while
-  `0` (or anything else) stores the normal one.
+  `0`, so `u64` loses nothing; `volume=1` stores the quiet rendition while `0`
+  (or anything else) stores the normal one; and a mailbox created from
+  `digits=01` comes back as `1`, so the leading zero the docs' example shows is
+  normalized away and `mailbox` is a number rather than an identifier.
 * **Declarative enum overrides** in
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
@@ -441,17 +442,17 @@ names no value for the `1=`/`0=` rule to match. For a scalar
 that needs structured parsing (multi-part value, custom validation),
 hand-write it in `src/types.rs`, register the field names in
 `xtask/src/field_overrides.rs::ROUTING_FIELDS`-style const, and add the
-deserializer to `src/responses.rs`. A substitution that carries a
-`param_serializer` needs the matching `param_deserializer`: `*Params` derive
-`Deserialize` too, and a field written in one form and read in another does
-not round-trip.
+deserializer to `src/responses.rs`.
 
 `cargo xtask check-types` is the complementary audit: it parses
 `src/generated.rs` and reports a field a method family types one way on the
-`set`/`create` side and another on the `get` side. Advisory, like
-`check-flags`, but it currently reports nothing -- keep it that way. A pair
-whose two types are meant to differ goes in its `DELIBERATE` list with the
-reason, which is the record of *why* rather than a way to silence it. A
+`set`/`create` side and another on the `get` side. Both audits print and exit
+zero by default, since a finding wants human judgment about which of the two
+types is right; both take `--deny`, which turns a finding into a non-zero exit,
+and CI runs them that way. So "it reports nothing" is a rule rather than a
+note here. A pair whose two types are meant to differ goes in its `DELIBERATE`
+list with the reason, which is the record of *why* rather than a way to
+silence it. A
 collection type is excluded from the comparison: a root response's payload
 list often shares its name with the record id it holds
 (`GetDISAsResponse::disa` against `SetDISAParams::disa`), and no override

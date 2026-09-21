@@ -2922,46 +2922,22 @@ fn a_nested_status_is_not_the_envelopes() {
     assert_eq!(resp.list[0].status.as_deref(), Some("completed"));
 }
 
-/// A consumer fronting this crate with another interface -- a tool server, a
-/// CLI printing JSON, a cache -- turns a typed response back into JSON rather
-/// than keeping mirror structs or dropping to `*_raw`.
+/// A whole response compares, so a test can assert one outright and a consumer
+/// can dedupe or diff records without writing them out field by field.
 #[test]
-fn responses_serialize_back_to_json() {
-    let resp: GetCDRResponse = serde_json::from_value(json!({
+fn a_whole_response_compares() {
+    let envelope = json!({
         "status": "success",
-        "cdr": [{
-            "date": "2026-09-16 15:14:35-04:00",
-            "callerid": "5551234567",
-            "destination": "5551234568",
-            "seconds": "11",
-            "total": "0.0099",
-        }],
+        "cdr": [{ "date": "2026-09-16 15:14:35-04:00", "seconds": "11" }],
+    });
+    let a: GetCDRResponse = serde_json::from_value(envelope.clone()).unwrap();
+    let b: GetCDRResponse = serde_json::from_value(envelope).unwrap();
+    assert_eq!(a, b);
+
+    let other: GetCDRResponse = serde_json::from_value(json!({
+        "status": "success",
+        "cdr": [{ "date": "2026-09-16 15:14:35-04:00", "seconds": "12" }],
     }))
     .unwrap();
-
-    let json = serde_json::to_value(&resp).unwrap();
-    assert_eq!(json["status"], "success");
-    assert_eq!(json["cdr"][0]["seconds"], 11);
-    assert_eq!(json["cdr"][0]["destination"], "5551234568");
-
-    // And the whole value compares, so a test or a cache can diff responses
-    // without writing them out field by field.
-    let again: GetCDRResponse = serde_json::from_value(json).unwrap();
-    assert_eq!(again, resp);
-}
-
-/// A response with a naive timestamp survives its own `Serialize`, which
-/// writes the ISO separator where the wire uses a space.
-#[test]
-fn a_naive_timestamp_survives_a_round_trip() {
-    let resp: GetRegistrationStatusResponse = serde_json::from_value(json!({
-        "status": "success",
-        "registered": "yes",
-        "registrations": [{ "server_name": "Toronto", "register_date": "2026-09-16 15:14:35" }],
-    }))
-    .unwrap();
-
-    let json = serde_json::to_value(&resp).unwrap();
-    let again: GetRegistrationStatusResponse = serde_json::from_value(json).unwrap();
-    assert_eq!(again, resp);
+    assert_ne!(a, other);
 }

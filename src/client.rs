@@ -329,9 +329,7 @@ impl Client {
         &self.base_url
     }
 
-    /// The account this client speaks for, so a consumer holding several (a
-    /// reseller plus its sub-accounts) can label a log line without carrying
-    /// the username alongside the client.
+    /// The account this client authenticates as.
     pub fn api_username(&self) -> &str {
         &self.api_username
     }

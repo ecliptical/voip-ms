@@ -10,8 +10,8 @@
 use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
+use crate::harness::Report;
 use crate::harness::area::{Area, AreaCtx, CostClass};
-use crate::harness::{NoParams, Report};
 use voip_ms::*;
 
 pub struct Reference;

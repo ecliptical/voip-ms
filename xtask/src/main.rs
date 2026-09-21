@@ -1011,17 +1011,21 @@ fn emit(
          // when they run it over this crate's types.\n\
          #![allow(clippy::upper_case_acronyms)]\n\
          \n\
-         use serde::{Deserialize, Serialize};\n\
+         use serde::Serialize;\n\
          use serde_json::Value;\n\
          \n\
          use crate::client::Client;\n\
          use crate::error::Result;\n\
          \n\
-         /// The parameters of a method that takes none. A method with an empty\n\
-         /// `*Params` struct would make every call site write it out, so the\n\
-         /// generated method takes no argument and sends this instead.\n\
-         #[derive(Serialize)]\n\
-         struct NoParams {}\n",
+         /// The parameters of a method that takes none.\n\
+         ///\n\
+         /// A method with an empty `*Params` struct would make every call site\n\
+         /// write it out, so the generated method takes no argument and sends\n\
+         /// this instead. It is public for a caller reaching one of those\n\
+         /// methods by wire name through [`Client::call_raw`], which still\n\
+         /// needs something to serialize.\n\
+         #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]\n\
+         pub struct NoParams {}\n",
     );
 
     out.push_str(enum_decls);
@@ -1053,7 +1057,7 @@ fn emit(
             "/// Parameters for [`Client::{}`] (wire method `{op}`).\n",
             camel_to_snake(op, &acronyms),
         ));
-        out.push_str("#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]\n");
+        out.push_str("#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]\n");
         out.push_str(&format!("pub struct {struct_name} {{\n"));
         let docs = param_docs.get(op);
         for (fname, ftype) in body_fields.iter().copied() {
@@ -1085,22 +1089,14 @@ fn emit(
             // A `param_skip_if` override emits the field unwrapped (plain `T`,
             // skipped at its default); otherwise it's `Option<T>` skipped when
             // `None`. A `param_serializer` supplies the wire form for a type
-            // whose own `Serialize` is wrong (a `bool` flag wanting `1`/`0`),
-            // and `param_deserializer` reads that same form back.
+            // whose own `Serialize` is wrong (a `bool` flag wanting `1`/`0`).
             let param_serializer = override_.and_then(|o| o.param_serializer.as_deref());
-            let param_deserializer = override_.and_then(|o| o.param_deserializer.as_deref());
             let skip_if = override_.and_then(|o| o.param_skip_if.as_deref());
-            // `default` is what makes the struct readable from a JSON object
-            // that names only the parameters it sets, mirroring the fields the
-            // serializer skips.
-            out.push_str("    #[serde(default, skip_serializing_if = \"");
+            out.push_str("    #[serde(skip_serializing_if = \"");
             out.push_str(skip_if.unwrap_or("Option::is_none"));
             out.push('"');
             if let Some(ser) = param_serializer {
                 out.push_str(&format!(", serialize_with = \"{ser}\""));
-            }
-            if let Some(de) = param_deserializer {
-                out.push_str(&format!(", deserialize_with = \"{de}\""));
             }
             if let Some(wire) = rename {
                 out.push_str(&format!(", rename = \"{wire}\""));
@@ -2049,8 +2045,8 @@ fn main() -> ExitCode {
         "gen" => cmd_gen(),
         "extract-responses" => cmd_extract(&rest),
         "extract-statuses" => cmd_extract_statuses(&rest),
-        "check-flags" => check_flags::cmd_check_flags(),
-        "check-types" => check_types::cmd_check_types(),
+        "check-flags" => check_flags::cmd_check_flags(&rest),
+        "check-types" => check_types::cmd_check_types(&rest),
         "dump-methods" => dump_methods::cmd_dump_methods(),
         "dump-fields" => dump_fields::cmd_dump_fields(),
         other => Err(format!(

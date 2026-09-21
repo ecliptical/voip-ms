@@ -29,7 +29,7 @@
 //! # Authentication
 //!
 //! VoIP.ms uses an `api_username` (your account email) and an `api_password`
-//! that is **distinct** from your portal password — generate it under the
+//! that is **distinct** from your portal password -- generate it under the
 //! "SOAP and REST/JSON API" page in the customer portal and enable API access
 //! there.
 //!

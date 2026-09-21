@@ -13,9 +13,9 @@
 //! structs of the same family. A family is the method name minus its leading
 //! verb, singularized, so `setSubAccount` and `getSubAccounts` share one.
 //!
-//! Purely advisory: some collisions are genuine (a `status` a response reports
-//! and a param never sets), so the command reports and exits successfully
-//! either way.
+//! Reports and exits successfully by default, since a finding wants human
+//! judgment about which of the two types is right. `--deny` makes any finding
+//! a non-zero exit, which is how CI holds the surface at zero.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -54,7 +54,8 @@ struct Field {
     rust_type: String,
 }
 
-pub fn cmd_check_types() -> Result<(), String> {
+pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
+    let deny = args.iter().any(|a| a == "--deny");
     let generated = repo_root().join("src").join("generated.rs");
     let text =
         fs::read_to_string(&generated).map_err(|e| format!("read {}: {e}", generated.display()))?;
@@ -135,14 +136,20 @@ pub fn cmd_check_types() -> Result<(), String> {
 
     if findings == 0 {
         println!("ok: every get/set field pair agrees on its type");
-    } else {
-        println!(
-            "\n{findings} field(s) typed differently to read than to write. Each forces a \
-             caller who listed a record and then updated it to convert by hand; fix with a \
-             field-name entry in xtask/src/field_overrides.rs."
-        );
+        return Ok(());
     }
 
+    let summary = format!(
+        "{findings} field(s) typed differently to read than to write. Each forces a \
+         caller who listed a record and then updated it to convert by hand; fix with a \
+         field-name entry in xtask/src/field_overrides.rs, or record why the two differ \
+         in this command's DELIBERATE list."
+    );
+    if deny {
+        return Err(summary);
+    }
+
+    println!("\n{summary}");
     Ok(())
 }
 

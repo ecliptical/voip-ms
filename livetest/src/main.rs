@@ -26,8 +26,8 @@ use config::{Cli, Config, Depth};
 use harness::area::AreaCtx;
 use harness::ledger::{self, Ledger};
 use harness::marker::RunToken;
-use harness::{NoParams, ProbeOutcome, Report, probe};
-use voip_ms::GetIPResponse;
+use harness::{ProbeOutcome, Report, probe};
+use voip_ms::{GetIPResponse, NoParams};
 
 #[tokio::main]
 async fn main() -> ExitCode {
