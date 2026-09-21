@@ -218,9 +218,11 @@ fn collect_timestamps(
 /// The derives every generated `*Response` struct carries.
 ///
 /// `PartialEq`/`Eq` let a whole response be compared, deduped, or diffed
-/// without writing it out field by field.
-const RESPONSE_DERIVES: &str =
-    "#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]\n";
+/// without writing it out field by field. No `Default`: a response is
+/// received, never built, and a defaulted one would claim
+/// [`crate::ApiStatus::Success`] over empty fields. The per-field
+/// `#[serde(default)]` is unaffected -- it defaults the field's own type.
+const RESPONSE_DERIVES: &str = "#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]\n";
 
 struct Emitter<'a> {
     /// Structs emitted in dependency-friendly order (children appended

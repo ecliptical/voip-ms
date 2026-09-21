@@ -520,7 +520,6 @@ fn success_is_a_variant_of_its_own() {
     assert!(status.is_documented());
     assert!(status.description().is_some());
     assert!(!status.is_empty_collection());
-    assert_eq!(ApiStatus::default(), ApiStatus::Success);
 }
 
 /// `.parse()` reaches the same place `from_wire` does, for a caller generic

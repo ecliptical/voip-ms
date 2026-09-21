@@ -123,9 +123,18 @@ by whether the struct is the method's root.
 Each family carries the one serde direction it uses -- `*Params` derive
 `Serialize`, `*Response` derive `Deserialize` -- plus `PartialEq` and `Eq`,
 which are independent of serde and let a whole value be compared, deduped, or
-diffed. The opposite direction on each was considered for 0.13 and dropped: no
-consumer asked for it, and a derive the crate does not use is a surface it
-would still have to keep working.
+diffed. A derive nothing reaches is a surface the crate would still have to
+keep working, so the rule is to emit only what something uses; `check-types`
+and the `is_copy_ty` table are the two places that depend on a specific trait
+being there.
+
+`*Params` derive `Default`, which is what makes the struct-update idiom of
+decision 3 work. `*Response` do not: a response is received, never built, and
+a defaulted one would claim success over empty fields. That is also why
+`ApiStatus` has no `Default` -- a status has no resting value, and `Success`
+was only ever the answer to "what does the derive need", not to "what does an
+unset status mean". The per-field `#[serde(default)]` is unaffected either way:
+it defaults the field's own type, not the struct.
 
 **Rationale**: The WSDL declares a single generic `arrayResponse` type
 for all 222 operations — there is no machine-readable response schema.

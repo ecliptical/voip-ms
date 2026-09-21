@@ -278,6 +278,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - That also retires the 19 `#[allow(dead_code)]` attributes the generator
     emitted to hide the readers nothing called. An `allow` covering generated
     code is the shape of the problem rather than a fix for it.
+  - `Default` is gone from every `*Response` and from `ApiStatus`. A response
+    is received, never built, and a defaulted one claimed `status: Success`
+    over empty fields; `Success` was the default only because the derive
+    needed one, which is not a reason. `*Params` keep `Default` -- the
+    struct-update idiom is built on it -- and the per-field
+    `#[serde(default)]` is unaffected, since it defaults the field's own type.
   - Each is additive to restore, so a consumer who needs one can ask.
 - **Breaking**: `Error::InvalidParams` carries a `ParamsError` rather than a
   `TimezoneOffsetError`. The variant name was general and its payload

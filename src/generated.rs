@@ -1445,10 +1445,9 @@ where
 /// assert_eq!(unknown.description(), None);
 /// assert!(!unknown.is_documented());
 /// ```
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ApiStatus {
     /// `success` -- The request succeeded
-    #[default]
     Success,
     /// `account_with_dids` -- The Account has DIDs assigned to it.
     AccountWithDIDs,
@@ -12250,7 +12249,7 @@ impl UnconnectFAXParams {
 }
 
 /// Response body for [`Client::add_charge`] (wire method `addCharge`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddChargeResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12259,7 +12258,7 @@ pub struct AddChargeResponse {
 }
 
 /// Response body for [`Client::add_lnp_file`] (wire method `addLNPFile`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddLNPFileResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12273,7 +12272,7 @@ pub struct AddLNPFileResponse {
 }
 
 /// Response body for [`Client::add_lnp_port`] (wire method `addLNPPort`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddLNPPortResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12287,7 +12286,7 @@ pub struct AddLNPPortResponse {
 }
 
 /// Response body for [`Client::add_member_to_conference`] (wire method `addMemberToConference`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddMemberToConferenceResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12301,7 +12300,7 @@ pub struct AddMemberToConferenceResponse {
 }
 
 /// Response body for [`Client::add_payment`] (wire method `addPayment`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddPaymentResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12310,7 +12309,7 @@ pub struct AddPaymentResponse {
 }
 
 /// Response body for [`Client::assign_did_vpri`] (wire method `assignDIDvPRI`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AssignDIDvPRIResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12335,7 +12334,7 @@ pub struct AssignDIDvPRIResponse {
 }
 
 /// Response body for [`Client::back_order_did_can`] (wire method `backOrderDIDCAN`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct BackOrderDIDCANResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12344,7 +12343,7 @@ pub struct BackOrderDIDCANResponse {
 }
 
 /// Response body for [`Client::back_order_did_usa`] (wire method `backOrderDIDUSA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct BackOrderDIDUSAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12353,7 +12352,7 @@ pub struct BackOrderDIDUSAResponse {
 }
 
 /// Response body for [`Client::cancel_did`] (wire method `cancelDID`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CancelDIDResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12362,7 +12361,7 @@ pub struct CancelDIDResponse {
 }
 
 /// Response body for [`Client::cancel_fax_number`] (wire method `cancelFaxNumber`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CancelFAXNumberResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12376,7 +12375,7 @@ pub struct CancelFAXNumberResponse {
 }
 
 /// Response body for [`Client::connect_did`] (wire method `connectDID`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ConnectDIDResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12385,7 +12384,7 @@ pub struct ConnectDIDResponse {
 }
 
 /// Response body for [`Client::connect_fax`] (wire method `connectFAX`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ConnectFAXResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12394,7 +12393,7 @@ pub struct ConnectFAXResponse {
 }
 
 /// Response body for [`Client::create_sub_account`] (wire method `createSubAccount`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CreateSubAccountResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12413,7 +12412,7 @@ pub struct CreateSubAccountResponse {
 }
 
 /// Response body for [`Client::create_voicemail`] (wire method `createVoicemail`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CreateVoicemailResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12422,7 +12421,7 @@ pub struct CreateVoicemailResponse {
 }
 
 /// Response body for [`Client::del_call_hunting`] (wire method `delCallHunting`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallHuntingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12431,7 +12430,7 @@ pub struct DelCallHuntingResponse {
 }
 
 /// Response body for [`Client::del_call_parking`] (wire method `delCallParking`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallParkingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12440,7 +12439,7 @@ pub struct DelCallParkingResponse {
 }
 
 /// Response body for [`Client::del_call_recording`] (wire method `delCallRecording`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallRecordingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12449,7 +12448,7 @@ pub struct DelCallRecordingResponse {
 }
 
 /// Response body for [`Client::del_callback`] (wire method `delCallback`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallbackResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12458,7 +12457,7 @@ pub struct DelCallbackResponse {
 }
 
 /// Response body for [`Client::del_caller_id_filtering`] (wire method `delCallerIDFiltering`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallerIDFilteringResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12467,7 +12466,7 @@ pub struct DelCallerIDFilteringResponse {
 }
 
 /// Response body for [`Client::del_client`] (wire method `delClient`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelClientResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12476,7 +12475,7 @@ pub struct DelClientResponse {
 }
 
 /// Response body for [`Client::del_conference`] (wire method `delConference`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelConferenceResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12485,7 +12484,7 @@ pub struct DelConferenceResponse {
 }
 
 /// Response body for [`Client::del_conference_member`] (wire method `delConferenceMember`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelConferenceMemberResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12494,7 +12493,7 @@ pub struct DelConferenceMemberResponse {
 }
 
 /// Response body for [`Client::del_disa`] (wire method `delDISA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelDISAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12503,7 +12502,7 @@ pub struct DelDISAResponse {
 }
 
 /// Response body for [`Client::del_email_to_fax`] (wire method `delEmailToFax`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelEmailToFAXResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12512,7 +12511,7 @@ pub struct DelEmailToFAXResponse {
 }
 
 /// Response body for [`Client::del_fax_folder`] (wire method `delFaxFolder`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelFAXFolderResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12521,7 +12520,7 @@ pub struct DelFAXFolderResponse {
 }
 
 /// Response body for [`Client::del_forwarding`] (wire method `delForwarding`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelForwardingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12530,7 +12529,7 @@ pub struct DelForwardingResponse {
 }
 
 /// Response body for [`Client::del_ivr`] (wire method `delIVR`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelIVRResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12539,7 +12538,7 @@ pub struct DelIVRResponse {
 }
 
 /// Response body for [`Client::del_location`] (wire method `delLocation`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelLocationResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12548,7 +12547,7 @@ pub struct DelLocationResponse {
 }
 
 /// Response body for [`Client::del_member_from_conference`] (wire method `delMemberFromConference`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelMemberFromConferenceResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12557,7 +12556,7 @@ pub struct DelMemberFromConferenceResponse {
 }
 
 /// Response body for [`Client::del_messages`] (wire method `delMessages`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelMessagesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12566,7 +12565,7 @@ pub struct DelMessagesResponse {
 }
 
 /// Response body for [`Client::del_music_on_hold`] (wire method `delMusicOnHold`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelMusicOnHoldResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12575,7 +12574,7 @@ pub struct DelMusicOnHoldResponse {
 }
 
 /// Response body for [`Client::del_phonebook`] (wire method `delPhonebook`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelPhonebookResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12584,7 +12583,7 @@ pub struct DelPhonebookResponse {
 }
 
 /// Response body for [`Client::del_phonebook_group`] (wire method `delPhonebookGroup`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelPhonebookGroupResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12593,7 +12592,7 @@ pub struct DelPhonebookGroupResponse {
 }
 
 /// Response body for [`Client::del_queue`] (wire method `delQueue`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelQueueResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12602,7 +12601,7 @@ pub struct DelQueueResponse {
 }
 
 /// Response body for [`Client::del_recording`] (wire method `delRecording`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelRecordingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12611,7 +12610,7 @@ pub struct DelRecordingResponse {
 }
 
 /// Response body for [`Client::del_ring_group`] (wire method `delRingGroup`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelRingGroupResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12620,7 +12619,7 @@ pub struct DelRingGroupResponse {
 }
 
 /// Response body for [`Client::del_sip_uri`] (wire method `delSIPURI`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelSIPURIResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12629,7 +12628,7 @@ pub struct DelSIPURIResponse {
 }
 
 /// Response body for [`Client::del_static_member`] (wire method `delStaticMember`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelStaticMemberResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12638,7 +12637,7 @@ pub struct DelStaticMemberResponse {
 }
 
 /// Response body for [`Client::del_sub_account`] (wire method `delSubAccount`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelSubAccountResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12647,7 +12646,7 @@ pub struct DelSubAccountResponse {
 }
 
 /// Response body for [`Client::del_time_condition`] (wire method `delTimeCondition`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelTimeConditionResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12656,7 +12655,7 @@ pub struct DelTimeConditionResponse {
 }
 
 /// Response body for [`Client::del_voicemail`] (wire method `delVoicemail`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelVoicemailResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12665,7 +12664,7 @@ pub struct DelVoicemailResponse {
 }
 
 /// Response body for [`Client::delete_fax_message`] (wire method `deleteFaxMessage`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DeleteFAXMessageResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12674,7 +12673,7 @@ pub struct DeleteFAXMessageResponse {
 }
 
 /// Response body for [`Client::delete_mms`] (wire method `deleteMMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DeleteMMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12683,7 +12682,7 @@ pub struct DeleteMMSResponse {
 }
 
 /// Response body for [`Client::delete_sms`] (wire method `deleteSMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DeleteSMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12692,7 +12691,7 @@ pub struct DeleteSMSResponse {
 }
 
 /// Response body for [`Client::e911_address_types`] (wire method `e911AddressTypes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911AddressTypesResponseType {
     #[serde(
         default,
@@ -12706,7 +12705,7 @@ pub struct E911AddressTypesResponseType {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911AddressTypesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12720,7 +12719,7 @@ pub struct E911AddressTypesResponse {
 }
 
 /// Response body for [`Client::e911_cancel`] (wire method `e911Cancel`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911CancelResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12729,7 +12728,7 @@ pub struct E911CancelResponse {
 }
 
 /// Response body for [`Client::e911_info`] (wire method `e911Info`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911InfoResponseInfo {
     #[serde(
         default,
@@ -12803,7 +12802,7 @@ pub struct E911InfoResponseInfo {
     pub other_info: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911InfoResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12814,7 +12813,7 @@ pub struct E911InfoResponse {
 }
 
 /// Response body for [`Client::e911_provision`] (wire method `e911Provision`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911ProvisionResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12823,7 +12822,7 @@ pub struct E911ProvisionResponse {
 }
 
 /// Response body for [`Client::e911_provision_manually`] (wire method `e911ProvisionManually`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911ProvisionManuallyResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12832,7 +12831,7 @@ pub struct E911ProvisionManuallyResponse {
 }
 
 /// Response body for [`Client::e911_update`] (wire method `e911Update`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911UpdateResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12841,7 +12840,7 @@ pub struct E911UpdateResponse {
 }
 
 /// Response body for [`Client::e911_validate`] (wire method `e911Validate`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911ValidateResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12850,7 +12849,7 @@ pub struct E911ValidateResponse {
 }
 
 /// Response body for [`Client::get_allowed_codecs`] (wire method `getAllowedCodecs`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetAllowedCodecsResponseAllowedCodec {
     #[serde(
         default,
@@ -12864,7 +12863,7 @@ pub struct GetAllowedCodecsResponseAllowedCodec {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetAllowedCodecsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12878,7 +12877,7 @@ pub struct GetAllowedCodecsResponse {
 }
 
 /// Response body for [`Client::get_auth_types`] (wire method `getAuthTypes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetAuthTypesResponseAuthType {
     #[serde(
         default,
@@ -12892,7 +12891,7 @@ pub struct GetAuthTypesResponseAuthType {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetAuthTypesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12906,7 +12905,7 @@ pub struct GetAuthTypesResponse {
 }
 
 /// Response body for [`Client::get_back_orders`] (wire method `getBackOrders`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBackOrdersResponseBackOrder {
     #[serde(
         default,
@@ -12967,7 +12966,7 @@ pub struct GetBackOrdersResponseBackOrder {
     pub order_date: Option<chrono::NaiveDateTime>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBackOrdersResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -12986,7 +12985,7 @@ pub struct GetBackOrdersResponse {
 }
 
 /// Response body for [`Client::get_balance`] (wire method `getBalance`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBalanceResponseBalance {
     #[serde(
         default,
@@ -13025,7 +13024,7 @@ pub struct GetBalanceResponseBalance {
     pub time_today: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBalanceResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13036,7 +13035,7 @@ pub struct GetBalanceResponse {
 }
 
 /// Response body for [`Client::get_balance_management`] (wire method `getBalanceManagement`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBalanceManagementResponseBalanceManagement {
     #[serde(
         default,
@@ -13050,7 +13049,7 @@ pub struct GetBalanceManagementResponseBalanceManagement {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBalanceManagementResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13064,7 +13063,7 @@ pub struct GetBalanceManagementResponse {
 }
 
 /// Response body for [`Client::get_cdr`] (wire method `getCDR`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCDRResponseCDR {
     #[serde(
         default,
@@ -13143,7 +13142,7 @@ pub struct GetCDRResponseCDR {
     pub useragent: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCDRResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13157,7 +13156,7 @@ pub struct GetCDRResponse {
 }
 
 /// Response body for [`Client::get_call_accounts`] (wire method `getCallAccounts`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallAccountsResponseAccount {
     #[serde(
         default,
@@ -13171,7 +13170,7 @@ pub struct GetCallAccountsResponseAccount {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallAccountsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13185,7 +13184,7 @@ pub struct GetCallAccountsResponse {
 }
 
 /// Response body for [`Client::get_call_billing`] (wire method `getCallBilling`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallBillingResponseCallBilling {
     #[serde(
         default,
@@ -13199,7 +13198,7 @@ pub struct GetCallBillingResponseCallBilling {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallBillingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13213,7 +13212,7 @@ pub struct GetCallBillingResponse {
 }
 
 /// Response body for [`Client::get_call_huntings`] (wire method `getCallHuntings`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallHuntingsResponseCallHunting {
     #[serde(
         default,
@@ -13259,7 +13258,7 @@ pub struct GetCallHuntingsResponseCallHunting {
     pub language: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallHuntingsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13273,7 +13272,7 @@ pub struct GetCallHuntingsResponse {
 }
 
 /// Response body for [`Client::get_call_parking`] (wire method `getCallParking`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallParkingResponseCallHunting {
     #[serde(
         default,
@@ -13322,7 +13321,7 @@ pub struct GetCallParkingResponseCallHunting {
     pub blf_lamps: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallParkingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13336,7 +13335,7 @@ pub struct GetCallParkingResponse {
 }
 
 /// Response body for [`Client::get_call_recording`] (wire method `getCallRecording`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallRecordingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13381,7 +13380,7 @@ pub struct GetCallRecordingResponse {
 }
 
 /// Response body for [`Client::get_call_recordings`] (wire method `getCallRecordings`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallRecordingsResponseRecording {
     #[serde(
         default,
@@ -13416,7 +13415,7 @@ pub struct GetCallRecordingsResponseRecording {
     pub duration: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallRecordingsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13430,7 +13429,7 @@ pub struct GetCallRecordingsResponse {
 }
 
 /// Response body for [`Client::get_call_transcriptions`] (wire method `getCallTranscriptions`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallTranscriptionsResponseTranscriptionRecognizedPhrase {
     #[serde(
         default,
@@ -13454,7 +13453,7 @@ pub struct GetCallTranscriptionsResponseTranscriptionRecognizedPhrase {
     pub phrase: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallTranscriptionsResponseTranscription {
     #[serde(
         default,
@@ -13488,7 +13487,7 @@ pub struct GetCallTranscriptionsResponseTranscription {
     pub recognized_phrases: Vec<GetCallTranscriptionsResponseTranscriptionRecognizedPhrase>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallTranscriptionsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13502,7 +13501,7 @@ pub struct GetCallTranscriptionsResponse {
 }
 
 /// Response body for [`Client::get_call_types`] (wire method `getCallTypes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallTypesResponseCallType {
     #[serde(
         default,
@@ -13516,7 +13515,7 @@ pub struct GetCallTypesResponseCallType {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallTypesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13530,7 +13529,7 @@ pub struct GetCallTypesResponse {
 }
 
 /// Response body for [`Client::get_callbacks`] (wire method `getCallbacks`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallbacksResponseCallback {
     #[serde(
         default,
@@ -13569,7 +13568,7 @@ pub struct GetCallbacksResponseCallback {
     pub callerid_number: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallbacksResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13583,7 +13582,7 @@ pub struct GetCallbacksResponse {
 }
 
 /// Response body for [`Client::get_caller_id_filtering`] (wire method `getCallerIDFiltering`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallerIDFilteringResponseFiltering {
     #[serde(
         default,
@@ -13627,7 +13626,7 @@ pub struct GetCallerIDFilteringResponseFiltering {
     pub note: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallerIDFilteringResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13641,7 +13640,7 @@ pub struct GetCallerIDFilteringResponse {
 }
 
 /// Response body for [`Client::get_carriers`] (wire method `getCarriers`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCarriersResponseCarrier {
     #[serde(
         default,
@@ -13655,7 +13654,7 @@ pub struct GetCarriersResponseCarrier {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCarriersResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13669,7 +13668,7 @@ pub struct GetCarriersResponse {
 }
 
 /// Response body for [`Client::get_charges`] (wire method `getCharges`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetChargesResponseCharge {
     #[serde(
         default,
@@ -13690,7 +13689,7 @@ pub struct GetChargesResponseCharge {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetChargesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13704,7 +13703,7 @@ pub struct GetChargesResponse {
 }
 
 /// Response body for [`Client::get_client_packages`] (wire method `getClientPackages`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientPackagesResponsePackage {
     #[serde(
         default,
@@ -13718,7 +13717,7 @@ pub struct GetClientPackagesResponsePackage {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientPackagesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13732,7 +13731,7 @@ pub struct GetClientPackagesResponse {
 }
 
 /// Response body for [`Client::get_client_threshold`] (wire method `getClientThreshold`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientThresholdResponseThresholdInformation {
     #[serde(
         default,
@@ -13746,7 +13745,7 @@ pub struct GetClientThresholdResponseThresholdInformation {
     pub email: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientThresholdResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13757,7 +13756,7 @@ pub struct GetClientThresholdResponse {
 }
 
 /// Response body for [`Client::get_clients`] (wire method `getClients`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientsResponseClient {
     #[serde(
         default,
@@ -13826,7 +13825,7 @@ pub struct GetClientsResponseClient {
     pub balance_management: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13840,7 +13839,7 @@ pub struct GetClientsResponse {
 }
 
 /// Response body for [`Client::get_conference`] (wire method `getConference`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceResponseConference {
     #[serde(
         default,
@@ -13974,7 +13973,7 @@ pub struct GetConferenceResponseConference {
     pub members: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -13988,7 +13987,7 @@ pub struct GetConferenceResponse {
 }
 
 /// Response body for [`Client::get_conference_members`] (wire method `getConferenceMembers`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceMembersResponseMember {
     #[serde(
         default,
@@ -14077,7 +14076,7 @@ pub struct GetConferenceMembersResponseMember {
     pub jitter_buffer: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceMembersResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14091,7 +14090,7 @@ pub struct GetConferenceMembersResponse {
 }
 
 /// Response body for [`Client::get_conference_recording_file`] (wire method `getConferenceRecordingFile`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceRecordingFileResponseRecording {
     #[serde(
         default,
@@ -14105,7 +14104,7 @@ pub struct GetConferenceRecordingFileResponseRecording {
     pub data: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceRecordingFileResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14119,7 +14118,7 @@ pub struct GetConferenceRecordingFileResponse {
 }
 
 /// Response body for [`Client::get_conference_recordings`] (wire method `getConferenceRecordings`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceRecordingsResponseRecording {
     #[serde(
         default,
@@ -14148,7 +14147,7 @@ pub struct GetConferenceRecordingsResponseRecording {
     pub date: Option<chrono::NaiveDateTime>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceRecordingsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14162,7 +14161,7 @@ pub struct GetConferenceRecordingsResponse {
 }
 
 /// Response body for [`Client::get_countries`] (wire method `getCountries`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCountriesResponseCountry {
     #[serde(
         default,
@@ -14176,7 +14175,7 @@ pub struct GetCountriesResponseCountry {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCountriesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14190,7 +14189,7 @@ pub struct GetCountriesResponse {
 }
 
 /// Response body for [`Client::get_did_countries`] (wire method `getDIDCountries`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDCountriesResponseCountry {
     #[serde(
         default,
@@ -14204,7 +14203,7 @@ pub struct GetDIDCountriesResponseCountry {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDCountriesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14218,7 +14217,7 @@ pub struct GetDIDCountriesResponse {
 }
 
 /// Response body for [`Client::get_dids_can`] (wire method `getDIDsCAN`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsCANResponseDID {
     #[serde(
         default,
@@ -14277,7 +14276,7 @@ pub struct GetDIDsCANResponseDID {
     pub sms: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsCANResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14291,7 +14290,7 @@ pub struct GetDIDsCANResponse {
 }
 
 /// Response body for [`Client::get_dids_info`] (wire method `getDIDsInfo`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInfoResponseDID {
     #[serde(
         default,
@@ -14491,7 +14490,7 @@ pub struct GetDIDsInfoResponseDID {
     pub transcription_email: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInfoResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14505,7 +14504,7 @@ pub struct GetDIDsInfoResponse {
 }
 
 /// Response body for [`Client::get_dids_international_geographic`] (wire method `getDIDsInternationalGeographic`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalGeographicResponseLocation {
     #[serde(
         default,
@@ -14564,7 +14563,7 @@ pub struct GetDIDsInternationalGeographicResponseLocation {
     pub channels: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalGeographicResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14578,7 +14577,7 @@ pub struct GetDIDsInternationalGeographicResponse {
 }
 
 /// Response body for [`Client::get_dids_international_national`] (wire method `getDIDsInternationalNational`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalNationalResponseLocation {
     #[serde(
         default,
@@ -14632,7 +14631,7 @@ pub struct GetDIDsInternationalNationalResponseLocation {
     pub setup_per_minute: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalNationalResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14646,7 +14645,7 @@ pub struct GetDIDsInternationalNationalResponse {
 }
 
 /// Response body for [`Client::get_dids_international_toll_free`] (wire method `getDIDsInternationalTollFree`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalTollFreeResponseLocation {
     #[serde(
         default,
@@ -14690,7 +14689,7 @@ pub struct GetDIDsInternationalTollFreeResponseLocation {
     pub minute: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalTollFreeResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14704,7 +14703,7 @@ pub struct GetDIDsInternationalTollFreeResponse {
 }
 
 /// Response body for [`Client::get_dids_usa`] (wire method `getDIDsUSA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsUSAResponseDID {
     #[serde(
         default,
@@ -14768,7 +14767,7 @@ pub struct GetDIDsUSAResponseDID {
     pub sms: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsUSAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14782,7 +14781,7 @@ pub struct GetDIDsUSAResponse {
 }
 
 /// Response body for [`Client::get_did_vpri`] (wire method `getDIDvPRI`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDvPRIResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14796,7 +14795,7 @@ pub struct GetDIDvPRIResponse {
 }
 
 /// Response body for [`Client::get_disas`] (wire method `getDISAs`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDISAsResponseDISA {
     #[serde(
         default,
@@ -14830,7 +14829,7 @@ pub struct GetDISAsResponseDISA {
     pub language: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDISAsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14844,7 +14843,7 @@ pub struct GetDISAsResponse {
 }
 
 /// Response body for [`Client::get_dtmf_modes`] (wire method `getDTMFModes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDTMFModesResponseDTMFMode {
     #[serde(
         default,
@@ -14858,7 +14857,7 @@ pub struct GetDTMFModesResponseDTMFMode {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDTMFModesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14872,7 +14871,7 @@ pub struct GetDTMFModesResponse {
 }
 
 /// Response body for [`Client::get_deposits`] (wire method `getDeposits`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDepositsResponseDeposit {
     #[serde(
         default,
@@ -14893,7 +14892,7 @@ pub struct GetDepositsResponseDeposit {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDepositsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14907,7 +14906,7 @@ pub struct GetDepositsResponse {
 }
 
 /// Response body for [`Client::get_device_types`] (wire method `getDeviceTypes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDeviceTypesResponseDeviceType {
     #[serde(
         default,
@@ -14921,7 +14920,7 @@ pub struct GetDeviceTypesResponseDeviceType {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDeviceTypesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14935,7 +14934,7 @@ pub struct GetDeviceTypesResponse {
 }
 
 /// Response body for [`Client::get_email_to_fax`] (wire method `getEmailToFax`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetEmailToFAXResponseEmailToFAX {
     #[serde(
         default,
@@ -14969,7 +14968,7 @@ pub struct GetEmailToFAXResponseEmailToFAX {
     pub from: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetEmailToFAXResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -14984,7 +14983,7 @@ pub struct GetEmailToFAXResponse {
 }
 
 /// Response body for [`Client::get_fax_folders`] (wire method `getFaxFolders`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXFoldersResponseFolder {
     #[serde(
         default,
@@ -14998,7 +14997,7 @@ pub struct GetFAXFoldersResponseFolder {
     pub name: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXFoldersResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15012,7 +15011,7 @@ pub struct GetFAXFoldersResponse {
 }
 
 /// Response body for [`Client::get_fax_message_pdf`] (wire method `getFaxMessagePDF`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXMessagePDFResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15026,7 +15025,7 @@ pub struct GetFAXMessagePDFResponse {
 }
 
 /// Response body for [`Client::get_fax_messages`] (wire method `getFaxMessages`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXMessagesResponseFAX {
     #[serde(
         default,
@@ -15095,7 +15094,7 @@ pub struct GetFAXMessagesResponseFAX {
     pub msg: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXMessagesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15109,7 +15108,7 @@ pub struct GetFAXMessagesResponse {
 }
 
 /// Response body for [`Client::get_fax_numbers_info`] (wire method `getFaxNumbersInfo`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXNumbersInfoResponseNumber {
     #[serde(
         default,
@@ -15210,7 +15209,7 @@ pub struct GetFAXNumbersInfoResponseNumber {
     pub fax_to_sip_enabled_account: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXNumbersInfoResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15224,7 +15223,7 @@ pub struct GetFAXNumbersInfoResponse {
 }
 
 /// Response body for [`Client::get_fax_numbers_portability`] (wire method `getFaxNumbersPortability`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXNumbersPortabilityResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15239,7 +15238,7 @@ pub struct GetFAXNumbersPortabilityResponse {
 }
 
 /// Response body for [`Client::get_fax_provinces`] (wire method `getFaxProvinces`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXProvincesResponseProvince {
     #[serde(
         default,
@@ -15263,7 +15262,7 @@ pub struct GetFAXProvincesResponseProvince {
     pub country_code: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXProvincesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15277,7 +15276,7 @@ pub struct GetFAXProvincesResponse {
 }
 
 /// Response body for [`Client::get_fax_rate_centers_can`] (wire method `getFaxRateCentersCAN`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXRateCentersCANResponseRatecenter {
     #[serde(
         default,
@@ -15301,7 +15300,7 @@ pub struct GetFAXRateCentersCANResponseRatecenter {
     pub available: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXRateCentersCANResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15315,7 +15314,7 @@ pub struct GetFAXRateCentersCANResponse {
 }
 
 /// Response body for [`Client::get_fax_rate_centers_usa`] (wire method `getFaxRateCentersUSA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXRateCentersUSAResponseRatecenter {
     #[serde(
         default,
@@ -15339,7 +15338,7 @@ pub struct GetFAXRateCentersUSAResponseRatecenter {
     pub available: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXRateCentersUSAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15353,7 +15352,7 @@ pub struct GetFAXRateCentersUSAResponse {
 }
 
 /// Response body for [`Client::get_fax_states`] (wire method `getFaxStates`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXStatesResponseState {
     #[serde(
         default,
@@ -15377,7 +15376,7 @@ pub struct GetFAXStatesResponseState {
     pub country_code: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXStatesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15391,7 +15390,7 @@ pub struct GetFAXStatesResponse {
 }
 
 /// Response body for [`Client::get_forwardings`] (wire method `getForwardings`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetForwardingsResponseForwarding {
     #[serde(
         default,
@@ -15430,7 +15429,7 @@ pub struct GetForwardingsResponseForwarding {
     pub diversion_header: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetForwardingsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15444,7 +15443,7 @@ pub struct GetForwardingsResponse {
 }
 
 /// Response body for [`Client::get_ip`] (wire method `getIP`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetIPResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15458,7 +15457,7 @@ pub struct GetIPResponse {
 }
 
 /// Response body for [`Client::get_ivrs`] (wire method `getIVRs`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetIVRsResponseIVR {
     #[serde(
         default,
@@ -15497,7 +15496,7 @@ pub struct GetIVRsResponseIVR {
     pub choices: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetIVRsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15511,7 +15510,7 @@ pub struct GetIVRsResponse {
 }
 
 /// Response body for [`Client::get_international_types`] (wire method `getInternationalTypes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetInternationalTypesResponseType {
     #[serde(
         default,
@@ -15525,7 +15524,7 @@ pub struct GetInternationalTypesResponseType {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetInternationalTypesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15539,7 +15538,7 @@ pub struct GetInternationalTypesResponse {
 }
 
 /// Response body for [`Client::get_join_when_empty_types`] (wire method `getJoinWhenEmptyTypes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetJoinWhenEmptyTypesResponseType {
     #[serde(
         default,
@@ -15553,7 +15552,7 @@ pub struct GetJoinWhenEmptyTypesResponseType {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetJoinWhenEmptyTypesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15567,7 +15566,7 @@ pub struct GetJoinWhenEmptyTypesResponse {
 }
 
 /// Response body for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPAttachResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15592,7 +15591,7 @@ pub struct GetLNPAttachResponse {
 }
 
 /// Response body for [`Client::get_lnp_attach_list`] (wire method `getLNPAttachList`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPAttachListResponseList {
     #[serde(
         default,
@@ -15612,7 +15611,7 @@ pub struct GetLNPAttachListResponseList {
     pub size: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPAttachListResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15626,7 +15625,7 @@ pub struct GetLNPAttachListResponse {
 }
 
 /// Response body for [`Client::get_lnp_details`] (wire method `getLNPDetails`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPDetailsResponseNumber {
     #[serde(
         default,
@@ -15646,7 +15645,7 @@ pub struct GetLNPDetailsResponseNumber {
     pub state: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPDetailsResponseNote {
     #[serde(
         default,
@@ -15662,7 +15661,7 @@ pub struct GetLNPDetailsResponseNote {
     pub time: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPDetailsResponseAttachment {
     #[serde(
         default,
@@ -15687,7 +15686,7 @@ pub struct GetLNPDetailsResponseAttachment {
     pub bytes: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPDetailsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15848,7 +15847,7 @@ pub struct GetLNPDetailsResponse {
 }
 
 /// Response body for [`Client::get_lnp_list`] (wire method `getLNPList`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPListResponseList {
     #[serde(
         default,
@@ -15872,7 +15871,7 @@ pub struct GetLNPListResponseList {
     pub status: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPListResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15886,7 +15885,7 @@ pub struct GetLNPListResponse {
 }
 
 /// Response body for [`Client::get_lnp_list_status`] (wire method `getLNPListStatus`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPListStatusResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15900,7 +15899,7 @@ pub struct GetLNPListStatusResponse {
 }
 
 /// Response body for [`Client::get_lnp_notes`] (wire method `getLNPNotes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPNotesResponseList {
     #[serde(
         default,
@@ -15916,7 +15915,7 @@ pub struct GetLNPNotesResponseList {
     pub time: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPNotesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15930,7 +15929,7 @@ pub struct GetLNPNotesResponse {
 }
 
 /// Response body for [`Client::get_lnp_status`] (wire method `getLNPStatus`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPStatusResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15949,7 +15948,7 @@ pub struct GetLNPStatusResponse {
 }
 
 /// Response body for [`Client::get_languages`] (wire method `getLanguages`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLanguagesResponseLanguage {
     #[serde(
         default,
@@ -15963,7 +15962,7 @@ pub struct GetLanguagesResponseLanguage {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLanguagesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -15977,7 +15976,7 @@ pub struct GetLanguagesResponse {
 }
 
 /// Response body for [`Client::get_locales`] (wire method `getLocales`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLocalesResponseLocale {
     #[serde(
         default,
@@ -15991,7 +15990,7 @@ pub struct GetLocalesResponseLocale {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLocalesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16005,7 +16004,7 @@ pub struct GetLocalesResponse {
 }
 
 /// Response body for [`Client::get_locations`] (wire method `getLocations`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLocationsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16019,7 +16018,7 @@ pub struct GetLocationsResponse {
 }
 
 /// Response body for [`Client::get_lock_international`] (wire method `getLockInternational`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLockInternationalResponseLockInternational {
     #[serde(
         default,
@@ -16033,7 +16032,7 @@ pub struct GetLockInternationalResponseLockInternational {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLockInternationalResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16047,7 +16046,7 @@ pub struct GetLockInternationalResponse {
 }
 
 /// Response body for [`Client::get_mms`] (wire method `getMMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMMSResponseSMS {
     #[serde(
         default,
@@ -16107,7 +16106,7 @@ pub struct GetMMSResponseSMS {
     pub media: Vec<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16121,7 +16120,7 @@ pub struct GetMMSResponse {
 }
 
 /// Response body for [`Client::get_media_mms`] (wire method `getMediaMMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMediaMMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16145,7 +16144,7 @@ pub struct GetMediaMMSResponse {
 }
 
 /// Response body for [`Client::get_music_on_hold`] (wire method `getMusicOnHold`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMusicOnHoldResponseMusicOnHold {
     #[serde(
         default,
@@ -16181,7 +16180,7 @@ pub struct GetMusicOnHoldResponseMusicOnHold {
     pub custom: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMusicOnHoldResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16195,7 +16194,7 @@ pub struct GetMusicOnHoldResponse {
 }
 
 /// Response body for [`Client::get_nat`] (wire method `getNAT`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetNATResponseNAT {
     #[serde(
         default,
@@ -16209,7 +16208,7 @@ pub struct GetNATResponseNAT {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetNATResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16223,7 +16222,7 @@ pub struct GetNATResponse {
 }
 
 /// Response body for [`Client::get_packages`] (wire method `getPackages`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPackagesResponsePackage {
     #[serde(
         default,
@@ -16277,7 +16276,7 @@ pub struct GetPackagesResponsePackage {
     pub free_minutes: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPackagesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16291,7 +16290,7 @@ pub struct GetPackagesResponse {
 }
 
 /// Response body for [`Client::get_phonebook`] (wire method `getPhonebook`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPhonebookResponsePhonebook {
     #[serde(
         default,
@@ -16335,7 +16334,7 @@ pub struct GetPhonebookResponsePhonebook {
     pub group_name: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPhonebookResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16349,7 +16348,7 @@ pub struct GetPhonebookResponse {
 }
 
 /// Response body for [`Client::get_phonebook_groups`] (wire method `getPhonebookGroups`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPhonebookGroupsResponsePhonebook {
     #[serde(
         default,
@@ -16368,7 +16367,7 @@ pub struct GetPhonebookGroupsResponsePhonebook {
     pub members: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPhonebookGroupsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16382,7 +16381,7 @@ pub struct GetPhonebookGroupsResponse {
 }
 
 /// Response body for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPlayInstructionsResponsePlayInstruction {
     #[serde(
         default,
@@ -16396,7 +16395,7 @@ pub struct GetPlayInstructionsResponsePlayInstruction {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPlayInstructionsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16410,7 +16409,7 @@ pub struct GetPlayInstructionsResponse {
 }
 
 /// Response body for [`Client::get_portability`] (wire method `getPortability`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPortabilityResponsePlan {
     #[serde(
         default,
@@ -16431,7 +16430,7 @@ pub struct GetPortabilityResponsePlan {
     pub price_per_min: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPortabilityResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16455,7 +16454,7 @@ pub struct GetPortabilityResponse {
 }
 
 /// Response body for [`Client::get_protocols`] (wire method `getProtocols`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetProtocolsResponseProtocol {
     #[serde(
         default,
@@ -16469,7 +16468,7 @@ pub struct GetProtocolsResponseProtocol {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetProtocolsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16483,7 +16482,7 @@ pub struct GetProtocolsResponse {
 }
 
 /// Response body for [`Client::get_provinces`] (wire method `getProvinces`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetProvincesResponseProvince {
     #[serde(
         default,
@@ -16497,7 +16496,7 @@ pub struct GetProvincesResponseProvince {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetProvincesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16511,7 +16510,7 @@ pub struct GetProvincesResponse {
 }
 
 /// Response body for [`Client::get_queues`] (wire method `getQueues`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetQueuesResponseQueue {
     #[serde(
         default,
@@ -16671,7 +16670,7 @@ pub struct GetQueuesResponseQueue {
     pub fail_over_routing_leave_unavail: Option<crate::Routing>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetQueuesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16685,7 +16684,7 @@ pub struct GetQueuesResponse {
 }
 
 /// Response body for [`Client::get_rate_centers_can`] (wire method `getRateCentersCAN`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRateCentersCANResponseRatecenter {
     #[serde(
         default,
@@ -16699,7 +16698,7 @@ pub struct GetRateCentersCANResponseRatecenter {
     pub available: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRateCentersCANResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16713,7 +16712,7 @@ pub struct GetRateCentersCANResponse {
 }
 
 /// Response body for [`Client::get_rate_centers_usa`] (wire method `getRateCentersUSA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRateCentersUSAResponseRatecenter {
     #[serde(
         default,
@@ -16727,7 +16726,7 @@ pub struct GetRateCentersUSAResponseRatecenter {
     pub available: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRateCentersUSAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16741,7 +16740,7 @@ pub struct GetRateCentersUSAResponse {
 }
 
 /// Response body for [`Client::get_rates`] (wire method `getRates`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRatesResponseRate {
     #[serde(
         default,
@@ -16775,7 +16774,7 @@ pub struct GetRatesResponseRate {
     pub real_rate: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRatesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16789,7 +16788,7 @@ pub struct GetRatesResponse {
 }
 
 /// Response body for [`Client::get_recording_file`] (wire method `getRecordingFile`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRecordingFileResponseRecording {
     #[serde(
         default,
@@ -16803,7 +16802,7 @@ pub struct GetRecordingFileResponseRecording {
     pub data: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRecordingFileResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16817,7 +16816,7 @@ pub struct GetRecordingFileResponse {
 }
 
 /// Response body for [`Client::get_recordings`] (wire method `getRecordings`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRecordingsResponseRecording {
     #[serde(
         default,
@@ -16831,7 +16830,7 @@ pub struct GetRecordingsResponseRecording {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRecordingsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16845,7 +16844,7 @@ pub struct GetRecordingsResponse {
 }
 
 /// Response body for [`Client::get_registration_status`] (wire method `getRegistrationStatus`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRegistrationStatusResponseRegistration {
     #[serde(
         default,
@@ -16904,7 +16903,7 @@ pub struct GetRegistrationStatusResponseRegistration {
     pub register_transport: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRegistrationStatusResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16933,7 +16932,7 @@ pub struct GetRegistrationStatusResponse {
 }
 
 /// Response body for [`Client::get_report_estimated_hold_time`] (wire method `getReportEstimatedHoldTime`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetReportEstimatedHoldTimeResponseType {
     #[serde(
         default,
@@ -16947,7 +16946,7 @@ pub struct GetReportEstimatedHoldTimeResponseType {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetReportEstimatedHoldTimeResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -16961,7 +16960,7 @@ pub struct GetReportEstimatedHoldTimeResponse {
 }
 
 /// Response body for [`Client::get_reseller_balance`] (wire method `getResellerBalance`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerBalanceResponseBalance {
     #[serde(
         default,
@@ -17000,7 +16999,7 @@ pub struct GetResellerBalanceResponseBalance {
     pub time_today: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerBalanceResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17011,7 +17010,7 @@ pub struct GetResellerBalanceResponse {
 }
 
 /// Response body for [`Client::get_reseller_cdr`] (wire method `getResellerCDR`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerCDRResponseCDR {
     #[serde(
         default,
@@ -17075,7 +17074,7 @@ pub struct GetResellerCDRResponseCDR {
     pub call_logs: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerCDRResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17089,7 +17088,7 @@ pub struct GetResellerCDRResponse {
 }
 
 /// Response body for [`Client::get_reseller_mms`] (wire method `getResellerMMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerMMSResponseSMS {
     #[serde(
         default,
@@ -17124,7 +17123,7 @@ pub struct GetResellerMMSResponseSMS {
     pub message: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerMMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17138,7 +17137,7 @@ pub struct GetResellerMMSResponse {
 }
 
 /// Response body for [`Client::get_reseller_sms`] (wire method `getResellerSMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerSMSResponseSMS {
     #[serde(
         default,
@@ -17173,7 +17172,7 @@ pub struct GetResellerSMSResponseSMS {
     pub message: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerSMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17187,7 +17186,7 @@ pub struct GetResellerSMSResponse {
 }
 
 /// Response body for [`Client::get_ring_groups`] (wire method `getRingGroups`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRingGroupsResponseRingGroup {
     #[serde(
         default,
@@ -17226,7 +17225,7 @@ pub struct GetRingGroupsResponseRingGroup {
     pub voicemail: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRingGroupsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17240,7 +17239,7 @@ pub struct GetRingGroupsResponse {
 }
 
 /// Response body for [`Client::get_ring_strategies`] (wire method `getRingStrategies`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRingStrategiesResponseStrategy {
     #[serde(
         default,
@@ -17254,7 +17253,7 @@ pub struct GetRingStrategiesResponseStrategy {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRingStrategiesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17268,7 +17267,7 @@ pub struct GetRingStrategiesResponse {
 }
 
 /// Response body for [`Client::get_routes`] (wire method `getRoutes`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRoutesResponseRoute {
     #[serde(
         default,
@@ -17282,7 +17281,7 @@ pub struct GetRoutesResponseRoute {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRoutesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17296,7 +17295,7 @@ pub struct GetRoutesResponse {
 }
 
 /// Response body for [`Client::get_sip_uris`] (wire method `getSIPURIs`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSIPURIsResponseSIPURI {
     #[serde(
         default,
@@ -17326,7 +17325,7 @@ pub struct GetSIPURIsResponseSIPURI {
     pub callerid_e164: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSIPURIsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17341,7 +17340,7 @@ pub struct GetSIPURIsResponse {
 }
 
 /// Response body for [`Client::get_sms`] (wire method `getSMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSMSResponseSMS {
     #[serde(
         default,
@@ -17381,7 +17380,7 @@ pub struct GetSMSResponseSMS {
     pub carrier_status: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17395,7 +17394,7 @@ pub struct GetSMSResponse {
 }
 
 /// Response body for [`Client::get_servers_info`] (wire method `getServersInfo`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetServersInfoResponseServer {
     #[serde(
         default,
@@ -17434,7 +17433,7 @@ pub struct GetServersInfoResponseServer {
     pub server_recommended: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetServersInfoResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17448,7 +17447,7 @@ pub struct GetServersInfoResponse {
 }
 
 /// Response body for [`Client::get_states`] (wire method `getStates`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetStatesResponseState {
     #[serde(
         default,
@@ -17462,7 +17461,7 @@ pub struct GetStatesResponseState {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetStatesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17476,7 +17475,7 @@ pub struct GetStatesResponse {
 }
 
 /// Response body for [`Client::get_static_members`] (wire method `getStaticMembers`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetStaticMembersResponseMember {
     #[serde(
         default,
@@ -17505,7 +17504,7 @@ pub struct GetStaticMembersResponseMember {
     pub priority: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetStaticMembersResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17519,7 +17518,7 @@ pub struct GetStaticMembersResponse {
 }
 
 /// Response body for [`Client::get_sub_accounts`] (wire method `getSubAccounts`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSubAccountsResponseAccount {
     #[serde(
         default,
@@ -17738,7 +17737,7 @@ pub struct GetSubAccountsResponseAccount {
     pub call_pickup_behavior: Option<CallPickupBehavior>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSubAccountsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17752,7 +17751,7 @@ pub struct GetSubAccountsResponse {
 }
 
 /// Response body for [`Client::get_termination_rates`] (wire method `getTerminationRates`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTerminationRatesResponseRoute {
     #[serde(
         default,
@@ -17766,7 +17765,7 @@ pub struct GetTerminationRatesResponseRoute {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTerminationRatesResponseRate {
     #[serde(
         default,
@@ -17790,7 +17789,7 @@ pub struct GetTerminationRatesResponseRate {
     pub rate: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTerminationRatesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17809,7 +17808,7 @@ pub struct GetTerminationRatesResponse {
 }
 
 /// Response body for [`Client::get_time_conditions`] (wire method `getTimeConditions`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTimeConditionsResponseTimecondition {
     #[serde(
         default,
@@ -17863,7 +17862,7 @@ pub struct GetTimeConditionsResponseTimecondition {
     pub weekdayend: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTimeConditionsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17877,7 +17876,7 @@ pub struct GetTimeConditionsResponse {
 }
 
 /// Response body for [`Client::get_timezones`] (wire method `getTimezones`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTimezonesResponseTimezone {
     #[serde(
         default,
@@ -17891,7 +17890,7 @@ pub struct GetTimezonesResponseTimezone {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTimezonesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17905,7 +17904,7 @@ pub struct GetTimezonesResponse {
 }
 
 /// Response body for [`Client::get_transaction_history`] (wire method `getTransactionHistory`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTransactionHistoryResponseTransaction {
     #[serde(
         default,
@@ -17935,7 +17934,7 @@ pub struct GetTransactionHistoryResponseTransaction {
     pub ammount: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTransactionHistoryResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -17949,7 +17948,7 @@ pub struct GetTransactionHistoryResponse {
 }
 
 /// Response body for [`Client::get_vpris`] (wire method `getVPRIs`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVPRIsResponseVPRI {
     #[serde(
         default,
@@ -17995,7 +17994,7 @@ pub struct GetVPRIsResponseVPRI {
     pub burst_percentage_charge: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVPRIsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18009,7 +18008,7 @@ pub struct GetVPRIsResponse {
 }
 
 /// Response body for [`Client::get_voicemail_attachment_formats`] (wire method `getVoicemailAttachmentFormats`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailAttachmentFormatsResponseEmailAttachmentFormat {
     #[serde(
         default,
@@ -18023,7 +18022,7 @@ pub struct GetVoicemailAttachmentFormatsResponseEmailAttachmentFormat {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailAttachmentFormatsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18037,7 +18036,7 @@ pub struct GetVoicemailAttachmentFormatsResponse {
 }
 
 /// Response body for [`Client::get_voicemail_folders`] (wire method `getVoicemailFolders`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailFoldersResponseFolder {
     #[serde(
         default,
@@ -18051,7 +18050,7 @@ pub struct GetVoicemailFoldersResponseFolder {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailFoldersResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18065,7 +18064,7 @@ pub struct GetVoicemailFoldersResponse {
 }
 
 /// Response body for [`Client::get_voicemail_message_file`] (wire method `getVoicemailMessageFile`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailMessageFileResponseMessage {
     #[serde(
         default,
@@ -18086,7 +18085,7 @@ pub struct GetVoicemailMessageFileResponseMessage {
     pub data: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailMessageFileResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18100,7 +18099,7 @@ pub struct GetVoicemailMessageFileResponse {
 }
 
 /// Response body for [`Client::get_voicemail_messages`] (wire method `getVoicemailMessages`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailMessagesResponseMessage {
     #[serde(
         default,
@@ -18141,7 +18140,7 @@ pub struct GetVoicemailMessagesResponseMessage {
     pub listened: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailMessagesResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18155,7 +18154,7 @@ pub struct GetVoicemailMessagesResponse {
 }
 
 /// Response body for [`Client::get_voicemail_setups`] (wire method `getVoicemailSetups`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailSetupsResponseVoicemailsetup {
     #[serde(
         default,
@@ -18169,7 +18168,7 @@ pub struct GetVoicemailSetupsResponseVoicemailsetup {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailSetupsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18183,7 +18182,7 @@ pub struct GetVoicemailSetupsResponse {
 }
 
 /// Response body for [`Client::get_voicemail_transcriptions`] (wire method `getVoicemailTranscriptions`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailTranscriptionsResponseMessage {
     #[serde(
         default,
@@ -18209,7 +18208,7 @@ pub struct GetVoicemailTranscriptionsResponseMessage {
     pub result: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailTranscriptionsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18223,7 +18222,7 @@ pub struct GetVoicemailTranscriptionsResponse {
 }
 
 /// Response body for [`Client::get_voicemails`] (wire method `getVoicemails`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailsResponseVoicemail {
     #[serde(
         default,
@@ -18333,7 +18332,7 @@ pub struct GetVoicemailsResponseVoicemail {
     pub transcription_delay: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailsResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18347,7 +18346,7 @@ pub struct GetVoicemailsResponse {
 }
 
 /// Response body for [`Client::mail_fax_message_pdf`] (wire method `mailFaxMessagePDF`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MailFAXMessagePDFResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18361,7 +18360,7 @@ pub struct MailFAXMessagePDFResponse {
 }
 
 /// Response body for [`Client::mark_listened_voicemail_message`] (wire method `markListenedVoicemailMessage`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MarkListenedVoicemailMessageResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18370,7 +18369,7 @@ pub struct MarkListenedVoicemailMessageResponse {
 }
 
 /// Response body for [`Client::mark_urgent_voicemail_message`] (wire method `markUrgentVoicemailMessage`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MarkUrgentVoicemailMessageResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18379,7 +18378,7 @@ pub struct MarkUrgentVoicemailMessageResponse {
 }
 
 /// Response body for [`Client::move_fax_message`] (wire method `moveFaxMessage`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MoveFAXMessageResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18388,7 +18387,7 @@ pub struct MoveFAXMessageResponse {
 }
 
 /// Response body for [`Client::move_folder_voicemail_message`] (wire method `moveFolderVoicemailMessage`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MoveFolderVoicemailMessageResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18397,7 +18396,7 @@ pub struct MoveFolderVoicemailMessageResponse {
 }
 
 /// Response body for [`Client::order_did`] (wire method `orderDID`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18406,7 +18405,7 @@ pub struct OrderDIDResponse {
 }
 
 /// Response body for [`Client::order_did_international_geographic`] (wire method `orderDIDInternationalGeographic`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDInternationalGeographicResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18415,7 +18414,7 @@ pub struct OrderDIDInternationalGeographicResponse {
 }
 
 /// Response body for [`Client::order_did_international_national`] (wire method `orderDIDInternationalNational`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDInternationalNationalResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18424,7 +18423,7 @@ pub struct OrderDIDInternationalNationalResponse {
 }
 
 /// Response body for [`Client::order_did_international_toll_free`] (wire method `orderDIDInternationalTollFree`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDInternationalTollFreeResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18433,7 +18432,7 @@ pub struct OrderDIDInternationalTollFreeResponse {
 }
 
 /// Response body for [`Client::order_did_virtual`] (wire method `orderDIDVirtual`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDVirtualResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18442,7 +18441,7 @@ pub struct OrderDIDVirtualResponse {
 }
 
 /// Response body for [`Client::order_fax_number`] (wire method `orderFaxNumber`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderFAXNumberResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18456,7 +18455,7 @@ pub struct OrderFAXNumberResponse {
 }
 
 /// Response body for [`Client::order_toll_free`] (wire method `orderTollFree`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderTollFreeResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18465,7 +18464,7 @@ pub struct OrderTollFreeResponse {
 }
 
 /// Response body for [`Client::order_vanity`] (wire method `orderVanity`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderVanityResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18474,7 +18473,7 @@ pub struct OrderVanityResponse {
 }
 
 /// Response body for [`Client::remove_did_vpri`] (wire method `removeDIDvPRI`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct RemoveDIDvPRIResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18494,7 +18493,7 @@ pub struct RemoveDIDvPRIResponse {
 }
 
 /// Response body for [`Client::search_dids_can`] (wire method `searchDIDsCAN`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchDIDsCANResponseDID {
     #[serde(
         default,
@@ -18548,7 +18547,7 @@ pub struct SearchDIDsCANResponseDID {
     pub flat_setup: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchDIDsCANResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18562,7 +18561,7 @@ pub struct SearchDIDsCANResponse {
 }
 
 /// Response body for [`Client::search_dids_usa`] (wire method `searchDIDsUSA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchDIDsUSAResponseDID {
     #[serde(
         default,
@@ -18616,7 +18615,7 @@ pub struct SearchDIDsUSAResponseDID {
     pub flat_setup: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchDIDsUSAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18630,7 +18629,7 @@ pub struct SearchDIDsUSAResponse {
 }
 
 /// Response body for [`Client::search_fax_area_code_can`] (wire method `searchFaxAreaCodeCAN`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchFAXAreaCodeCANResponseRatecenter {
     #[serde(
         default,
@@ -18649,7 +18648,7 @@ pub struct SearchFAXAreaCodeCANResponseRatecenter {
     pub ratecenter: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchFAXAreaCodeCANResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18663,7 +18662,7 @@ pub struct SearchFAXAreaCodeCANResponse {
 }
 
 /// Response body for [`Client::search_fax_area_code_usa`] (wire method `searchFaxAreaCodeUSA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchFAXAreaCodeUSAResponseRatecenter {
     #[serde(
         default,
@@ -18682,7 +18681,7 @@ pub struct SearchFAXAreaCodeUSAResponseRatecenter {
     pub ratecenter: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchFAXAreaCodeUSAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18696,7 +18695,7 @@ pub struct SearchFAXAreaCodeUSAResponse {
 }
 
 /// Response body for [`Client::search_toll_free_can_us`] (wire method `searchTollFreeCanUS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchTollFreeCANUSResponseDID {
     #[serde(
         default,
@@ -18720,7 +18719,7 @@ pub struct SearchTollFreeCANUSResponseDID {
     pub setup: Option<rust_decimal::Decimal>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchTollFreeCANUSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18734,7 +18733,7 @@ pub struct SearchTollFreeCANUSResponse {
 }
 
 /// Response body for [`Client::search_toll_free_usa`] (wire method `searchTollFreeUSA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchTollFreeUSAResponseDID {
     #[serde(
         default,
@@ -18773,7 +18772,7 @@ pub struct SearchTollFreeUSAResponseDID {
     pub setup: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchTollFreeUSAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18787,7 +18786,7 @@ pub struct SearchTollFreeUSAResponse {
 }
 
 /// Response body for [`Client::search_vanity`] (wire method `searchVanity`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchVanityResponseDID {
     #[serde(
         default,
@@ -18831,7 +18830,7 @@ pub struct SearchVanityResponseDID {
     pub setup_canadian: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchVanityResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18845,7 +18844,7 @@ pub struct SearchVanityResponse {
 }
 
 /// Response body for [`Client::send_call_recording_email`] (wire method `sendCallRecordingEmail`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendCallRecordingEmailResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18859,7 +18858,7 @@ pub struct SendCallRecordingEmailResponse {
 }
 
 /// Response body for [`Client::send_fax_message`] (wire method `sendFaxMessage`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendFAXMessageResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18868,7 +18867,7 @@ pub struct SendFAXMessageResponse {
 }
 
 /// Response body for [`Client::send_mms`] (wire method `sendMMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendMMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18882,7 +18881,7 @@ pub struct SendMMSResponse {
 }
 
 /// Response body for [`Client::send_sms`] (wire method `sendSMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendSMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18896,7 +18895,7 @@ pub struct SendSMSResponse {
 }
 
 /// Response body for [`Client::send_voicemail_email`] (wire method `sendVoicemailEmail`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendVoicemailEmailResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18905,7 +18904,7 @@ pub struct SendVoicemailEmailResponse {
 }
 
 /// Response body for [`Client::set_call_hunting`] (wire method `setCallHunting`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallHuntingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18919,7 +18918,7 @@ pub struct SetCallHuntingResponse {
 }
 
 /// Response body for [`Client::set_call_parking`] (wire method `setCallParking`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallParkingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18933,7 +18932,7 @@ pub struct SetCallParkingResponse {
 }
 
 /// Response body for [`Client::set_callback`] (wire method `setCallback`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallbackResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18947,7 +18946,7 @@ pub struct SetCallbackResponse {
 }
 
 /// Response body for [`Client::set_caller_id_filtering`] (wire method `setCallerIDFiltering`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallerIDFilteringResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18961,7 +18960,7 @@ pub struct SetCallerIDFilteringResponse {
 }
 
 /// Response body for [`Client::set_client`] (wire method `setClient`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetClientResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18970,7 +18969,7 @@ pub struct SetClientResponse {
 }
 
 /// Response body for [`Client::set_client_threshold`] (wire method `setClientThreshold`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetClientThresholdResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18979,7 +18978,7 @@ pub struct SetClientThresholdResponse {
 }
 
 /// Response body for [`Client::set_conference`] (wire method `setConference`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetConferenceResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -18993,7 +18992,7 @@ pub struct SetConferenceResponse {
 }
 
 /// Response body for [`Client::set_conference_member`] (wire method `setConferenceMember`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetConferenceMemberResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19007,7 +19006,7 @@ pub struct SetConferenceMemberResponse {
 }
 
 /// Response body for [`Client::set_did_billing_type`] (wire method `setDIDBillingType`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDBillingTypeResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19016,7 +19015,7 @@ pub struct SetDIDBillingTypeResponse {
 }
 
 /// Response body for [`Client::set_did_info`] (wire method `setDIDInfo`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDInfoResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19025,7 +19024,7 @@ pub struct SetDIDInfoResponse {
 }
 
 /// Response body for [`Client::set_did_pop`] (wire method `setDIDPOP`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDPOPResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19034,7 +19033,7 @@ pub struct SetDIDPOPResponse {
 }
 
 /// Response body for [`Client::set_did_routing`] (wire method `setDIDRouting`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDRoutingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19043,7 +19042,7 @@ pub struct SetDIDRoutingResponse {
 }
 
 /// Response body for [`Client::set_did_voicemail`] (wire method `setDIDVoicemail`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDVoicemailResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19052,7 +19051,7 @@ pub struct SetDIDVoicemailResponse {
 }
 
 /// Response body for [`Client::set_disa`] (wire method `setDISA`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDISAResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19066,7 +19065,7 @@ pub struct SetDISAResponse {
 }
 
 /// Response body for [`Client::set_email_to_fax`] (wire method `setEmailToFax`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetEmailToFAXResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19075,7 +19074,7 @@ pub struct SetEmailToFAXResponse {
 }
 
 /// Response body for [`Client::set_fax_folder`] (wire method `setFaxFolder`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXFolderResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19084,7 +19083,7 @@ pub struct SetFAXFolderResponse {
 }
 
 /// Response body for [`Client::set_fax_number_email`] (wire method `setFaxNumberEmail`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXNumberEmailResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19093,7 +19092,7 @@ pub struct SetFAXNumberEmailResponse {
 }
 
 /// Response body for [`Client::set_fax_number_info`] (wire method `setFaxNumberInfo`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXNumberInfoResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19102,7 +19101,7 @@ pub struct SetFAXNumberInfoResponse {
 }
 
 /// Response body for [`Client::set_fax_number_url_callback`] (wire method `setFaxNumberURLCallback`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXNumberURLCallbackResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19111,7 +19110,7 @@ pub struct SetFAXNumberURLCallbackResponse {
 }
 
 /// Response body for [`Client::set_forwarding`] (wire method `setForwarding`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetForwardingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19125,7 +19124,7 @@ pub struct SetForwardingResponse {
 }
 
 /// Response body for [`Client::set_ivr`] (wire method `setIVR`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetIVRResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19139,7 +19138,7 @@ pub struct SetIVRResponse {
 }
 
 /// Response body for [`Client::set_location`] (wire method `setLocation`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetLocationResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19148,7 +19147,7 @@ pub struct SetLocationResponse {
 }
 
 /// Response body for [`Client::set_music_on_hold`] (wire method `setMusicOnHold`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetMusicOnHoldResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19157,7 +19156,7 @@ pub struct SetMusicOnHoldResponse {
 }
 
 /// Response body for [`Client::set_phonebook`] (wire method `setPhonebook`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetPhonebookResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19171,7 +19170,7 @@ pub struct SetPhonebookResponse {
 }
 
 /// Response body for [`Client::set_phonebook_group`] (wire method `setPhonebookGroup`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetPhonebookGroupResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19185,7 +19184,7 @@ pub struct SetPhonebookGroupResponse {
 }
 
 /// Response body for [`Client::set_queue`] (wire method `setQueue`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetQueueResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19199,7 +19198,7 @@ pub struct SetQueueResponse {
 }
 
 /// Response body for [`Client::set_recording`] (wire method `setRecording`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetRecordingResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19213,7 +19212,7 @@ pub struct SetRecordingResponse {
 }
 
 /// Response body for [`Client::set_ring_group`] (wire method `setRingGroup`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetRingGroupResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19227,7 +19226,7 @@ pub struct SetRingGroupResponse {
 }
 
 /// Response body for [`Client::set_sip_uri`] (wire method `setSIPURI`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetSIPURIResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19236,7 +19235,7 @@ pub struct SetSIPURIResponse {
 }
 
 /// Response body for [`Client::set_sms`] (wire method `setSMS`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetSMSResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19251,7 +19250,7 @@ pub struct SetSMSResponse {
 }
 
 /// Response body for [`Client::set_static_member`] (wire method `setStaticMember`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetStaticMemberResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19265,7 +19264,7 @@ pub struct SetStaticMemberResponse {
 }
 
 /// Response body for [`Client::set_sub_account`] (wire method `setSubAccount`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetSubAccountResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19274,7 +19273,7 @@ pub struct SetSubAccountResponse {
 }
 
 /// Response body for [`Client::set_time_condition`] (wire method `setTimeCondition`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetTimeConditionResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19288,7 +19287,7 @@ pub struct SetTimeConditionResponse {
 }
 
 /// Response body for [`Client::set_voicemail`] (wire method `setVoicemail`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetVoicemailResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19297,7 +19296,7 @@ pub struct SetVoicemailResponse {
 }
 
 /// Response body for [`Client::signup_client`] (wire method `signupClient`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SignupClientResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19311,7 +19310,7 @@ pub struct SignupClientResponse {
 }
 
 /// Response body for [`Client::unconnect_did`] (wire method `unconnectDID`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct UnconnectDIDResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code
@@ -19320,7 +19319,7 @@ pub struct UnconnectDIDResponse {
 }
 
 /// Response body for [`Client::unconnect_fax`] (wire method `unconnectFAX`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct UnconnectFAXResponse {
     /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
     /// or the empty-collection code

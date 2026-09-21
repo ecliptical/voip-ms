@@ -839,17 +839,11 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          /// assert_eq!(unknown.description(), None);\n\
          /// assert!(!unknown.is_documented());\n\
          /// ```\n\
-         #[derive(Debug, Clone, Default, PartialEq, Eq)]\n\
+         #[derive(Debug, Clone, PartialEq, Eq)]\n\
          pub enum ApiStatus {\n",
     );
     for (variant, code, desc) in &variants {
         out.push_str(&format!("    /// `{code}` -- {desc}\n"));
-        // The response structs derive `Default`, and a status field's resting
-        // value is the one a call that went through reports.
-        if variant == "Success" {
-            out.push_str("    #[default]\n");
-        }
-
         out.push_str(&format!("    {variant},\n"));
     }
     out.push_str("    /// A `status` value not present in the documented table,\n");

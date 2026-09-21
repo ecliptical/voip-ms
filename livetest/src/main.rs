@@ -149,8 +149,7 @@ async fn run() -> Result<bool> {
 /// allow-listed IP, so a failure here is a proxy/credential problem, surfaced
 /// before any real work.
 async fn confirm_connectivity(client: &voip_ms::Client) -> Result<()> {
-    let outcome =
-        probe::<NoParams, GetIPResponse>(client, "getIP", &NoParams::default(), |_| None).await;
+    let outcome = probe::<NoParams, GetIPResponse>(client, "getIP", &NoParams {}, |_| None).await;
 
     match outcome {
         ProbeOutcome::Ok { .. } => {
