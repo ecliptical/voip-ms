@@ -469,7 +469,7 @@ fn emit_params_constructor(
 
 /// Doc emitted on the offset ops' public `timezone` field in place of the
 /// mined upstream text, which describes the numeric wire form ("Numeric: -12
-/// to 13") the public `Tz` field no longer is.
+/// to 13") the public `Tz` field is not.
 const OFFSET_TIMEZONE_DOC: &str = "IANA time zone for the reported timestamps (Example: \
      'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects, at the query \
      start date (DST-aware). Omit for UTC -- the request always carries an offset, and the \
@@ -1110,15 +1110,9 @@ fn emit(
             let mined = docs.and_then(|d| d.get(fname));
             if offset_op(op).is_some() && fname == "timezone" {
                 // The mined doc describes the numeric wire form the public
-                // `Tz` field no longer is; keep only its `(required)` marker.
-                let required = mined.is_some_and(|d| d.contains("(required)"));
-                let doc = if required {
-                    format!("{OFFSET_TIMEZONE_DOC} (required)")
-                } else {
-                    OFFSET_TIMEZONE_DOC.to_string()
-                };
-
-                render_doc(&mut body, "    ", &doc);
+                // `Tz` field is not, and its `(required)` marker is the one
+                // `REQUIRED_CTOR_SKIP` overrules: the field defaults to UTC.
+                render_doc(&mut body, "    ", OFFSET_TIMEZONE_DOC);
             } else if let Some(desc) = mined {
                 render_doc(&mut body, "    ", desc);
             }

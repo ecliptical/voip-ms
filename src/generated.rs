@@ -6250,7 +6250,7 @@ pub struct GetCDRParams {
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
     /// at the query start date (DST-aware). Omit for UTC -- the request always
-    /// carries an offset, and the reported timestamps carry it back. (required)
+    /// carries an offset, and the reported timestamps carry it back.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -7887,7 +7887,7 @@ pub struct GetResellerCDRParams {
     /// IANA time zone for the reported timestamps (Example:
     /// 'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects,
     /// at the query start date (DST-aware). Omit for UTC -- the request always
-    /// carries an offset, and the reported timestamps carry it back. (required)
+    /// carries an offset, and the reported timestamps carry it back.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
