@@ -4,6 +4,9 @@
 /// Every wire method name the generated `Client` exposes. The
 /// completeness gate asserts the area registry partitions exactly this
 /// set, so a newly generated method with no owning area fails the build.
+///
+/// Only the gate reads it, so a non-test build sees an unused const.
+#[cfg_attr(not(test), allow(dead_code))]
 pub const WIRE_METHODS: &[&str] = &[
     "addCharge",
     "addLNPFile",

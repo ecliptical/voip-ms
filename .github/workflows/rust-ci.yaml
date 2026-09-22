@@ -55,15 +55,18 @@ jobs:
         # the types in `voip-ms` (they do not depend on it), which is the
         # mistake this catches.
         run: RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" cargo doc --no-deps --workspace
-      - name: Check the generated surface is what the generator emits
-        # `src/generated.rs` is committed, so an edit to `xtask` reaches a
-        # release only if someone re-ran `gen`. Regenerating here and demanding
-        # a clean tree makes the two move together: a hand-edit to the
-        # `@generated` file, or a generator change committed without its
-        # output, fails instead of shipping.
+      - name: Confirm the committed surface is what the generator emits
+        # Nothing else regenerates. Without this, a generator change that alters
+        # the emitted surface reaches main and is found by whoever next runs
+        # `cargo xtask gen` -- as a diff they did not make, in a file they are
+        # told not to hand-edit. Compiling what the run just wrote is also the
+        # only gate that reads inside an emitted macro body, which neither `syn`
+        # nor `rustfmt` parses.
         run: |
           cargo xtask gen
-          git diff --exit-code -- src/generated.rs livetest/src/response_fields.rs
+          cargo xtask dump-methods
+          cargo check --workspace --all-targets --features unchecked-raw
+          git diff --exit-code
 
   coverage:
     name: Run tests with coverage

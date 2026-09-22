@@ -169,10 +169,10 @@ where
 /// let `qualify` complete it, then deserialize `T` over the result. The raw
 /// envelope is what a drift report shows, so `qualify`'s edits stay out of it.
 ///
-/// The fetch asks [`voip_ms::requires_multipart`] rather than assuming a GET.
-/// Nothing routed through any probe is in the multipart table today -- that is
-/// the invariant to check when adding one, not the method's prefix -- and a
-/// file method sent as a GET would fail on request-line length, reading as a
+/// The fetch goes through [`Client::call_raw_by_name`], which takes the
+/// transport the method requires. A probe holds a wire name, not a generated
+/// method, so it cannot inherit the transport from the call site -- and a file
+/// method sent as a GET would fail on request-line length, reading as a
 /// transport error rather than as this function's mistake.
 async fn probe_qualified<P, T>(
     client: &Client,
@@ -185,12 +185,7 @@ where
     P: Serialize + Sync,
     T: DeserializeOwned + Debug,
 {
-    let request = if voip_ms::requires_multipart(method) {
-        client.call_multipart_raw(method, params).await
-    } else {
-        client.call_raw(method, params).await
-    };
-    let raw = match request {
+    let raw = match client.call_raw_by_name(method, params).await {
         Ok(value) => value,
         // An empty-collection status is the typed path's empty-list case, not a
         // failure: both raw forms surface it verbatim, where the typed `call`

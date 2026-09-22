@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `Client::call_raw_by_name` sends a wire method over the transport that method
+  requires, so a caller dispatching by name no longer re-derives the choice from
+  `requires_multipart`. The same choice existed in three places -- the live
+  harness's probe, its failure capture, and the `call_raw` example -- with only
+  a comment keeping a fourth from getting it wrong, and no test covering either
+  arm. `call_raw_unchecked_by_name` is its counterpart behind the
+  `unchecked-raw` feature, so a diagnostic dump goes out the way the call did.
+- `ParamsError::Unencodable`, for parameters that have no wire-field rendering:
+  a nested structure, or a value serde reports as something other than a scalar.
+
+### Changed
+
+- A multipart request's fields are rendered directly from the parameters rather
+  than read back out of a query string built to be discarded. The round trip
+  allocated roughly four times an upload's size -- about 30 MB for an 8 MB fax
+  -- to arrive at the same fields. Both transports now render through one
+  serializer, so a value is written the same way on each by construction rather
+  than by round trip; the crate's own tests assert that rendering against
+  `serde_urlencoded`, which is what the query string applies.
+- Parameters that cannot be rendered as fields fail as
+  `Error::InvalidParams(ParamsError::Unencodable)` naming the parameter, on both
+  transports. They previously surfaced as `Error::Http` wrapping the encoder's
+  error, which reads as a transport failure for a request that was never sent.
+
+### Fixed
+
+- `cargo xtask gen` fails rather than warns when the Rust it emits does not
+  parse or `rustfmt` rejects it, and writes nothing in that case. A missing
+  `rustfmt` is still only a warning. Neither check reads inside a macro body, so
+  an emitted `matches!` arm list that can be empty still needs its own branch;
+  CI now regenerates and compiles the result, which is the check that does.
+- CI regenerates `src/generated.rs`, `livetest/src/response_fields.rs`, and
+  `livetest/src/wire_methods.rs` and fails on a difference. A generator change
+  that altered the emitted surface used to reach `main` and be found by whoever
+  next ran `cargo xtask gen`, as a diff they did not make.
+
 ## [0.13.0] - 2026-09-21
 
 ### Fixed

@@ -7,7 +7,9 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
+use crate::harness::fixtures::{
+    Orphan, owned, owned_orphans, read_back, sweep_orphans, tolerate_absent,
+};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -81,13 +83,7 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
     // an IVR referencing it makes `delRecording` refuse, which fails that
     // area's sweep and aborts the run before `ivr`'s sweep can free it.
     let recording = match client.get_recordings(&GetRecordingsParams::default()).await {
-        // Separate steps on purpose: one `find` would stop at the first
-        // unowned recording and give up if it carried no id.
-        Ok(resp) => resp
-            .recordings
-            .into_iter()
-            .filter(|r| !owned(&r.description))
-            .find_map(|r| r.value),
+        Ok(resp) => borrowable_recording(resp.recordings),
         // `no_recording` deserializes as an empty list on some paths; treat any
         // read failure as "none discoverable" rather than a hard error here.
         Err(_) => None,
@@ -153,22 +149,80 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
     .await;
 }
 
+/// The id of a recording the fixture may point an IVR at: one the account
+/// already had, never one this harness created.
+///
+/// Filtering and id-taking are separate passes on purpose. A single `find`
+/// stops at the first record it looks at, so an unowned recording reporting no
+/// id would end the search rather than be passed over -- which is how this
+/// regressed once already.
+fn borrowable_recording(
+    listed: impl IntoIterator<Item = GetRecordingsResponseRecording>,
+) -> Option<u64> {
+    listed
+        .into_iter()
+        .filter(|r| !owned(&r.description))
+        .find_map(|r| r.value)
+}
+
 async fn list_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetIVRsResponse = client.get_ivrs(&GetIVRsParams::default()).await?;
-    Ok(resp
-        .ivrs
-        .into_iter()
-        .filter(|i| owned(&i.name))
-        .filter_map(|i| {
-            i.ivr.map(|id| Orphan {
-                label: format!("ivr id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(resp.ivrs, "ivr", |i| &i.name, |i| i.ivr))
 }
 
 async fn del_ivr(client: &Client, id: u64) -> anyhow::Result<()> {
     client.del_ivr(&DelIVRParams { ivr: Some(id) }).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::harness::marker::RunToken;
+
+    /// One listed recording. Built through the wire shape because a `*Response`
+    /// record has no `Default` -- a received value is never manufactured.
+    fn recording(description: Option<&str>, value: Option<u64>) -> GetRecordingsResponseRecording {
+        serde_json::from_value(serde_json::json!({
+            "status": "success",
+            "description": description,
+            "value": value,
+        }))
+        .expect("a recording record")
+    }
+
+    #[test]
+    fn an_unowned_recording_with_no_id_does_not_end_the_search() {
+        // The regression this guards: the first record is one the fixture may
+        // borrow but cannot name, and the usable recording is behind it.
+        let listed = vec![
+            recording(Some("customer greeting"), None),
+            recording(Some("main menu"), Some(42)),
+        ];
+
+        assert_eq!(borrowable_recording(listed), Some(42));
+    }
+
+    #[test]
+    fn a_marker_bearing_recording_is_never_borrowed() {
+        // Pointing an IVR at callflow's own recording makes `delRecording`
+        // refuse, which fails that area's sweep and aborts the run.
+        let marker = RunToken::new().short_marker(0);
+        let listed = vec![
+            recording(Some(&marker), Some(1)),
+            recording(Some("main menu"), Some(2)),
+        ];
+
+        assert_eq!(borrowable_recording(listed), Some(2));
+    }
+
+    #[test]
+    fn an_account_with_nothing_to_borrow_yields_none() {
+        assert_eq!(borrowable_recording(Vec::new()), None);
+        assert_eq!(
+            borrowable_recording(vec![recording(Some("no id"), None)]),
+            None
+        );
+    }
 }

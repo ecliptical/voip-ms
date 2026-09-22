@@ -23,7 +23,8 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
 use crate::harness::fixtures::{
-    Orphan, owned, queue_number, read_back, required_queue_params, sweep_orphans, tolerate_absent,
+    Orphan, owned_orphans, queue_number, read_back, required_queue_params, sweep_orphans,
+    tolerate_absent,
 };
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
@@ -33,13 +34,12 @@ pub struct Callflow;
 
 const AREA: &str = "callflow";
 
-/// Apache's default `LimitRequestLine`, which voip.ms runs. A GET carries its
-/// whole request there, so a payload past this could not have been sent as one.
-/// Compared against base64 characters, the form a query string would hold.
-const REQUEST_LINE_BYTES: usize = 8_190;
-
 /// Seconds of audio the fixture uploads.
 const FIXTURE_SECONDS: u32 = 2;
+
+/// The sample rate every WAV here carries: what voip.ms stores a recording at,
+/// so nothing about an upload depends on its conversion.
+const SAMPLE_RATE: u32 = 8_000;
 
 /// How much of an upload's duration must survive voip.ms's re-encode. The one
 /// re-encode on record trimmed 9%.
@@ -618,8 +618,9 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 /// `getRecordingFile`, and delete it.
 ///
 /// The payload is the point: at 8 kHz mono 16-bit, [`FIXTURE_SECONDS`] of
-/// audio base64-encodes to several times [`REQUEST_LINE_BYTES`], so this is the
-/// only live coverage of the multipart transport.
+/// audio base64-encodes to several times the 8190-byte request line voip.ms's
+/// front end accepts, so this is the only live coverage of the multipart
+/// transport.
 ///
 /// The read-back goes through [`stored_wav`], which is given the uploaded
 /// duration to judge what came back against. `getRecordingFile` is called
@@ -769,33 +770,46 @@ fn wav_duration_secs(bytes: &[u8]) -> Option<f32> {
     }
 }
 
-/// A RIFF/WAVE container holding `seconds` of a 440 Hz tone at 8 kHz mono
-/// 16-bit PCM -- the format voip.ms stores a recording in, so nothing about the
-/// upload depends on its conversion. A tone rather than silence, so a stored
-/// file that lost its payload is still distinguishable from one that kept it.
-fn tone_wav(seconds: u32) -> Vec<u8> {
-    const SAMPLE_RATE: u32 = 8_000;
-    const BYTES_PER_FRAME: u32 = 2;
-    // RIFF header through the `data` chunk's length field, less the leading
-    // `RIFF` tag and the length field itself -- what the RIFF length counts.
+/// A RIFF/WAVE header through the `data` chunk's length field, followed by
+/// `data_len` bytes of audio in `format` at `bits_per_sample`.
+///
+/// One builder for every WAV this module makes, so the two generators cannot
+/// drift apart in what they declare -- the byte rate [`wav_duration_secs`]
+/// divides by is computed here, once, from the frame size.
+fn wav_header(format: u16, bits_per_sample: u16, data_len: u32) -> Vec<u8> {
+    // The `fmt ` chunk's own length, and the header from `WAVE` through the
+    // `data` length field -- what the RIFF length counts, excluding its own tag
+    // and length field.
+    const FMT_LEN: u32 = 16;
     const HEADER_LEN: u32 = 36;
 
-    let frames = seconds * SAMPLE_RATE;
-    let data_len = frames * BYTES_PER_FRAME;
-    // The 8 the RIFF length excludes: its own tag and length field.
+    let bytes_per_frame = u32::from(bits_per_sample / 8);
     let mut wav = Vec::with_capacity((HEADER_LEN + 8 + data_len) as usize);
     wav.extend_from_slice(b"RIFF");
     wav.extend_from_slice(&(HEADER_LEN + data_len).to_le_bytes());
     wav.extend_from_slice(b"WAVEfmt ");
-    wav.extend_from_slice(&16u32.to_le_bytes()); // fmt chunk length
-    wav.extend_from_slice(&1u16.to_le_bytes()); // format: uncompressed PCM
-    wav.extend_from_slice(&1u16.to_le_bytes()); // channels
+    wav.extend_from_slice(&FMT_LEN.to_le_bytes());
+    wav.extend_from_slice(&format.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes()); // channels: mono
     wav.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
-    wav.extend_from_slice(&(SAMPLE_RATE * BYTES_PER_FRAME).to_le_bytes()); // bytes per second
-    wav.extend_from_slice(&(BYTES_PER_FRAME as u16).to_le_bytes()); // block align
-    wav.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
+    wav.extend_from_slice(&(SAMPLE_RATE * bytes_per_frame).to_le_bytes()); // bytes per second
+    wav.extend_from_slice(&(bytes_per_frame as u16).to_le_bytes()); // block align
+    wav.extend_from_slice(&bits_per_sample.to_le_bytes());
     wav.extend_from_slice(b"data");
     wav.extend_from_slice(&data_len.to_le_bytes());
+
+    wav
+}
+
+/// A WAV holding `seconds` of a 440 Hz tone as uncompressed 16-bit PCM. A tone
+/// rather than silence, so a stored file that lost its payload is still
+/// distinguishable from one that kept it.
+fn tone_wav(seconds: u32) -> Vec<u8> {
+    const PCM: u16 = 1;
+    const BITS: u16 = 16;
+
+    let frames = seconds * SAMPLE_RATE;
+    let mut wav = wav_header(PCM, BITS, frames * u32::from(BITS / 8));
     for frame in 0..frames {
         let phase = std::f32::consts::TAU * 440.0 * frame as f32 / SAMPLE_RATE as f32;
         // Quarter scale: loud enough to survive a re-encode, quiet enough not
@@ -813,17 +827,12 @@ fn fail(report: &mut Report, label: &str, error: &str) {
 
 async fn list_callback_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetCallbacksResponse = client.get_callbacks(&GetCallbacksParams::default()).await?;
-    Ok(resp
-        .callbacks
-        .into_iter()
-        .filter(|c| owned(&c.description))
-        .filter_map(|c| {
-            c.callback.map(|id| Orphan {
-                label: format!("callback id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.callbacks,
+        "callback",
+        |c| &c.description,
+        |c| c.callback,
+    ))
 }
 
 async fn del_callback(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -835,17 +844,7 @@ async fn del_callback(client: &Client, id: u64) -> anyhow::Result<()> {
 
 async fn list_disa_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetDISAsResponse = client.get_disas(&GetDISAsParams::default()).await?;
-    Ok(resp
-        .disa
-        .into_iter()
-        .filter(|d| owned(&d.name))
-        .filter_map(|d| {
-            d.disa.map(|id| Orphan {
-                label: format!("disa id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(resp.disa, "disa", |d| &d.name, |d| d.disa))
 }
 
 async fn del_disa(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -857,17 +856,12 @@ async fn list_ring_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>>
     let resp: GetRingGroupsResponse = client
         .get_ring_groups(&GetRingGroupsParams::default())
         .await?;
-    Ok(resp
-        .ring_groups
-        .into_iter()
-        .filter(|g| owned(&g.name))
-        .filter_map(|g| {
-            g.ring_group.map(|id| Orphan {
-                label: format!("ringgroup id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.ring_groups,
+        "ringgroup",
+        |g| &g.name,
+        |g| g.ring_group,
+    ))
 }
 
 async fn del_ring_group(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -883,17 +877,12 @@ async fn list_time_condition_orphans(client: &Client) -> anyhow::Result<Vec<Orph
     let resp: GetTimeConditionsResponse = client
         .get_time_conditions(&GetTimeConditionsParams::default())
         .await?;
-    Ok(resp
-        .timecondition
-        .into_iter()
-        .filter(|t| owned(&t.name))
-        .filter_map(|t| {
-            t.timecondition.map(|id| Orphan {
-                label: format!("timecondition id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.timecondition,
+        "timecondition",
+        |t| &t.name,
+        |t| t.timecondition,
+    ))
 }
 
 async fn del_time_condition(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -909,17 +898,12 @@ async fn list_recording_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> 
     let resp: GetRecordingsResponse = client
         .get_recordings(&GetRecordingsParams::default())
         .await?;
-    Ok(resp
-        .recordings
-        .into_iter()
-        .filter(|r| owned(&r.description))
-        .filter_map(|r| {
-            r.value.map(|id| Orphan {
-                label: format!("recording id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.recordings,
+        "recording",
+        |r| &r.description,
+        |r| r.value,
+    ))
 }
 
 async fn del_recording(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -937,17 +921,12 @@ async fn del_recording(client: &Client, id: u64) -> anyhow::Result<()> {
 /// Overlaps harmlessly with the `queue` area's sweep when both are selected.
 async fn list_dep_queue_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetQueuesResponse = client.get_queues(&GetQueuesParams::default()).await?;
-    Ok(resp
-        .queues
-        .into_iter()
-        .filter(|q| owned(&q.queue_name))
-        .filter_map(|q| {
-            q.queue.map(|id| Orphan {
-                label: format!("queue id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.queues,
+        "queue",
+        |q| &q.queue_name,
+        |q| q.queue,
+    ))
 }
 
 async fn del_queue(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -961,25 +940,21 @@ async fn del_queue(client: &Client, id: u64) -> anyhow::Result<()> {
 mod tests {
     use super::*;
 
+    /// Apache's default `LimitRequestLine`, which voip.ms runs. A GET carries
+    /// its whole request there, so a payload past this could not have been sent
+    /// as one. Compared against base64 characters, the form a query string
+    /// would hold.
+    const REQUEST_LINE_BYTES: usize = 8_190;
+
     /// A G.711 mu-law WAV of `seconds`: same audio, half the bytes of the
     /// 16-bit PCM the fixture uploads. Stands in for voip.ms re-encoding to the
     /// ordinary telephony codec, which a byte-count floor would fail.
     fn mulaw_wav(seconds: u32) -> Vec<u8> {
-        const SAMPLE_RATE: u32 = 8_000;
+        const MULAW: u16 = 7;
+        const BITS: u16 = 8;
+
         let data_len = seconds * SAMPLE_RATE;
-        let mut wav = Vec::new();
-        wav.extend_from_slice(b"RIFF");
-        wav.extend_from_slice(&(36 + data_len).to_le_bytes());
-        wav.extend_from_slice(b"WAVEfmt ");
-        wav.extend_from_slice(&16u32.to_le_bytes());
-        wav.extend_from_slice(&7u16.to_le_bytes()); // format: G.711 mu-law
-        wav.extend_from_slice(&1u16.to_le_bytes());
-        wav.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
-        wav.extend_from_slice(&SAMPLE_RATE.to_le_bytes()); // one byte per frame
-        wav.extend_from_slice(&1u16.to_le_bytes());
-        wav.extend_from_slice(&8u16.to_le_bytes());
-        wav.extend_from_slice(b"data");
-        wav.extend_from_slice(&data_len.to_le_bytes());
+        let mut wav = wav_header(MULAW, BITS, data_len);
         wav.extend(std::iter::repeat_n(0x7fu8, data_len as usize));
         wav
     }
@@ -988,11 +963,14 @@ mod tests {
     fn tone_wav_is_a_decodable_wave_of_the_expected_size() {
         let wav = tone_wav(FIXTURE_SECONDS);
         // 44-byte header plus the frames, at 8 kHz 16-bit mono.
-        let frames = FIXTURE_SECONDS * 8_000;
+        let frames = FIXTURE_SECONDS * SAMPLE_RATE;
         assert_eq!(wav.len() as u32, 44 + frames * 2);
         assert_eq!(&wav[..4], b"RIFF");
         assert_eq!(&wav[8..12], b"WAVE");
-        assert_eq!(u32::from_le_bytes(wav[24..28].try_into().unwrap()), 8_000);
+        assert_eq!(
+            u32::from_le_bytes(wav[24..28].try_into().unwrap()),
+            SAMPLE_RATE
+        );
         assert_eq!(u16::from_le_bytes(wav[34..36].try_into().unwrap()), 16);
         assert_eq!(
             u32::from_le_bytes(wav[40..44].try_into().unwrap()),
@@ -1002,6 +980,31 @@ mod tests {
             wav[44..].iter().any(|b| *b != 0),
             "the tone must carry a signal, not silence"
         );
+    }
+
+    #[test]
+    fn the_parser_reads_back_the_duration_the_header_declares() {
+        // Asserted through `wav_duration_secs`, not against byte offsets: the
+        // parser walks the chunk list rather than indexing fixed positions, so
+        // comparing the header to constants would pin the generator against
+        // itself and miss the field the parser actually reads. Three seconds at
+        // each format, whose frame sizes differ by 2x: a parser taking the
+        // sample rate instead of the byte rate computes `3 * bytes_per_frame`,
+        // which the 16-bit case catches at 6.0 while the 8-bit one still reads
+        // 3.0 and passes.
+        for (format, bits, bytes_per_frame) in [(1u16, 16u16, 2u32), (7, 8, 1)] {
+            let mut wav = wav_header(format, bits, 3 * SAMPLE_RATE * bytes_per_frame);
+            wav.extend(std::iter::repeat_n(
+                0u8,
+                (3 * SAMPLE_RATE * bytes_per_frame) as usize,
+            ));
+
+            assert_eq!(
+                wav_duration_secs(&wav),
+                Some(3.0),
+                "format {format} at {bits} bits must read back as the 3 s it carries"
+            );
+        }
     }
 
     #[test]

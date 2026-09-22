@@ -51,17 +51,24 @@
 //! [`Client::add_lnp_file`]): a file does not fit the request line VoIP.ms
 //! accepts, so those four are a `multipart/form-data` POST. [`Client`] picks
 //! the transport per method, so nothing about the call site changes; a caller
-//! dispatching by wire name asks [`requires_multipart`]. That endpoint
-//! returns the `{ "status": ... }` JSON envelope directly, which this crate
-//! deserializes -- a status other than `success` surfaces as [`Error::Api`],
-//! except an empty-collection status ([`ApiStatus::is_empty_collection`], e.g. `no_sms`),
-//! which the typed methods return as an empty response (the `*_raw` methods
-//! still surface it verbatim). (The generic `…/api/v1/` endpoint instead
+//! dispatching by wire name gets the same choice from
+//! [`Client::call_raw_by_name`], or asks [`requires_multipart`] directly --
+//! both only for a method this crate was generated from, since one VoIP.ms has
+//! added since is absent from the table and so reads as a GET. For that one,
+//! choose [`Client::call_multipart_raw`] yourself.
+//!
+//! The REST endpoint returns the `{ "status": ... }` JSON envelope directly,
+//! which this crate deserializes -- a status other than `success` surfaces as
+//! [`Error::Api`], except an empty-collection status
+//! ([`ApiStatus::is_empty_collection`], e.g. `no_sms`), which the typed methods
+//! return as an empty response (the `*_raw` methods still surface it
+//! verbatim). (The generic `…/api/v1/` endpoint instead
 //! defaults to `text/html` and needs an explicit `content_type=json`; this
 //! crate does not use it.)
 
 mod client;
 mod error;
+mod form;
 mod generated;
 mod responses;
 mod types;

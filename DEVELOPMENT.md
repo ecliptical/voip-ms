@@ -401,6 +401,13 @@ the credentials and server auth held as secrets.
 		cannot execute without the live API
 	* coverage summary posted to pull requests via
 		`ecliptical/covdir-report-action`
+	* `cargo xtask check-types --deny` and `check-flags --deny`
+	* `cargo xtask gen && cargo xtask dump-methods`, then a build and
+		`git diff --exit-code`. Nothing else regenerates, so without this a
+		generator change that altered the emitted surface reaches `main` and is
+		found by whoever next runs `gen`, as a diff they did not make. Compiling
+		what the run just wrote is also the only gate that reads inside an
+		emitted macro body, which neither `syn` nor `rustfmt` parses
 * `dependabot-automerge.yaml` auto-approves and auto-merges safe Cargo
 	updates from Dependabot.
 * `release.yaml` runs on `v*` tags:

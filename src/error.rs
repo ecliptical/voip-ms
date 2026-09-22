@@ -56,6 +56,12 @@ pub enum ParamsError {
     /// falls outside the range VoIP.ms accepts.
     #[error(transparent)]
     Timezone(#[from] crate::types::TimezoneOffsetError),
+
+    /// Parameters with no wire-field rendering: a nested structure, or a value
+    /// `serde` reports as something other than a scalar. Both transports carry
+    /// the same flat name/value fields, so neither can send one.
+    #[error("{0}")]
+    Unencodable(String),
 }
 
 /// Wraps the error with its request URL stripped.

@@ -158,8 +158,9 @@ where
 /// Dump the exact read-back request (wire method + serialized params) and the
 /// raw response envelope for a fixture read-back that returned an error status,
 /// so the Class B `invalid_method` case can be diagnosed from a live run. Sent
-/// over the transport [`probe`] used, but unchecked, so a non-success envelope
-/// arrives in the body rather than as an error.
+/// by wire name like the read-back itself, so the dump takes the same transport
+/// the call did, but unchecked, so a non-success envelope arrives in the body
+/// rather than as an error.
 async fn capture_read_back_error<P>(
     client: &Client,
     area: &str,
@@ -177,14 +178,7 @@ async fn capture_read_back_error<P>(
         }
     }
 
-    // The same choice `probe` made, so the dump cannot diverge from what was
-    // sent. Nothing reaching here is in the multipart table today.
-    let raw = if voip_ms::requires_multipart(method) {
-        client.call_multipart_raw_unchecked(method, params).await
-    } else {
-        client.call_raw_unchecked(method, params).await
-    };
-    match raw {
+    match client.call_raw_unchecked_by_name(method, params).await {
         Ok(body) => {
             let pretty = serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string());
             eprintln!("[capture]   raw response:");
@@ -208,6 +202,34 @@ pub struct Orphan {
 /// field shape.
 pub fn owned(field: &Option<String>) -> bool {
     field.as_deref().is_some_and(is_owned_marker)
+}
+
+/// The marker-bearing records of `listed`, as `<kind> id=<id>` orphans.
+///
+/// `name` reads the free-text field carrying the marker and `id` the record's
+/// identifier. A record this harness owns but that reports no id is skipped:
+/// there is nothing to delete, and a sweep that cannot name it cannot reclaim
+/// it either.
+pub fn owned_orphans<T, N, I>(
+    listed: impl IntoIterator<Item = T>,
+    kind: &str,
+    name: N,
+    id: I,
+) -> Vec<Orphan>
+where
+    N: Fn(&T) -> &Option<String>,
+    I: Fn(&T) -> Option<u64>,
+{
+    listed
+        .into_iter()
+        .filter(|record| owned(name(record)))
+        .filter_map(|record| {
+            id(&record).map(|id| Orphan {
+                label: format!("{kind} id={id}"),
+                id,
+            })
+        })
+        .collect()
 }
 
 /// Fold a teardown `del_*` result so a delete of an already-absent resource
@@ -396,6 +418,52 @@ mod tests {
         // A credentials error is not an "absent target"; it must stay a failure
         // even though its wire code starts with `invalid_`.
         assert!(!is_absent(&ApiStatus::InvalidCredentials));
+    }
+
+    /// A listed record: a marker-bearing name and an id, either of which the
+    /// API may leave out.
+    struct Record {
+        name: Option<String>,
+        id: Option<u64>,
+    }
+
+    fn record(name: Option<&str>, id: Option<u64>) -> Record {
+        Record {
+            name: name.map(str::to_string),
+            id,
+        }
+    }
+
+    #[test]
+    fn owned_orphans_keeps_the_marked_records_that_can_be_deleted() {
+        let marker = crate::harness::marker::RunToken::new().marker(0);
+        let listed = vec![
+            record(Some(&marker), Some(1)),
+            // Marked but unidentified: nothing to delete, so it is dropped
+            // rather than reported as an orphan the sweep then fails to clear.
+            record(Some(&marker), None),
+            record(Some("a customer's own queue"), Some(2)),
+            record(None, Some(3)),
+            record(Some(&marker), Some(4)),
+        ];
+
+        let found = owned_orphans(listed, "queue", |r| &r.name, |r| r.id);
+
+        assert_eq!(
+            found.iter().map(|o| o.id).collect::<Vec<_>>(),
+            vec![1, 4],
+            "only the harness's own records, and only the deletable ones"
+        );
+        assert_eq!(found[0].label, "queue id=1");
+    }
+
+    #[test]
+    fn owned_orphans_claims_nothing_it_did_not_mark() {
+        let listed = vec![
+            record(Some("production ring group"), Some(7)),
+            record(None, None),
+        ];
+        assert!(owned_orphans(listed, "ringgroup", |r| &r.name, |r| r.id).is_empty());
     }
 
     #[test]
