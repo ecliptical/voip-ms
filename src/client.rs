@@ -1,11 +1,12 @@
-use reqwest::{IntoUrl, Url, multipart};
+use reqwest::{Url, multipart};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use std::fmt;
 use std::sync::LazyLock;
 
-use crate::error::{ApiStatus, Error, Result};
+use crate::error::{ApiStatus, Error, ParamsError, Result};
+use crate::form;
 
 /// Default base URL for the VoIP.ms REST API.
 pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
@@ -14,12 +15,6 @@ pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
 /// literal this crate controls.
 static DEFAULT_URL: LazyLock<Url> = LazyLock::new(|| {
     Url::parse(DEFAULT_BASE_URL).expect("the default base URL is a literal and must parse")
-});
-
-/// A URL built only to be discarded: the multipart form reads the query string
-/// `reqwest` serializes the parameters into, and never sends the request.
-static SCRATCH_URL: LazyLock<Url> = LazyLock::new(|| {
-    Url::parse("http://form.invalid/").expect("the scratch URL is a literal and must parse")
 });
 
 /// Where a request carries its parameters.
@@ -33,6 +28,18 @@ enum Transport {
     /// an alternative: `rest.php` hands one to a SOAP handler, which answers
     /// with an XML fault.
     MultipartPost,
+}
+
+impl Transport {
+    /// The transport `method` has to travel over, which the wire method decides
+    /// and no caller chooses.
+    fn for_method(method: &str) -> Self {
+        if crate::requires_multipart(method) {
+            Self::MultipartPost
+        } else {
+            Self::Get
+        }
+    }
 }
 
 /// Async client for the VoIP.ms REST API.
@@ -71,40 +78,27 @@ impl Client {
         }
     }
 
-    /// The GET form of a request to `url`: credentials, `method`, and `params`
-    /// on the query string.
-    fn get_request<U, P>(&self, url: U, method: &str, params: &P) -> reqwest::RequestBuilder
-    where
-        U: IntoUrl,
-        P: Serialize + ?Sized,
-    {
-        self.http
-            .get(url)
-            .query(&[
-                ("api_username", self.api_username.as_str()),
-                ("api_password", self.api_password.as_str()),
-                ("method", method),
-            ])
-            .query(params)
-    }
-
-    /// The request's parameters as multipart fields, read back out of the query
-    /// string the GET form serializes them into. The two transports differ in
-    /// where a value rides, not in how it is encoded, and a parameter no
-    /// `Serialize` can put on a query string fails here as it would there.
-    fn multipart_form<P>(&self, method: &str, params: &P) -> Result<multipart::Form>
+    /// Every field the request carries: credentials, `method`, then `params`.
+    ///
+    /// Rendered once for both transports, so a value rides differently on each
+    /// but is written the same way on both. A parameter with no field rendering
+    /// -- a nested structure, or a value that is not a scalar -- is
+    /// [`Error::InvalidParams`] and nothing is sent.
+    fn wire_fields<P>(&self, method: &str, params: &P) -> Result<Vec<(String, String)>>
     where
         P: Serialize + ?Sized,
     {
-        let scratch = self
-            .get_request(SCRATCH_URL.clone(), method, params)
-            .build()?;
-        let mut form = multipart::Form::new();
-        for (name, value) in scratch.url().query_pairs() {
-            form = form.text(name.into_owned(), value.into_owned());
-        }
+        let mut fields = vec![
+            ("api_username".to_string(), self.api_username.clone()),
+            ("api_password".to_string(), self.api_password.clone()),
+            ("method".to_string(), method.to_string()),
+        ];
+        fields.extend(
+            form::to_fields(params)
+                .map_err(|e| Error::InvalidParams(ParamsError::Unencodable(e.into_message())))?,
+        );
 
-        Ok(form)
+        Ok(fields)
     }
 
     /// Issue the request for `method` over `transport` and return its parsed
@@ -113,12 +107,17 @@ impl Client {
     where
         P: Serialize + ?Sized,
     {
+        let fields = self.wire_fields(method, params)?;
         let request = match transport {
-            Transport::Get => self.get_request(self.base_url.clone(), method, params),
-            Transport::MultipartPost => self
-                .http
-                .post(self.base_url.clone())
-                .multipart(self.multipart_form(method, params)?),
+            Transport::Get => self.http.get(self.base_url.clone()).query(&fields),
+            Transport::MultipartPost => {
+                let form = fields
+                    .into_iter()
+                    .fold(multipart::Form::new(), |form, (name, value)| {
+                        form.text(name, value)
+                    });
+                self.http.post(self.base_url.clone()).multipart(form)
+            }
         };
 
         let text = request.send().await?.error_for_status()?.text().await?;
@@ -196,6 +195,43 @@ impl Client {
         Ok(body)
     }
 
+    /// Issue a request for `method` over whichever transport that method
+    /// requires, and return the full JSON response body as a
+    /// [`serde_json::Value`].
+    ///
+    /// The by-name form of [`Client::call_raw`], for a caller holding a wire
+    /// method name rather than calling a generated method: a base64 file
+    /// parameter does not fit the request line a GET puts it on, so the four
+    /// methods carrying one are a `multipart/form-data` POST
+    /// ([`requires_multipart`](crate::requires_multipart)), and picking the
+    /// wrong one fails on request-line length rather than on anything that
+    /// names the cause. The `status` field is classified as in
+    /// [`Client::call_raw`].
+    ///
+    /// ```no_run
+    /// # async fn example(client: &voip_ms::Client) -> voip_ms::Result<()> {
+    /// use voip_ms::serde_json::json;
+    ///
+    /// let envelope = client
+    ///     .call_raw_by_name("setRecording", &json!({ "name": "greeting", "file": "UklGRg==" }))
+    ///     .await?;
+    /// # let _ = envelope;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn call_raw_by_name<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        let (body, empty) = self
+            .fetch(method, params, Transport::for_method(method))
+            .await?;
+        if let Some(status) = empty {
+            return Err(Error::Api(status));
+        }
+        Ok(body)
+    }
+
     /// Issue a request for `method` and return the raw JSON response body
     /// verbatim, *without* classifying its `status` field -- a non-`success`
     /// status is returned as-is in the body rather than as an [`Error::Api`].
@@ -228,6 +264,23 @@ impl Client {
         P: Serialize + ?Sized,
     {
         self.send(method, params, Transport::MultipartPost).await
+    }
+
+    /// The by-name form of [`Client::call_raw_unchecked`]: the same
+    /// unclassified envelope, over whichever transport `method` requires.
+    ///
+    /// Reach for this to dump what a method really answered when its typed call
+    /// reported an error status -- the dump then goes out the same way the call
+    /// did, so the two cannot describe different requests.
+    ///
+    /// Gated behind the `unchecked-raw` feature.
+    #[cfg(feature = "unchecked-raw")]
+    pub async fn call_raw_unchecked_by_name<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        self.send(method, params, Transport::for_method(method))
+            .await
     }
 
     /// Issue a request and deserialize the full JSON response body into `T`.

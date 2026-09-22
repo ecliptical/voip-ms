@@ -33,10 +33,17 @@ chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = { version = "0.10", features = ["serde"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "multipart", "query"] }
 rust_decimal = "1.43"
+# Float rendering in `src/form.rs`, matching what `reqwest`'s `.query()` would
+# have produced: `Display` drops the fraction on a whole float, so the two
+# transports would disagree on `1.0` without it.
+ryu = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2"
 
 [dev-dependencies]
+# The encoder `reqwest`'s `.query()` uses. Held here so `src/form.rs`'s
+# rendering is asserted against it value by value rather than by eye.
+serde_urlencoded = "0.7"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 wiremock = "0.6"

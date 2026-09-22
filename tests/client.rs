@@ -1810,8 +1810,8 @@ async fn every_file_carrying_method_posts_and_the_rest_do_not() {
 async fn multipart_fields_carry_the_same_wire_forms_as_the_query_string() {
     // The transport moves where a value rides, not how it is encoded: a `1`/`0`
     // flag is still `1`, a `None` is still absent, and a `+` inside a base64
-    // payload survives the round trip through the query string the form is
-    // built from.
+    // payload reaches the part unescaped, where a query string would percent-
+    // encode it.
     use voip_ms::SendFAXMessageParams;
 
     let (server, client) = fixture().await;
@@ -1918,10 +1918,7 @@ async fn the_unchecked_diagnostic_hatch_has_both_transports() {
 }
 
 #[test]
-fn requires_multipart_names_exactly_the_file_carrying_methods() {
-    // Hand-maintained against the generated predicate, the same way the other
-    // drift oracles are: if a regen changes which methods post, that is a wire
-    // contract change and has to be acknowledged here.
+fn requires_multipart_answers_for_the_four_and_for_a_name_it_has_never_seen() {
     for method in ["setRecording", "sendFaxMessage", "sendMMS", "addLNPFile"] {
         assert!(
             voip_ms::requires_multipart(method),
@@ -1929,16 +1926,132 @@ fn requires_multipart_names_exactly_the_file_carrying_methods() {
         );
     }
 
-    for method in ["getBalance", "sendSMS", "getRecordingFile", "getCDR"] {
-        assert!(
-            !voip_ms::requires_multipart(method),
-            "{method} has no file parameter and stays a GET"
-        );
-    }
-
     // An unknown method is not assumed to need it: a caller reaching for a
     // brand-new wire name gets the default transport, as `call_raw` documents.
     assert!(!voip_ms::requires_multipart("someBrandNewMethod"));
+
+    // That the four are the *only* ones is checked over the whole wire surface
+    // rather than against a handful of names, in livetest's `completeness`
+    // suite, which is where the generated list of all 222 methods lives.
+}
+
+#[tokio::test]
+async fn a_call_by_name_takes_the_transport_the_method_requires() {
+    // The choice a caller dispatching by wire name would otherwise re-derive.
+    // Both arms are exercised here because no generated method reaches this
+    // path, so nothing else would tell a one-armed dispatcher from a correct
+    // one.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .and(header_regex(
+            "content-type",
+            "^multipart/form-data; boundary=",
+        ))
+        .and(body_string_contains(
+            "name=\"method\"\r\n\r\nsetRecording\r\n",
+        ))
+        .and(body_string_contains("name=\"file\"\r\n\r\nQUJD\r\n"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success", "recording": 295001 })),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({ "status": "success", "balance": {} })),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let posted = client
+        .call_raw_by_name("setRecording", &json!({ "file": "QUJD" }))
+        .await
+        .unwrap();
+    assert_eq!(posted["recording"], 295001);
+
+    let got = client
+        .call_raw_by_name("getBalance", &GetBalanceParams::default())
+        .await
+        .unwrap();
+    assert_eq!(got["status"], "success");
+}
+
+#[cfg(feature = "unchecked-raw")]
+#[tokio::test]
+async fn an_unchecked_call_by_name_takes_the_same_transport() {
+    // A diagnostic dump has to go out the way the call did, or it describes a
+    // request that was never made.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .and(body_string_contains("name=\"file\"\r\n\r\nQUJD\r\n"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({ "status": "invalid_credentials" })),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({ "status": "invalid_credentials" })),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let posted = client
+        .call_raw_unchecked_by_name("setRecording", &json!({ "file": "QUJD" }))
+        .await
+        .expect("an error status is returned in the body, not as Err");
+    assert_eq!(posted["status"], "invalid_credentials");
+
+    let got = client
+        .call_raw_unchecked_by_name("getBalance", &GetBalanceParams::default())
+        .await
+        .expect("an error status is returned in the body, not as Err");
+    assert_eq!(got["status"], "invalid_credentials");
+}
+
+#[tokio::test]
+async fn parameters_with_no_field_rendering_are_refused_before_anything_is_sent() {
+    // A nested value has no form field and no query parameter, so the call
+    // fails as invalid parameters rather than as a transport error -- and on
+    // both transports, which render their fields the same way.
+    let (server, client) = fixture().await;
+
+    Mock::given(path("/api/v1/rest.php"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let nested = json!({ "routing": { "kind": "sys", "value": "hangup" } });
+    for error in [
+        client.call_raw("setDISA", &nested).await.unwrap_err(),
+        client
+            .call_multipart_raw("setRecording", &nested)
+            .await
+            .unwrap_err(),
+    ] {
+        let voip_ms::Error::InvalidParams(voip_ms::ParamsError::Unencodable(message)) = error
+        else {
+            panic!("expected InvalidParams, got {error}");
+        };
+
+        assert!(message.contains("`routing`"), "{message}");
+    }
 }
 
 /// A method the WSDL declares no parameters for takes no argument, so a call

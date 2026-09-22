@@ -8,7 +8,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
+use crate::harness::fixtures::{Orphan, owned_orphans, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -206,17 +206,12 @@ fn fail(report: &mut Report, label: &str, error: &str) {
 
 async fn list_entry_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetPhonebookResponse = client.get_phonebook(&GetPhonebookParams::default()).await?;
-    Ok(resp
-        .phonebooks
-        .into_iter()
-        .filter(|p| owned(&p.name))
-        .filter_map(|p| {
-            p.phonebook.map(|id| Orphan {
-                label: format!("phonebook id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.phonebooks,
+        "phonebook",
+        |p| &p.name,
+        |p| p.phonebook,
+    ))
 }
 
 async fn del_entry(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -232,17 +227,12 @@ async fn list_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetPhonebookGroupsResponse = client
         .get_phonebook_groups(&GetPhonebookGroupsParams::default())
         .await?;
-    Ok(resp
-        .phonebooks
-        .into_iter()
-        .filter(|g| owned(&g.name))
-        .filter_map(|g| {
-            g.phonebook_group.map(|id| Orphan {
-                label: format!("phonebookgroup id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.phonebooks,
+        "phonebookgroup",
+        |g| &g.name,
+        |g| g.phonebook_group,
+    ))
 }
 
 async fn del_group(client: &Client, id: u64) -> anyhow::Result<()> {

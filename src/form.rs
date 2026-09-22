@@ -1,0 +1,890 @@
+//! The `(name, value)` fields a request's parameters become on the wire.
+//!
+//! Both transports carry the same fields -- a GET on the query string, a
+//! multipart POST as form parts -- so a parameter set is rendered once, here,
+//! and the transport only decides where the fields ride. `reqwest`'s `.query()`
+//! percent-encodes them into the query string; a form part carries the value
+//! verbatim.
+//!
+//! The rendering matches `serde_urlencoded`, which is what `.query()` applies
+//! to a parameter set handed to it directly. That agreement is what lets the
+//! multipart form be built without first encoding the parameters into a URL and
+//! reading them back out -- a round trip that allocated roughly four times an
+//! upload's size to reach the same fields. This module's tests assert the two
+//! renderings agree value by value, against `serde_urlencoded` itself.
+
+use std::fmt::{self, Display};
+
+use serde::Serialize;
+use serde::ser::{self, Impossible, Serializer};
+
+/// Render `params` as the wire fields they carry.
+///
+/// A field whose value is absent (`None`) carries nothing at all, which is how
+/// a query string omits it.
+pub(crate) fn to_fields<P>(params: &P) -> Result<Vec<(String, String)>, FormError>
+where
+    P: Serialize + ?Sized,
+{
+    let mut fields = Vec::new();
+    params.serialize(FieldsSerializer {
+        out: &mut fields,
+        key: None,
+    })?;
+
+    Ok(fields)
+}
+
+/// Why a parameter set has no wire-field rendering.
+#[derive(Debug)]
+pub(crate) struct FormError(String);
+
+impl FormError {
+    /// The same message, naming the parameter it came from.
+    fn in_field(self, field: &str) -> Self {
+        Self(format!("parameter `{field}` {}", self.0))
+    }
+
+    /// The message, for the [`crate::ParamsError`] this becomes.
+    pub(crate) fn into_message(self) -> String {
+        self.0
+    }
+}
+
+impl Display for FormError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for FormError {}
+
+impl ser::Error for FormError {
+    fn custom<T: Display>(msg: T) -> Self {
+        Self(msg.to_string())
+    }
+}
+
+/// Render one value and push it under `key`, unless it is absent.
+fn push_field<T>(out: &mut Vec<(String, String)>, key: &str, value: &T) -> Result<(), FormError>
+where
+    T: ?Sized + Serialize,
+{
+    if let Some(rendered) = value
+        .serialize(PartSerializer)
+        .map_err(|e| e.in_field(key))?
+    {
+        out.push((key.to_string(), rendered));
+    }
+
+    Ok(())
+}
+
+/// The parameter set itself: a struct, a map, or a sequence of pairs.
+struct FieldsSerializer<'a> {
+    out: &'a mut Vec<(String, String)>,
+    /// The map key awaiting its value. `serde` hands the two over separately.
+    key: Option<String>,
+}
+
+/// The arms that are not a parameter set, each rejected the same way.
+macro_rules! not_a_parameter_set {
+    ($($method:ident($($arg:ident: $ty:ty),*);)*) => {
+        $(
+            fn $method(self $(, $arg: $ty)*) -> Result<Self::Ok, Self::Error> {
+                $(let _ = $arg;)*
+                Err(ser::Error::custom(
+                    "parameters must be a struct, a map, or a sequence of name/value pairs",
+                ))
+            }
+        )*
+    };
+}
+
+impl<'a> Serializer for FieldsSerializer<'a> {
+    type Ok = ();
+    type Error = FormError;
+    type SerializeSeq = PairsSerializer<'a>;
+    type SerializeTuple = PairsSerializer<'a>;
+    type SerializeTupleStruct = Impossible<(), FormError>;
+    type SerializeTupleVariant = Impossible<(), FormError>;
+    type SerializeMap = Self;
+    type SerializeStruct = Self;
+    type SerializeStructVariant = Impossible<(), FormError>;
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        Ok(self)
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        Ok(self)
+    }
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        Ok(PairsSerializer { out: self.out })
+    }
+
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        Ok(PairsSerializer { out: self.out })
+    }
+
+    /// A parameter set that is absent carries no fields, which is what an empty
+    /// query string says.
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+
+    fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_struct<T>(
+        self,
+        _name: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T>(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        Err(ser::Error::custom(
+            "parameters must be a struct, a map, or a sequence of name/value pairs",
+        ))
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        Err(ser::Error::custom(
+            "parameters must be a struct, a map, or a sequence of name/value pairs",
+        ))
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        Err(ser::Error::custom(
+            "parameters must be a struct, a map, or a sequence of name/value pairs",
+        ))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        Err(ser::Error::custom(
+            "parameters must be a struct, a map, or a sequence of name/value pairs",
+        ))
+    }
+
+    not_a_parameter_set! {
+        serialize_bool(v: bool);
+        serialize_i8(v: i8);
+        serialize_i16(v: i16);
+        serialize_i32(v: i32);
+        serialize_i64(v: i64);
+        serialize_i128(v: i128);
+        serialize_u8(v: u8);
+        serialize_u16(v: u16);
+        serialize_u32(v: u32);
+        serialize_u64(v: u64);
+        serialize_u128(v: u128);
+        serialize_f32(v: f32);
+        serialize_f64(v: f64);
+        serialize_char(v: char);
+        serialize_str(v: &str);
+        serialize_bytes(v: &[u8]);
+        serialize_unit_struct(name: &'static str);
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+    ) -> Result<Self::Ok, Self::Error> {
+        Err(ser::Error::custom(
+            "parameters must be a struct, a map, or a sequence of name/value pairs",
+        ))
+    }
+}
+
+impl ser::SerializeStruct for FieldsSerializer<'_> {
+    type Ok = ();
+    type Error = FormError;
+
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        push_field(self.out, key, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+}
+
+impl ser::SerializeMap for FieldsSerializer<'_> {
+    type Ok = ();
+    type Error = FormError;
+
+    fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.key = Some(
+            key.serialize(PartSerializer)?
+                .ok_or_else(|| ser::Error::custom("a parameter name cannot be absent"))?,
+        );
+
+        Ok(())
+    }
+
+    fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        let key = self
+            .key
+            .take()
+            .ok_or_else(|| ser::Error::custom("a parameter value arrived before its name"))?;
+
+        push_field(self.out, &key, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+}
+
+/// A parameter set given as a sequence of `(name, value)` pairs.
+struct PairsSerializer<'a> {
+    out: &'a mut Vec<(String, String)>,
+}
+
+impl ser::SerializeSeq for PairsSerializer<'_> {
+    type Ok = ();
+    type Error = FormError;
+
+    fn serialize_element<T>(&mut self, pair: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        pair.serialize(PairSerializer { out: self.out })
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+}
+
+impl ser::SerializeTuple for PairsSerializer<'_> {
+    type Ok = ();
+    type Error = FormError;
+
+    fn serialize_element<T>(&mut self, pair: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        pair.serialize(PairSerializer { out: self.out })
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+}
+
+/// One element of a sequence of pairs, which must be a two-element tuple.
+struct PairSerializer<'a> {
+    out: &'a mut Vec<(String, String)>,
+}
+
+/// The arms that are not a `(name, value)` pair, each rejected the same way.
+macro_rules! not_a_pair {
+    ($($method:ident($($arg:ident: $ty:ty),*) -> $ret:ty;)*) => {
+        $(
+            fn $method(self $(, $arg: $ty)*) -> Result<$ret, Self::Error> {
+                $(let _ = $arg;)*
+                Err(ser::Error::custom(
+                    "each element of a parameter sequence must be a name/value pair",
+                ))
+            }
+        )*
+    };
+}
+
+impl<'a> Serializer for PairSerializer<'a> {
+    type Ok = ();
+    type Error = FormError;
+    type SerializeSeq = PairElements<'a>;
+    type SerializeTuple = PairElements<'a>;
+    type SerializeTupleStruct = PairElements<'a>;
+    type SerializeTupleVariant = Impossible<(), FormError>;
+    type SerializeMap = Impossible<(), FormError>;
+    type SerializeStruct = Impossible<(), FormError>;
+    type SerializeStructVariant = Impossible<(), FormError>;
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        Ok(PairElements {
+            out: self.out,
+            key: None,
+        })
+    }
+
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        Ok(PairElements {
+            out: self.out,
+            key: None,
+        })
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        Ok(PairElements {
+            out: self.out,
+            key: None,
+        })
+    }
+
+    fn serialize_newtype_struct<T>(
+        self,
+        _name: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T>(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        Err(ser::Error::custom(
+            "each element of a parameter sequence must be a name/value pair",
+        ))
+    }
+
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        Err(ser::Error::custom(
+            "each element of a parameter sequence must be a name/value pair",
+        ))
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        Err(ser::Error::custom(
+            "each element of a parameter sequence must be a name/value pair",
+        ))
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        Err(ser::Error::custom(
+            "each element of a parameter sequence must be a name/value pair",
+        ))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        Err(ser::Error::custom(
+            "each element of a parameter sequence must be a name/value pair",
+        ))
+    }
+
+    not_a_pair! {
+        serialize_bool(v: bool) -> ();
+        serialize_i8(v: i8) -> ();
+        serialize_i16(v: i16) -> ();
+        serialize_i32(v: i32) -> ();
+        serialize_i64(v: i64) -> ();
+        serialize_i128(v: i128) -> ();
+        serialize_u8(v: u8) -> ();
+        serialize_u16(v: u16) -> ();
+        serialize_u32(v: u32) -> ();
+        serialize_u64(v: u64) -> ();
+        serialize_u128(v: u128) -> ();
+        serialize_f32(v: f32) -> ();
+        serialize_f64(v: f64) -> ();
+        serialize_char(v: char) -> ();
+        serialize_str(v: &str) -> ();
+        serialize_bytes(v: &[u8]) -> ();
+        serialize_none() -> ();
+        serialize_unit() -> ();
+        serialize_unit_struct(name: &'static str) -> ();
+        serialize_unit_variant(name: &'static str, index: u32, variant: &'static str) -> ();
+    }
+}
+
+/// The two elements of one `(name, value)` pair, as `serde` hands them over.
+struct PairElements<'a> {
+    out: &'a mut Vec<(String, String)>,
+    key: Option<String>,
+}
+
+impl PairElements<'_> {
+    fn take(&mut self, element: &(impl Serialize + ?Sized)) -> Result<(), FormError> {
+        match self.key.take() {
+            None => {
+                self.key = Some(
+                    element
+                        .serialize(PartSerializer)?
+                        .ok_or_else(|| ser::Error::custom("a parameter name cannot be absent"))?,
+                );
+
+                Ok(())
+            }
+
+            Some(key) => push_field(self.out, &key, element),
+        }
+    }
+
+    fn finish(self) -> Result<(), FormError> {
+        match self.key {
+            None => Ok(()),
+            Some(_) => Err(ser::Error::custom(
+                "a parameter pair must carry both a name and a value",
+            )),
+        }
+    }
+}
+
+impl ser::SerializeSeq for PairElements<'_> {
+    type Ok = ();
+    type Error = FormError;
+
+    fn serialize_element<T>(&mut self, element: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.take(element)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        self.finish()
+    }
+}
+
+impl ser::SerializeTuple for PairElements<'_> {
+    type Ok = ();
+    type Error = FormError;
+
+    fn serialize_element<T>(&mut self, element: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.take(element)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        self.finish()
+    }
+}
+
+impl ser::SerializeTupleStruct for PairElements<'_> {
+    type Ok = ();
+    type Error = FormError;
+
+    fn serialize_field<T>(&mut self, element: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.take(element)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        self.finish()
+    }
+}
+
+/// One parameter's value. `Ok(None)` is an absent value, which carries no field
+/// at all.
+struct PartSerializer;
+
+/// The arms with no scalar form, each rejected the same way.
+macro_rules! no_scalar_form {
+    ($($method:ident($($arg:ident: $ty:ty),*) -> $ret:ty;)*) => {
+        $(
+            fn $method(self $(, $arg: $ty)*) -> Result<$ret, Self::Error> {
+                $(let _ = $arg;)*
+                Err(ser::Error::custom("has no value a wire field can carry"))
+            }
+        )*
+    };
+}
+
+impl Serializer for PartSerializer {
+    type Ok = Option<String>;
+    type Error = FormError;
+    type SerializeSeq = Impossible<Option<String>, FormError>;
+    type SerializeTuple = Impossible<Option<String>, FormError>;
+    type SerializeTupleStruct = Impossible<Option<String>, FormError>;
+    type SerializeTupleVariant = Impossible<Option<String>, FormError>;
+    type SerializeMap = Impossible<Option<String>, FormError>;
+    type SerializeStruct = Impossible<Option<String>, FormError>;
+    type SerializeStructVariant = Impossible<Option<String>, FormError>;
+
+    fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(if v { "true" } else { "false" }.to_string()))
+    }
+
+    fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    /// `ryu`'s rendering, which is `serde_urlencoded`'s: it keeps the fraction
+    /// on a whole float (`1.0`, where `Display` writes `1`).
+    fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(ryu::Buffer::new().format(v).to_string()))
+    }
+
+    fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(ryu::Buffer::new().format(v).to_string()))
+    }
+
+    fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(v.to_string()))
+    }
+
+    fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+        Ok(None)
+    }
+
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        variant: &'static str,
+    ) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(variant.to_string()))
+    }
+
+    fn serialize_newtype_struct<T>(
+        self,
+        _name: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T>(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        Err(ser::Error::custom("has no value a wire field can carry"))
+    }
+
+    no_scalar_form! {
+        serialize_bytes(v: &[u8]) -> Option<String>;
+        serialize_unit() -> Option<String>;
+        serialize_unit_struct(name: &'static str) -> Option<String>;
+        serialize_seq(len: Option<usize>) -> Self::SerializeSeq;
+        serialize_tuple(len: usize) -> Self::SerializeTuple;
+        serialize_map(len: Option<usize>) -> Self::SerializeMap;
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        Err(ser::Error::custom("has no value a wire field can carry"))
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        Err(ser::Error::custom("has no value a wire field can carry"))
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        Err(ser::Error::custom("has no value a wire field can carry"))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        Err(ser::Error::custom("has no value a wire field can carry"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::collections::BTreeMap;
+
+    /// The fields `reqwest`'s `.query()` would put on the query string, read
+    /// back as pairs. Encoding and decoding are exact inverses, so what comes
+    /// back is what rode.
+    fn query_fields<T>(params: &T) -> Result<Vec<(String, String)>, ()>
+    where
+        T: ?Sized + Serialize,
+    {
+        let encoded = serde_urlencoded::to_string(params).map_err(|_| ())?;
+        serde_urlencoded::from_str(&encoded).map_err(|_| ())
+    }
+
+    /// Assert this module renders `params` into the same fields the query
+    /// string carries -- including agreeing on a parameter set neither can
+    /// render.
+    #[track_caller]
+    fn agrees<T>(params: &T)
+    where
+        T: ?Sized + Serialize,
+    {
+        let ours = to_fields(params).map_err(|_| ());
+        assert_eq!(ours, query_fields(params));
+    }
+
+    /// One field of `value`, which is how a parameter reaches either transport.
+    #[derive(Serialize)]
+    struct One<T> {
+        value: T,
+    }
+
+    fn one<T: Serialize>(value: T) -> One<T> {
+        One { value }
+    }
+
+    #[derive(Serialize)]
+    enum Choice {
+        #[serde(rename = "ring-all")]
+        RingAll,
+    }
+
+    #[derive(Serialize)]
+    struct Wrapped(u32);
+
+    #[test]
+    fn scalars_render_as_the_query_string_renders_them() {
+        agrees(&one(true));
+        agrees(&one(false));
+        agrees(&one("plain"));
+        // The characters a query string escapes: they must survive as
+        // themselves, since a form part carries them unescaped.
+        agrees(&one("a+b&c=d e%f"));
+        agrees(&one('x'));
+        agrees(&one(-5i64));
+        agrees(&one(u64::MAX));
+        agrees(&one(i128::MIN));
+        agrees(&one(0.5f64));
+        agrees(&one(1.0f32));
+        agrees(&one(Choice::RingAll));
+        agrees(&one(Wrapped(7)));
+        agrees(&one(Some(3u32)));
+    }
+
+    /// A whole float is the one value `Display` and the query string disagree
+    /// on, which is why the rendering is not `to_string`.
+    #[test]
+    fn a_whole_float_keeps_its_fraction() {
+        assert_eq!(
+            to_fields(&one(1.0f64)).unwrap(),
+            vec![("value".to_string(), "1.0".to_string())]
+        );
+        assert_eq!(1.0f64.to_string(), "1");
+    }
+
+    #[test]
+    fn an_absent_value_carries_no_field_at_all() {
+        agrees(&one(Option::<u32>::None));
+        assert!(to_fields(&one(Option::<u32>::None)).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_parameter_set_can_be_a_struct_a_map_or_a_sequence_of_pairs() {
+        agrees(&BTreeMap::from([("b", "2"), ("a", "1")]));
+        agrees(&[("a", "1"), ("b", "2")][..]);
+        agrees(&vec![("a".to_string(), "1".to_string())]);
+        agrees(&serde_json::json!({ "a": "1", "b": 2 }));
+        // No parameters at all is an empty field list, not a failure.
+        agrees(&());
+        assert!(to_fields(&()).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_value_with_no_scalar_form_is_refused_by_name() {
+        let nested = serde_json::json!({ "routing": { "kind": "sys" } });
+        let error = to_fields(&nested).unwrap_err().into_message();
+        assert!(error.contains("`routing`"), "{error}");
+        assert!(error.contains("wire field"), "{error}");
+        // The query string refuses it too, so neither transport is the one
+        // that could have carried it.
+        assert!(query_fields(&nested).is_err());
+
+        agrees(&one(vec![1u32, 2]));
+        agrees(&one(()));
+    }
+
+    #[test]
+    fn a_parameter_set_that_is_not_a_set_of_fields_is_refused() {
+        let error = to_fields("just a string").unwrap_err().into_message();
+        assert!(error.contains("struct, a map, or a sequence"), "{error}");
+        assert!(to_fields(&42u32).is_err());
+        assert!(to_fields(&serde_json::json!([1, 2, 3])).is_err());
+    }
+
+    #[test]
+    fn the_generated_parameters_render_the_same_on_both_transports() {
+        use crate::*;
+
+        // Every scalar kind the generated surface carries: a string, an id, a
+        // decimal, a flag with a wire spelling of its own, a domain type with a
+        // custom `Display`, and a named zone.
+        agrees(&SetForwardingParams {
+            forwarding: Some(19183),
+            phone_number: Some("15555550100".into()),
+            description: Some("desk & phone = ok".into()),
+            pause: Some("1.5".parse().unwrap()),
+            diversion_header: Some(true),
+            ..Default::default()
+        });
+        agrees(&SetTimeConditionParams {
+            name: Some("after hours".into()),
+            routing_match: Some(Routing::System("hangup".into())),
+            ..Default::default()
+        });
+        agrees(&GetCDRParams {
+            date_from: Some(chrono::NaiveDate::from_ymd_opt(2026, 9, 16).unwrap()),
+            timezone: Some(chrono_tz::Tz::Asia__Kolkata),
+            ..Default::default()
+        });
+        agrees(&SetRecordingParams {
+            name: Some("greeting".into()),
+            file: Some("UklGRiQAAABXQVZF".into()),
+            ..Default::default()
+        });
+    }
+}

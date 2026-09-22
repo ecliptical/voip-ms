@@ -25,7 +25,7 @@
 
 use std::collections::BTreeMap;
 
-use voip_ms::{Client, requires_multipart, serde_json};
+use voip_ms::{Client, serde_json};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,14 +45,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new(username, password);
 
     // The transport is the method's, not a choice: a base64 file parameter
-    // does not fit the request line a GET puts it on.
-    let response = if requires_multipart(&method) {
-        client.call_multipart_raw(&method, &params).await
-    } else {
-        client.call_raw(&method, &params).await
-    };
-
-    match response {
+    // does not fit the request line a GET puts it on, so the call goes out by
+    // name and lets the crate pick.
+    match client.call_raw_by_name(&method, &params).await {
         Ok(envelope) => println!("{}", serde_json::to_string_pretty(&envelope)?),
         // A non-success status is the answer to some questions, so it prints
         // instead of ending the run.

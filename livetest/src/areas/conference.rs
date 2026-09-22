@@ -12,7 +12,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
+use crate::harness::fixtures::{Orphan, owned_orphans, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -231,17 +231,12 @@ async fn list_conference_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>>
     let resp: GetConferenceResponse = client
         .get_conference(&GetConferenceParams::default())
         .await?;
-    Ok(resp
-        .conference
-        .into_iter()
-        .filter(|c| owned(&c.description))
-        .filter_map(|c| {
-            c.conference.map(|id| Orphan {
-                label: format!("conference id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.conference,
+        "conference",
+        |c| &c.description,
+        |c| c.conference,
+    ))
 }
 
 async fn del_conference(client: &Client, id: u64) -> anyhow::Result<()> {
@@ -257,17 +252,12 @@ async fn list_member_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetConferenceMembersResponse = client
         .get_conference_members(&GetConferenceMembersParams::default())
         .await?;
-    Ok(resp
-        .members
-        .into_iter()
-        .filter(|m| owned(&m.description))
-        .filter_map(|m| {
-            m.member.map(|id| Orphan {
-                label: format!("conferencemember id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.members,
+        "conferencemember",
+        |m| &m.description,
+        |m| m.member,
+    ))
 }
 
 async fn del_member(client: &Client, id: u64) -> anyhow::Result<()> {

@@ -51,7 +51,9 @@
 //! [`Client::add_lnp_file`]): a file does not fit the request line VoIP.ms
 //! accepts, so those four are a `multipart/form-data` POST. [`Client`] picks
 //! the transport per method, so nothing about the call site changes; a caller
-//! dispatching by wire name asks [`requires_multipart`]. That endpoint
+//! dispatching by wire name gets the same choice from
+//! [`Client::call_raw_by_name`], or asks [`requires_multipart`] directly. That
+//! endpoint
 //! returns the `{ "status": ... }` JSON envelope directly, which this crate
 //! deserializes -- a status other than `success` surfaces as [`Error::Api`],
 //! except an empty-collection status ([`ApiStatus::is_empty_collection`], e.g. `no_sms`),
@@ -62,6 +64,7 @@
 
 mod client;
 mod error;
+mod form;
 mod generated;
 mod responses;
 mod types;

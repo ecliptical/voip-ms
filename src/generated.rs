@@ -19331,9 +19331,9 @@ pub struct UnconnectFAXResponse {
 /// a GET, because one of its parameters carries a base64-encoded file that
 /// would overrun the request line a query string rides on.
 ///
-/// The generated [`Client`] methods apply this themselves. It is public for a
-/// caller that dispatches by wire-method name and so has to choose between
-/// [`Client::call_raw`] and [`Client::call_multipart_raw`] itself.
+/// The generated [`Client`] methods apply this themselves, and
+/// [`Client::call_raw_by_name`] applies it to a wire-method name. It is
+/// public for a caller that needs the answer without making the call.
 pub fn requires_multipart(method: &str) -> bool {
     matches!(
         method,

@@ -13,7 +13,6 @@
 //! makes a reported key paste straight into an `additions` entry.
 
 use std::collections::BTreeMap;
-use std::fs;
 
 use crate::extract::Shape;
 
@@ -75,9 +74,7 @@ pub fn write_table(shapes: &BTreeMap<String, Shape>) -> Result<(), String> {
     table.sort_by(|a, b| a.0.cmp(&b.0));
 
     let out_path = crate::repo_root().join(OUT_REL);
-    fs::write(&out_path, render(&table))
-        .map_err(|e| format!("write {}: {e}", out_path.display()))?;
-    crate::rustfmt_file(&out_path);
+    crate::write_rust(&out_path, &render(&table))?;
 
     let total: usize = table.iter().map(|(_, p)| p.len()).sum();
     println!(

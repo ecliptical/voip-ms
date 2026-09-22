@@ -676,9 +676,13 @@ adds the status classification on top. The public `call`, `call_raw`, and
 `call_at` are the GET forms (as is `call_raw_unchecked`, behind the
 `unchecked-raw` feature); `call_multipart`, `call_multipart_raw`, and
 `call_multipart_raw_unchecked` are their multipart-POST counterparts.
-`requires_multipart(method)` answers which a given wire method needs, for a
-caller dispatching by name rather than through a generated method. All
-generated methods are thin wrappers over one of them:
+A caller dispatching by wire name rather than through a generated method calls
+`call_raw_by_name` (or `call_raw_unchecked_by_name`), which picks the transport
+the way a generated method does; `requires_multipart(method)` answers the same
+question for a caller that needs it without making the call. The dispatcher
+exists because that two-arm choice was written out at each call site instead,
+where no test reached either arm. All generated methods are thin wrappers over
+one of them:
 
 ```rust
 pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {
@@ -690,9 +694,20 @@ pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetReco
 }
 ```
 
-A multipart request's fields are taken from the query string the GET form
-serializes the same parameters into, so the two transports differ in where a
-value rides and never in how it is encoded.
+Both transports render their fields through one serializer (`src/form.rs`), so
+they differ in where a value rides and never in how it is written. That
+serializer matches `serde_urlencoded`, which is what `reqwest`'s `.query()`
+applies to a parameter set, and its tests assert the agreement value by value --
+including the one arm where `Display` would diverge, a whole float, which the
+query string renders `1.0` and `to_string` renders `1`. The multipart form was
+originally built by reading back the query string the GET form produced, which
+bought the same parity at the cost of encoding and decoding the whole payload:
+roughly 30 MB of transient allocation for an 8 MB fax.
+
+A parameter with no field rendering -- a nested value, or anything serde reports
+as other than a scalar -- is `Error::InvalidParams(ParamsError::Unencodable)`
+naming the parameter, and nothing is sent. Neither transport can carry one, so
+this is not a property of the transport that happened to be chosen.
 
 If a regeneration drift is ever needed (e.g. a method needs custom
 encoding), break that one method out of the codegen with an explicit
@@ -754,11 +769,12 @@ Four variants, no more:
   systematically for a method, that's a VoIP.ms-side break.
 * `Error::InvalidParams(ParamsError)` -- the parameters could not be
   converted to their wire form, so no request was sent. `ParamsError` names
-  which check failed, today only `Timezone(TimezoneOffsetError)` (see 5a's
-  record-listing offsets). The inner enum exists so the next parameter
+  which check failed: `Timezone(TimezoneOffsetError)` (see 5a's record-listing
+  offsets) and `Unencodable(String)`, a parameter with no wire-field rendering
+  (decision #7). The inner enum exists so the next parameter
   validation is additive: the variant name is general and a specific payload
-  would have forced either a second `Error` variant or a breaking change. Both
-  hops carry `#[from]`, so a generated `TryFrom<&*Params>` returning a
+  would have forced either a second `Error` variant or a breaking change. The
+  timezone hop carries `#[from]`, so a generated `TryFrom<&*Params>` returning a
   `TimezoneOffsetError` still reaches `Error` through one `?`.
 
 ### Transport-failure classification
@@ -819,6 +835,7 @@ voip-ms/
 │   ├── lib.rs           # Module surface; re-exports generated.rs
 │   ├── client.rs        # Client, ClientBuilder, call()
 │   ├── error.rs         # Error, ApiStatus, Result, TransportFailure
+│   ├── form.rs          # Params -> the wire fields both transports carry
 │   ├── generated.rs     # 222 *Params + Client methods + *Response (generated)
 │   ├── responses.rs     # Custom serde deserializers for generated.rs
 │   └── types.rs         # Hand-written domain types (Routing, …)

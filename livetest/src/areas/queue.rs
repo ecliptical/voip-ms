@@ -11,7 +11,8 @@ use async_trait::async_trait;
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
 use crate::harness::fixtures::{
-    Orphan, owned, queue_number, read_back, required_queue_params, sweep_orphans, tolerate_absent,
+    Orphan, owned_orphans, queue_number, read_back, required_queue_params, sweep_orphans,
+    tolerate_absent,
 };
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
@@ -151,17 +152,12 @@ async fn queue_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
 
 async fn list_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetQueuesResponse = client.get_queues(&GetQueuesParams::default()).await?;
-    Ok(resp
-        .queues
-        .into_iter()
-        .filter(|q| owned(&q.queue_name))
-        .filter_map(|q| {
-            q.queue.map(|id| Orphan {
-                label: format!("queue id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.queues,
+        "queue",
+        |q| &q.queue_name,
+        |q| q.queue,
+    ))
 }
 
 async fn del_queue(client: &Client, id: u64) -> anyhow::Result<()> {

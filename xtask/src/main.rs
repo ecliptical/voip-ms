@@ -1268,9 +1268,8 @@ fn multipart_doc_sentence(fields: &[String]) -> String {
 /// Emit the public `requires_multipart` predicate over the table's keys.
 fn emit_requires_multipart(base64_file_params: &BTreeMap<String, Vec<String>>) -> String {
     if base64_file_params.is_empty() {
-        // `matches!(method, )` does not parse, and a failing rustfmt is only a
-        // warning, so an empty table would otherwise write a file that does not
-        // compile and exit 0.
+        // `matches!(method, )` does not parse, so the empty table needs a body
+        // of its own rather than an arm list with nothing in it.
         return "\n/// Whether `method` must be sent as a `multipart/form-data` POST rather than\n\
                 /// a GET. No method carries a base64 file parameter, so nothing does.\n\
                 pub fn requires_multipart(_method: &str) -> bool {\n    false\n}\n"
@@ -1287,9 +1286,9 @@ fn emit_requires_multipart(base64_file_params: &BTreeMap<String, Vec<String>>) -
          /// a GET, because one of its parameters carries a base64-encoded file that\n\
          /// would overrun the request line a query string rides on.\n\
          ///\n\
-         /// The generated [`Client`] methods apply this themselves. It is public for a\n\
-         /// caller that dispatches by wire-method name and so has to choose between\n\
-         /// [`Client::call_raw`] and [`Client::call_multipart_raw`] itself.\n\
+         /// The generated [`Client`] methods apply this themselves, and\n\
+         /// [`Client::call_raw_by_name`] applies it to a wire-method name. It is\n\
+         /// public for a caller that needs the answer without making the call.\n\
          pub fn requires_multipart(method: &str) -> bool {{\n    \
              matches!(method, {arms})\n\
          }}\n"
@@ -1619,21 +1618,46 @@ fn emit_enums(
     out
 }
 
+/// Write emitted Rust to `path` and format it, failing the run on output
+/// neither parser accepts rather than leaving it on disk.
+///
+/// Two gates, because an emitter defect that renders broken Rust used to exit
+/// zero: the file is parsed before it is written, and a `rustfmt` that rejects
+/// it afterwards is an error rather than a warning. Only a missing `rustfmt`
+/// stays a warning, so a machine without one can still regenerate.
+///
+/// Neither gate sees inside a macro invocation -- `matches!(method, )` is valid
+/// tokens to both, and is the defect that prompted them. An emitted `matches!`
+/// arm list that can be empty therefore needs a branch of its own plus a test,
+/// as [`emit_requires_multipart`] has; these gates cover the structural rest.
+/// What covers everything is a build, which CI reaches by regenerating and then
+/// compiling.
+pub(crate) fn write_rust(path: &Path, rendered: &str) -> Result<(), String> {
+    syn::parse_file(rendered).map_err(|e| {
+        format!(
+            "emitted Rust for {} does not parse ({e}); the file was not written",
+            path.display()
+        )
+    })?;
+    fs::write(path, rendered).map_err(|e| format!("write {}: {e}", path.display()))?;
+    rustfmt_file(path)
+}
+
 /// Format a file this generator just wrote, so its output is what `cargo fmt
-/// --check` expects and a regen leaves no formatting churn behind. A missing or
-/// failing rustfmt is a warning: the file is already valid Rust.
-pub(crate) fn rustfmt_file(path: &Path) {
+/// --check` expects and a regen leaves no formatting churn behind.
+fn rustfmt_file(path: &Path) -> Result<(), String> {
     match Command::new("rustfmt")
         .args(["--edition", "2024"])
         .arg(path)
         .status()
     {
-        Ok(s) if s.success() => {}
-        Ok(s) => eprintln!("warning: rustfmt exited with {s}; run `cargo fmt` manually"),
+        Ok(s) if s.success() => Ok(()),
+        Ok(s) => Err(format!("rustfmt rejected {} ({s})", path.display())),
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
             eprintln!("warning: rustfmt not found on PATH; run `cargo fmt` manually");
+            Ok(())
         }
-        Err(e) => eprintln!("warning: rustfmt failed ({e}); run `cargo fmt` manually"),
+        Err(e) => Err(format!("rustfmt failed on {} ({e})", path.display())),
     }
 }
 
@@ -1902,7 +1926,7 @@ fn cmd_gen() -> Result<(), String> {
         &zoned_timestamps,
         &base64_file_params.by_op,
     );
-    fs::write(&out_path, &rendered).map_err(|e| format!("write {}: {e}", out_path.display()))?;
+    write_rust(&out_path, &rendered)?;
     println!(
         "wrote {} ({} methods, {} method descriptions, {} typed responses, \
          {} status codes)",
@@ -1912,8 +1936,6 @@ fn cmd_gen() -> Result<(), String> {
         responses.len(),
         statuses.len(),
     );
-
-    rustfmt_file(&out_path);
 
     // From the same shapes, so the harness's key-diff table can't fall behind
     // the structs it describes.
@@ -2177,6 +2199,80 @@ mod tests {
         // `setRecording.file` is listed, `sendFaxMessage.file` is not.
         let found = base64_file_params(&wsdl_fixture(), &docs, &["setRecording.file"]).unwrap();
         assert_eq!(found.unlisted, vec!["sendFaxMessage.file".to_string()]);
+    }
+
+    /// The emitted predicate, parsed as an item so a malformed one is a failure
+    /// here rather than a compile error in a file the run already wrote.
+    fn parsed_predicate(table: &BTreeMap<String, Vec<String>>) -> (String, syn::ItemFn) {
+        let rendered = emit_requires_multipart(table);
+        let item: syn::ItemFn = syn::parse_str(&rendered)
+            .unwrap_or_else(|e| panic!("emitted predicate does not parse ({e}): {rendered}"));
+        (rendered, item)
+    }
+
+    fn table_of(ops: &[&str]) -> BTreeMap<String, Vec<String>> {
+        ops.iter()
+            .map(|op| ((*op).to_string(), vec!["file".to_string()]))
+            .collect()
+    }
+
+    #[test]
+    fn requires_multipart_matches_every_op_in_the_table() {
+        let (rendered, item) = parsed_predicate(&table_of(&["sendMMS", "setRecording"]));
+
+        assert_eq!(item.sig.ident, "requires_multipart");
+        // Both arms, in the table's own order, and joined so one name cannot
+        // stand in for the other.
+        assert!(
+            rendered.contains(r#"matches!(method, "sendMMS" | "setRecording")"#),
+            "{rendered}"
+        );
+    }
+
+    #[test]
+    fn requires_multipart_over_an_empty_table_still_parses() {
+        // `matches!(method, )` is not valid Rust, so the empty table takes a
+        // branch of its own. Nothing exercises that branch today -- four ops are
+        // listed -- which is exactly why it is asserted rather than assumed.
+        let (rendered, item) = parsed_predicate(&BTreeMap::new());
+
+        assert_eq!(item.sig.ident, "requires_multipart");
+        assert!(!rendered.contains("matches!"), "{rendered}");
+        // The parameter is `_method`: an unused binding would warn in a
+        // consumer's build, and the generated module is not theirs to silence.
+        assert!(
+            rendered.contains("fn requires_multipart(_method: &str)"),
+            "{rendered}"
+        );
+    }
+
+    #[test]
+    fn write_rust_refuses_output_that_does_not_parse() {
+        // The class the gate closes: an emitter defect that renders broken Rust
+        // must stop the run, not leave the file on disk with a warning.
+        // Named per process so two concurrent runs cannot share the file.
+        let dir = std::env::temp_dir().join(format!("voip-ms-xtask-{}", std::process::id()));
+        fs::create_dir_all(&dir).expect("a temp dir for the refusal case");
+        let path = dir.join("broken.rs");
+        let _ = fs::remove_file(&path);
+
+        let err = write_rust(&path, "pub fn broken() -> bool { false").unwrap_err();
+        assert!(err.contains("does not parse"), "{err}");
+        assert!(!path.exists(), "the file must not have been written");
+
+        write_rust(&path, "pub fn fine() -> bool {\n    false\n}\n")
+            .expect("valid Rust is written");
+        assert!(path.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_macro_body_is_opaque_to_the_parse_gate() {
+        // Both parsers take a macro invocation as tokens, so the defect that
+        // prompted the gate -- an arm list rendered empty -- reads as valid Rust
+        // to each of them. That is why the empty-table branch above exists and
+        // is asserted, rather than left to the gate.
+        assert!(syn::parse_file("fn f(m: &str) -> bool { matches!(m, ) }").is_ok());
     }
 
     #[test]
