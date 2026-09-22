@@ -165,7 +165,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   timestamps come back qualified `+05:30`).
 - Every generated `*Params` and `*Response` struct derives `PartialEq` and
   `Eq`, so a test can compare a whole response and a consumer can dedupe or
-  diff records without writing them out field by field.
+  diff records without writing them out field by field. `ApiStatus`, every
+  generated wire enum, `Routing`, `Reported<T>`, `TransactionDate`, `Seconds`,
+  `WaitTime`, and `MaxMembers` also derive `PartialOrd` and `Ord`, so they can
+  key a `BTreeMap` or be sorted.
 - `NoParams`, the parameters of a method that takes none. Public so a caller
   reaching one of the eight parameterless methods by wire name through
   `Client::call_raw` has something to serialize.

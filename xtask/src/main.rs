@@ -895,7 +895,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          /// assert_eq!(unknown.description(), None);\n\
          /// assert!(!unknown.is_documented());\n\
          /// ```\n\
-         #[derive(Debug, Clone, PartialEq, Eq, Hash)]\n\
+         #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]\n\
          pub enum ApiStatus {\n",
     );
     for (variant, code, desc) in &variants {
@@ -1592,7 +1592,7 @@ fn emit_enums(
             ));
         }
 
-        out.push_str("#[derive(Debug, Clone, PartialEq, Eq, Hash)]\n");
+        out.push_str("#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]\n");
         out.push_str(&format!("pub enum {name} {{\n"));
         for v in &def.variants {
             if let Some(doc) = &v.doc {

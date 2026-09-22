@@ -38,7 +38,7 @@ use std::str::FromStr;
 /// * `did:5551234567` → [`Routing::Did`]
 /// * `phone:5551234567` → [`Routing::Phone`]
 /// * `none:` → [`Routing::None`]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Routing {
     /// No routing (wire: `none:`).
     None,
@@ -259,7 +259,7 @@ impl<'de> Deserialize<'de> for Routing {
 /// sentinel. [`Seconds`] serializes the sentinel as `none`; [`WaitTime`] as
 /// `unlimited` (the word `maximum_wait_time` documents). Both deserialize
 /// tolerantly: a number, a numeric string, or either sentinel word.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Seconds {
     /// A concrete number of seconds.
     Value(u64),
@@ -271,7 +271,7 @@ pub enum Seconds {
 ///
 /// Like [`Seconds`] but serializes the unbounded case as `unlimited`, the word
 /// `maximum_wait_time` documents.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WaitTime {
     /// A concrete number of seconds.
     Value(u64),
@@ -283,7 +283,7 @@ pub enum WaitTime {
 ///
 /// `getConference` reports `max_members` as a count or the word `Unlimited`
 /// when the conference has no cap.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum MaxMembers {
     /// A concrete member cap.
     Value(u64),
@@ -648,7 +648,7 @@ impl<'de> Deserialize<'de> for TimezoneName {
 /// Absence is the surrounding [`Option`], not a variant here: a field VoIP.ms
 /// omits is `None`, and so is one carrying a blank or a `0000-00-00`
 /// placeholder.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Reported<T> {
     /// The value, as this crate reads it.
     Parsed(T),
@@ -716,7 +716,7 @@ impl<T: fmt::Display> fmt::Display for Reported<T> {
 /// parsing trims, [`chrono`] accepts unpadded components it renders padded, and
 /// a window bounded by timestamps keeps only the days. Only
 /// [`TransactionDate::Unrecognized`] holds the value as received, trimmed.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TransactionDate {
     /// The instant the row posted (wire: `2016-06-03 00:03:46`).
     At(NaiveDateTime),

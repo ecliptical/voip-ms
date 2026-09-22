@@ -475,8 +475,9 @@ in `xtask/src/field_overrides.rs`:
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
   sections. The generator emits the enum type (deriving `Debug`, `Clone`,
-  `PartialEq`, `Eq` -- not `Copy`, since the `Unknown(String)` catch-all holds
-  a `String`), `as_wire` / `from_wire`, `Display`, and substitutes the field's
+  `PartialEq`, `Eq`, `Hash`, `PartialOrd`, `Ord` -- not `Copy`, since the
+  `Unknown(String)` catch-all holds a `String`), `as_wire` / `from_wire`,
+  `Display`, and substitutes the field's
   type in every `*Params` and `*Response` struct that has that field.
 
   **Only the serde direction a field reaches it through is emitted**, tracked
