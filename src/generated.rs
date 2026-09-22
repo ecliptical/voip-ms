@@ -19358,15 +19358,15 @@ pub struct UnconnectFAXResponse {
 /// a GET, because one of its parameters carries a base64-encoded file that
 /// would overrun the request line a query string rides on.
 ///
-/// The generated [`Client`] methods apply this themselves, and
-/// [`Client::call_raw_by_name`] applies it to a wire-method name. It is
-/// public for a caller that needs the answer without making the call.
+/// [`Client::call_raw`] and the other generic calls apply this to the
+/// wire-method name they are given. It is public for a caller that needs
+/// the answer without making the call.
 ///
 /// **It answers only for the methods this crate was generated from.** The
 /// names are a fixed table, so a method VoIP.ms has added since answers
 /// `false` rather than reporting that it cannot say -- and `false` is the
-/// wrong answer for an upload method. Regenerate, or choose
-/// [`Client::call_multipart_raw`] by hand.
+/// wrong answer for an upload method. Regenerate, or call
+/// [`Client::call_multipart_raw`] for it.
 pub fn requires_multipart(method: &str) -> bool {
     matches!(
         method,
@@ -19381,7 +19381,7 @@ pub fn requires_multipart(method: &str) -> bool {
 /// `Some` for exactly the record-listing methods, with that method's
 /// `*_TIMESTAMPS` const, so a caller holding a wire-method name need not
 /// map names to consts itself. A generated method attaches the offset on
-/// its own; a raw envelope, such as [`Client::call_raw_by_name`] returns,
+/// its own; a raw envelope, such as [`Client::call_raw`] returns,
 /// reports the wall clocks without it.
 ///
 /// **A method this answers `Some` for must be sent an explicit
@@ -19425,7 +19425,7 @@ impl Client {
     /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
     /// not fit the request line a GET would carry it on.
     pub async fn add_lnp_file(&self, params: &AddLNPFileParams) -> Result<AddLNPFileResponse> {
-        self.call_multipart("addLNPFile", params).await
+        self.call("addLNPFile", params).await
     }
 
     /// Call the `addLNPFile` API method and return the raw JSON envelope.
@@ -19433,7 +19433,7 @@ impl Client {
     /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
     /// not fit the request line a GET would carry it on.
     pub async fn add_lnp_file_raw(&self, params: &AddLNPFileParams) -> Result<Value> {
-        self.call_multipart_raw("addLNPFile", params).await
+        self.call_raw("addLNPFile", params).await
     }
 
     /// \- Add one or more numbers to start a portability process.
@@ -22403,7 +22403,7 @@ impl Client {
         &self,
         params: &SendFAXMessageParams,
     ) -> Result<SendFAXMessageResponse> {
-        self.call_multipart("sendFaxMessage", params).await
+        self.call("sendFaxMessage", params).await
     }
 
     /// Call the `sendFaxMessage` API method and return the raw JSON envelope.
@@ -22411,7 +22411,7 @@ impl Client {
     /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
     /// not fit the request line a GET would carry it on.
     pub async fn send_fax_message_raw(&self, params: &SendFAXMessageParams) -> Result<Value> {
-        self.call_multipart_raw("sendFaxMessage", params).await
+        self.call_raw("sendFaxMessage", params).await
     }
 
     /// \- Send a MMS message to a Destination Number.
@@ -22421,7 +22421,7 @@ impl Client {
     /// Sent as a `multipart/form-data` POST: the base64 `media2` parameter does
     /// not fit the request line a GET would carry it on.
     pub async fn send_mms(&self, params: &SendMMSParams) -> Result<SendMMSResponse> {
-        self.call_multipart("sendMMS", params).await
+        self.call("sendMMS", params).await
     }
 
     /// Call the `sendMMS` API method and return the raw JSON envelope.
@@ -22429,7 +22429,7 @@ impl Client {
     /// Sent as a `multipart/form-data` POST: the base64 `media2` parameter does
     /// not fit the request line a GET would carry it on.
     pub async fn send_mms_raw(&self, params: &SendMMSParams) -> Result<Value> {
-        self.call_multipart_raw("sendMMS", params).await
+        self.call_raw("sendMMS", params).await
     }
 
     /// \- Send a SMS message to a Destination Number.
@@ -22865,7 +22865,7 @@ impl Client {
     /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
     /// not fit the request line a GET would carry it on.
     pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetRecordingResponse> {
-        self.call_multipart("setRecording", params).await
+        self.call("setRecording", params).await
     }
 
     /// Call the `setRecording` API method and return the raw JSON envelope.
@@ -22873,7 +22873,7 @@ impl Client {
     /// Sent as a `multipart/form-data` POST: the base64 `file` parameter does
     /// not fit the request line a GET would carry it on.
     pub async fn set_recording_raw(&self, params: &SetRecordingParams) -> Result<Value> {
-        self.call_multipart_raw("setRecording", params).await
+        self.call_raw("setRecording", params).await
     }
 
     /// \- Updates a specific Ring Group if a ring group code is provided.

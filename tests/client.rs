@@ -1890,16 +1890,47 @@ async fn a_base64_response_payload_survives_its_escaped_slashes() {
     assert_eq!(resp.recordings[0].data.as_deref(), Some("UklGRi//AABXQVZF"));
 }
 
-#[cfg(feature = "unchecked-raw")]
 #[tokio::test]
-async fn the_unchecked_diagnostic_hatch_has_both_transports() {
-    // The pair exists so diagnosing a file method reaches it over the transport
-    // that method needs. Both surface a non-success envelope verbatim rather
-    // than as `Error::Api`, and each must use its own transport to do it.
+async fn the_multipart_hatch_posts_a_method_the_table_does_not_know() {
+    // The one case `call_multipart_raw` exists for: an upload method VoIP.ms
+    // added after this crate was generated, which `call_raw` would send as a
+    // GET.
     let (server, client) = fixture().await;
 
     Mock::given(method("POST"))
         .and(path("/api/v1/rest.php"))
+        .and(header_regex(
+            "content-type",
+            "^multipart/form-data; boundary=",
+        ))
+        .and(body_string_contains(
+            "name=\"method\"\r\n\r\nsomeBrandNewUpload\r\n",
+        ))
+        .and(body_string_contains("name=\"file\"\r\n\r\nQUJD\r\n"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let posted = client
+        .call_multipart_raw("someBrandNewUpload", &json!({ "file": "QUJD" }))
+        .await
+        .unwrap();
+    assert_eq!(posted["status"], "success");
+}
+
+#[cfg(feature = "unchecked-raw")]
+#[tokio::test]
+async fn the_unchecked_multipart_hatch_posts_a_method_the_table_does_not_know() {
+    // The unchecked form of the same hatch: a non-success envelope comes back
+    // in the body rather than as `Error::Api`.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/v1/rest.php"))
+        .and(body_string_contains(
+            "name=\"method\"\r\n\r\nsomeBrandNewUpload\r\n",
+        ))
         .and(body_string_contains("name=\"file\"\r\n\r\nQUJD\r\n"))
         .respond_with(
             ResponseTemplate::new(200).set_body_json(json!({"status": "invalid_credentials"})),
@@ -1908,35 +1939,19 @@ async fn the_unchecked_diagnostic_hatch_has_both_transports() {
         .mount(&server)
         .await;
 
-    Mock::given(method("GET"))
-        .and(path("/api/v1/rest.php"))
-        .and(query_param("method", "getBalance"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({"status": "invalid_credentials"})),
-        )
-        .expect(1)
-        .mount(&server)
-        .await;
-
     let posted = client
-        .call_multipart_raw_unchecked("setRecording", &json!({ "file": "QUJD" }))
+        .call_multipart_raw_unchecked("someBrandNewUpload", &json!({ "file": "QUJD" }))
         .await
         .expect("an error status is returned in the body, not as Err");
     assert_eq!(posted["status"], "invalid_credentials");
-
-    let got = client
-        .call_raw_unchecked("getBalance", &GetBalanceParams::default())
-        .await
-        .unwrap();
-    assert_eq!(got["status"], "invalid_credentials");
 }
 
 #[test]
 fn requires_multipart_does_not_claim_a_name_it_has_never_seen() {
     // A method this crate has not been regenerated for gets the default
     // transport, which a caller reaching for a brand-new wire name has to know:
-    // `call_raw_by_name` can only answer for the 222 names in the table, so an
-    // ungenerated upload method needs `call_multipart_raw` chosen by hand.
+    // `call_raw` can only answer for the 222 names in the table, so an
+    // ungenerated upload method needs `call_multipart_raw`.
     //
     // Which names the predicate *does* match is asserted as a set over the whole
     // generated surface, in livetest's `completeness` suite -- the only place the
@@ -1946,11 +1961,9 @@ fn requires_multipart_does_not_claim_a_name_it_has_never_seen() {
 }
 
 #[tokio::test]
-async fn a_call_by_name_takes_the_transport_the_method_requires() {
-    // The choice a caller dispatching by wire name would otherwise re-derive.
-    // Both arms are exercised here because no generated method reaches this
-    // path, so nothing else would tell a one-armed dispatcher from a correct
-    // one.
+async fn call_raw_takes_the_transport_the_method_requires() {
+    // The choice a caller dispatching by wire name would otherwise re-derive,
+    // with both arms reached through the one generic call.
     let (server, client) = fixture().await;
 
     Mock::given(method("POST"))
@@ -1982,13 +1995,13 @@ async fn a_call_by_name_takes_the_transport_the_method_requires() {
         .await;
 
     let posted = client
-        .call_raw_by_name("setRecording", &json!({ "file": "QUJD" }))
+        .call_raw("setRecording", &json!({ "file": "QUJD" }))
         .await
         .unwrap();
     assert_eq!(posted["recording"], 295001);
 
     let got = client
-        .call_raw_by_name("getBalance", &GetBalanceParams::default())
+        .call_raw("getBalance", &GetBalanceParams::default())
         .await
         .unwrap();
     assert_eq!(got["status"], "success");
@@ -2013,7 +2026,7 @@ fn offset_timestamps_answers_each_record_listing_method_with_its_const() {
 }
 
 #[tokio::test]
-async fn a_record_listing_call_by_name_returns_the_bare_wall_clock() {
+async fn a_raw_record_listing_call_returns_the_bare_wall_clock() {
     // The raw contract is what VoIP.ms sent, so the offset stays off until the
     // caller attaches it; the typed deserializer refuses the envelope before
     // then.
@@ -2033,7 +2046,7 @@ async fn a_record_listing_call_by_name_returns_the_bare_wall_clock() {
 
     let offset = voip_ms::TimezoneOffset::new(-4).unwrap();
     let mut envelope = client
-        .call_raw_by_name(
+        .call_raw(
             "getCDR",
             &json!({ "date_from": "2026-09-01", "date_to": "2026-09-16", "timezone": offset }),
         )
@@ -2054,9 +2067,10 @@ async fn a_record_listing_call_by_name_returns_the_bare_wall_clock() {
 
 #[cfg(feature = "unchecked-raw")]
 #[tokio::test]
-async fn an_unchecked_call_by_name_takes_the_same_transport() {
+async fn call_raw_unchecked_takes_the_same_transport() {
     // A diagnostic dump has to go out the way the call did, or it describes a
-    // request that was never made.
+    // request that was never made. Both arms surface a non-success envelope
+    // verbatim rather than as `Error::Api`.
     let (server, client) = fixture().await;
 
     Mock::given(method("POST"))
@@ -2080,13 +2094,13 @@ async fn an_unchecked_call_by_name_takes_the_same_transport() {
         .await;
 
     let posted = client
-        .call_raw_unchecked_by_name("setRecording", &json!({ "file": "QUJD" }))
+        .call_raw_unchecked("setRecording", &json!({ "file": "QUJD" }))
         .await
         .expect("an error status is returned in the body, not as Err");
     assert_eq!(posted["status"], "invalid_credentials");
 
     let got = client
-        .call_raw_unchecked_by_name("getBalance", &GetBalanceParams::default())
+        .call_raw_unchecked("getBalance", &GetBalanceParams::default())
         .await
         .expect("an error status is returned in the body, not as Err");
     assert_eq!(got["status"], "invalid_credentials");

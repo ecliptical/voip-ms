@@ -580,7 +580,9 @@ POST carrying every parameter -- credentials and method name included -- as a
 form field. Four methods qualify: `setRecording`, `sendFaxMessage`, `sendMMS`
 (`media2`), and `addLNPFile`. `Client` decides per method from the generated
 surface; a caller does not choose, and no parameter or builder option
-overrides it.
+overrides it. The one exception is `Client::call_multipart_raw` (and its
+`_unchecked` twin), for an upload method this crate has not been regenerated
+for and so cannot recognize.
 
 **Rationale**: VoIP.ms documents and accepts both, but every documented example
 is GET, and GET keeps the request observable in logs and proxies during
@@ -612,11 +614,14 @@ document. `tools/server.wsdl` (decision #1) does not record `addLNPFile`'s
 POST-only requirement -- that lives only in the HTML docs -- but every method
 that needs POST has a base64 file parameter and every method with one needs
 POST, so the parameter carries the whole rule. The four paths are listed in
-`BASE64_FILE_PARAM_PATHS` (`xtask/src/field_overrides.rs`), which the generator
-reads to route those methods through `Client::call_multipart` /
-`call_multipart_raw` instead of `call` / `call_raw`. Those two are public for
-the same reason `call_raw` is: a method this crate hasn't been regenerated for
-still needs a way to be called.
+`BASE64_FILE_PARAM_PATHS` (`xtask/src/field_overrides.rs`), from which the
+generator emits `requires_multipart`. Every generated method calls `call` /
+`call_raw`, and those (with `call_at`, `call_raw_unchecked`, and the private
+`call_zoned`) read the transport from `requires_multipart` by wire name, so the
+choice lives in one place and a caller dispatching by name gets the same answer
+as a generated method. `call_multipart_raw` is public for the same reason
+`call_raw` is: a method this crate hasn't been regenerated for still needs a way
+to be called, and for an upload method that way has to be a POST.
 
 **How to apply**: When a new method takes a base64 file parameter, add its
 `"wireMethod.field"` path to `BASE64_FILE_PARAM_PATHS` and regenerate.
@@ -626,12 +631,11 @@ in `xtask/src/main.rs`:
 * it **fails** on an entry naming a parameter the WSDL does not declare, since
   a path left behind by a docs revision would drop the method back onto a GET
   without a word;
-* it **fails** on an entry naming an op that is also in `OFFSET_OPS`. The
-  emitter routes an offset op through its `*ParamsWire` twin over GET and stops
-  there, so an op in both tables would keep the transport that cannot carry its
-  payload. Nothing overlaps today, and reconciling the wire twin with a
-  multipart body is unexamined work, so the generator refuses rather than
-  guesses;
+* it **fails** on an entry naming an op that is also in `OFFSET_OPS`. An offset
+  op sends its `*ParamsWire` twin, which has only ever gone out over GET; listing
+  it would move that twin onto a multipart body without a word. Nothing overlaps
+  today, and reconciling the wire twin with a multipart body is unexamined work,
+  so the generator refuses rather than guesses;
 * it **warns** when a parameter the docs describe as base64 is absent from the
   table. That is the tripwire for a fifth method appearing in a docs refresh;
   it warns rather than fails because the reading comes from mined HTML and
@@ -672,9 +676,8 @@ retypes the fields -- a raw caller reading them out of a generated method body
 would be copying something that moves with the response shape. The same pass
 emits `offset_timestamps(method)`, which answers a wire name with its const, so
 a caller dispatching by name does not keep its own method-to-const map. It is a
-lookup and not a step inside `call_raw_by_name`: the raw calls return exactly
-what VoIP.ms sent, and a raw envelope with offsets attached would no longer be
-that.
+lookup and not a step inside `call_raw`: the raw calls return exactly what
+VoIP.ms sent, and a raw envelope with offsets attached would no longer be that.
 
 `attach_offset` skips a blank value. A blank is one record's missing timestamp,
 which the deserializers fold to `None`; suffixing it produces a string that
@@ -757,18 +760,17 @@ it together.
 The private `Client::send` is the single point that hits the network; it takes
 the transport (decision #7) and returns the parsed envelope, and `Client::fetch`
 adds the status classification on top. The public `call`, `call_raw`, and
-`call_at` are the GET forms (as is `call_raw_unchecked`, behind the
-`unchecked-raw` feature); `call_multipart`, `call_multipart_raw`, and
-`call_multipart_raw_unchecked` are their multipart-POST counterparts.
-A caller dispatching by wire name rather than through a generated method calls
-`call_raw_by_name` (or `call_raw_unchecked_by_name`), which picks the transport
-the way a generated method does; `requires_multipart(method)` answers the same
-question for a caller that needs it without making the call, and
-`offset_timestamps(method)` names the timestamps the caller then completes with
-`attach_offset` (decision #8). The dispatcher
-exists because that two-arm choice was written out at each call site instead,
-where no test reached either arm. All generated methods are thin wrappers over
-one of them:
+`call_at` (and `call_raw_unchecked`, behind the `unchecked-raw` feature) take
+the transport from `Transport::for_method`, which reads the generated
+`requires_multipart(method)`; the private `raw` and `typed` helpers hold the
+two bodies they share. `call_multipart_raw` and `call_multipart_raw_unchecked`
+are the single explicit escape hatch, for an upload method this crate has not
+been regenerated for, which `requires_multipart` answers `false` for. A caller
+dispatching by wire name calls `call_raw` like a generated method does;
+`requires_multipart(method)` answers the transport question without making the
+call, and `offset_timestamps(method)` names the timestamps the caller then
+completes with `attach_offset` (decision #8). Every generated method is a thin
+wrapper over `call` or `call_raw`, whatever its transport:
 
 ```rust
 pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceResponse> {
@@ -776,7 +778,7 @@ pub async fn get_balance(&self, params: &GetBalanceParams) -> Result<GetBalanceR
 }
 
 pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetRecordingResponse> {
-  self.call_multipart("setRecording", params).await
+  self.call("setRecording", params).await
 }
 ```
 

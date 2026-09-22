@@ -44,10 +44,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (username, password) = credentials()?;
     let client = Client::new(username, password);
 
-    // The transport is the method's, not a choice: a base64 file parameter
-    // does not fit the request line a GET puts it on, so the call goes out by
-    // name and lets the crate pick.
-    match client.call_raw_by_name(&method, &params).await {
+    // `call_raw` picks the transport from the wire name, so a method carrying a
+    // base64 file goes out as the multipart POST it needs. A method this crate
+    // has not been regenerated for is sent as a GET.
+    match client.call_raw(&method, &params).await {
         Ok(envelope) => println!("{}", serde_json::to_string_pretty(&envelope)?),
         // A non-success status is the answer to some questions, so it prints
         // instead of ending the run.

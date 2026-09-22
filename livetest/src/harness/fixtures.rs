@@ -176,7 +176,7 @@ async fn capture_read_back_error<P>(
         }
     }
 
-    match client.call_raw_unchecked_by_name(method, params).await {
+    match client.call_raw_unchecked(method, params).await {
         Ok(body) => {
             let pretty = serde_json::to_string_pretty(&body).unwrap_or_else(|_| body.to_string());
             eprintln!("[capture]   raw response:");

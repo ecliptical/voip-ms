@@ -151,7 +151,8 @@ refresh needs eyes on the diff, not just a green build:
   description mentions base64 that is not in `BASE64_FILE_PARAM_PATHS` in
   [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs). Confirm the
   parameter really carries a file, add its `"wireMethod.field"` path, and
-  regenerate; the method then routes through `Client::call_multipart`. A stale
+  regenerate; `requires_multipart` then names the method, and `Client::call` /
+  `call_raw` send it as a multipart POST. A stale
   entry (a parameter the WSDL dropped) fails the run outright.
 * **New status codes** — `api-statuses.json` grows; each new code becomes an
   `ApiStatus` variant. If two codes collapse to the same PascalCase variant,

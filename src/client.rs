@@ -32,8 +32,8 @@ enum Transport {
 }
 
 impl Transport {
-    /// The transport `method` has to travel over, which the wire method decides
-    /// and no caller chooses.
+    /// The transport `method` travels over, read from the generated table. A
+    /// method absent from it is a GET.
     fn for_method(method: &str) -> Self {
         if crate::requires_multipart(method) {
             Self::MultipartPost
@@ -170,6 +170,32 @@ impl Client {
         Ok((body, empty))
     }
 
+    /// [`Client::fetch`], with an empty-collection status rejected as
+    /// [`Error::Api`] like any other non-`success` one.
+    async fn raw<P>(&self, method: &str, params: &P, transport: Transport) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        let (body, empty) = self.fetch(method, params, transport).await?;
+        if let Some(status) = empty {
+            return Err(Error::Api(status));
+        }
+
+        Ok(body)
+    }
+
+    /// [`Client::fetch`], deserialized into `T`; an empty-collection status
+    /// deserializes with its collection fields at `None`.
+    async fn typed<P, T>(&self, method: &str, params: &P, transport: Transport) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let (body, _empty) = self.fetch(method, params, transport).await?;
+        serde_json::from_value(body)
+            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
+    }
+
     /// Issue a request for `method` with the given typed parameters and
     /// return the full JSON response body as a [`serde_json::Value`].
     ///
@@ -180,67 +206,27 @@ impl Client {
     /// [`Client::call`] instead folds those into an empty response.
     ///
     /// This is the low-level raw call used by every generated `*_raw`
-    /// method on [`Client`]. Reach for it directly when VoIP.ms adds a
-    /// method this crate hasn't been regenerated for; otherwise prefer
-    /// the typed [`Client::call`] or one of the per-method wrappers.
-    pub async fn call_raw<P>(&self, method: &str, params: &P) -> Result<Value>
-    where
-        P: Serialize + ?Sized,
-    {
-        let (body, empty) = self.fetch(method, params, Transport::Get).await?;
-        if let Some(status) = empty {
-            return Err(Error::Api(status));
-        }
-        Ok(body)
-    }
-
-    /// Issue a `multipart/form-data` POST for `method` and return the full
-    /// JSON response body as a [`serde_json::Value`].
+    /// method on [`Client`]. Reach for it directly when holding a wire method
+    /// name rather than calling a generated method, or when VoIP.ms adds a
+    /// method this crate hasn't been regenerated for; otherwise prefer the
+    /// typed [`Client::call`] or one of the per-method wrappers.
     ///
-    /// The multipart counterpart of [`Client::call_raw`], with the same
-    /// verbatim contract on the `status` field. Every parameter travels as a
-    /// form field -- credentials and `method` included -- so nothing is bounded
-    /// by the 8190-byte request line the API's front end accepts, which a
-    /// base64 file payload overruns many times over. The multipart encoding is
-    /// not interchangeable with `application/x-www-form-urlencoded`: `rest.php`
-    /// hands one of those to a SOAP handler and answers with an XML fault.
-    pub async fn call_multipart_raw<P>(&self, method: &str, params: &P) -> Result<Value>
-    where
-        P: Serialize + ?Sized,
-    {
-        let (body, empty) = self.fetch(method, params, Transport::MultipartPost).await?;
-        if let Some(status) = empty {
-            return Err(Error::Api(status));
-        }
-        Ok(body)
-    }
-
-    /// Issue a request for `method` over whichever transport that method
-    /// requires, and return the full JSON response body as a
-    /// [`serde_json::Value`].
-    ///
-    /// The by-name form of [`Client::call_raw`], for a caller holding a wire
-    /// method name rather than calling a generated method: a base64 file
-    /// parameter does not fit the request line a GET puts it on, so the four
-    /// methods carrying one are a `multipart/form-data` POST
-    /// ([`requires_multipart`](crate::requires_multipart)), and picking the
-    /// wrong one fails on request-line length rather than on anything that
-    /// names the cause. The `status` field is classified as in
-    /// [`Client::call_raw`].
-    ///
-    /// **Only for a method this crate has been regenerated for.**
-    /// [`requires_multipart`](crate::requires_multipart) answers from the
-    /// generated table, so a method VoIP.ms has added since answers `false`
-    /// whatever parameters it takes. If that method carries a file, this sends
-    /// it as a GET and it dies on the request line; call
-    /// [`Client::call_multipart_raw`] directly instead.
+    /// The transport is chosen for the caller from `method`. A method in the
+    /// generated table whose parameters carry a base64 file
+    /// ([`requires_multipart`](crate::requires_multipart)) is a
+    /// `multipart/form-data` POST, since the file does not fit the request line
+    /// a GET puts it on; every other method is a GET. A method this crate has
+    /// not been regenerated for is absent from the table and so is sent as a
+    /// GET whatever parameters it takes: an upload method the crate has never
+    /// seen needs [`Client::call_multipart_raw`].
     ///
     /// ```no_run
     /// # async fn example(client: &voip_ms::Client) -> voip_ms::Result<()> {
     /// use voip_ms::serde_json::json;
     ///
+    /// // A multipart POST, because `setRecording` carries a file.
     /// let envelope = client
-    ///     .call_raw_by_name("setRecording", &json!({ "name": "greeting", "file": "UklGRg==" }))
+    ///     .call_raw("setRecording", &json!({ "name": "greeting", "file": "UklGRg==" }))
     ///     .await?;
     /// # let _ = envelope;
     /// # Ok(())
@@ -260,7 +246,7 @@ impl Client {
     ///
     /// let offset = TimezoneOffset::new(-4)?;
     /// let mut envelope = client
-    ///     .call_raw_by_name(
+    ///     .call_raw(
     ///         method,
     ///         &json!({ "date_from": "2026-09-01", "date_to": "2026-09-16", "timezone": offset }),
     ///     )
@@ -271,17 +257,36 @@ impl Client {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn call_raw_by_name<P>(&self, method: &str, params: &P) -> Result<Value>
+    pub async fn call_raw<P>(&self, method: &str, params: &P) -> Result<Value>
     where
         P: Serialize + ?Sized,
     {
-        let (body, empty) = self
-            .fetch(method, params, Transport::for_method(method))
-            .await?;
-        if let Some(status) = empty {
-            return Err(Error::Api(status));
-        }
-        Ok(body)
+        self.raw(method, params, Transport::for_method(method))
+            .await
+    }
+
+    /// Issue a `multipart/form-data` POST for `method` and return the full
+    /// JSON response body as a [`serde_json::Value`].
+    ///
+    /// The one call that takes the transport from its caller: for an upload
+    /// method this crate has not been regenerated for, which
+    /// [`requires_multipart`](crate::requires_multipart) answers `false` for
+    /// and [`Client::call_raw`] would therefore send as a GET. A method in the
+    /// generated table needs none of this; `call_raw` already posts the ones
+    /// that carry a file.
+    ///
+    /// The `status` field is classified as in [`Client::call_raw`]. Every
+    /// parameter travels as a form field -- credentials and `method` included
+    /// -- so nothing is bounded by the 8190-byte request line the API's front
+    /// end accepts, which a base64 file payload overruns many times over. The
+    /// multipart encoding is not interchangeable with
+    /// `application/x-www-form-urlencoded`: `rest.php` hands one of those to a
+    /// SOAP handler and answers with an XML fault.
+    pub async fn call_multipart_raw<P>(&self, method: &str, params: &P) -> Result<Value>
+    where
+        P: Serialize + ?Sized,
+    {
+        self.raw(method, params, Transport::MultipartPost).await
     }
 
     /// Issue a request for `method` and return the raw JSON response body
@@ -296,18 +301,22 @@ impl Client {
     /// unexpected error status. An empty body reads as `{"status":"success"}`;
     /// a non-empty body that isn't JSON is an [`Error::InvalidResponse`].
     ///
+    /// The transport is chosen from `method` as in [`Client::call_raw`], so a
+    /// dump of what a method answered goes out the same way its typed call did.
+    ///
     /// Gated behind the `unchecked-raw` feature.
     #[cfg(feature = "unchecked-raw")]
     pub async fn call_raw_unchecked<P>(&self, method: &str, params: &P) -> Result<Value>
     where
         P: Serialize + ?Sized,
     {
-        self.send(method, params, Transport::Get).await
+        self.send(method, params, Transport::for_method(method))
+            .await
     }
 
-    /// The `multipart/form-data` POST counterpart of
-    /// [`Client::call_raw_unchecked`]: the same unclassified envelope, for a
-    /// method whose base64 file parameter does not fit a request line.
+    /// The same unclassified envelope as [`Client::call_raw_unchecked`], over a
+    /// `multipart/form-data` POST: for an upload method this crate has not been
+    /// regenerated for, as [`Client::call_multipart_raw`] is.
     ///
     /// Gated behind the `unchecked-raw` feature.
     #[cfg(feature = "unchecked-raw")]
@@ -318,62 +327,20 @@ impl Client {
         self.send(method, params, Transport::MultipartPost).await
     }
 
-    /// The by-name form of [`Client::call_raw_unchecked`]: the same
-    /// unclassified envelope, over whichever transport `method` requires.
-    ///
-    /// Reach for this to dump what a method really answered when its typed call
-    /// reported an error status -- the dump then goes out the same way the call
-    /// did, so the two cannot describe different requests.
-    ///
-    /// **Only for a method this crate has been regenerated for.**
-    /// [`requires_multipart`](crate::requires_multipart) answers from the
-    /// generated table, so a method VoIP.ms has added since answers `false`
-    /// whatever parameters it takes. If that method carries a file, this sends
-    /// it as a GET and it dies on the request line; call
-    /// [`Client::call_multipart_raw_unchecked`] directly instead. The bound
-    /// matters most here: this is the hatch someone reaches for once a method
-    /// has already behaved unexpectedly.
-    ///
-    /// Gated behind the `unchecked-raw` feature.
-    #[cfg(feature = "unchecked-raw")]
-    pub async fn call_raw_unchecked_by_name<P>(&self, method: &str, params: &P) -> Result<Value>
-    where
-        P: Serialize + ?Sized,
-    {
-        self.send(method, params, Transport::for_method(method))
-            .await
-    }
-
     /// Issue a request and deserialize the full JSON response body into `T`.
     ///
     /// Like [`Client::call_raw`], a non-`success` status is returned as
     /// [`Error::Api`] -- except an empty-collection status
     /// ([`ApiStatus::is_empty_collection`]), which deserializes into `T` with its
-    /// collection fields defaulting to `None` rather than erroring.
+    /// collection fields defaulting to `None` rather than erroring. The
+    /// transport is chosen from `method` as in [`Client::call_raw`].
     pub async fn call<P, T>(&self, method: &str, params: &P) -> Result<T>
     where
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (body, _empty) = self.fetch(method, params, Transport::Get).await?;
-        serde_json::from_value(body)
-            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
-    }
-
-    /// Issue a `multipart/form-data` POST for `method` and deserialize the full
-    /// JSON response body into `T`.
-    ///
-    /// The multipart counterpart of [`Client::call`], with the same handling of
-    /// an empty-collection status. See [`Client::call_multipart_raw`] for what
-    /// the transport changes and why a base64 file payload needs it.
-    pub async fn call_multipart<P, T>(&self, method: &str, params: &P) -> Result<T>
-    where
-        P: Serialize + ?Sized,
-        T: DeserializeOwned,
-    {
-        let (body, _empty) = self.fetch(method, params, Transport::MultipartPost).await?;
-        serde_json::from_value(body)
-            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
+        self.typed(method, params, Transport::for_method(method))
+            .await
     }
 
     /// Issue a request and deserialize a JSON subtree selected by JSON pointer.
@@ -384,13 +351,15 @@ impl Client {
     /// As with [`Client::call`], an empty-collection status
     /// ([`ApiStatus::is_empty_collection`]) is not an error; it carries no data subtree,
     /// so the pointer resolves to JSON `null` and `T`'s fields default to
-    /// `None`.
+    /// `None`. The transport is chosen from `method` as in [`Client::call_raw`].
     pub async fn call_at<P, T>(&self, method: &str, params: &P, pointer: &str) -> Result<T>
     where
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (body, empty) = self.fetch(method, params, Transport::Get).await?;
+        let (body, empty) = self
+            .fetch(method, params, Transport::for_method(method))
+            .await?;
         let subtree = match body.pointer(pointer) {
             Some(v) => v.clone(),
             None if empty.is_some() => Value::Null,
@@ -429,10 +398,9 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        // Always a GET: an offset op has no file parameter, and `cargo xtask
-        // gen` refuses one that grows a base64 param rather than picking a
-        // transport for it silently.
-        let (mut body, _empty) = self.fetch(method, params, Transport::Get).await?;
+        let (mut body, _empty) = self
+            .fetch(method, params, Transport::for_method(method))
+            .await?;
         attach_offset(&mut body, offset, timestamps);
         serde_json::from_value(body)
             .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))

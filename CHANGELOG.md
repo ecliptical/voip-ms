@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Every other method is still a GET. The transport is decided per method from
     the presence of a base64 file parameter, so no call site changes and the
     218 methods that can stay observable in a log or proxy do.
+  - `Client::call`, `call_raw`, `call_at`, and `call_raw_unchecked` make the
+    same choice from the wire name they are given, so a caller dispatching by
+    name gets the POST for those four methods without asking for it.
   - The POST is `multipart/form-data` specifically.
     `application/x-www-form-urlencoded` reaches a SOAP handler on `rest.php`
     and comes back as an XML fault, which is what makes the API look GET-only
@@ -96,11 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   use alongside `1 = Enable / 0 = Disable`. The bare form names no value, so
   the `1=`/`0=` rule could not see it, and the audit reported "ok" while `cnam`,
   `sip_traffic`, and `setMusicOnHold`'s `volume` stayed integers.
-- `cargo xtask dump-methods` reads `call_multipart_raw` as well as `call_raw`,
-  so the four file-carrying methods stay in the wire-method list the live
-  harness's completeness gate partitions. It has read only `call_raw` since
-  before those methods moved to a POST in this release, so re-running it would
-  have dropped them.
 - `cargo xtask gen` fails rather than warns when the Rust it emits does not
   parse or `rustfmt` rejects it, and writes nothing in that case. A missing
   `rustfmt` is still only a warning. Neither check reads inside a macro body, so
@@ -132,22 +130,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wire spelling and `Deserialize` for reading one out of a raw envelope.
   Parsing cannot fail, so a value this crate does not understand costs its own
   field and nothing else.
-- `Client::call_multipart` and `Client::call_multipart_raw`: the multipart-POST
-  counterparts of `Client::call` and `Client::call_raw`, for calling a method
-  with a file payload that this crate hasn't been regenerated for. Same status
-  handling as the GET pair, including how each treats an empty-collection
-  status. `Client::call_multipart_raw_unchecked` pairs with
-  `call_raw_unchecked` under the `unchecked-raw` feature, so diagnosing an
-  unexpected status on a file method can use the transport that method needs.
-- `requires_multipart(method)`: whether a wire method has to be a POST. The
-  generated methods and `Client::call_raw_by_name` apply it themselves; it is
-  public for a caller that needs the answer without making the call.
-- `Client::call_raw_by_name` sends a wire method over the transport that method
-  requires, for a caller dispatching by name rather than through a generated
-  method, so the caller does not re-derive the choice from
-  `requires_multipart`. `call_raw_unchecked_by_name` is its counterpart behind
-  the `unchecked-raw` feature, so a diagnostic dump goes out the way the call
-  did.
+- `Client::call_multipart_raw`: a `multipart/form-data` POST for an upload
+  method this crate hasn't been regenerated for. `Client::call_raw` chooses the
+  transport from the generated table, where a method the crate has never seen
+  is absent and so goes out as a GET; this is the one call that takes the
+  transport from its caller. Same status handling as `call_raw`, including an
+  empty-collection status. `Client::call_multipart_raw_unchecked` pairs with
+  `call_raw_unchecked` under the `unchecked-raw` feature.
+- `requires_multipart(method)`: whether a wire method has to be a POST.
+  `Client::call`, `call_raw`, `call_at`, and `call_raw_unchecked` apply it to
+  the wire name they are given; it is public for a caller that needs the answer
+  without making the call.
 - `ParamsError::Unencodable`, for parameters that have no wire-field rendering:
   a nested structure, or a value serde reports as something other than a scalar.
 - `attach_offset` completes the bare wall clocks in a record-listing envelope
@@ -160,11 +153,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   emitted by the same codegen pass that types the fields.
 - `offset_timestamps(method)`: the by-name counterpart of those six consts. It
   answers a record-listing method's wire name with that method's const and any
-  other name with `None`, so a caller dispatching through
-  `Client::call_raw_by_name` completes the envelope with `attach_offset`
-  without keeping its own method-to-const map. It is generated from the same
-  table as the consts, so the two cannot drift. `call_raw_by_name` itself
-  still returns the timestamps as VoIP.ms sent them, and a method the lookup
+  other name with `None`, so a caller dispatching through `Client::call_raw`
+  completes the envelope with `attach_offset` without keeping its own
+  method-to-const map. It is generated from the same table as the consts, so
+  the two cannot drift. `call_raw` itself still returns the timestamps as
+  VoIP.ms sent them, and a method the lookup
   answers `Some` for must be sent an explicit `timezone`: omitting it selects
   the account's configured zone, which no API call reports.
 - `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`. A zone off the
@@ -188,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `key=value` parameters and prints the envelope. The typed methods answer what
   a value *is*; this answers what VoIP.ms actually sent, which is what settles a
   field whose documentation and response sample disagree. It sends the call
-  through `Client::call_raw_by_name`, so the transport is the method's, and
+  through `Client::call_raw`, so the transport is the method's, and
   prints a non-`success` status rather than raising it, so an error envelope
   reads as easily as a successful one.
 - `Client::api_username()`, so a consumer holding several clients (a reseller

@@ -245,17 +245,13 @@ async fn main() -> voip_ms::Result<()> {
 }
 ```
 
-If that method takes a base64 file, it has to be a `multipart/form-data` POST:
-a payload larger than the request line reaches the API no other way. Call
+`call_raw` picks the transport from the wire name: a method this crate knows to
+carry a base64 file goes out as the `multipart/form-data` POST it needs, and
+every other method as a GET. A method the crate has never seen is not in that
+table, so if it takes a base64 file -- a payload larger than the request line,
+which reaches the API no other way -- call
 [`Client::call_multipart_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_multipart_raw)
-for it. The choice cannot be made for you here -- this crate knows which methods
-carry a file only for the ones it has been regenerated for, and a method it has
-never seen is not among them.
-
-For a method the crate *does* know, dispatching by wire name rather than through
-the generated method,
-[`Client::call_raw_by_name`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw_by_name)
-picks the transport itself. It returns what VoIP.ms sent, so the record-listing
+for it instead. `call_raw` returns what VoIP.ms sent, so the record-listing
 methods' timestamps come back without their offset: send those methods an
 explicit `timezone`, and complete the envelope with
 [`attach_offset`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_offset.html)

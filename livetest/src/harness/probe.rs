@@ -178,11 +178,9 @@ where
 /// let `qualify` complete it, then deserialize `T` over the result. The raw
 /// envelope is what a drift report shows, so `qualify`'s edits stay out of it.
 ///
-/// The fetch goes through [`Client::call_raw_by_name`], which takes the
-/// transport the method requires. A probe holds a wire name, not a generated
-/// method, so it cannot inherit the transport from the call site -- and a file
-/// method sent as a GET would fail on request-line length, reading as a
-/// transport error rather than as this function's mistake.
+/// The fetch goes through [`Client::call_raw`], which picks the transport from
+/// the wire name: a file method sent as a GET would fail on request-line
+/// length, reading as a transport error rather than as this function's mistake.
 async fn probe_qualified<P, T>(
     client: &Client,
     method: &str,
@@ -194,7 +192,7 @@ where
     P: Serialize + Sync,
     T: DeserializeOwned + Debug,
 {
-    let raw = match client.call_raw_by_name(method, params).await {
+    let raw = match client.call_raw(method, params).await {
         Ok(value) => value,
         // An empty-collection status is the typed path's empty-list case, not a
         // failure: both raw forms surface it verbatim, where the typed `call`

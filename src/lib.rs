@@ -49,13 +49,14 @@
 //! parameters carry a base64-encoded file ([`Client::set_recording`],
 //! [`Client::send_fax_message`], [`Client::send_mms`],
 //! [`Client::add_lnp_file`]): a file does not fit the request line VoIP.ms
-//! accepts, so those four are a `multipart/form-data` POST. [`Client`] picks
-//! the transport per method, so nothing about the call site changes; a caller
-//! dispatching by wire name gets the same choice from
-//! [`Client::call_raw_by_name`], or asks [`requires_multipart`] directly --
-//! both only for a method this crate was generated from, since one VoIP.ms has
-//! added since is absent from the table and so reads as a GET. For that one,
-//! choose [`Client::call_multipart_raw`] yourself.
+//! accepts, so those four are a `multipart/form-data` POST. [`Client::call`],
+//! [`Client::call_raw`], and [`Client::call_at`] choose the transport from the
+//! wire name they are given, as every generated method does, so nothing about
+//! the call site changes; [`requires_multipart`] answers the same question
+//! without making the call. Both answer only for a method this crate was
+//! generated from: one VoIP.ms has added since is absent from the table and is
+//! sent as a GET. An upload method of that kind goes through
+//! [`Client::call_multipart_raw`].
 //!
 //! The REST endpoint returns the `{ "status": ... }` JSON envelope directly,
 //! which this crate deserializes -- a status other than `success` surfaces as

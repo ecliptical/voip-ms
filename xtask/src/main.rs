@@ -218,7 +218,7 @@ fn emit_offset_timestamps(
                /// `Some` for exactly the record-listing methods, with that method's\n\
                /// `*_TIMESTAMPS` const, so a caller holding a wire-method name need not\n\
                /// map names to consts itself. A generated method attaches the offset on\n\
-               /// its own; a raw envelope, such as [`Client::call_raw_by_name`] returns,\n\
+               /// its own; a raw envelope, such as [`Client::call_raw`] returns,\n\
                /// reports the wall clocks without it.\n\
                ///\n\
                /// **A method this answers `Some` for must be sent an explicit\n\
@@ -301,11 +301,12 @@ fn base64_file_params(
         }
 
         // Neither check above catches this: the entry is well-formed and
-        // listed, and `emit` would silently keep the GET.
+        // listed, and the op would silently start posting its `*ParamsWire`
+        // twin as a multipart form, a combination nothing has exercised.
         if offset_op(op).is_some() {
             return Err(format!(
-                "BASE64_FILE_PARAM_PATHS entry `{path}` names an offset op, which `emit` \
-                 routes over GET through its wire twin; reconcile the two transports there \
+                "BASE64_FILE_PARAM_PATHS entry `{path}` names an offset op, whose wire twin \
+                 has only ever been sent over GET; confirm it survives a multipart body \
                  before listing it"
             ));
         }
@@ -1262,34 +1263,20 @@ fn emit(
             continue;
         }
 
-        if let Some(fields) = base64_file_params.get(op) {
-            // The base64 payload is many times the 8190-byte request line a GET
-            // would put the query string on, so the whole call travels as form
-            // fields instead.
-            let sentence = multipart_doc_sentence(fields);
-            out.push_str(&format!(
-                "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
-                 ///\n    \
-                 {sentence}\
-                 pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
-                     self.call_multipart(\"{op}\", params).await\n    \
-                 }}\n\n\
-                 /// Call the `{op}` API method and return the raw JSON envelope.\n    \
-                 ///\n    \
-                 {sentence}\
-                 pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
-                     self.call_multipart_raw(\"{op}\", params).await\n    \
-                 }}\n\n"
-            ));
-            continue;
-        }
-
+        // `call` / `call_raw` pick the multipart transport for a method in
+        // `requires_multipart` themselves; the sentence only documents it.
+        let sentence = base64_file_params
+            .get(op)
+            .map(|fields| multipart_doc_sentence(fields))
+            .unwrap_or_default();
         out.push_str(&format!(
             "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
+             {sentence}\
              pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
                  self.call(\"{op}\", params).await\n    \
              }}\n\n\
              /// Call the `{op}` API method and return the raw JSON envelope.\n    \
+             {sentence}\
              pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                  self.call_raw(\"{op}\", params).await\n    \
              }}\n\n"
@@ -1316,7 +1303,8 @@ fn multipart_doc_sentence(fields: &[String]) -> String {
     };
 
     format!(
-        "/// Sent as a `multipart/form-data` POST: the base64 {named} {noun} {verb}\n    \
+        "///\n    \
+         /// Sent as a `multipart/form-data` POST: the base64 {named} {noun} {verb}\n    \
          /// not fit the request line a GET would carry {pronoun} on.\n    "
     )
 }
@@ -1342,15 +1330,15 @@ fn emit_requires_multipart(base64_file_params: &BTreeMap<String, Vec<String>>) -
          /// a GET, because one of its parameters carries a base64-encoded file that\n\
          /// would overrun the request line a query string rides on.\n\
          ///\n\
-         /// The generated [`Client`] methods apply this themselves, and\n\
-         /// [`Client::call_raw_by_name`] applies it to a wire-method name. It is\n\
-         /// public for a caller that needs the answer without making the call.\n\
+         /// [`Client::call_raw`] and the other generic calls apply this to the\n\
+         /// wire-method name they are given. It is public for a caller that needs\n\
+         /// the answer without making the call.\n\
          ///\n\
          /// **It answers only for the methods this crate was generated from.** The\n\
          /// names are a fixed table, so a method VoIP.ms has added since answers\n\
          /// `false` rather than reporting that it cannot say -- and `false` is the\n\
-         /// wrong answer for an upload method. Regenerate, or choose\n\
-         /// [`Client::call_multipart_raw`] by hand.\n\
+         /// wrong answer for an upload method. Regenerate, or call\n\
+         /// [`Client::call_multipart_raw`] for it.\n\
          pub fn requires_multipart(method: &str) -> bool {{\n    \
              matches!(method, {arms})\n\
          }}\n"
@@ -2338,8 +2326,8 @@ mod tests {
 
     #[test]
     fn base64_file_params_rejects_an_offset_op() {
-        // `emit` routes an offset op over GET through its wire twin, before the
-        // multipart branch is reached, so the two cannot both hold silently.
+        // An offset op's wire twin has only been sent over GET, so listing one
+        // here would move it onto multipart with nothing having checked that.
         let err = base64_file_params(&wsdl_fixture(), &ParamDocs::new(), &["getCDR.date_from"])
             .unwrap_err();
         assert!(err.contains("names an offset op"), "{err}");
