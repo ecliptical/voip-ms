@@ -300,6 +300,15 @@ impl Client {
     /// reported an error status -- the dump then goes out the same way the call
     /// did, so the two cannot describe different requests.
     ///
+    /// **Only for a method this crate has been regenerated for.**
+    /// [`requires_multipart`](crate::requires_multipart) answers from the
+    /// generated table, so a method VoIP.ms has added since answers `false`
+    /// whatever parameters it takes. If that method carries a file, this sends
+    /// it as a GET and it dies on the request line; call
+    /// [`Client::call_multipart_raw_unchecked`] directly instead. The bound
+    /// matters most here: this is the hatch someone reaches for once a method
+    /// has already behaved unexpectedly.
+    ///
     /// Gated behind the `unchecked-raw` feature.
     #[cfg(feature = "unchecked-raw")]
     pub async fn call_raw_unchecked_by_name<P>(&self, method: &str, params: &P) -> Result<Value>

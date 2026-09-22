@@ -1290,6 +1290,12 @@ fn emit_requires_multipart(base64_file_params: &BTreeMap<String, Vec<String>>) -
          /// The generated [`Client`] methods apply this themselves, and\n\
          /// [`Client::call_raw_by_name`] applies it to a wire-method name. It is\n\
          /// public for a caller that needs the answer without making the call.\n\
+         ///\n\
+         /// **It answers only for the methods this crate was generated from.** The\n\
+         /// names are a fixed table, so a method VoIP.ms has added since answers\n\
+         /// `false` rather than reporting that it cannot say -- and `false` is the\n\
+         /// wrong answer for an upload method. Regenerate, or choose\n\
+         /// [`Client::call_multipart_raw`] by hand.\n\
          pub fn requires_multipart(method: &str) -> bool {{\n    \
              matches!(method, {arms})\n\
          }}\n"
@@ -1653,11 +1659,21 @@ pub(crate) fn write_rust(path: &Path, rendered: &str) -> Result<(), String> {
 
 /// `rendered` as `rustfmt` formats it, so a regen leaves no churn for
 /// `cargo fmt --check`. `None` when no `rustfmt` is installed.
+///
+/// `rustfmt`'s own diagnostic goes to the terminal, since why it refused is
+/// most of what the gate is worth.
 fn rustfmt(rendered: &str) -> Result<Option<String>, String> {
+    rustfmt_with(rendered, Stdio::inherit())
+}
+
+/// [`rustfmt`], with somewhere else to put its diagnostic -- the tests silence
+/// it rather than print a bare `error:` line into a run that passed.
+fn rustfmt_with(rendered: &str, stderr: Stdio) -> Result<Option<String>, String> {
     let mut child = match Command::new("rustfmt")
         .args(["--edition", "2024", "--emit", "stdout"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
+        .stderr(stderr)
         .spawn()
     {
         Ok(child) => child,
@@ -2295,15 +2311,11 @@ mod tests {
         assert!(err.contains("does not parse"), "{err}");
         assert!(!path.exists(), "the file must not have been written");
 
-        // The same must hold when `rustfmt` is the one refusing: a run that
-        // formats the file it already wrote leaves the tree half-regenerated.
-        // `syn` accepts this, `rustfmt` does not.
-        // The rustfmt gate refuses too, and it runs before the write rather
-        // than over it -- which is what keeps a formatting failure from leaving
-        // one of `gen`'s three outputs replaced and the other two behind.
-        // Driven directly: anything rustfmt rejects, `syn` rejects first, so
-        // this arm is unreachable through `write_rust` with a literal.
-        let err = rustfmt("fn f() { let _ = |&:| (); }\n").unwrap_err();
+        // The rustfmt gate refuses too. Driven directly because anything
+        // rustfmt rejects, `syn` rejects first, so no literal reaches this arm
+        // through `write_rust`. Its own diagnostic is silenced here: inherited,
+        // it prints a bare `error:` line into an otherwise green test run.
+        let err = rustfmt_with("fn f() { let _ = |&:| (); }\n", Stdio::null()).unwrap_err();
         assert!(err.contains("rustfmt rejected"), "{err}");
 
         write_rust(&path, "pub fn fine() -> bool {\n    false\n}\n")

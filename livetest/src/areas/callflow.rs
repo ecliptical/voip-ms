@@ -988,8 +988,10 @@ mod tests {
         // parser walks the chunk list rather than indexing fixed positions, so
         // comparing the header to constants would pin the generator against
         // itself and miss the field the parser actually reads. Three seconds at
-        // each format, whose frame sizes differ by 2x, so a parser taking the
-        // sample rate instead of the byte rate lands on 1.0 for one of them.
+        // each format, whose frame sizes differ by 2x: a parser taking the
+        // sample rate instead of the byte rate computes `3 * bytes_per_frame`,
+        // which the 16-bit case catches at 6.0 while the 8-bit one still reads
+        // 3.0 and passes.
         for (format, bits, bytes_per_frame) in [(1u16, 16u16, 2u32), (7, 8, 1)] {
             let mut wav = wav_header(format, bits, 3 * SAMPLE_RATE * bytes_per_frame);
             wav.extend(std::iter::repeat_n(

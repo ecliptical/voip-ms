@@ -19334,6 +19334,12 @@ pub struct UnconnectFAXResponse {
 /// The generated [`Client`] methods apply this themselves, and
 /// [`Client::call_raw_by_name`] applies it to a wire-method name. It is
 /// public for a caller that needs the answer without making the call.
+///
+/// **It answers only for the methods this crate was generated from.** The
+/// names are a fixed table, so a method VoIP.ms has added since answers
+/// `false` rather than reporting that it cannot say -- and `false` is the
+/// wrong answer for an upload method. Regenerate, or choose
+/// [`Client::call_multipart_raw`] by hand.
 pub fn requires_multipart(method: &str) -> bool {
     matches!(
         method,
