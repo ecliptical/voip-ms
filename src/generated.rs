@@ -13675,8 +13675,11 @@ pub struct GetChargesResponseCharge {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub id: Option<u64>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_ledger_date"
+    )]
+    pub date: Option<crate::LedgerDate>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -14878,8 +14881,11 @@ pub struct GetDepositsResponseDeposit {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub id: Option<u64>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_ledger_date"
+    )]
+    pub date: Option<crate::LedgerDate>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -17908,9 +17914,9 @@ pub struct GetTimezonesResponse {
 pub struct GetTransactionHistoryResponseTransaction {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_transaction_date"
+        deserialize_with = "crate::responses::deserialize_opt_ledger_date"
     )]
-    pub date: Option<crate::TransactionDate>,
+    pub date: Option<crate::LedgerDate>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"

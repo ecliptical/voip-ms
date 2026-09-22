@@ -349,13 +349,31 @@ in `xtask/src/field_overrides.rs`:
   `DATE_FIELDS`) map to [`chrono::NaiveDate`], whose own `Serialize` emits the
   documented `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is
   a datetime in some responses and a date in others, so no single type fits.
-  `getTransactionHistory` is the case where one response holds both:
-  [`crate::TransactionDate`] (`TRANSACTION_DATE_RESPONSE_PATHS`, assigned per
-  struct for the same reason the timezones are) carries either the instant a
-  row posted or the span it bills for (`2026-08-01 to 2026-08-31`), with an
-  `Unrecognized(String)` catch-all. The doc sample shows only a timestamp, so
-  the extractor inferred `datetime` and a live span failed the whole envelope --
-  the same shape of break as the legacy zone names, found the same way.
+  The billing ledger is where one field holds both and a third thing besides:
+  [`crate::LedgerDate`] (`LEDGER_DATE_RESPONSE_PATHS`, assigned per struct for
+  the same reason the timezones are) carries a timestamp (`At`), a bare date
+  (`On`), or the span a row bills for (`Period`, wire `2026-08-01 to
+  2026-08-31`), with an `Unrecognized(String)` catch-all. The doc samples show
+  only a point in time, so the extractor inferred `datetime` for
+  `getTransactionHistory` and `date` for `getCharges` / `getDeposits`, and a
+  live span failed the whole envelope -- the same shape of break as the legacy
+  zone names, found the same way.
+
+  `On` is a separate variant rather than a midnight `At` because the three
+  methods disagree on precision: `getTransactionHistory` reports to the second
+  and the other two to the day. Folding a bare date into a timestamp would
+  invent a time of day and render it back with one, so the round-trip through
+  `Display` -- which every variant holds -- would stop being honest.
+
+  Only `getTransactionHistory` has been observed sending a span, in the
+  production logs behind issue #28 (four distinct values, all
+  `YYYY-MM-DD to YYYY-MM-DD`). `getCharges` and `getDeposits` are the same
+  ledger kept for a reseller client and bill by the same periods, but they take
+  a client id and no account available for testing has one, so they are typed
+  for the shape rather than against an observation -- recorded here because it
+  is the one entry in this section settled by reasoning instead of by a live
+  call. The asymmetry decides it: reading a span strictly costs the whole
+  response, reading a point in time leniently costs nothing.
 * **Numeric ids the WSDL under-types as strings** (`U64_FIELDS`, plus
   `setConference`'s 20 prompt slots in `CONFERENCE_PROMPT_FIELDS`) map to
   `u64`. This is the class where the two inference sources disagreed

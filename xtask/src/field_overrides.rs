@@ -273,22 +273,32 @@ pub(crate) fn tz_response_override() -> FieldOverride {
     }
 }
 
-/// The response fields typed [`crate::TransactionDate`]. A transaction-history
-/// row reports either the instant it posted or the span it bills for
-/// (`2026-08-01 to 2026-08-31`) in the same `date` field, which the doc sample's
-/// lone timestamp does not show and a strict `NaiveDateTime` fails the whole
-/// response on. Assigned per struct, since `date` elsewhere means one or the
-/// other and never both. Keyed `"StructName.field"`.
-pub(crate) const TRANSACTION_DATE_RESPONSE_PATHS: &[&str] =
-    &["GetTransactionHistoryResponseTransaction.date"];
+/// The billing-ledger `date` fields, typed [`crate::LedgerDate`]. A row here
+/// reports either when it posted or the span it bills for
+/// (`2026-08-01 to 2026-08-31`) in the same field, which the doc samples' lone
+/// point in time does not show and a strict `chrono` type fails the whole
+/// response on. Assigned per struct, since `date` on every other method is a
+/// point in time and never a span. Keyed `"StructName.field"`.
+///
+/// Only `getTransactionHistory` has been seen sending a span. `getCharges` and
+/// `getDeposits` are the same ledger kept for a reseller client and bill by the
+/// same periods, but they take a client id, and no account available for
+/// testing has one, so they are typed for the shape rather than against an
+/// observation. The asymmetry is what decides it: reading a span strictly costs
+/// the whole response, while reading a point in time leniently costs nothing.
+pub(crate) const LEDGER_DATE_RESPONSE_PATHS: &[&str] = &[
+    "GetTransactionHistoryResponseTransaction.date",
+    "GetChargesResponseCharge.date",
+    "GetDepositsResponseDeposit.date",
+];
 
-/// The [`FieldOverride`] typing a response field as
-/// [`crate::TransactionDate`], which carries a timestamp, a date span, or an
-/// unrecognized value verbatim.
-pub(crate) fn transaction_date_override() -> FieldOverride {
+/// The [`FieldOverride`] typing a response field as [`crate::LedgerDate`],
+/// which carries a timestamp, a bare date, a date span, or an unrecognized
+/// value verbatim.
+pub(crate) fn ledger_date_override() -> FieldOverride {
     FieldOverride {
-        rust_type: "crate::TransactionDate".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_transaction_date".into()),
+        rust_type: "crate::LedgerDate".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_ledger_date".into()),
         ..Default::default()
     }
 }
