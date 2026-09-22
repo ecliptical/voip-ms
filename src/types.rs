@@ -600,11 +600,13 @@ impl<'de> Deserialize<'de> for TimezoneName {
 /// The `date` a `getTransactionHistory` row carries: when it posted, or the
 /// window it summarizes.
 ///
-/// Most rows name a point in time. The report also aggregates communication
-/// charges over the range the caller asked for, and that aggregate row puts the
-/// range itself in the same field (`2026-08-01 to 2026-08-31`), which no single
-/// [`chrono`] type holds. Parsing never fails: a form no variant covers lands
-/// in [`TransactionDate::Unrecognized`] and round-trips unchanged, so one
+/// Most rows name a point in time. The report also ends with a synthesized row
+/// per usage-metered charge, totaling it over the range the call asked for, and
+/// that row puts the range itself in the same field
+/// (`2026-08-01 to 2026-08-31`), which no single [`chrono`] type holds. Such a
+/// row has no transaction to name and reports `uniqueid` as the literal `n/a`.
+/// Parsing never fails: a form no variant covers lands in
+/// [`TransactionDate::Unrecognized`] and round-trips unchanged, so one
 /// unreadable row cannot fail the whole response.
 ///
 /// Every variant round-trips through [`Display`](std::fmt::Display) as VoIP.ms

@@ -2127,10 +2127,10 @@ async fn a_transaction_history_span_does_not_lose_the_response() {
                 },
                 {
                     "date": "2026-08-01 to 2026-08-31",
-                    "uniqueid": "61392144x31a363bc",
-                    "type": "CALLS",
-                    "description": "Communication Charges",
-                    "ammount": "-4.25",
+                    "uniqueid": "n/a",
+                    "type": "CNAM Queries",
+                    "description": "CNAM Queries",
+                    "ammount": "-0.1760",
                 },
                 { "date": "", "uniqueid": "3" },
                 { "date": "2026-08-14", "uniqueid": "4" },
@@ -2194,8 +2194,11 @@ async fn a_transaction_history_span_does_not_lose_the_response() {
             NaiveDate::from_ymd_opt(2026, 8, 14).unwrap()
         ))
     );
+    // The synthesized row names no transaction and is metered to four decimal
+    // places; both survive beside the range.
+    assert_eq!(envelope.transactions[1].uniqueid.as_deref(), Some("n/a"));
     assert_eq!(
         envelope.transactions[1].ammount,
-        Some(Decimal::from_str_exact("-4.25").unwrap())
+        Some(Decimal::from_str_exact("-0.1760").unwrap())
     );
 }

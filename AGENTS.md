@@ -358,15 +358,19 @@ in `xtask/src/field_overrides.rs`:
   failed the whole envelope -- the same shape of break as the legacy zone names,
   found the same way.
 
-  **The range is the requested window, not a billing period.** The transaction
-  report aggregates communication charges over the range the caller asked for,
-  and that aggregate row carries the range in place of a timestamp. Two things
-  establish it: VoIP.ms's own wiki describes the report as showing
-  "Communication Charges (including incoming and outgoing calls) for the range
-  of dates selected", and the four values in the production logs behind issue
-  #28 changed within a single four-minute session as the caller varied the
-  window, two of them (`2026-08-07 to 2026-08-07`, `2026-08-01 to 2026-08-07`)
-  aligning to no billing period at all.
+  **The range is the requested window, not a billing period.** The report ends
+  with a synthesized row per usage-metered charge -- CNAM queries, communication
+  charges -- totaling that charge over the range the caller asked for, and the
+  row carries the range itself in place of a timestamp. The customer portal
+  shows it directly: a search from 2026-04-01 to 2026-09-22 ends in a
+  `CNAM Queries` row dated `2026-04-01 to 2026-09-22`, the search range
+  verbatim. The row is synthesized rather than recorded, so it has no
+  transaction to name and reports `uniqueid` as the literal `n/a`, which is the
+  cheapest way for a consumer to tell it from a real one. The production logs
+  behind issue #28 agree: four values, changing within one four-minute session
+  as the caller varied the window, two of them
+  (`2026-08-07 to 2026-08-07`, `2026-08-01 to 2026-08-07`) aligning to no
+  billing period at all.
 
   That is what keeps the type off `getCharges` and `getDeposits`, which are the
   same ledger kept for a reseller client. Neither takes a date range -- `client`
