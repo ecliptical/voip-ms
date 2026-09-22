@@ -26,26 +26,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     on a first test.
   - A multipart call carries the credentials as form fields, so for those four
     methods the API password no longer appears in the request URL.
-- **Breaking**: the three billing-ledger `date` fields are `Option<LedgerDate>`:
-  `GetTransactionHistoryResponseTransaction::date` (was
-  `Option<chrono::NaiveDateTime>`), `GetChargesResponseCharge::date` and
-  `GetDepositsResponseDeposit::date` (both were `Option<chrono::NaiveDate>`). A
-  row that bills a period reports `2026-08-01 to 2026-08-31` where every other
-  row reports a point in time, and a strict `chrono` type failed the whole
-  envelope on the first such row -- so a caller whose range covered a plan
-  charge got an error instead of the records beside it. `LedgerDate` reads a
-  timestamp (`At`), a bare date (`On`), or a span (`Period`), and keeps anything
-  else verbatim in `Unrecognized`, so the next surprise in one of these fields
-  cannot cost a response.
-  - The docs' Output blocks show only a point in time, so the extractor had
-    nothing else to infer from. The type is assigned per struct in
-    `LEDGER_DATE_RESPONSE_PATHS`, since `date` on every other method is a point
-    in time and never a span.
-  - Only `getTransactionHistory` has been observed sending a span.
-    `getCharges` and `getDeposits` are the same ledger kept for a reseller
-    client and bill by the same periods, but they take a client id and no
-    account available for testing has one, so they are typed for the shape
-    rather than against an observation.
+- **Breaking**: `GetTransactionHistoryResponseTransaction::date` is
+  `Option<TransactionDate>` instead of `Option<chrono::NaiveDateTime>`. The row
+  that aggregates communication charges over the requested window reports that
+  window -- `2026-08-01 to 2026-08-31` -- in place of a timestamp, and a strict
+  datetime failed the whole envelope on it, so a caller whose range covered any
+  billed calls got an error instead of the transactions beside it.
+  `TransactionDate` reads a timestamp (`At`), a bare date (`On`), or a range
+  (`Period`), and keeps anything else verbatim in `Unrecognized`, so the next
+  surprise in that field cannot cost a response.
+  - The docs' Output block shows only a timestamp, so the extractor had nothing
+    else to infer from. The type is assigned per struct in
+    `TRANSACTION_DATE_RESPONSE_PATHS`, since `date` elsewhere is a point in time
+    and never a range.
+  - `getCharges` and `getDeposits` keep their `Option<chrono::NaiveDate>`. They
+    are the same ledger kept for a reseller client, but neither takes a date
+    range, so neither has a window to aggregate over and neither can report one.
 - `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,
   where every other 4xx still answers `true`. The method claims the request
   *provably* never reached VoIP.ms, and 408 does not prove that: RFC 9110
@@ -343,8 +339,7 @@ The rest is mechanical and the compiler finds all of it:
 | `maximum_callers: Some("10".into())` | `maximum_callers: Some(WaitTime::Value(10))` |
 | `report_hold_time_agent: Some("yes".into())` | `report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Yes)` |
 | `client.zip` as `u64` | `client.zip` as `String` (and `password`, `security_code`, `dtmf_digits`, `callerid_prefix`) |
-| `transaction.date` as `NaiveDateTime` | `transaction.date.as_ref().and_then(LedgerDate::at)` for the same value |
-| `charge.date` / `deposit.date` as `NaiveDate` | `charge.date.as_ref().and_then(LedgerDate::date)` for the same value |
+| `transaction.date` as `NaiveDateTime` | `transaction.date.as_ref().and_then(TransactionDate::at)` for the same value |
 | `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))`, and `ParamsError` is `#[non_exhaustive]`, so a `match` on it needs a wildcard arm |
 
 ## [0.12.2] - 2026-09-17

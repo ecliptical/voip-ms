@@ -273,32 +273,35 @@ pub(crate) fn tz_response_override() -> FieldOverride {
     }
 }
 
-/// The billing-ledger `date` fields, typed [`crate::LedgerDate`]. A row here
-/// reports either when it posted or the span it bills for
-/// (`2026-08-01 to 2026-08-31`) in the same field, which the doc samples' lone
-/// point in time does not show and a strict `chrono` type fails the whole
-/// response on. Assigned per struct, since `date` on every other method is a
-/// point in time and never a span. Keyed `"StructName.field"`.
+/// The response fields typed [`crate::TransactionDate`]. A
+/// `getTransactionHistory` row reports either when it posted or a span
+/// (`2026-08-01 to 2026-08-31`) in the same field, which the doc sample's lone
+/// timestamp does not show and a strict `NaiveDateTime` fails the whole
+/// response on. Assigned per struct, since `date` elsewhere is a point in time
+/// and never a span. Keyed `"StructName.field"`.
 ///
-/// Only `getTransactionHistory` has been seen sending a span. `getCharges` and
-/// `getDeposits` are the same ledger kept for a reseller client and bill by the
-/// same periods, but they take a client id, and no account available for
-/// testing has one, so they are typed for the shape rather than against an
-/// observation. The asymmetry is what decides it: reading a span strictly costs
-/// the whole response, while reading a point in time leniently costs nothing.
-pub(crate) const LEDGER_DATE_RESPONSE_PATHS: &[&str] = &[
-    "GetTransactionHistoryResponseTransaction.date",
-    "GetChargesResponseCharge.date",
-    "GetDepositsResponseDeposit.date",
-];
+/// The span is the *requested window*, not a billing period: the transaction
+/// report aggregates communication charges over the range the caller asked for,
+/// and that aggregate row carries the range in place of a timestamp. Four
+/// observed values bear it out -- they changed within one four-minute session as
+/// the caller varied the window, and two of them (`2026-08-07 to 2026-08-07`,
+/// `2026-08-01 to 2026-08-07`) align to no billing period at all.
+///
+/// This is why `getCharges` and `getDeposits` are not in this list even though
+/// they are the same ledger kept for a reseller client. Neither takes a date
+/// range -- `client` is their only parameter -- so neither has a window to
+/// aggregate over, and neither can produce the row. They stay
+/// [`chrono::NaiveDate`].
+pub(crate) const TRANSACTION_DATE_RESPONSE_PATHS: &[&str] =
+    &["GetTransactionHistoryResponseTransaction.date"];
 
-/// The [`FieldOverride`] typing a response field as [`crate::LedgerDate`],
+/// The [`FieldOverride`] typing a response field as [`crate::TransactionDate`],
 /// which carries a timestamp, a bare date, a date span, or an unrecognized
 /// value verbatim.
-pub(crate) fn ledger_date_override() -> FieldOverride {
+pub(crate) fn transaction_date_override() -> FieldOverride {
     FieldOverride {
-        rust_type: "crate::LedgerDate".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_ledger_date".into()),
+        rust_type: "crate::TransactionDate".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_transaction_date".into()),
         ..Default::default()
     }
 }

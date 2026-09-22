@@ -1822,11 +1822,14 @@ fn cmd_gen() -> Result<(), String> {
         field_type_override.insert((*path).to_string(), field_overrides::tz_response_override());
     }
 
-    // A billing-ledger row's `date` is a point in time or a date span, so it
-    // is typed per struct here for the same reason -- the JSON section takes
-    // declared enums only.
-    for path in field_overrides::LEDGER_DATE_RESPONSE_PATHS {
-        field_type_override.insert((*path).to_string(), field_overrides::ledger_date_override());
+    // A transaction-history row's `date` is a point in time or the window the
+    // row summarizes, so it is typed per struct here for the same reason -- the
+    // JSON section takes declared enums only.
+    for path in field_overrides::TRANSACTION_DATE_RESPONSE_PATHS {
+        field_type_override.insert(
+            (*path).to_string(),
+            field_overrides::transaction_date_override(),
+        );
     }
 
     // Each offset op's response reports its timestamps in the offset the

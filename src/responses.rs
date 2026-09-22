@@ -27,7 +27,7 @@ use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::str::FromStr;
 
-use crate::types::{LedgerDate, MaxMembers, Routing, Seconds, TimezoneName, WaitTime};
+use crate::types::{MaxMembers, Routing, Seconds, TimezoneName, TransactionDate, WaitTime};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -330,13 +330,13 @@ where
     }
 }
 
-/// Deserialize a billing-ledger row's `date` into a [`LedgerDate`]: a
+/// Deserialize a billing-ledger row's `date` into a [`TransactionDate`]: a
 /// timestamp or a bare date when the row names a point in time, a pair of
 /// dates when it bills a span, the verbatim string when it is none of those,
 /// and `None` for absent / empty / the placeholder.
-pub(crate) fn deserialize_opt_ledger_date<'de, D>(
+pub(crate) fn deserialize_opt_transaction_date<'de, D>(
     deserializer: D,
-) -> Result<Option<LedgerDate>, D::Error>
+) -> Result<Option<TransactionDate>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -351,7 +351,7 @@ where
                 return Ok(None);
             }
 
-            let Ok(date) = trimmed.parse::<LedgerDate>();
+            let Ok(date) = trimmed.parse::<TransactionDate>();
             Ok(Some(date))
         }
         Some(other) => Err(D::Error::custom(format!(
@@ -689,22 +689,22 @@ mod tests {
     }
 
     #[test]
-    fn opt_ledger_date_reads_a_timestamp_a_date_a_span_and_anything_else() {
-        let call = deserialize_opt_ledger_date::<serde_json::Value>;
+    fn opt_transaction_date_reads_a_timestamp_a_date_a_span_and_anything_else() {
+        let call = deserialize_opt_transaction_date::<serde_json::Value>;
         assert_eq!(call(json!(null)).unwrap(), None);
         assert_eq!(call(json!("")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00")).unwrap(), None);
-        // `getCharges` and `getDeposits` report the day with no time of day.
+        // A date with no time of day stays a date rather than gaining a midnight.
         assert_eq!(
             call(json!("2010-10-29")).unwrap(),
-            Some(LedgerDate::On(
+            Some(TransactionDate::On(
                 NaiveDate::from_ymd_opt(2010, 10, 29).unwrap()
             ))
         );
         assert_eq!(
             call(json!("2016-06-03 00:03:46")).unwrap(),
-            Some(LedgerDate::At(
+            Some(TransactionDate::At(
                 NaiveDate::from_ymd_opt(2016, 6, 3)
                     .unwrap()
                     .and_hms_opt(0, 3, 46)
@@ -713,7 +713,7 @@ mod tests {
         );
         assert_eq!(
             call(json!("2026-08-01 to 2026-08-31")).unwrap(),
-            Some(LedgerDate::Period {
+            Some(TransactionDate::Period {
                 from: NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
                 to: NaiveDate::from_ymd_opt(2026, 8, 31).unwrap(),
             })
@@ -722,7 +722,7 @@ mod tests {
         // record it belongs to -- and every record beside it.
         assert_eq!(
             call(json!("whenever")).unwrap(),
-            Some(LedgerDate::Unrecognized("whenever".to_string()))
+            Some(TransactionDate::Unrecognized("whenever".to_string()))
         );
         assert!(call(json!(0)).is_err());
     }

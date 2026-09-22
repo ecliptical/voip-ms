@@ -597,44 +597,44 @@ impl<'de> Deserialize<'de> for TimezoneName {
     }
 }
 
-/// The `date` a billing-ledger row carries: when it posted, or the span it
-/// bills for.
+/// The `date` a `getTransactionHistory` row carries: when it posted, or the
+/// window it summarizes.
 ///
-/// Three methods report one: `getTransactionHistory` (the account ledger),
-/// `getCharges` and `getDeposits` (the reseller-client ledger). Most rows name
-/// a point in time -- `getTransactionHistory` to the second, the other two to
-/// the day -- but a row covering a period, such as a plan or a usage summary,
-/// puts `<from> to <to>` in the same field (`2026-08-01 to 2026-08-31`), which
-/// no single [`chrono`] type holds. Parsing never fails: a form no variant
-/// covers lands in [`LedgerDate::Unrecognized`] and round-trips unchanged, so
-/// one unreadable row cannot fail the whole response.
+/// Most rows name a point in time. The report also aggregates communication
+/// charges over the range the caller asked for, and that aggregate row puts the
+/// range itself in the same field (`2026-08-01 to 2026-08-31`), which no single
+/// [`chrono`] type holds. Parsing never fails: a form no variant covers lands
+/// in [`TransactionDate::Unrecognized`] and round-trips unchanged, so one
+/// unreadable row cannot fail the whole response.
 ///
 /// Every variant round-trips through [`Display`](std::fmt::Display) as VoIP.ms
 /// spelled it, so a value read here can be echoed back verbatim.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum LedgerDate {
+pub enum TransactionDate {
     /// The instant the row posted (wire: `2016-06-03 00:03:46`).
     At(NaiveDateTime),
-    /// The day the row posted, with no time of day (wire: `2010-10-29`).
+    /// The day the row posted, with no time of day (wire: `2010-10-29`). Kept
+    /// distinct from [`TransactionDate::At`] rather than read as midnight,
+    /// which would invent a time of day and render it back with one.
     On(NaiveDate),
-    /// The span it bills for (wire: `<from> to <to>`).
+    /// The window an aggregate row summarizes (wire: `<from> to <to>`).
     Period { from: NaiveDate, to: NaiveDate },
     /// A form no other variant covers, preserved verbatim.
     Unrecognized(String),
 }
 
-/// Separates the two dates of a [`LedgerDate::Period`] on the wire.
+/// Separates the two dates of a [`TransactionDate::Period`] on the wire.
 const PERIOD_SEPARATOR: &str = " to ";
 
-/// The wire spelling of a [`LedgerDate::At`] timestamp, the same one
+/// The wire spelling of a [`TransactionDate::At`] timestamp, the same one
 /// `deserialize_opt_datetime` reads for every other VoIP.ms datetime.
 const DATETIME_WIRE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
-impl LedgerDate {
+impl TransactionDate {
     /// The instant, or `None` unless the row reported one to the second.
     pub fn at(&self) -> Option<NaiveDateTime> {
         match self {
-            LedgerDate::At(at) => Some(*at),
+            TransactionDate::At(at) => Some(*at),
             _ => None,
         }
     }
@@ -644,8 +644,8 @@ impl LedgerDate {
     /// value.
     pub fn date(&self) -> Option<NaiveDate> {
         match self {
-            LedgerDate::At(at) => Some(at.date()),
-            LedgerDate::On(on) => Some(*on),
+            TransactionDate::At(at) => Some(at.date()),
+            TransactionDate::On(on) => Some(*on),
             _ => None,
         }
     }
@@ -653,24 +653,24 @@ impl LedgerDate {
     /// The span as `(from, to)`, or `None` when the row names a point in time.
     pub fn period(&self) -> Option<(NaiveDate, NaiveDate)> {
         match self {
-            LedgerDate::Period { from, to } => Some((*from, *to)),
+            TransactionDate::Period { from, to } => Some((*from, *to)),
             _ => None,
         }
     }
 }
 
-impl fmt::Display for LedgerDate {
+impl fmt::Display for TransactionDate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LedgerDate::At(at) => write!(f, "{}", at.format(DATETIME_WIRE_FORMAT)),
-            LedgerDate::On(on) => write!(f, "{on}"),
-            LedgerDate::Period { from, to } => write!(f, "{from}{PERIOD_SEPARATOR}{to}"),
-            LedgerDate::Unrecognized(s) => f.write_str(s),
+            TransactionDate::At(at) => write!(f, "{}", at.format(DATETIME_WIRE_FORMAT)),
+            TransactionDate::On(on) => write!(f, "{on}"),
+            TransactionDate::Period { from, to } => write!(f, "{from}{PERIOD_SEPARATOR}{to}"),
+            TransactionDate::Unrecognized(s) => f.write_str(s),
         }
     }
 }
 
-impl FromStr for LedgerDate {
+impl FromStr for TransactionDate {
     type Err = std::convert::Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -680,19 +680,19 @@ impl FromStr for LedgerDate {
                     from.trim().parse::<NaiveDate>(),
                     to.trim().parse::<NaiveDate>(),
                 ) {
-                    (Ok(from), Ok(to)) => LedgerDate::Period { from, to },
-                    _ => LedgerDate::Unrecognized(s.to_string()),
+                    (Ok(from), Ok(to)) => TransactionDate::Period { from, to },
+                    _ => TransactionDate::Unrecognized(s.to_string()),
                 },
             );
         }
 
         if let Ok(at) = NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT) {
-            return Ok(LedgerDate::At(at));
+            return Ok(TransactionDate::At(at));
         }
 
         Ok(match s.parse::<NaiveDate>() {
-            Ok(on) => LedgerDate::On(on),
-            Err(_) => LedgerDate::Unrecognized(s.to_string()),
+            Ok(on) => TransactionDate::On(on),
+            Err(_) => TransactionDate::Unrecognized(s.to_string()),
         })
     }
 }
@@ -979,12 +979,11 @@ mod tests {
         }
     }
 
-    /// Every form has to come back out as VoIP.ms spelled it. The date-only
-    /// form is why `On` exists rather than a midnight `At`: reading
-    /// `getCharges`'s `2010-10-29` as a timestamp would invent a time of day
-    /// and render it back with one.
+    /// Every form has to come back out as VoIP.ms spelled it. That round-trip
+    /// is why `On` exists rather than a midnight `At`: reading a bare date as a
+    /// timestamp would invent a time of day and render it back with one.
     #[test]
-    fn ledger_date_round_trips_every_form() {
+    fn transaction_date_round_trips_every_form() {
         for wire in [
             "2016-06-03 00:03:46",
             "2010-10-29",
@@ -992,26 +991,26 @@ mod tests {
             "2026-08-07 to 2026-08-07",
             "whenever",
         ] {
-            let Ok(parsed) = wire.parse::<LedgerDate>();
+            let Ok(parsed) = wire.parse::<TransactionDate>();
             assert_eq!(parsed.to_string(), wire);
         }
     }
 
     #[test]
-    fn ledger_date_separates_a_point_in_time_from_a_span() {
+    fn transaction_date_separates_a_point_in_time_from_a_span() {
         let day = NaiveDate::from_ymd_opt(2016, 6, 3).unwrap();
-        let Ok(at) = "2016-06-03 00:03:46".parse::<LedgerDate>();
+        let Ok(at) = "2016-06-03 00:03:46".parse::<TransactionDate>();
         assert_eq!(at.at(), Some(day.and_hms_opt(0, 3, 46).unwrap()));
         assert_eq!(at.date(), Some(day));
         assert_eq!(at.period(), None);
 
         // A date-only row has a day but no instant.
-        let Ok(on) = "2010-10-29".parse::<LedgerDate>();
+        let Ok(on) = "2010-10-29".parse::<TransactionDate>();
         assert_eq!(on.at(), None);
         assert_eq!(on.date(), NaiveDate::from_ymd_opt(2010, 10, 29));
         assert_eq!(on.period(), None);
 
-        let Ok(period) = "2026-08-01 to 2026-09-01".parse::<LedgerDate>();
+        let Ok(period) = "2026-08-01 to 2026-09-01".parse::<TransactionDate>();
         assert_eq!(
             period.period(),
             Some((
@@ -1026,10 +1025,10 @@ mod tests {
     /// A half-parsed span is unrecognized rather than silently half-read: one
     /// side alone says nothing about what the row covers.
     #[test]
-    fn ledger_date_keeps_a_malformed_span_verbatim() {
+    fn transaction_date_keeps_a_malformed_span_verbatim() {
         for wire in ["2026-08-01 to never", "not-a-date to 2026-08-31"] {
-            let Ok(parsed) = wire.parse::<LedgerDate>();
-            assert_eq!(parsed, LedgerDate::Unrecognized(wire.to_string()));
+            let Ok(parsed) = wire.parse::<TransactionDate>();
+            assert_eq!(parsed, TransactionDate::Unrecognized(wire.to_string()));
         }
     }
 

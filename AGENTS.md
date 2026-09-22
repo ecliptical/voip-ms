@@ -349,31 +349,36 @@ in `xtask/src/field_overrides.rs`:
   `DATE_FIELDS`) map to [`chrono::NaiveDate`], whose own `Serialize` emits the
   documented `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is
   a datetime in some responses and a date in others, so no single type fits.
-  The billing ledger is where one field holds both and a third thing besides:
-  [`crate::LedgerDate`] (`LEDGER_DATE_RESPONSE_PATHS`, assigned per struct for
-  the same reason the timezones are) carries a timestamp (`At`), a bare date
-  (`On`), or the span a row bills for (`Period`, wire `2026-08-01 to
-  2026-08-31`), with an `Unrecognized(String)` catch-all. The doc samples show
-  only a point in time, so the extractor inferred `datetime` for
-  `getTransactionHistory` and `date` for `getCharges` / `getDeposits`, and a
-  live span failed the whole envelope -- the same shape of break as the legacy
-  zone names, found the same way.
+  `getTransactionHistory` is the case where one field holds a point in time and
+  a range: [`crate::TransactionDate`] (`TRANSACTION_DATE_RESPONSE_PATHS`,
+  assigned per struct for the same reason the timezones are) carries a timestamp
+  (`At`), a bare date (`On`), or a range (`Period`, wire `2026-08-01 to
+  2026-08-31`), with an `Unrecognized(String)` catch-all. The doc sample shows
+  only a timestamp, so the extractor inferred `datetime`, and a live range
+  failed the whole envelope -- the same shape of break as the legacy zone names,
+  found the same way.
 
-  `On` is a separate variant rather than a midnight `At` because the three
-  methods disagree on precision: `getTransactionHistory` reports to the second
-  and the other two to the day. Folding a bare date into a timestamp would
-  invent a time of day and render it back with one, so the round-trip through
-  `Display` -- which every variant holds -- would stop being honest.
+  **The range is the requested window, not a billing period.** The transaction
+  report aggregates communication charges over the range the caller asked for,
+  and that aggregate row carries the range in place of a timestamp. Two things
+  establish it: VoIP.ms's own wiki describes the report as showing
+  "Communication Charges (including incoming and outgoing calls) for the range
+  of dates selected", and the four values in the production logs behind issue
+  #28 changed within a single four-minute session as the caller varied the
+  window, two of them (`2026-08-07 to 2026-08-07`, `2026-08-01 to 2026-08-07`)
+  aligning to no billing period at all.
 
-  Only `getTransactionHistory` has been observed sending a span, in the
-  production logs behind issue #28 (four distinct values, all
-  `YYYY-MM-DD to YYYY-MM-DD`). `getCharges` and `getDeposits` are the same
-  ledger kept for a reseller client and bill by the same periods, but they take
-  a client id and no account available for testing has one, so they are typed
-  for the shape rather than against an observation -- recorded here because it
-  is the one entry in this section settled by reasoning instead of by a live
-  call. The asymmetry decides it: reading a span strictly costs the whole
-  response, reading a point in time leniently costs nothing.
+  That is what keeps the type off `getCharges` and `getDeposits`, which are the
+  same ledger kept for a reseller client. Neither takes a date range -- `client`
+  is their only parameter -- so neither has a window to aggregate over and
+  neither can produce the row; both stay `NaiveDate`. The reasoning generalizes:
+  a range in a `date` field is a property of a *report with a window*, so the
+  methods to suspect are the ones that take `date_from` / `date_to`, not the
+  ones that merely list a ledger.
+
+  `On` is a separate variant rather than a midnight `At` because folding a bare
+  date into a timestamp would invent a time of day and render it back with one,
+  breaking the `Display` round-trip every variant holds.
 * **Numeric ids the WSDL under-types as strings** (`U64_FIELDS`, plus
   `setConference`'s 20 prompt slots in `CONFERENCE_PROMPT_FIELDS`) map to
   `u64`. This is the class where the two inference sources disagreed

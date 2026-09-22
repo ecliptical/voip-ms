@@ -2104,11 +2104,11 @@ async fn the_polymorphic_client_filters_still_take_a_string() {
 }
 
 #[tokio::test]
-async fn a_ledger_span_does_not_lose_the_response() {
-    use voip_ms::{GetTransactionHistoryParams, LedgerDate, chrono::NaiveDate};
+async fn a_transaction_history_span_does_not_lose_the_response() {
+    use voip_ms::{GetTransactionHistoryParams, TransactionDate, chrono::NaiveDate};
 
-    // A row that bills a period reports `<from> to <to>` where every other row
-    // reports one timestamp. Read strictly, the first such row failed the
+    // The row that aggregates communication charges over the requested window
+    // reports that window in place of a timestamp. Read strictly, it failed the
     // whole envelope and took every transaction beside it.
     let (server, client) = fixture().await;
 
@@ -2128,11 +2128,12 @@ async fn a_ledger_span_does_not_lose_the_response() {
                 {
                     "date": "2026-08-01 to 2026-08-31",
                     "uniqueid": "61392144x31a363bc",
-                    "type": "PLAN",
-                    "description": "Monthly Plan",
+                    "type": "CALLS",
+                    "description": "Communication Charges",
                     "ammount": "-4.25",
                 },
                 { "date": "", "uniqueid": "3" },
+                { "date": "2026-08-14", "uniqueid": "4" },
             ],
         })))
         .expect(1)
@@ -2147,10 +2148,10 @@ async fn a_ledger_span_does_not_lose_the_response() {
         .await
         .unwrap();
 
-    assert_eq!(envelope.transactions.len(), 3);
+    assert_eq!(envelope.transactions.len(), 4);
     assert_eq!(
         envelope.transactions[0].date,
-        Some(LedgerDate::At(
+        Some(TransactionDate::At(
             NaiveDate::from_ymd_opt(2026, 9, 8)
                 .unwrap()
                 .and_hms_opt(1, 19, 49)
@@ -2163,7 +2164,7 @@ async fn a_ledger_span_does_not_lose_the_response() {
         envelope.transactions[0]
             .date
             .as_ref()
-            .and_then(LedgerDate::at),
+            .and_then(TransactionDate::at),
         Some(
             NaiveDate::from_ymd_opt(2026, 9, 8)
                 .unwrap()
@@ -2175,96 +2176,26 @@ async fn a_ledger_span_does_not_lose_the_response() {
         envelope.transactions[1]
             .date
             .as_ref()
-            .and_then(LedgerDate::at),
+            .and_then(TransactionDate::at),
         None
     );
     assert_eq!(
         envelope.transactions[1].date,
-        Some(LedgerDate::Period {
+        Some(TransactionDate::Period {
             from: NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
             to: NaiveDate::from_ymd_opt(2026, 8, 31).unwrap(),
         })
     );
     assert_eq!(envelope.transactions[2].date, None);
+    // A date with no time of day stays a date rather than gaining a midnight.
+    assert_eq!(
+        envelope.transactions[3].date,
+        Some(TransactionDate::On(
+            NaiveDate::from_ymd_opt(2026, 8, 14).unwrap()
+        ))
+    );
     assert_eq!(
         envelope.transactions[1].ammount,
         Some(Decimal::from_str_exact("-4.25").unwrap())
-    );
-}
-
-#[tokio::test]
-async fn the_reseller_ledger_reads_a_bare_date_and_a_span() {
-    use voip_ms::{GetChargesParams, GetDepositsParams, LedgerDate, chrono::NaiveDate};
-
-    // `getCharges` and `getDeposits` report the day rather than the instant,
-    // and bill a reseller client by the same periods the account ledger uses.
-    // The day has to survive as a day, without a time of day invented for it.
-    let (server, client) = fixture().await;
-
-    Mock::given(method("GET"))
-        .and(path("/api/v1/rest.php"))
-        .and(query_param("method", "getCharges"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "status": "success",
-            "charges": [
-                { "id": "475568", "date": "2010-10-29", "amount": "2.00", "description": "DID5551234567" },
-                { "id": "475569", "date": "2026-08-01 to 2026-08-31", "amount": "4.25", "description": "Monthly Plan" },
-            ],
-        })))
-        .expect(1)
-        .mount(&server)
-        .await;
-
-    Mock::given(method("GET"))
-        .and(path("/api/v1/rest.php"))
-        .and(query_param("method", "getDeposits"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "status": "success",
-            "deposits": [
-                { "id": "808639", "date": "2010-10-15", "amount": "4.00", "description": "Credit : 2 Setup Charges" },
-            ],
-        })))
-        .expect(1)
-        .mount(&server)
-        .await;
-
-    let charges = client
-        .get_charges(&GetChargesParams {
-            client: Some(561115),
-        })
-        .await
-        .unwrap();
-
-    assert_eq!(
-        charges.charges[0].date,
-        Some(LedgerDate::On(
-            NaiveDate::from_ymd_opt(2010, 10, 29).unwrap()
-        ))
-    );
-    // The migration path for a field that was `NaiveDate`.
-    assert_eq!(
-        charges.charges[0].date.as_ref().and_then(LedgerDate::date),
-        NaiveDate::from_ymd_opt(2010, 10, 29)
-    );
-    assert_eq!(
-        charges.charges[1].date,
-        Some(LedgerDate::Period {
-            from: NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
-            to: NaiveDate::from_ymd_opt(2026, 8, 31).unwrap(),
-        })
-    );
-
-    let deposits = client
-        .get_deposits(&GetDepositsParams {
-            client: Some(561115),
-        })
-        .await
-        .unwrap();
-
-    assert_eq!(
-        deposits.deposits[0].date,
-        Some(LedgerDate::On(
-            NaiveDate::from_ymd_opt(2010, 10, 15).unwrap()
-        ))
     );
 }
