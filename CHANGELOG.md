@@ -42,9 +42,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Read one with `.get()` (or `.value()` / `.into_value()`), and reach what
     could not be read with `.unreadable()`.
   - Params are unchanged. They are written, never received, so they keep the
-    bare `chrono::NaiveDate` / `NaiveDateTime`. The six record-listing
-    timestamps are unchanged too: `DateTime<FixedOffset>` there still refuses a
-    value carrying no offset rather than inventing one.
+    bare `chrono::NaiveDate` / `NaiveDateTime`.
+  - The six record-listing timestamps are `Option<Reported<DateTime<FixedOffset>>>`
+    as well, and still refuse a value that carries no offset rather than reading
+    it as UTC. The offset is now checked separately from the parse, so only the
+    missing offset -- a broken contract -- fails the envelope, while a malformed
+    qualified timestamp degrades like any other value. These are the API's
+    longest responses, so failing one costs the most rows.
+- **Breaking**: `deserialize_opt_timezone_name` reads a bare number or bool as
+  its text, landing in `TimezoneName::Unrecognized`, where it used to fail the
+  envelope. A list or an object is still rejected: that is a shape, not a
+  spelling. `deserialize_opt_date` and `deserialize_opt_datetime` are gone --
+  every response date routes through the `Reported` pair, and nothing called
+  them.
 - **Breaking**: `GetTransactionHistoryResponseTransaction::date` is
   `Option<TransactionDate>` instead of `Option<chrono::NaiveDateTime>`. The row
   that aggregates communication charges over the requested window reports that

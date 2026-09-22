@@ -654,10 +654,7 @@ impl<T: Copy> Reported<T> {
     /// The value, copied out of the wrapper. The shorthand for the [`chrono`]
     /// types these fields hold, which are all [`Copy`].
     pub fn get(&self) -> Option<T> {
-        match self {
-            Reported::Parsed(v) => Some(*v),
-            Reported::Unreadable(_) => None,
-        }
+        self.value().copied()
     }
 }
 
@@ -667,12 +664,6 @@ impl<T: fmt::Display> fmt::Display for Reported<T> {
             Reported::Parsed(v) => v.fmt(f),
             Reported::Unreadable(s) => f.write_str(s),
         }
-    }
-}
-
-impl<T> From<T> for Reported<T> {
-    fn from(value: T) -> Self {
-        Reported::Parsed(value)
     }
 }
 
@@ -790,11 +781,26 @@ impl FromStr for TransactionDate {
 }
 
 impl<'de> Deserialize<'de> for TransactionDate {
+    /// Reads the same wire forms the response field does: the text trimmed, and
+    /// a bare number or bool taken as its text rather than rejected.
+    ///
+    /// One difference is inherent and not a disagreement: the field is
+    /// `Option<TransactionDate>`, so absence -- an empty value or a zero-date
+    /// placeholder -- is its `None`. A bare `TransactionDate` has no absent
+    /// form, so it keeps those in [`TransactionDate::Unrecognized`] rather than
+    /// inventing one.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         struct DateVisitor;
+
+        impl DateVisitor {
+            fn parse<E: DeError>(text: &str) -> Result<TransactionDate, E> {
+                let Ok(date) = text.trim().parse::<TransactionDate>();
+                Ok(date)
+            }
+        }
 
         impl<'de> Visitor<'de> for DateVisitor {
             type Value = TransactionDate;
@@ -803,16 +809,28 @@ impl<'de> Deserialize<'de> for TransactionDate {
                 f.write_str("a transaction date: a timestamp, a date, or `<from> to <to>`")
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<TransactionDate, E>
-            where
-                E: DeError,
-            {
-                let Ok(date) = TransactionDate::from_str(v);
-                Ok(date)
+            fn visit_str<E: DeError>(self, v: &str) -> Result<TransactionDate, E> {
+                Self::parse(v)
+            }
+
+            fn visit_i64<E: DeError>(self, v: i64) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
+            }
+
+            fn visit_u64<E: DeError>(self, v: u64) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
+            }
+
+            fn visit_f64<E: DeError>(self, v: f64) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
+            }
+
+            fn visit_bool<E: DeError>(self, v: bool) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
             }
         }
 
-        deserializer.deserialize_str(DateVisitor)
+        deserializer.deserialize_any(DateVisitor)
     }
 }
 
@@ -1187,6 +1205,46 @@ mod tests {
             assert_eq!(back, wire.parse::<TransactionDate>().unwrap());
             assert_eq!(back.to_string(), wire);
         }
+    }
+
+    /// The advertised use is reading one out of a raw envelope, which is
+    /// exactly where the untidy forms show up -- so the impl has to read them
+    /// the way the response field does, not just the canonical four.
+    #[test]
+    fn transaction_date_deserializes_the_untidy_forms_too() {
+        let from = |v: serde_json::Value| serde_json::from_value::<TransactionDate>(v).unwrap();
+        assert_eq!(
+            from(serde_json::json!(" 2010-10-29 ")),
+            TransactionDate::On(NaiveDate::from_ymd_opt(2010, 10, 29).unwrap())
+        );
+        assert_eq!(
+            from(serde_json::json!(0)),
+            TransactionDate::Unrecognized("0".to_string())
+        );
+        assert_eq!(
+            from(serde_json::json!(true)),
+            TransactionDate::Unrecognized("true".to_string())
+        );
+    }
+
+    #[test]
+    fn reported_reads_both_variants_through_every_accessor() {
+        let day = NaiveDate::from_ymd_opt(2026, 10, 8).unwrap();
+        let parsed = Reported::Parsed(day);
+        assert_eq!(parsed.value(), Some(&day));
+        assert_eq!(parsed.get(), Some(day));
+        assert_eq!(parsed.unreadable(), None);
+        assert_eq!(parsed.clone().into_value(), Some(day));
+        assert_eq!(parsed.to_string(), "2026-10-08");
+
+        let unreadable: Reported<NaiveDate> = Reported::Unreadable("08/10/2026".to_string());
+        assert_eq!(unreadable.value(), None);
+        assert_eq!(unreadable.get(), None);
+        assert_eq!(unreadable.unreadable(), Some("08/10/2026"));
+        assert_eq!(unreadable.clone().into_value(), None);
+        // The arm the examples print through: a degraded date still renders as
+        // what VoIP.ms sent rather than as nothing.
+        assert_eq!(unreadable.to_string(), "08/10/2026");
     }
 
     #[test]

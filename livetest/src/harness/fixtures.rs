@@ -73,7 +73,7 @@ pub async fn read_back<P, T>(
 ) -> bool
 where
     P: Serialize + Sync,
-    T: DeserializeOwned,
+    T: DeserializeOwned + std::fmt::Debug,
 {
     // The `label` (`fixture:getX`) is the report key, not a wire method: the
     // wire call is `getX`. Strip the prefix so the read-back invokes the same
@@ -102,7 +102,7 @@ pub async fn read_back_zoned<P, T>(
 ) -> bool
 where
     P: Serialize + Sync,
-    T: DeserializeOwned,
+    T: DeserializeOwned + std::fmt::Debug,
 {
     let method = label.strip_prefix("fixture:").unwrap_or(label);
     match ZonedRequest::new(params, TimezoneOffset::UTC) {

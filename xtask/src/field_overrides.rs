@@ -19,7 +19,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// How a particular field name should be typed.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct FieldOverride {
     /// Fully-qualified Rust type to substitute for `String`.
     pub rust_type: String,
@@ -41,7 +41,7 @@ pub struct FieldOverride {
     /// Rust type to substitute on the *response* side only, when it differs
     /// from [`Self::rust_type`]. A param is written and so cannot receive a
     /// value this crate does not understand; a response can, which is why the
-    /// date fields read as [`crate::Reported<T>`] and write as the bare `T`.
+    /// date fields read as `Reported<T>` and write as the bare `T`.
     pub response_rust_type: Option<String>,
 }
 
@@ -272,7 +272,7 @@ pub(crate) fn tz_param_override() -> FieldOverride {
 /// clock voip.ms reports, qualified by the UTC offset the request carried.
 pub(crate) fn zoned_timestamp_override() -> FieldOverride {
     FieldOverride {
-        rust_type: "chrono::DateTime<chrono::FixedOffset>".into(),
+        rust_type: "crate::Reported<chrono::DateTime<chrono::FixedOffset>>".into(),
         response_deserializer: Some("crate::responses::deserialize_opt_datetime_offset".into()),
         ..Default::default()
     }
@@ -288,7 +288,7 @@ pub(crate) fn tz_response_override() -> FieldOverride {
     }
 }
 
-/// The response fields typed [`crate::TransactionDate`]. A
+/// The response fields typed `TransactionDate`. A
 /// `getTransactionHistory` row reports either when it posted or a span
 /// (`2026-08-01 to 2026-08-31`) in the same field, which the doc sample's lone
 /// timestamp does not show and a strict `NaiveDateTime` fails the whole
@@ -303,7 +303,7 @@ pub(crate) fn tz_response_override() -> FieldOverride {
 pub(crate) const TRANSACTION_DATE_RESPONSE_PATHS: &[&str] =
     &["GetTransactionHistoryResponseTransaction.date"];
 
-/// The [`FieldOverride`] typing a response field as [`crate::TransactionDate`],
+/// The [`FieldOverride`] typing a response field as `TransactionDate`,
 /// which carries a timestamp, a bare date, a date span, or an unrecognized
 /// value verbatim.
 pub(crate) fn transaction_date_override() -> FieldOverride {
@@ -387,7 +387,7 @@ pub(crate) const BASE64_FILE_PARAM_PATHS: &[&str] = &[
 /// (`Example: '2010-11-30'`). Typed [`chrono::NaiveDate`], whose own
 /// `Serialize` emits exactly that wire form, instead of the WSDL's
 /// `xsd:string` -- on the param side, which is the only side that writes. A
-/// response reads the same field as [`crate::Reported<chrono::NaiveDate>`],
+/// response reads the same field as `Reported<chrono::NaiveDate>`,
 /// like every other response date.
 /// `reseller_nextbilling` is here so `getSubAccounts` and
 /// `setSubAccount` agree on it; the other two are the date-range filters. The

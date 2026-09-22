@@ -121,11 +121,25 @@ live harness reads. Params are the other way round -- they are written, never
 received, so they keep the bare `chrono` type, which is why `FieldOverride`
 carries a `response_rust_type` beside `rust_type`.
 
-Two deserializers stay strict, and both are strict about the same thing. The
-record-listing `deserialize_opt_datetime_offset` rejects a timestamp with no
-offset rather than reading it as UTC (decision #8), and the remaining
-`deserialize_opt_*` scalar helpers reject a shape, not a spelling. The rule is
-that an unexpected *value* degrades and an unexpected *contract* does not.
+The rule is that an unexpected **value** degrades and an unexpected **contract**
+does not. `deserialize_opt_datetime_offset` is where the two meet: a
+record-listing timestamp carrying no UTC offset is rejected, because reading it
+as UTC invents the zone decision #8 exists to remove, while one that carries an
+offset and still does not parse degrades like any other value. A JSON list or
+object where a scalar belongs is a shape, and no scalar type can stand in for
+one, so that is rejected too.
+
+**The class is not closed.** Four scalar helpers still fail the whole envelope
+on a well-shaped string they cannot read:
+`deserialize_opt_u64_from_string_or_number` (`"1,234"`),
+`deserialize_opt_decimal_from_string_or_number` (`"$1.00"`),
+`deserialize_opt_bool_from_string_number_or_yn` (`"maybe"`) and
+`deserialize_opt_routing`. That is the remaining exposure, and it is not
+hypothetical: `GetTransactionHistoryResponseTransaction::ammount` is a strict
+`Decimal` on the same row whose `uniqueid` VoIP.ms already reports as the
+literal `n/a`. Extending `Reported<T>` to them is the same change made here for
+dates, and wants the same thing first -- an observation, or a decision recorded
+as one.
 
 The one exception is the envelope's own `status`, which is a required
 [`ApiStatus`] on each top-level `*Response`. `Client::fetch` has already

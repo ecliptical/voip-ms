@@ -60,7 +60,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!(
                 "{}  {:>15} -> {:<15}  {}  {}",
                 call.date
-                    .map(|d| d.to_string())
+                    .as_ref()
+                    .map(ToString::to_string)
                     .unwrap_or_else(|| "(unknown)".to_string()),
                 call.callerid.as_deref().unwrap_or("(unknown)"),
                 call.destination.as_deref().unwrap_or("(unknown)"),

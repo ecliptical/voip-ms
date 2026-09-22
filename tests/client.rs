@@ -1502,7 +1502,9 @@ async fn record_listing_without_a_zone_asks_for_utc() {
     let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
     assert_eq!(
         envelope.cdr[0].date,
-        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap())
+        Some(voip_ms::Reported::Parsed(
+            voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap()
+        ))
     );
 }
 
@@ -1531,7 +1533,11 @@ async fn record_listing_timestamps_carry_the_offset_that_was_sent() {
         timezone: Some(voip_ms::chrono_tz::America::New_York),
         ..Default::default()
     };
-    let date = client.get_cdr(&params).await.unwrap().cdr[0].date.unwrap();
+    let date = client.get_cdr(&params).await.unwrap().cdr[0]
+        .date
+        .as_ref()
+        .and_then(voip_ms::Reported::get)
+        .unwrap();
     assert_eq!(
         date,
         voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T15:14:35-04:00").unwrap()
@@ -1562,7 +1568,9 @@ async fn record_listing_timestamps_qualify_a_single_bare_record() {
     let envelope = client.get_sms(&GetSMSParams::default()).await.unwrap();
     assert_eq!(
         envelope.sms[0].date,
-        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-03-30T10:24:16+00:00").unwrap())
+        Some(voip_ms::Reported::Parsed(
+            voip_ms::chrono::DateTime::parse_from_rfc3339("2026-03-30T10:24:16+00:00").unwrap()
+        ))
     );
 }
 
@@ -1593,7 +1601,9 @@ async fn record_listing_blank_timestamp_does_not_lose_the_response() {
     assert_eq!(envelope.cdr[1].date, None);
     assert_eq!(
         envelope.cdr[2].date,
-        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap())
+        Some(voip_ms::Reported::Parsed(
+            voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap()
+        ))
     );
 }
 
@@ -1622,7 +1632,11 @@ async fn record_listing_half_hour_zone_stamps_the_offset_it_sent() {
         timezone: Some(voip_ms::chrono_tz::Asia::Kolkata),
         ..Default::default()
     };
-    let date = client.get_cdr(&params).await.unwrap().cdr[0].date.unwrap();
+    let date = client.get_cdr(&params).await.unwrap().cdr[0]
+        .date
+        .as_ref()
+        .and_then(voip_ms::Reported::get)
+        .unwrap();
     assert_eq!(
         date,
         voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-17T00:44:35+05:30").unwrap()

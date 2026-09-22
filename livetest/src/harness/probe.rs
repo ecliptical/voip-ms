@@ -9,7 +9,15 @@
 //!
 //! A typed deserialization that *succeeds* still proves nothing about fidelity,
 //! so the same raw envelope also goes through the key diff in
-//! [`super::keydiff`], which reports what the typed shape silently dropped.
+//! [`super::keydiff`], which reports what the typed shape silently dropped --
+//! and the deserialized value is scanned for the tolerant types' catch-all
+//! variants, which is what a *value* the crate cannot read now looks like.
+//!
+//! Those three checks answer three different questions: drift is "the crate
+//! could not read the envelope", unmodeled is "the crate dropped part of it",
+//! degraded is "the crate read it but did not understand one value".
+
+use std::fmt::Debug;
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -27,6 +35,7 @@ pub enum ProbeOutcome {
     Ok {
         element_count: Option<usize>,
         unmodeled: Vec<String>,
+        degraded: Vec<String>,
     },
     /// Raw succeeded but the typed deserialization failed: a drift bug.
     Drift { error: String, raw_json: String },
@@ -51,7 +60,7 @@ pub async fn probe<P, T>(
 ) -> ProbeOutcome
 where
     P: Serialize + Sync,
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     probe_qualified(client, method, params, |_| {}, count).await
 }
@@ -121,7 +130,7 @@ pub async fn probe_zoned<T>(
     count: impl Fn(&T) -> Option<usize>,
 ) -> ProbeOutcome
 where
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     let fixed = request.offset.to_fixed_offset();
     probe_qualified(
@@ -148,7 +157,7 @@ pub async fn probe_zoned_default<P, T>(
 ) -> ProbeOutcome
 where
     P: Serialize + Default,
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     match ZonedRequest::new(&P::default(), TimezoneOffset::UTC) {
         Ok(request) => probe_zoned(client, method, &request, timestamps, count).await,
@@ -174,7 +183,7 @@ async fn probe_qualified<P, T>(
 ) -> ProbeOutcome
 where
     P: Serialize + Sync,
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     let request = if voip_ms::requires_multipart(method) {
         client.call_multipart_raw(method, params).await
@@ -192,6 +201,7 @@ where
             return ProbeOutcome::Ok {
                 element_count: Some(0),
                 unmodeled: Vec::new(),
+                degraded: Vec::new(),
             };
         }
         Err(Error::Api(status)) => return ProbeOutcome::ApiError(status.to_string()),
@@ -221,6 +231,7 @@ where
     qualify(&mut qualified);
     match serde_json::from_value::<T>(qualified) {
         Ok(typed) => ProbeOutcome::Ok {
+            degraded: degraded_values(&typed),
             element_count: count(&typed),
             unmodeled,
         },
@@ -231,6 +242,92 @@ where
     }
 }
 
+/// The catch-all variants a tolerant type parks a value it could not read in.
+/// `Unknown {` is [`voip_ms::Routing`]'s, which is a struct variant; the rest
+/// are tuple variants.
+const CATCH_ALL_VARIANTS: &[&str] = &["Unreadable(", "Unrecognized(", "Unknown(", "Unknown {"];
+
+/// The values a deserialized response could not read, as `Debug` renders them.
+///
+/// Tolerance is what stopped one odd value failing a whole envelope, and it
+/// took this probe's only signal with it: a re-spelled date now deserializes
+/// *successfully* into a catch-all variant, so the typed read no longer fails
+/// and `keydiff` stays quiet because the key is modeled. Without this, the
+/// harness would pass silently on the very input that opened issue #28.
+///
+/// It reads `Debug` because that is the only uniform view of a `*Response`:
+/// the type carries no `Serialize` (a response is received, never built), and
+/// a per-type accessor would mean touching all 222 of them.
+fn degraded_values(typed: &impl Debug) -> Vec<String> {
+    let rendered = format!("{typed:?}");
+    let mut found: Vec<String> = Vec::new();
+    for variant in CATCH_ALL_VARIANTS {
+        let mut rest = rendered.as_str();
+        while let Some(at) = rest.find(variant) {
+            let tail = &rest[at..];
+            let end = tail
+                .find(['(', '{'].as_slice())
+                .map_or(tail.len(), |i| i + 1);
+            let payload_end = tail[end..]
+                .find([')', '}'].as_slice())
+                .map_or(tail.len(), |i| end + i + 1);
+            found.push(tail[..payload_end].to_string());
+            rest = &rest[at + variant.len()..];
+        }
+    }
+
+    found.sort();
+    found.dedup();
+    found
+}
+
 fn pretty(value: &Value) -> String {
     serde_json::to_string_pretty(value).unwrap_or_else(|_| value.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use voip_ms::{Reported, TransactionDate, chrono::NaiveDate};
+
+    /// The signal this replaces: before tolerance, these values failed the
+    /// typed read and the probe reported drift. They now deserialize, so the
+    /// catch-all variant is the only thing left that says the wire changed.
+    #[test]
+    fn a_catch_all_variant_is_what_drift_looks_like_now() {
+        let found = degraded_values(&vec![
+            Some(Reported::Unreadable("08/10/2026".to_string())),
+            Some(Reported::Parsed(
+                NaiveDate::from_ymd_opt(2026, 10, 8).unwrap(),
+            )),
+        ]);
+        assert_eq!(found, ["Unreadable(\"08/10/2026\")"]);
+    }
+
+    /// Every tolerant family reports, not just the date wrapper: the issue this
+    /// harness missed was a `TransactionDate`, and a zone name or a routing tag
+    /// degrades the same way.
+    #[test]
+    fn every_tolerant_family_reports() {
+        let found = degraded_values(&(
+            TransactionDate::Unrecognized("whenever".to_string()),
+            voip_ms::Routing::Unknown {
+                tag: "zzz".to_string(),
+                value: "1".to_string(),
+            },
+        ));
+        assert_eq!(found.len(), 2, "{found:?}");
+        assert!(found.iter().any(|f| f.starts_with("Unrecognized(")));
+        assert!(found.iter().any(|f| f.starts_with("Unknown {")));
+    }
+
+    /// A response the crate read end to end has nothing to report, so an
+    /// ordinary run stays quiet.
+    #[test]
+    fn a_fully_read_response_reports_nothing() {
+        let clean = vec![Some(Reported::Parsed(
+            NaiveDate::from_ymd_opt(2026, 10, 8).unwrap(),
+        ))];
+        assert!(degraded_values(&clean).is_empty());
+    }
 }

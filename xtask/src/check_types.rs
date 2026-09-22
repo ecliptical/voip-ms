@@ -48,7 +48,7 @@ const DELIBERATE: &[&str] = &[
 ];
 
 /// The type a field carries for comparison, with a response's
-/// [`crate::Reported<T>`] wrapper removed.
+/// `Reported<T>` wrapper removed.
 ///
 /// Reading `Reported<T>` where the param writes a bare `T` is the crate-wide
 /// rule rather than an exception: a param is written and cannot receive a value

@@ -13069,7 +13069,7 @@ pub struct GetCDRResponseCDR {
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
+    pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -16078,7 +16078,7 @@ pub struct GetMMSResponseSMS {
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
+    pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
         deserialize_with = "deserialize_opt_message_type",
@@ -17037,7 +17037,7 @@ pub struct GetResellerCDRResponseCDR {
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
+    pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -17120,7 +17120,7 @@ pub struct GetResellerMMSResponseSMS {
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
+    pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
         deserialize_with = "deserialize_opt_message_type",
@@ -17169,7 +17169,7 @@ pub struct GetResellerSMSResponseSMS {
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
+    pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
         deserialize_with = "deserialize_opt_message_type",
@@ -17372,7 +17372,7 @@ pub struct GetSMSResponseSMS {
         default,
         deserialize_with = "crate::responses::deserialize_opt_datetime_offset"
     )]
-    pub date: Option<chrono::DateTime<chrono::FixedOffset>>,
+    pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
         deserialize_with = "deserialize_opt_message_type",

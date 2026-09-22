@@ -1446,29 +1446,34 @@ pub(crate) fn repo_root() -> PathBuf {
         .to_path_buf()
 }
 
-/// Snake-cased name used for the per-enum `deserialize_opt_*` helper
-/// emitted into `generated.rs`.
 /// Record a per-struct type assignment, refusing a second one that disagrees.
 ///
-/// Four tables feed this map and `BTreeMap::insert` is last-writer-wins, so a
-/// path reached by two of them would take whichever ran last and drop the other
-/// on a run that reported success. `getTransactionHistory` is the live example:
-/// it takes a date window, so a `timezone` parameter appearing on it would put
-/// it in `OFFSET_OPS`, whose loop runs after the range assignment and would
-/// replace it with a zoned timestamp. Re-asserting the same type is allowed --
-/// only a disagreement is a contradiction.
+/// Five tables feed this map -- the JSON `field_type_override`,
+/// `NAMED_ZONE_TZ_PARAM_PATHS`, `NAMED_ZONE_TZ_RESPONSE_PATHS`,
+/// `TRANSACTION_DATE_RESPONSE_PATHS` and the `OFFSET_OPS` zoned timestamps --
+/// and `BTreeMap::insert` is last-writer-wins, so a path reached by two of them
+/// would take whichever ran last and drop the other on a run that reported
+/// success. `getTransactionHistory` is the live example: it takes a date
+/// window, so a `timezone` parameter appearing on it would put it in
+/// `OFFSET_OPS`, whose loop runs after the range assignment and would replace
+/// it with a zoned timestamp.
+///
+/// The whole override is compared, not just `rust_type`: two tables can agree
+/// on the Rust type and disagree on the response type or the deserializer, and
+/// resolving that by loop order is the same silent loss. Re-asserting an
+/// identical override stays allowed, since only a disagreement is a
+/// contradiction.
 fn assign_field_type(
     assignments: &mut BTreeMap<String, field_overrides::FieldOverride>,
     path: String,
     ov: field_overrides::FieldOverride,
 ) -> Result<(), String> {
     if let Some(existing) = assignments.get(&path)
-        && existing.rust_type != ov.rust_type
+        && *existing != ov
     {
         return Err(format!(
-            "`{path}` is assigned two types, `{}` and `{}`; the tables in `gen` \
-             disagree and one of the entries has to go",
-            existing.rust_type, ov.rust_type
+            "`{path}` is assigned two different overrides, `{existing:?}` and `{ov:?}`; \
+             the tables in `gen` disagree and one of the entries has to go"
         ));
     }
 
@@ -1476,6 +1481,8 @@ fn assign_field_type(
     Ok(())
 }
 
+/// Snake-cased name used for the per-enum `deserialize_opt_*` helper
+/// emitted into `generated.rs`.
 fn enum_deserializer_path(enum_name: &str) -> String {
     let acronyms = acronyms_sorted();
     format!("deserialize_opt_{}", camel_to_snake(enum_name, &acronyms))

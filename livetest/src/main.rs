@@ -174,8 +174,8 @@ async fn confirm_connectivity(client: &voip_ms::Client) -> Result<()> {
 fn print_summary(report: &Report) {
     let c = report.counts();
     println!(
-        "\n== summary == pass={} fail={} skip={} drift={} unmodeled={}",
-        c.pass, c.fail, c.skip, c.drift, c.unmodeled
+        "\n== summary == pass={} fail={} skip={} drift={} unmodeled={} degraded={}",
+        c.pass, c.fail, c.skip, c.drift, c.unmodeled, c.degraded
     );
     println!("{}", report.summary_json());
 
@@ -195,6 +195,18 @@ fn print_summary(report: &Report) {
              `additions` section of tools/api-response-overrides.json and regenerate \
              (see DEVELOPMENT.md).",
             c.unmodeled
+        );
+    }
+
+    // Likewise: a value that landed in a catch-all deserialized fine, so it
+    // shows up in neither drift nor unmodeled. It is the form drift takes once
+    // the type tolerates what it cannot parse.
+    if c.degraded > 0 {
+        eprintln!(
+            "\n{} method(s) returned a value the typed surface could not read -- the \
+             envelope survived, so read the [DEGRADED] lines above for what the wire \
+             now carries, and retype the field if it is a form to keep.",
+            c.degraded
         );
     }
 }
