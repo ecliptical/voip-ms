@@ -7,7 +7,7 @@ use async_trait::async_trait;
 
 use crate::areas::probe_macros::probe_list;
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
-use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
+use crate::harness::fixtures::{Orphan, owned_orphans, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -130,17 +130,12 @@ async fn list_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
     let resp: GetForwardingsResponse = client
         .get_forwardings(&GetForwardingsParams::default())
         .await?;
-    Ok(resp
-        .forwardings
-        .into_iter()
-        .filter(|f| owned(&f.description))
-        .filter_map(|f| {
-            f.forwarding.map(|id| Orphan {
-                label: format!("forwarding id={id}"),
-                id,
-            })
-        })
-        .collect())
+    Ok(owned_orphans(
+        resp.forwardings,
+        "forwarding",
+        |f| &f.description,
+        |f| f.forwarding,
+    ))
 }
 
 async fn del_forwarding(client: &Client, id: u64) -> anyhow::Result<()> {

@@ -245,10 +245,17 @@ async fn main() -> voip_ms::Result<()> {
 }
 ```
 
-If that method takes a base64 file, call
+If that method takes a base64 file, it has to be a `multipart/form-data` POST:
+a payload larger than the request line reaches the API no other way. Call
 [`Client::call_multipart_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_multipart_raw)
-instead: it sends the same parameters as a `multipart/form-data` POST, which is
-the only way a payload larger than the request line reaches the API.
+for it. The choice cannot be made for you here -- this crate knows which methods
+carry a file only for the ones it has been regenerated for, and a method it has
+never seen is not among them.
+
+For a method the crate *does* know, dispatching by wire name rather than through
+the generated method,
+[`Client::call_raw_by_name`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw_by_name)
+picks the transport itself.
 
 ## Error model
 

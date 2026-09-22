@@ -46,6 +46,18 @@ jobs:
         run: |
           cargo xtask check-types --deny
           cargo xtask check-flags --deny
+      - name: Confirm the committed surface is what the generator emits
+        # Nothing else regenerates. Without this, a generator change that alters
+        # the emitted surface reaches main and is found by whoever next runs
+        # `cargo xtask gen` -- as a diff they did not make, in a file they are
+        # told not to hand-edit. Compiling what the run just wrote is also the
+        # only gate that reads inside an emitted macro body, which neither `syn`
+        # nor `rustfmt` parses.
+        run: |
+          cargo xtask gen
+          cargo xtask dump-methods
+          cargo check --workspace --all-targets --features unchecked-raw
+          git diff --exit-code
 
   coverage:
     name: Run tests with coverage

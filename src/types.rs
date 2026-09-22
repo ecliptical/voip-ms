@@ -116,9 +116,41 @@ impl Routing {
     }
 }
 
+/// The one place a [`Routing`]'s `tag:payload` text is written.
+///
+/// It is a separate type rather than [`Routing`]'s own `Display` so that
+/// `Display` can be changed -- made friendlier for a log, say -- without
+/// changing what every routing field sends. Being a `Display` itself is what
+/// lets [`Serialize`] stream it through `collect_str` with no intermediate
+/// `String`.
+struct Wire<'a>(&'a Routing);
+
+impl fmt::Display for Wire<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.0.tag(), self.0.value())
+    }
+}
+
+impl Routing {
+    /// The `tag:payload` string VoIP.ms carries, the inverse of
+    /// [`Routing::from_str`].
+    ///
+    /// This is the wire form, stated once and separately from [`Display`]. The
+    /// two render the same text today, and the separation is what lets that stop
+    /// being true without the wire form following along.
+    ///
+    /// [`Display`]: std::fmt::Display
+    /// [`Routing::from_str`]: std::str::FromStr::from_str
+    pub fn to_wire(&self) -> String {
+        Wire(self).to_string()
+    }
+}
+
+/// Renders the wire form ([`Routing::to_wire`]), which is what a reader of a
+/// routing field expects to see. Nothing on the wire depends on this impl.
 impl fmt::Display for Routing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.tag(), self.value())
+        Wire(self).fmt(f)
     }
 }
 
@@ -182,7 +214,7 @@ impl Serialize for Routing {
     where
         S: Serializer,
     {
-        serializer.collect_str(self)
+        serializer.collect_str(&Wire(self))
     }
 }
 
@@ -639,7 +671,37 @@ mod tests {
         // Split is on the FIRST colon so sip URIs survive intact.
         let r = Routing::from_str("sip:5552223333@sip.voip.ms:5060").unwrap();
         assert_eq!(r, Routing::Sip("5552223333@sip.voip.ms:5060".into()));
-        assert_eq!(r.to_string(), "sip:5552223333@sip.voip.ms:5060");
+        assert_eq!(r.to_wire(), "sip:5552223333@sip.voip.ms:5060");
+    }
+
+    #[test]
+    fn the_wire_form_is_what_serde_sends_and_from_str_accepts() {
+        // `to_wire` is the contract, not `Display`: the two agree today, and
+        // this is what has to keep holding if one of them changes.
+        for r in [
+            Routing::None,
+            Routing::Account("100001_VoIP".into()),
+            Routing::Sip("5552223333@sip.voip.ms:5060".into()),
+            Routing::Unknown {
+                tag: "future".into(),
+                value: "abc".into(),
+            },
+        ] {
+            let wire = r.to_wire();
+            assert_eq!(
+                Routing::from_str(&wire).unwrap(),
+                r,
+                "the wire form must parse back to the value that produced it"
+            );
+            assert_eq!(
+                serde_json::to_string(&r).unwrap(),
+                serde_json::to_string(&wire).unwrap(),
+                "serde sends the wire form"
+            );
+            // They agree today. Changing `Display` is then a deliberate edit
+            // here, not something a reader of the doc has to take on faith.
+            assert_eq!(r.to_string(), wire, "Display renders the wire form today");
+        }
     }
 
     #[test]

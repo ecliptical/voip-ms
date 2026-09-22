@@ -27,8 +27,7 @@ pub fn cmd_dump_methods() -> Result<(), String> {
     methods.dedup();
 
     let out_path = root.join(OUT_REL);
-    fs::write(&out_path, render(&methods))
-        .map_err(|e| format!("write {}: {e}", out_path.display()))?;
+    crate::write_rust(&out_path, &render(&methods))?;
     println!(
         "wrote {} ({} wire methods)",
         out_path.display(),
@@ -120,6 +119,9 @@ fn render(methods: &[String]) -> String {
          /// Every wire method name the generated `Client` exposes. The\n\
          /// completeness gate asserts the area registry partitions exactly this\n\
          /// set, so a newly generated method with no owning area fails the build.\n\
+         ///\n\
+         /// Only the gate reads it, so a non-test build sees an unused const.\n\
+         #[cfg_attr(not(test), allow(dead_code))]\n\
          pub const WIRE_METHODS: &[&str] = &[\n",
     );
     for m in methods {

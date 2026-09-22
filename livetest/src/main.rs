@@ -5,12 +5,6 @@
 //! pre-flight sweep guarantees a clean slate before any fixtures run. See
 //! `--help` and the design notes in the plan.
 
-// The harness framework (Scope, ownership markers, ledger, sweep hooks) is
-// built ahead of the fixtures and costly areas that consume it. Until those
-// land, the framework surface reads as dead code; the allowance keeps the
-// scaffolding intact rather than deleting pieces later phases depend on.
-#![allow(dead_code)]
-
 mod areas;
 mod config;
 mod harness;

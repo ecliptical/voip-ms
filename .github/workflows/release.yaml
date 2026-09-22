@@ -49,6 +49,21 @@ jobs:
       - name: Check the non-default TLS backend
         run: cargo check --no-default-features --features native-tls
 
+      - name: Audit the generated surface
+        run: |
+          cargo xtask check-types --deny
+          cargo xtask check-flags --deny
+
+      - name: Confirm the committed surface is what the generator emits
+        # A tag is the last point at which a hand-edited or stale
+        # `src/generated.rs` can be caught, and the version published is the one
+        # that ships.
+        run: |
+          cargo xtask gen
+          cargo xtask dump-methods
+          cargo check --workspace --all-targets --features unchecked-raw
+          git diff --exit-code
+
       - name: Verify publishability (dry run)
         run: cargo publish --locked --dry-run
 
