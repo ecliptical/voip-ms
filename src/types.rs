@@ -400,6 +400,8 @@ impl TimezoneOffset {
     const MIN: i64 = -12;
     const MAX: i64 = 13;
 
+    /// Zero hours from UTC, sent as `0`. A record-listing request that names no
+    /// zone carries this offset.
     pub const UTC: Self = Self(Decimal::ZERO);
 
     /// Construct an offset, rejecting a value outside `-12..=13` hours.
