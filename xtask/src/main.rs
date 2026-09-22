@@ -2279,7 +2279,7 @@ mod tests {
             field_overrides::zoned_timestamp_override(),
         )
         .unwrap_err();
-        assert!(err.contains("assigned two types"), "{err}");
+        assert!(err.contains("assigned two different overrides"), "{err}");
 
         // Re-asserting the same type is not a disagreement, so a path listed
         // twice in one table is harmless rather than a build failure.

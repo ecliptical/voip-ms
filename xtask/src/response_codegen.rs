@@ -755,7 +755,7 @@ mod tests {
         let found = timestamp_fields("getCDR", &shape).unwrap();
         let emitted = emit_with_override(&shape, &found[0].struct_path);
         assert!(
-            emitted.contains("pub date: Option<chrono::DateTime<chrono::FixedOffset>>"),
+            emitted.contains("pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"),
             "{emitted}"
         );
         assert!(
@@ -769,7 +769,7 @@ mod tests {
         let found = timestamp_fields("getCDR", &datetime()).unwrap();
         let emitted = emit_with_override(&datetime(), &found[0].struct_path);
         assert!(
-            emitted.contains("pub value: Option<chrono::DateTime<chrono::FixedOffset>>"),
+            emitted.contains("pub value: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"),
             "{emitted}"
         );
         assert!(
@@ -791,7 +791,7 @@ mod tests {
             "{emitted}"
         );
         assert!(
-            emitted.contains("pub date: Option<chrono::DateTime<chrono::FixedOffset>>"),
+            emitted.contains("pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"),
             "{emitted}"
         );
         assert!(
