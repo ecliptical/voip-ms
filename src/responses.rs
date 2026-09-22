@@ -28,9 +28,7 @@ use serde_json::Value;
 use std::convert::Infallible;
 use std::str::FromStr;
 
-use crate::types::{
-    MaxMembers, Reported, Routing, Seconds, TimezoneName, TransactionDate, WaitTime,
-};
+use crate::types::{Reported, Routing, TransactionDate};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -429,7 +427,9 @@ where
 /// Placeholder folding is *not* done here -- it is a date's contract, not every
 /// caller's, and folding a `0000-00-00 to ...` range would discard the fact
 /// that a range was reported at all.
-fn deserialize_opt_from_wire_text<'de, T, D>(deserializer: D) -> Result<Option<T>, D::Error>
+pub(crate) fn deserialize_opt_from_wire_text<'de, T, D>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error>
 where
     T: FromStr<Err = Infallible>,
     D: Deserializer<'de>,
@@ -440,19 +440,6 @@ where
 
     let Ok(parsed) = text.parse::<T>();
     Ok(Some(parsed))
-}
-
-/// Deserialize an optional named-zone response field into a [`TimezoneName`]:
-/// a parsed zone when the IANA database recognizes the name, the verbatim
-/// string when it doesn't (voip.ms still reports legacy names like
-/// `Asia/Beijing`), and `None` for absent/empty.
-pub(crate) fn deserialize_opt_timezone_name<'de, D>(
-    deserializer: D,
-) -> Result<Option<TimezoneName>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    deserialize_opt_from_wire_text::<TimezoneName, D>(deserializer)
 }
 
 /// Deserialize a transaction-history row's `date` into a [`TransactionDate`]:
@@ -482,36 +469,11 @@ where
     Ok(Some(date))
 }
 
-pub(crate) fn deserialize_opt_seconds<'de, D>(deserializer: D) -> Result<Option<Seconds>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    deserialize_opt_via::<Seconds, D>(deserializer)
-}
-
-pub(crate) fn deserialize_opt_wait_time<'de, D>(
-    deserializer: D,
-) -> Result<Option<WaitTime>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    deserialize_opt_via::<WaitTime, D>(deserializer)
-}
-
-pub(crate) fn deserialize_opt_max_members<'de, D>(
-    deserializer: D,
-) -> Result<Option<MaxMembers>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    deserialize_opt_via::<MaxMembers, D>(deserializer)
-}
-
 /// Deserialize an optional value via the target type's own `Deserialize`,
-/// mapping JSON null and the empty string to `None`. Shared by the
-/// seconds-or-sentinel helpers, whose types accept a number, a numeric string,
-/// or a sentinel word but should still read an absent/empty field as `None`.
-fn deserialize_opt_via<'de, T, D>(deserializer: D) -> Result<Option<T>, D::Error>
+/// mapping JSON null and a blank string to `None`, so a type with no blank
+/// spelling of its own still reads an empty field as absent. Unlike
+/// [`deserialize_opt_from_wire_text`], a value `T` rejects fails the field.
+pub(crate) fn deserialize_opt_via<'de, T, D>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     T: Deserialize<'de>,
     D: Deserializer<'de>,
@@ -643,6 +605,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::{Seconds, TimezoneName, WaitTime};
     use serde::Deserialize;
     use serde_json::json;
     use std::collections::HashMap;
@@ -941,11 +904,10 @@ mod tests {
     }
 
     /// The zone reader tolerates a scalar spelling and rejects a shape, which
-    /// is the rule the date readers follow -- and it had no test of its own
-    /// while every other `deserialize_opt_*` did.
+    /// is the rule the date readers follow.
     #[test]
     fn opt_timezone_name_tolerates_a_scalar_and_rejects_a_shape() {
-        let call = deserialize_opt_timezone_name::<serde_json::Value>;
+        let call = deserialize_opt_from_wire_text::<TimezoneName, serde_json::Value>;
         assert_eq!(call(json!(null)).unwrap(), None);
         assert_eq!(call(json!("  ")).unwrap(), None);
         assert_eq!(
@@ -982,14 +944,14 @@ mod tests {
 
     #[test]
     fn opt_seconds_and_wait_time_via_helper() {
-        let sec = deserialize_opt_seconds::<serde_json::Value>;
+        let sec = deserialize_opt_via::<Seconds, serde_json::Value>;
         assert_eq!(sec(json!(null)).unwrap(), None);
         assert_eq!(sec(json!("  ")).unwrap(), None);
         assert_eq!(sec(json!(30)).unwrap(), Some(Seconds::Value(30)));
         assert_eq!(sec(json!("none")).unwrap(), Some(Seconds::Unlimited));
         assert!(sec(json!("garbage")).is_err());
 
-        let wt = deserialize_opt_wait_time::<serde_json::Value>;
+        let wt = deserialize_opt_via::<WaitTime, serde_json::Value>;
         assert_eq!(wt(json!("unlimited")).unwrap(), Some(WaitTime::Unlimited));
         assert_eq!(wt(json!("45")).unwrap(), Some(WaitTime::Value(45)));
     }

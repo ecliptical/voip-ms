@@ -237,7 +237,7 @@ The suite has two layers with different jobs.
 		 full envelope verbatim; a non-success status maps to `Error::Api`; a 5xx
 		 to `Error::Http`; a missing `status` field to `Error::InvalidResponse`;
 		 `None` fields are omitted from the query; and typed deserialization via
-		 `call`/`call_at`/`call_raw` works. It also pins specific documented wire
+		 `call`/`call_raw` works. It also pins specific documented wire
 		 forms (routing tags, `1`/`0` and `yes`/`no` flags, `-1`/`0000-00-00`
 		 sentinels, enum codes) and the per-method transport split: the four
 		 methods with a base64 file parameter POST multipart with nothing in the

@@ -170,7 +170,7 @@ fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
     OFFSET_OPS.iter().find(|o| o.wire == wire)
 }
 
-/// The public const naming an offset op's response timestamp paths
+/// The const naming an offset op's response timestamp paths
 /// (`getCDR` -> `GET_CDR_TIMESTAMPS`).
 fn timestamps_const_name(wire: &str, acronyms: &[&'static str]) -> String {
     format!(
@@ -180,9 +180,8 @@ fn timestamps_const_name(wire: &str, acronyms: &[&'static str]) -> String {
 }
 
 /// Emit the per-op `*_TIMESTAMPS` consts. The typed methods pass them to
-/// `Client::call_zoned`; they are public because a `call_raw` caller has to
-/// apply the same offset by hand and would otherwise read the paths out of the
-/// generated method bodies.
+/// `Client::call_zoned`. They are private: [`emit_offset_timestamps`] is the
+/// one public route to the same paths.
 fn emit_timestamp_consts(
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
     acronyms: &[&'static str],
@@ -197,7 +196,7 @@ fn emit_timestamp_consts(
         out.push_str(&format!(
             "\n/// Paths to the timestamps in a `{op}` response, in the form\n\
              /// [`attach_offset`](crate::attach_offset) takes.\n\
-             pub const {}: &[&str] = &[{rendered}];\n",
+             const {}: &[&str] = &[{rendered}];\n",
             timestamps_const_name(op, acronyms),
         ));
     }
@@ -215,11 +214,9 @@ fn emit_offset_timestamps(
                /// `method`'s response timestamps, or `None` for a method whose response\n\
                /// reports none in an offset the request chose.\n\
                ///\n\
-               /// `Some` for exactly the record-listing methods, with that method's\n\
-               /// `*_TIMESTAMPS` const, so a caller holding a wire-method name need not\n\
-               /// map names to consts itself. A generated method attaches the offset on\n\
-               /// its own; a raw envelope, such as [`Client::call_raw`] returns,\n\
-               /// reports the wall clocks without it.\n\
+               /// `Some` for exactly the record-listing methods. A generated method\n\
+               /// attaches the offset on its own; a raw envelope, such as\n\
+               /// [`Client::call_raw`] returns, reports the wall clocks without it.\n\
                ///\n\
                /// **A method this answers `Some` for must be sent an explicit\n\
                /// `timezone`.** The offset to attach is the one the request carried.\n\
@@ -841,9 +838,8 @@ const SUCCESS_STATUS: (&str, &str) = ("success", "The request succeeded");
 /// Emit the `ApiStatus` enum: a `Success` variant, one PascalCase variant per
 /// documented wire code (carrying its description as a doc comment), and an
 /// `Unknown(String)` catch-all, with
-/// `as_str`/`from_wire`/`description`/`is_documented`/`is_empty_collection`
-/// and the `Default`/`FromStr`/`Display`/`Serialize`/`Deserialize`/`From<String>`
-/// impls. The wire strings are preserved verbatim (including the rare
+/// `as_wire`/`from_wire`/`description`/`is_documented`/`is_empty_collection`
+/// and the `FromStr`/`Display`/`Deserialize` impls. The wire strings are preserved verbatim (including the rare
 /// capitalized codes); only the variant *identifiers* are normalized.
 fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> String {
     if statuses.is_empty() {
@@ -885,7 +881,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          /// # use voip_ms::ApiStatus;\n\
          /// let status = ApiStatus::from_wire(\"invalid_credentials\");\n\
          /// assert_eq!(status, ApiStatus::InvalidCredentials);\n\
-         /// assert_eq!(status.as_str(), \"invalid_credentials\");\n\
+         /// assert_eq!(status.as_wire(), \"invalid_credentials\");\n\
          /// assert_eq!(status.description(), Some(\"Username or Password is incorrect\"));\n\
          /// assert!(status.is_documented());\n\
          ///\n\
@@ -908,9 +904,9 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
 
     out.push_str("impl ApiStatus {\n");
 
-    // as_str
+    // as_wire
     out.push_str("    /// The verbatim wire `status` string.\n");
-    out.push_str("    pub fn as_str(&self) -> &str {\n");
+    out.push_str("    pub fn as_wire(&self) -> &str {\n");
     out.push_str("        match self {\n");
     for (variant, code, _) in &variants {
         out.push_str(&format!("            ApiStatus::{variant} => {code:?},\n"));
@@ -982,7 +978,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
     out.push_str(
         "impl std::fmt::Display for ApiStatus {\n    \
              fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        \
-                 f.write_str(self.as_str())\n    \
+                 f.write_str(self.as_wire())\n    \
              }\n\
          }\n\n",
     );
@@ -994,21 +990,6 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
              type Err = std::convert::Infallible;\n\n    \
              fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {\n        \
                  Ok(ApiStatus::from_wire(s))\n    \
-             }\n\
-         }\n\n",
-    );
-
-    // From<String> / From<&str> — keep the prior `ApiStatus::from(String)`
-    // ergonomics working against the new enum.
-    out.push_str(
-        "impl From<String> for ApiStatus {\n    \
-             fn from(s: String) -> Self {\n        \
-                 ApiStatus::from_wire(&s)\n    \
-             }\n\
-         }\n\n\
-         impl From<&str> for ApiStatus {\n    \
-             fn from(s: &str) -> Self {\n        \
-                 ApiStatus::from_wire(s)\n    \
              }\n\
          }\n\n",
     );
@@ -1247,8 +1228,8 @@ fn emit(
                  /// cannot be resolved is\n    \
                  /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope\n    \
                  /// reports its timestamps in that offset without naming it:\n    \
-                 /// [`attach_offset`](crate::attach_offset) puts it back, over\n    \
-                 /// [`{paths}`](crate::{paths}).\n    \
+                 /// [`attach_offset`](crate::attach_offset) puts it back, over the paths\n    \
+                 /// [`offset_timestamps`](crate::offset_timestamps) answers for `{op}`.\n    \
                  pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                      self.call_raw(\"{op}\", &{struct_name}Wire::try_from(params)?).await\n    \
                  }}\n\n"
@@ -1523,11 +1504,9 @@ fn assign_field_type(
     Ok(())
 }
 
-/// Snake-cased name used for the per-enum `deserialize_opt_*` helper
-/// emitted into `generated.rs`.
+/// The `deserialize_with` path for a response field holding a declared enum.
 fn enum_deserializer_path(enum_name: &str) -> String {
-    let acronyms = acronyms_sorted();
-    format!("deserialize_opt_{}", camel_to_snake(enum_name, &acronyms))
+    format!("crate::responses::deserialize_opt_from_wire_text::<{enum_name}, _>")
 }
 
 /// Which serde directions each declared enum is actually reached through.
@@ -1667,8 +1646,7 @@ fn emit_enums(
             ));
         }
 
-        // Deserialize, and the `deserialize_opt_*` helper the response fields
-        // name -- only for an enum some `*Response` field reads. Both are
+        // Deserialize -- only for an enum some `*Response` field reads. It is
         // tolerant of the string / number / bool wire forms voip.ms mixes.
         if sides.deserialize.contains(name) {
             out.push_str(&format!(
@@ -1678,18 +1656,6 @@ fn emit_enums(
                          Ok({name}::from_wire(&s))\n    \
                      }}\n\
                  }}\n\n"
-            ));
-
-            let helper = enum_deserializer_path(name);
-            out.push_str(&format!(
-                "pub(crate) fn {helper}<'de, D>(d: D) -> std::result::Result<Option<{name}>, D::Error>\n\
-                 where D: serde::Deserializer<'de> {{\n    \
-                     let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;\n    \
-                     Ok(opt.and_then(|s| {{\n        \
-                         let t = s.trim();\n        \
-                         if t.is_empty() {{ None }} else {{ Some({name}::from_wire(t)) }}\n    \
-                     }}))\n\
-                 }}\n"
             ));
         }
     }

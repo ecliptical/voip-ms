@@ -22,9 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Every other method is still a GET. The transport is decided per method from
     the presence of a base64 file parameter, so no call site changes and the
     218 methods that can stay observable in a log or proxy do.
-  - `Client::call`, `call_raw`, `call_at`, and `call_raw_unchecked` make the
-    same choice from the wire name they are given, so a caller dispatching by
-    name gets the POST for those four methods without asking for it.
+  - `Client::call`, `call_raw`, and `call_raw_unchecked` make the same choice
+    from the wire name they are given, so a caller dispatching by name gets
+    the POST for those four methods without asking for it.
   - The POST is `multipart/form-data` specifically.
     `application/x-www-form-urlencoded` reaches a SOAP handler on `rest.php`
     and comes back as an XML fault, which is what makes the API look GET-only
@@ -62,8 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     missing offset -- a broken contract -- fails the envelope, while a malformed
     qualified timestamp degrades like any other value. These are the API's
     longest responses, so failing one costs the most rows.
-- **Breaking**: `deserialize_opt_timezone_name` reads a bare number or bool as
-  its text, landing in `TimezoneName::Unrecognized`, where it used to fail the
+- **Breaking**: a named-zone response field reads a bare number or bool as its
+  text, landing in `TimezoneName::Unrecognized`, where it used to fail the
   envelope. A list or an object is still rejected: that is a shape, not a
   spelling. `deserialize_opt_date` and `deserialize_opt_datetime` are gone --
   every response date routes through the `Reported` pair, and nothing called
@@ -138,28 +138,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty-collection status. `Client::call_multipart_raw_unchecked` pairs with
   `call_raw_unchecked` under the `unchecked-raw` feature.
 - `requires_multipart(method)`: whether a wire method has to be a POST.
-  `Client::call`, `call_raw`, `call_at`, and `call_raw_unchecked` apply it to
-  the wire name they are given; it is public for a caller that needs the answer
-  without making the call.
+  `Client::call`, `call_raw`, and `call_raw_unchecked` apply it to the wire
+  name they are given; it is public for a caller that needs the answer without
+  making the call.
 - `ParamsError::Unencodable`, for parameters that have no wire-field rendering:
   a nested structure, or a value serde reports as something other than a scalar.
 - `attach_offset` completes the bare wall clocks in a record-listing envelope
   with the offset the request carried, the step the typed methods take before
   deserializing. Public because a `call_raw` caller needs it too: the raw
   envelope still reports its timestamps without the offset. It takes a
-  `*`-wildcard path, not the RFC 6901 JSON pointer `Client::call_at` takes.
-- `GET_CDR_TIMESTAMPS`, `GET_SMS_TIMESTAMPS`, `GET_MMS_TIMESTAMPS` and their
-  three reseller siblings: the paths `attach_offset` needs for each method,
-  emitted by the same codegen pass that types the fields.
-- `offset_timestamps(method)`: the by-name counterpart of those six consts. It
-  answers a record-listing method's wire name with that method's const and any
-  other name with `None`, so a caller dispatching through `Client::call_raw`
-  completes the envelope with `attach_offset` without keeping its own
-  method-to-const map. It is generated from the same table as the consts, so
-  the two cannot drift. `call_raw` itself still returns the timestamps as
-  VoIP.ms sent them, and a method the lookup
-  answers `Some` for must be sent an explicit `timezone`: omitting it selects
-  the account's configured zone, which no API call reports.
+  `*`-wildcard path (`/cdr/*/date`).
+- `offset_timestamps(method)`: the paths `attach_offset` needs for a
+  record-listing method, answered from its wire name, and `None` for any other
+  name. A caller dispatching through `Client::call_raw` completes the envelope
+  with `attach_offset` without spelling the paths out. It is emitted by the same
+  codegen pass that types the fields, so the two cannot drift. `call_raw`
+  itself still returns the timestamps as VoIP.ms sent them, and a method the
+  lookup answers `Some` for must be sent an explicit `timezone`: omitting it
+  selects the account's configured zone, which no API call reports.
 - `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`. A zone off the
   hour keeps its fraction through both (`Asia/Kolkata` sends `5.50` and its
   timestamps come back qualified `+05:30`).
@@ -194,8 +190,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Seconds::as_u64`, `WaitTime::as_u64`, and `MaxMembers::as_u64`: the count,
   or `None` for the unbounded sentinel, so reading it does not need a match.
 - `serde` is re-exported from the crate root. AGENTS.md and the 0.3.0 entry
-  both said it already was; it was not, and the README's `call_at` example
-  needed a separate dependency to compile.
+  both said it already was; it was not.
 - `cargo xtask check-types` reports a field a method family types one way to
   read and another way to write. It parses the emitted surface, so it describes
   what shipped rather than what the inputs say. It reports nothing today:
@@ -235,7 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   error, which reads as a transport failure for a request that was never sent.
 - `Error::Api`'s `Display` renders the documented meaning beside the code:
   `API status: did_in_use (DID Number is already in use)`. An undocumented code
-  still renders alone. `as_str()` and `ApiStatus`'s own `Display` are unchanged.
+  still renders alone. `ApiStatus`'s own `Display` is unchanged.
 - `src/generated.rs` carries `#![allow(clippy::upper_case_acronyms)]`. The type
   names keep VoIP.ms's acronym casing (`GetDIDsInfoParams`, `SendSMSResponse`),
   which is deliberate but departs from C-CASE, so clippy reported this crate's
@@ -395,6 +390,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   specific, so the next parameter check had nowhere to go.
   `ParamsError::Timezone` holds the previous payload, and `?` converts through
   both hops, so the next kind of validation is additive.
+- **Breaking**: `Client::call_at` is gone. It was `call`, a JSON-pointer lookup,
+  and `serde_json::from_value`, and it put a second path syntax beside the
+  `*`-wildcard paths `attach_offset` takes. The generated method returns the
+  same data typed; for a method or a shape the crate does not model, take the
+  subtree from `call_raw`'s envelope with `Value::pointer`.
+- **Breaking**: `ApiStatus::as_str` is `ApiStatus::as_wire`, the name every
+  generated wire enum already used for the same operation.
+- **Breaking**: `ApiStatus` no longer implements `From<String>` or `From<&str>`.
+  `ApiStatus::from_wire` and `FromStr` remain, which is also what every wire
+  enum offers.
+- **Breaking**: `TimezoneOffset` no longer implements `TryFrom<i64>` or
+  `FromStr`, and `TimezoneOffsetError::NotNumeric`, which only `FromStr`
+  returned, is gone. `TimezoneOffset::new` takes any `Into<Decimal>`, an `i64`
+  included, so it is the one constructor.
+- **Breaking**: the six `*_TIMESTAMPS` consts (`GET_CDR_TIMESTAMPS` and its
+  siblings) are private. `offset_timestamps(method)` answers the same paths
+  and is the one public route to them.
 
 ### Upgrading
 
@@ -431,6 +443,12 @@ The rest is mechanical and the compiler finds all of it:
 | `transaction.date` as `NaiveDateTime` | `transaction.date.as_ref().and_then(TransactionDate::at)` for the same value |
 | `sort_by_key(\|t\| t.date)` / `max_by_key` / `t.date > cutoff` | key on `t.date.as_ref().and_then(TransactionDate::date)` -- `at()` reports `None` for a date-only row as well as an aggregate one, so ordering by it silently collects both at one end |
 | `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))`, and `ParamsError` is `#[non_exhaustive]`, so a `match` on it needs a wildcard arm |
+| `HashMap<ApiStatus, V>` (or keyed by any type that lost `Hash`) | key on the wire text, `status.as_wire().to_owned()`, or ask for `Hash` back |
+| `status.as_str()` | `status.as_wire()` |
+| `ApiStatus::from("no_did")` | `ApiStatus::from_wire("no_did")` |
+| `TimezoneOffset::try_from(-5)?` / `"-5".parse::<TimezoneOffset>()?` | `TimezoneOffset::new(-5)?` / `TimezoneOffset::new(Decimal::from_str_exact("-5")?)?` |
+| `client.call_at("getDIDsInfo", &params, "/dids")` | `client.get_dids_info(&params).await?.dids`, or `client.call_raw(method, &params).await?.pointer("/dids")` for a shape the crate does not model |
+| `voip_ms::GET_CDR_TIMESTAMPS` | `voip_ms::offset_timestamps("getCDR").unwrap()` |
 
 ## [0.12.2] - 2026-09-17
 

@@ -283,7 +283,9 @@ pub(crate) fn zoned_timestamp_override() -> FieldOverride {
 pub(crate) fn tz_response_override() -> FieldOverride {
     FieldOverride {
         rust_type: "crate::TimezoneName".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_timezone_name".into()),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_from_wire_text::<crate::TimezoneName, _>".into(),
+        ),
         ..Default::default()
     }
 }
@@ -547,19 +549,25 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
     // param_serializer needed.
     let seconds = FieldOverride {
         rust_type: "crate::Seconds".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_seconds".into()),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_via::<crate::Seconds, _>".into(),
+        ),
         ..Default::default()
     };
     let wait_time = FieldOverride {
         rust_type: "crate::WaitTime".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_wait_time".into()),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_via::<crate::WaitTime, _>".into(),
+        ),
         ..Default::default()
     };
     // getConference reports `max_members` as a count or the word `Unlimited`;
     // like Seconds/WaitTime it carries its own Serialize, so no param_serializer.
     let max_members = FieldOverride {
         rust_type: "crate::MaxMembers".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_max_members".into()),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_via::<crate::MaxMembers, _>".into(),
+        ),
         ..Default::default()
     };
     // Phone-number override: `String` (a formatted / non-NANP caller ID must

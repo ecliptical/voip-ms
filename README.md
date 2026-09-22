@@ -145,35 +145,6 @@ Both families derive `PartialEq` and `Eq`, so a test can assert a whole
 response and a consumer can dedupe or diff records without writing them out
 field by field.
 
-### Picking a nested field with a JSON pointer
-
-When you only want one nested field, use
-[`Client::call_at`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_at)
-with a JSON pointer and your own type:
-
-```rust,no_run
-use voip_ms::serde::Deserialize;
-use voip_ms::{Client, GetDIDsInfoParams};
-
-#[derive(Debug, Deserialize)]
-#[serde(crate = "voip_ms::serde")]
-struct Did {
-    did: String,
-}
-
-#[tokio::main]
-async fn main() -> voip_ms::Result<()> {
-    let client = Client::new("you@example.com", "your-api-password");
-
-    let dids: Vec<Did> = client
-        .call_at("getDIDsInfo", &GetDIDsInfoParams::default(), "/dids")
-        .await?;
-
-    println!("DID count: {}", dids.len());
-    Ok(())
-}
-```
-
 ### Customizing the HTTP client
 
 Use [`Client::builder`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.builder) to plug in your own `reqwest::Client` — for proxies,
@@ -270,7 +241,7 @@ All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voi
   `ApiStatus::APINotEnabled`, …) for ergonomic match arms, plus an
   `ApiStatus::Unknown(String)` catch-all that preserves any code VoIP.ms
   hasn't documented. `ApiStatus::description()` returns the documented
-  human-readable meaning (or `None` for `Unknown`), `as_str()` gives the
+  human-readable meaning (or `None` for `Unknown`), `as_wire()` gives the
   verbatim wire string, and `is_documented()` reports whether it's a known
   variant. `Display` on the error renders both, so a log line reads
   `API status: did_in_use (DID Number is already in use)`.

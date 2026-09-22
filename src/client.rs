@@ -183,18 +183,6 @@ impl Client {
         Ok(body)
     }
 
-    /// [`Client::fetch`], deserialized into `T`; an empty-collection status
-    /// deserializes with its collection fields at `None`.
-    async fn typed<P, T>(&self, method: &str, params: &P, transport: Transport) -> Result<T>
-    where
-        P: Serialize + ?Sized,
-        T: DeserializeOwned,
-    {
-        let (body, _empty) = self.fetch(method, params, transport).await?;
-        serde_json::from_value(body)
-            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
-    }
-
     /// Issue a request for `method` with the given typed parameters and
     /// return the full JSON response body as a [`serde_json::Value`].
     ///
@@ -338,42 +326,11 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        self.typed(method, params, Transport::for_method(method))
-            .await
-    }
-
-    /// Issue a request and deserialize a JSON subtree selected by JSON pointer.
-    ///
-    /// Use this when the API wraps the interesting data under a known key
-    /// (e.g. `/balance` or `/dids`).
-    ///
-    /// As with [`Client::call`], an empty-collection status
-    /// ([`ApiStatus::is_empty_collection`]) is not an error; it carries no data subtree,
-    /// so the pointer resolves to JSON `null` and `T`'s fields default to
-    /// `None`. The transport is chosen from `method` as in [`Client::call_raw`].
-    pub async fn call_at<P, T>(&self, method: &str, params: &P, pointer: &str) -> Result<T>
-    where
-        P: Serialize + ?Sized,
-        T: DeserializeOwned,
-    {
-        let (mut body, empty) = self
+        let (body, _empty) = self
             .fetch(method, params, Transport::for_method(method))
             .await?;
-        let subtree = match body.pointer_mut(pointer).map(Value::take) {
-            Some(v) => v,
-            None if empty.is_some() => Value::Null,
-            None => {
-                return Err(Error::InvalidResponse(format!(
-                    "response missing JSON pointer `{pointer}` for method `{method}`"
-                )));
-            }
-        };
-
-        serde_json::from_value(subtree).map_err(|e| {
-            Error::InvalidResponse(format!(
-                "failed to deserialize JSON pointer `{pointer}` for method `{method}`: {e}"
-            ))
-        })
+        serde_json::from_value(body)
+            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
     }
 
     /// Issue a request and deserialize the response, first attaching `offset`
@@ -428,15 +385,11 @@ impl Client {
 /// Each entry is a `/`-separated path into `body` in which a `*` segment stands
 /// for every element of a list -- `/cdr/*/date` reaches the `date` of every
 /// record. A `*` also matches the bare object VoIP.ms returns in place of a
-/// one-element list. This is not an RFC 6901 JSON pointer, which has no
-/// wildcard; [`Client::call_at`] takes one of those, and the two syntaxes are
-/// not interchangeable.
+/// one-element list.
 ///
-/// Each method's paths are a public const, so a raw caller names them rather
-/// than spelling them out: [`GET_CDR_TIMESTAMPS`](crate::GET_CDR_TIMESTAMPS),
-/// [`GET_SMS_TIMESTAMPS`](crate::GET_SMS_TIMESTAMPS), and their reseller and
-/// MMS siblings. [`offset_timestamps`](crate::offset_timestamps) answers the
-/// same paths from a wire-method name.
+/// [`offset_timestamps`](crate::offset_timestamps) answers each record-listing
+/// method's paths from its wire name, so a raw caller names the method rather
+/// than spelling the paths out.
 ///
 /// A blank value and one that already names a zone are both left alone -- the
 /// first has no wall clock to qualify and stays the empty placeholder the

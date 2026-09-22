@@ -77,23 +77,6 @@ impl<'de> serde::Deserialize<'de> for CallPickupBehavior {
     }
 }
 
-pub(crate) fn deserialize_opt_call_pickup_behavior<'de, D>(
-    d: D,
-) -> std::result::Result<Option<CallPickupBehavior>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(CallPickupBehavior::from_wire(t))
-        }
-    }))
-}
-
 /// Outgoing-call dialing mode for a sub-account.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DialingMode {
@@ -203,23 +186,6 @@ impl<'de> serde::Deserialize<'de> for DidBillingType {
     }
 }
 
-pub(crate) fn deserialize_opt_did_billing_type<'de, D>(
-    d: D,
-) -> std::result::Result<Option<DidBillingType>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(DidBillingType::from_wire(t))
-        }
-    }))
-}
-
 /// DTMF transport mode for SIP sub-accounts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DtmfMode {
@@ -280,23 +246,6 @@ impl<'de> serde::Deserialize<'de> for DtmfMode {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(DtmfMode::from_wire(&s))
     }
-}
-
-pub(crate) fn deserialize_opt_dtmf_mode<'de, D>(
-    d: D,
-) -> std::result::Result<Option<DtmfMode>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(DtmfMode::from_wire(t))
-        }
-    }))
 }
 
 /// Voicemail email attachment format.
@@ -364,23 +313,6 @@ impl<'de> serde::Deserialize<'de> for EmailAttachmentFormat {
     }
 }
 
-pub(crate) fn deserialize_opt_email_attachment_format<'de, D>(
-    d: D,
-) -> std::result::Result<Option<EmailAttachmentFormat>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(EmailAttachmentFormat::from_wire(t))
-        }
-    }))
-}
-
 /// When to include estimated hold time in queue position announcements.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EstimatedHoldTimeAnnounce {
@@ -441,23 +373,6 @@ impl<'de> serde::Deserialize<'de> for EstimatedHoldTimeAnnounce {
     }
 }
 
-pub(crate) fn deserialize_opt_estimated_hold_time_announce<'de, D>(
-    d: D,
-) -> std::result::Result<Option<EstimatedHoldTimeAnnounce>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(EstimatedHoldTimeAnnounce::from_wire(t))
-        }
-    }))
-}
-
 /// Type of service location for an LNP port.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LocationType {
@@ -514,23 +429,6 @@ impl<'de> serde::Deserialize<'de> for LocationType {
     }
 }
 
-pub(crate) fn deserialize_opt_location_type<'de, D>(
-    d: D,
-) -> std::result::Result<Option<LocationType>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(LocationType::from_wire(t))
-        }
-    }))
-}
-
 /// Direction of an SMS / MMS message: a filter on requests, the direction on results.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MessageType {
@@ -585,23 +483,6 @@ impl<'de> serde::Deserialize<'de> for MessageType {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(MessageType::from_wire(&s))
     }
-}
-
-pub(crate) fn deserialize_opt_message_type<'de, D>(
-    d: D,
-) -> std::result::Result<Option<MessageType>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(MessageType::from_wire(t))
-        }
-    }))
 }
 
 /// Asterisk NAT handling mode.
@@ -666,21 +547,6 @@ impl<'de> serde::Deserialize<'de> for Nat {
     }
 }
 
-pub(crate) fn deserialize_opt_nat<'de, D>(d: D) -> std::result::Result<Option<Nat>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(Nat::from_wire(t))
-        }
-    }))
-}
-
 /// Voicemail playback instruction mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayInstructions {
@@ -737,23 +603,6 @@ impl<'de> serde::Deserialize<'de> for PlayInstructions {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(PlayInstructions::from_wire(&s))
     }
-}
-
-pub(crate) fn deserialize_opt_play_instructions<'de, D>(
-    d: D,
-) -> std::result::Result<Option<PlayInstructions>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(PlayInstructions::from_wire(t))
-        }
-    }))
 }
 
 /// Whether callers may join, or are kept in, a queue with no available members. Used by both `join_when_empty` and `leave_when_empty`.
@@ -818,23 +667,6 @@ impl<'de> serde::Deserialize<'de> for QueueEmptyBehavior {
     }
 }
 
-pub(crate) fn deserialize_opt_queue_empty_behavior<'de, D>(
-    d: D,
-) -> std::result::Result<Option<QueueEmptyBehavior>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(QueueEmptyBehavior::from_wire(t))
-        }
-    }))
-}
-
 /// Sort order for selected recordings.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecordingSort {
@@ -889,23 +721,6 @@ impl<'de> serde::Deserialize<'de> for RecordingSort {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(RecordingSort::from_wire(&s))
     }
-}
-
-pub(crate) fn deserialize_opt_recording_sort<'de, D>(
-    d: D,
-) -> std::result::Result<Option<RecordingSort>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(RecordingSort::from_wire(t))
-        }
-    }))
 }
 
 /// Order in which ring-group members are attempted.
@@ -963,23 +778,6 @@ impl<'de> serde::Deserialize<'de> for RingGroupOrder {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(RingGroupOrder::from_wire(&s))
     }
-}
-
-pub(crate) fn deserialize_opt_ring_group_order<'de, D>(
-    d: D,
-) -> std::result::Result<Option<RingGroupOrder>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(RingGroupOrder::from_wire(t))
-        }
-    }))
 }
 
 /// Queue ring strategy. Mirrors Asterisk's queue strategy options.
@@ -1045,23 +843,6 @@ impl<'de> serde::Deserialize<'de> for RingStrategy {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(RingStrategy::from_wire(&s))
     }
-}
-
-pub(crate) fn deserialize_opt_ring_strategy<'de, D>(
-    d: D,
-) -> std::result::Result<Option<RingStrategy>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(RingStrategy::from_wire(t))
-        }
-    }))
 }
 
 /// How a DID / toll-free search string is matched.
@@ -1180,23 +961,6 @@ impl<'de> serde::Deserialize<'de> for TollFreeCarrier {
     }
 }
 
-pub(crate) fn deserialize_opt_toll_free_carrier<'de, D>(
-    d: D,
-) -> std::result::Result<Option<TollFreeCarrier>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(TollFreeCarrier::from_wire(t))
-        }
-    }))
-}
-
 /// Voicemail transcription output format.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TranscriptionFormat {
@@ -1251,23 +1015,6 @@ impl<'de> serde::Deserialize<'de> for TranscriptionFormat {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(TranscriptionFormat::from_wire(&s))
     }
-}
-
-pub(crate) fn deserialize_opt_transcription_format<'de, D>(
-    d: D,
-) -> std::result::Result<Option<TranscriptionFormat>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(TranscriptionFormat::from_wire(t))
-        }
-    }))
 }
 
 /// Toll-free prefix to search for a vanity number.
@@ -1406,23 +1153,6 @@ impl<'de> serde::Deserialize<'de> for VoicemailFolder {
     }
 }
 
-pub(crate) fn deserialize_opt_voicemail_folder<'de, D>(
-    d: D,
-) -> std::result::Result<Option<VoicemailFolder>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;
-    Ok(opt.and_then(|s| {
-        let t = s.trim();
-        if t.is_empty() {
-            None
-        } else {
-            Some(VoicemailFolder::from_wire(t))
-        }
-    }))
-}
-
 /// A `status` returned by the VoIP.ms API.
 ///
 /// Every documented error code from the official API docs' global
@@ -1436,7 +1166,7 @@ where
 /// # use voip_ms::ApiStatus;
 /// let status = ApiStatus::from_wire("invalid_credentials");
 /// assert_eq!(status, ApiStatus::InvalidCredentials);
-/// assert_eq!(status.as_str(), "invalid_credentials");
+/// assert_eq!(status.as_wire(), "invalid_credentials");
 /// assert_eq!(status.description(), Some("Username or Password is incorrect"));
 /// assert!(status.is_documented());
 ///
@@ -2416,7 +2146,7 @@ pub enum ApiStatus {
 
 impl ApiStatus {
     /// The verbatim wire `status` string.
-    pub fn as_str(&self) -> &str {
+    pub fn as_wire(&self) -> &str {
         match self {
             ApiStatus::Success => "success",
             ApiStatus::AccountWithDIDs => "account_with_dids",
@@ -4197,7 +3927,7 @@ impl ApiStatus {
 
 impl std::fmt::Display for ApiStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
+        f.write_str(self.as_wire())
     }
 }
 
@@ -4206,18 +3936,6 @@ impl std::str::FromStr for ApiStatus {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         Ok(ApiStatus::from_wire(s))
-    }
-}
-
-impl From<String> for ApiStatus {
-    fn from(s: String) -> Self {
-        ApiStatus::from_wire(&s)
-    }
-}
-
-impl From<&str> for ApiStatus {
-    fn from(s: &str) -> Self {
-        ApiStatus::from_wire(s)
     }
 }
 
@@ -4230,27 +3948,27 @@ impl<'de> serde::Deserialize<'de> for ApiStatus {
 
 /// Paths to the timestamps in a `getCDR` response, in the form
 /// [`attach_offset`](crate::attach_offset) takes.
-pub const GET_CDR_TIMESTAMPS: &[&str] = &["/cdr/*/date"];
+const GET_CDR_TIMESTAMPS: &[&str] = &["/cdr/*/date"];
 
 /// Paths to the timestamps in a `getMMS` response, in the form
 /// [`attach_offset`](crate::attach_offset) takes.
-pub const GET_MMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+const GET_MMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
 
 /// Paths to the timestamps in a `getResellerCDR` response, in the form
 /// [`attach_offset`](crate::attach_offset) takes.
-pub const GET_RESELLER_CDR_TIMESTAMPS: &[&str] = &["/cdr/*/date"];
+const GET_RESELLER_CDR_TIMESTAMPS: &[&str] = &["/cdr/*/date"];
 
 /// Paths to the timestamps in a `getResellerMMS` response, in the form
 /// [`attach_offset`](crate::attach_offset) takes.
-pub const GET_RESELLER_MMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+const GET_RESELLER_MMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
 
 /// Paths to the timestamps in a `getResellerSMS` response, in the form
 /// [`attach_offset`](crate::attach_offset) takes.
-pub const GET_RESELLER_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+const GET_RESELLER_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
 
 /// Paths to the timestamps in a `getSMS` response, in the form
 /// [`attach_offset`](crate::attach_offset) takes.
-pub const GET_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
+const GET_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
 
 /// \- Adds a Charge to a specific Reseller Client
 ///
@@ -12957,7 +12675,10 @@ pub struct GetBackOrdersResponseBackOrder {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub cnam: Option<bool>,
-    #[serde(default, deserialize_with = "deserialize_opt_did_billing_type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<DidBillingType, _>"
+    )]
     pub billing_type: Option<DidBillingType>,
     #[serde(
         default,
@@ -13234,7 +12955,10 @@ pub struct GetCallHuntingsResponseCallHunting {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub ring_time: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_ring_group_order")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<RingGroupOrder, _>"
+    )]
     pub order: Option<RingGroupOrder>,
     #[serde(
         default,
@@ -13861,7 +13585,7 @@ pub struct GetConferenceResponseConference {
     pub description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_max_members"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::MaxMembers, _>"
     )]
     pub max_members: Option<crate::MaxMembers>,
     #[serde(
@@ -14365,7 +14089,10 @@ pub struct GetDIDsInfoResponseDID {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub port_out_pin: Option<u64>,
-    #[serde(default, deserialize_with = "deserialize_opt_did_billing_type")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<DidBillingType, _>"
+    )]
     pub billing_type: Option<DidBillingType>,
     #[serde(
         default,
@@ -15728,7 +15455,7 @@ pub struct GetLNPDetailsResponse {
     pub is_partial: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "deserialize_opt_location_type",
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<LocationType, _>",
         rename = "locationType"
     )]
     pub location_type: Option<LocationType>,
@@ -16081,7 +15808,7 @@ pub struct GetMMSResponseSMS {
     pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
-        deserialize_with = "deserialize_opt_message_type",
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<MessageType, _>",
         rename = "type"
     )]
     pub direction: Option<MessageType>,
@@ -16192,7 +15919,10 @@ pub struct GetMusicOnHoldResponseMusicOnHold {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub volume: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_recording_sort")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<RecordingSort, _>"
+    )]
     pub sort: Option<RecordingSort>,
     #[serde(
         default,
@@ -16580,12 +16310,12 @@ pub struct GetQueuesResponseQueue {
     pub agent_announcement: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "deserialize_opt_estimated_hold_time_announce"
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<EstimatedHoldTimeAnnounce, _>"
     )]
     pub report_hold_time_agent: Option<EstimatedHoldTimeAnnounce>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_seconds"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::Seconds, _>"
     )]
     pub member_delay: Option<crate::Seconds>,
     #[serde(
@@ -16595,19 +16325,28 @@ pub struct GetQueuesResponseQueue {
     pub music_on_hold: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_wait_time"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::WaitTime, _>"
     )]
     pub maximum_wait_time: Option<crate::WaitTime>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_wait_time"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::WaitTime, _>"
     )]
     pub maximum_callers: Option<crate::WaitTime>,
-    #[serde(default, deserialize_with = "deserialize_opt_queue_empty_behavior")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<QueueEmptyBehavior, _>"
+    )]
     pub join_when_empty: Option<QueueEmptyBehavior>,
-    #[serde(default, deserialize_with = "deserialize_opt_queue_empty_behavior")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<QueueEmptyBehavior, _>"
+    )]
     pub leave_when_empty: Option<QueueEmptyBehavior>,
-    #[serde(default, deserialize_with = "deserialize_opt_ring_strategy")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<RingStrategy, _>"
+    )]
     pub ring_strategy: Option<RingStrategy>,
     #[serde(
         default,
@@ -16621,12 +16360,12 @@ pub struct GetQueuesResponseQueue {
     pub agent_ring_timeout: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_seconds"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::Seconds, _>"
     )]
     pub retry_timer: Option<crate::Seconds>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_seconds"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::Seconds, _>"
     )]
     pub wrapup_time: Option<crate::Seconds>,
     #[serde(
@@ -16636,22 +16375,22 @@ pub struct GetQueuesResponseQueue {
     pub voice_announcement: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_seconds"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::Seconds, _>"
     )]
     pub frequency_announcement: Option<crate::Seconds>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_seconds"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::Seconds, _>"
     )]
     pub announce_position_frecuency: Option<crate::Seconds>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_seconds"
+        deserialize_with = "crate::responses::deserialize_opt_via::<crate::Seconds, _>"
     )]
     pub announce_round_seconds: Option<crate::Seconds>,
     #[serde(
         default,
-        deserialize_with = "deserialize_opt_estimated_hold_time_announce"
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<EstimatedHoldTimeAnnounce, _>"
     )]
     pub if_announce_position_enabled_report_estimated_hold_time: Option<EstimatedHoldTimeAnnounce>,
     #[serde(
@@ -17123,7 +16862,7 @@ pub struct GetResellerMMSResponseSMS {
     pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
-        deserialize_with = "deserialize_opt_message_type",
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<MessageType, _>",
         rename = "type"
     )]
     pub direction: Option<MessageType>,
@@ -17172,7 +16911,7 @@ pub struct GetResellerSMSResponseSMS {
     pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
-        deserialize_with = "deserialize_opt_message_type",
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<MessageType, _>",
         rename = "type"
     )]
     pub direction: Option<MessageType>,
@@ -17375,7 +17114,7 @@ pub struct GetSMSResponseSMS {
     pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>,
     #[serde(
         default,
-        deserialize_with = "deserialize_opt_message_type",
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<MessageType, _>",
         rename = "type"
     )]
     pub direction: Option<MessageType>,
@@ -17621,9 +17360,15 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub allowed_codecs: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_dtmf_mode")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<DtmfMode, _>"
+    )]
     pub dtmf_mode: Option<DtmfMode>,
-    #[serde(default, deserialize_with = "deserialize_opt_nat")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<Nat, _>"
+    )]
     pub nat: Option<Nat>,
     #[serde(
         default,
@@ -17750,14 +17495,20 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub internal_cnam: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_toll_free_carrier")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<TollFreeCarrier, _>"
+    )]
     pub tfcarrier: Option<TollFreeCarrier>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_sentinel_none"
     )]
     pub default_e911: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_call_pickup_behavior")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<CallPickupBehavior, _>"
+    )]
     pub call_pickup_behavior: Option<CallPickupBehavior>,
 }
 
@@ -17904,7 +17655,7 @@ pub struct GetTimeConditionsResponse {
 pub struct GetTimezonesResponseTimezone {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_timezone_name"
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<crate::TimezoneName, _>"
     )]
     pub value: Option<crate::TimezoneName>,
     #[serde(
@@ -18098,7 +17849,10 @@ pub struct GetVoicemailMessageFileResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub mailbox: Option<u64>,
-    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<VoicemailFolder, _>"
+    )]
     pub folder: Option<VoicemailFolder>,
     #[serde(
         default,
@@ -18133,7 +17887,10 @@ pub struct GetVoicemailMessagesResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub mailbox: Option<u64>,
-    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<VoicemailFolder, _>"
+    )]
     pub folder: Option<VoicemailFolder>,
     #[serde(
         default,
@@ -18226,7 +17983,10 @@ pub struct GetVoicemailTranscriptionsResponseMessage {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub duration: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_voicemail_folder")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<VoicemailFolder, _>"
+    )]
     pub folder: Option<VoicemailFolder>,
     #[serde(
         default,
@@ -18293,7 +18053,7 @@ pub struct GetVoicemailsResponseVoicemail {
     pub say_time: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_timezone_name"
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<crate::TimezoneName, _>"
     )]
     pub timezone: Option<crate::TimezoneName>,
     #[serde(
@@ -18301,14 +18061,20 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub say_callerid: Option<bool>,
-    #[serde(default, deserialize_with = "deserialize_opt_play_instructions")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<PlayInstructions, _>"
+    )]
     pub play_instructions: Option<PlayInstructions>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub language: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_opt_email_attachment_format")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<EmailAttachmentFormat, _>"
+    )]
     pub email_attachment_format: Option<EmailAttachmentFormat>,
     #[serde(
         default,
@@ -18350,7 +18116,10 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
     pub transcription_summary: Option<bool>,
-    #[serde(default, deserialize_with = "deserialize_opt_transcription_format")]
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<TranscriptionFormat, _>"
+    )]
     pub transcription_format: Option<TranscriptionFormat>,
     #[serde(
         default,
@@ -19378,11 +19147,9 @@ pub fn requires_multipart(method: &str) -> bool {
 /// `method`'s response timestamps, or `None` for a method whose response
 /// reports none in an offset the request chose.
 ///
-/// `Some` for exactly the record-listing methods, with that method's
-/// `*_TIMESTAMPS` const, so a caller holding a wire-method name need not
-/// map names to consts itself. A generated method attaches the offset on
-/// its own; a raw envelope, such as [`Client::call_raw`] returns,
-/// reports the wall clocks without it.
+/// `Some` for exactly the record-listing methods. A generated method
+/// attaches the offset on its own; a raw envelope, such as
+/// [`Client::call_raw`] returns, reports the wall clocks without it.
 ///
 /// **A method this answers `Some` for must be sent an explicit
 /// `timezone`.** The offset to attach is the one the request carried.
@@ -20236,8 +20003,8 @@ impl Client {
     /// cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
     /// reports its timestamps in that offset without naming it:
-    /// [`attach_offset`](crate::attach_offset) puts it back, over
-    /// [`GET_CDR_TIMESTAMPS`](crate::GET_CDR_TIMESTAMPS).
+    /// [`attach_offset`](crate::attach_offset) puts it back, over the paths
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for `getCDR`.
     pub async fn get_cdr_raw(&self, params: &GetCDRParams) -> Result<Value> {
         self.call_raw("getCDR", &GetCDRParamsWire::try_from(params)?)
             .await
@@ -21206,8 +20973,8 @@ impl Client {
     /// cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
     /// reports its timestamps in that offset without naming it:
-    /// [`attach_offset`](crate::attach_offset) puts it back, over
-    /// [`GET_MMS_TIMESTAMPS`](crate::GET_MMS_TIMESTAMPS).
+    /// [`attach_offset`](crate::attach_offset) puts it back, over the paths
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for `getMMS`.
     pub async fn get_mms_raw(&self, params: &GetMMSParams) -> Result<Value> {
         self.call_raw("getMMS", &GetMMSParamsWire::try_from(params)?)
             .await
@@ -21554,8 +21321,8 @@ impl Client {
     /// cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
     /// reports its timestamps in that offset without naming it:
-    /// [`attach_offset`](crate::attach_offset) puts it back, over
-    /// [`GET_RESELLER_CDR_TIMESTAMPS`](crate::GET_RESELLER_CDR_TIMESTAMPS).
+    /// [`attach_offset`](crate::attach_offset) puts it back, over the paths
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for `getResellerCDR`.
     pub async fn get_reseller_cdr_raw(&self, params: &GetResellerCDRParams) -> Result<Value> {
         self.call_raw(
             "getResellerCDR",
@@ -21591,8 +21358,8 @@ impl Client {
     /// cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
     /// reports its timestamps in that offset without naming it:
-    /// [`attach_offset`](crate::attach_offset) puts it back, over
-    /// [`GET_RESELLER_MMS_TIMESTAMPS`](crate::GET_RESELLER_MMS_TIMESTAMPS).
+    /// [`attach_offset`](crate::attach_offset) puts it back, over the paths
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for `getResellerMMS`.
     pub async fn get_reseller_mms_raw(&self, params: &GetResellerMMSParams) -> Result<Value> {
         self.call_raw(
             "getResellerMMS",
@@ -21628,8 +21395,8 @@ impl Client {
     /// cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
     /// reports its timestamps in that offset without naming it:
-    /// [`attach_offset`](crate::attach_offset) puts it back, over
-    /// [`GET_RESELLER_SMS_TIMESTAMPS`](crate::GET_RESELLER_SMS_TIMESTAMPS).
+    /// [`attach_offset`](crate::attach_offset) puts it back, over the paths
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for `getResellerSMS`.
     pub async fn get_reseller_sms_raw(&self, params: &GetResellerSMSParams) -> Result<Value> {
         self.call_raw(
             "getResellerSMS",
@@ -21724,8 +21491,8 @@ impl Client {
     /// cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope
     /// reports its timestamps in that offset without naming it:
-    /// [`attach_offset`](crate::attach_offset) puts it back, over
-    /// [`GET_SMS_TIMESTAMPS`](crate::GET_SMS_TIMESTAMPS).
+    /// [`attach_offset`](crate::attach_offset) puts it back, over the paths
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for `getSMS`.
     pub async fn get_sms_raw(&self, params: &GetSMSParams) -> Result<Value> {
         self.call_raw("getSMS", &GetSMSParamsWire::try_from(params)?)
             .await

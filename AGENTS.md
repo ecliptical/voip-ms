@@ -340,7 +340,7 @@ in `xtask/src/field_overrides.rs`:
     on the wire via `serialize_opt_tz`. *Named-zone responses*
     (`getVoicemails`, `getTimezones` -- `NAMED_ZONE_TZ_RESPONSE_PATHS`) are the
     tolerant [`crate::TimezoneName`] (`Known(Tz)` or `Unrecognized(String)`)
-    via `deserialize_opt_timezone_name`: voip.ms's live `getTimezones` catalog
+    via `deserialize_opt_from_wire_text`: voip.ms's live `getTimezones` catalog
     lists legacy names the IANA database has dropped (`Asia/Beijing`,
     `US/Pacific-New`, `Factory`, old Saudi `Riyadh87`/`88`/`89`,
     `Canada/East-Saskatchewan`), and a strict `Tz` failed the whole response on
@@ -496,11 +496,11 @@ in `xtask/src/field_overrides.rs`:
 
   **Only the serde direction a field reaches it through is emitted**, tracked
   in `EnumSides` while the structs render: `Serialize` for an enum some
-  `*Params` writes, `Deserialize` plus its `deserialize_opt_*` helper for one
-  some `*Response` reads, both for the 15 that are both. Emitting both
-  unconditionally meant every helper needed an `#[allow(dead_code)]` to hide
-  the three nothing called, which is the shape of the problem rather than a
-  fix for it. The same rule retired `ApiStatus`'s `Serialize`,
+  `*Params` writes, `Deserialize` for one some `*Response` reads, both for the
+  15 that are both. A response field names no per-enum helper: it reads through
+  the generic `deserialize_opt_from_wire_text::<Enum, _>`, the same reader
+  `TimezoneName` uses, and the seconds-or-sentinel types go through
+  `deserialize_opt_via::<T, _>` the same way. The same rule retired `ApiStatus`'s `Serialize`,
   `TimezoneName`'s `Serialize`, and `TimezoneOffset`'s `Deserialize`. Used
   for `DtmfMode`, `Nat`, `EmailAttachmentFormat`,
   `TranscriptionFormat`, `PlayInstructions`, `RingStrategy`,
@@ -631,9 +631,9 @@ that needs POST has a base64 file parameter and every method with one needs
 POST, so the parameter carries the whole rule. The four paths are listed in
 `BASE64_FILE_PARAM_PATHS` (`xtask/src/field_overrides.rs`), from which the
 generator emits `requires_multipart`. Every generated method calls `call` /
-`call_raw`, and those (with `call_at`, `call_raw_unchecked`, and the private
-`call_zoned`) read the transport from `requires_multipart` by wire name, so the
-choice lives in one place and a caller dispatching by name gets the same answer
+`call_raw`, and those (with `call_raw_unchecked` and the private `call_zoned`)
+read the transport from `requires_multipart` by wire name, so the choice lives
+in one place and a caller dispatching by name gets the same answer
 as a generated method. `call_multipart_raw` is public for the same reason
 `call_raw` is: a method this crate hasn't been regenerated for still needs a way
 to be called, and for an upload method that way has to be a POST.
@@ -685,14 +685,15 @@ assumes one: serde has no access to the request, and a deserializer that read a
 bare wall clock as UTC would reintroduce exactly the invented zone this typing
 removes. So `deserialize_opt_datetime_offset` rejects a value with no offset,
 and `attach_offset` is public because a `call_raw` caller needs the same step
-(`livetest`'s `probe_zoned` is one). Each method's paths are public too, as
-`GET_CDR_TIMESTAMPS` and its siblings, emitted by the same codegen pass that
-retypes the fields -- a raw caller reading them out of a generated method body
-would be copying something that moves with the response shape. The same pass
-emits `offset_timestamps(method)`, which answers a wire name with its const, so
-a caller dispatching by name does not keep its own method-to-const map. It is a
-lookup and not a step inside `call_raw`: the raw calls return exactly what
-VoIP.ms sent, and a raw envelope with offsets attached would no longer be that.
+(`livetest`'s `probe_zoned` is one). Each method's paths reach a caller through
+`offset_timestamps(method)`, emitted by the same codegen pass that retypes the
+fields -- a raw caller reading them out of a generated method body would be
+copying something that moves with the response shape. It is the one public
+route: the per-method `*_TIMESTAMPS` consts the typed methods pass to
+`call_zoned` are private, so there is no second spelling of the same paths to
+keep in step. It is a lookup and not a step inside `call_raw`: the raw calls
+return exactly what VoIP.ms sent, and a raw envelope with offsets attached would
+no longer be that.
 
 `attach_offset` skips a blank value. A blank is one record's missing timestamp,
 which the deserializers fold to `None`; suffixing it produces a string that
@@ -721,7 +722,7 @@ those would mean the crate inventing a zone.
 
 **How to apply**: `cargo xtask gen` derives the fields from the response shapes:
 every `datetime` scalar under an `OFFSET_OPS` method is retyped and its path
-emitted as that method's `*_TIMESTAMPS` const. Three things fail the run rather
+emitted as that method's `*_TIMESTAMPS` const and `offset_timestamps` arm. Three things fail the run rather
 than degrade quietly, because each would leave a field silently naive while the
 build stayed green:
 
@@ -774,11 +775,11 @@ it together.
 
 The private `Client::send` is the single point that hits the network; it takes
 the transport (decision #7) and returns the parsed envelope, and `Client::fetch`
-adds the status classification on top. The public `call`, `call_raw`, and
-`call_at` (and `call_raw_unchecked`, behind the `unchecked-raw` feature) take
-the transport from `Transport::for_method`, which reads the generated
-`requires_multipart(method)`; the private `raw` and `typed` helpers hold the
-two bodies they share. `call_multipart_raw` and `call_multipart_raw_unchecked`
+adds the status classification on top. The public `call` and `call_raw` (and
+`call_raw_unchecked`, behind the `unchecked-raw` feature) take the transport
+from `Transport::for_method`, which reads the generated
+`requires_multipart(method)`; the private `raw` helper holds the body
+`call_raw` and `call_multipart_raw` share. `call_multipart_raw` and `call_multipart_raw_unchecked`
 are the single explicit escape hatch, for an upload method this crate has not
 been regenerated for, which `requires_multipart` answers `false` for. A caller
 dispatching by wire name calls `call_raw` like a generated method does;
@@ -853,19 +854,19 @@ Four variants, no more:
   `Unknown(String)` catch-all, so a code VoIP.ms returns but hasn't
   documented is preserved verbatim rather than lost -- the variant set is
   documentation, not a closed contract. `ApiStatus::from_wire` /
-  `as_str` round-trip the wire string, `description()` returns the
+  `as_wire` round-trip the wire string, `description()` returns the
   documented meaning (`None` for `Unknown`), and `is_documented()`
   reports whether it's a known variant. The enum, its impls, and the
   description table are emitted by `cargo xtask gen` from
   `tools/api-statuses.json`, which is extracted from the docs' global
   "Error Codes" table via `cargo xtask extract-statuses <html>`. Because
   the docs ship a couple of codes capitalized (`Invalid_threshold`), the
-  variant's `as_str` preserves the wire casing while the variant
+  variant's `as_wire` preserves the wire casing while the variant
   *identifier* normalizes through the same acronym-aware PascalCase as
   method/type names (`no_did` → `NoDID`). `Display` on the *error* renders the
   code with its documented meaning (`API status: did_in_use (DID Number is
   already in use)`) so a log line says what went wrong; `Display` on
-  `ApiStatus` itself stays the bare wire string, matching `as_str`.
+  `ApiStatus` itself stays the bare wire string, matching `as_wire`.
 
   `ApiStatus::Success` is the one variant the table does not supply. It is
   synthesized by the generator, because a typed response's `status` field
@@ -875,15 +876,15 @@ Four variants, no more:
 
   **Empty-collection statuses are not errors for typed calls.** VoIP.ms
   returns a distinct `no_*` status per list method when the list is empty
-  (`no_sms`, `no_cdr`, `no_messages`, …). The typed `Client::call` /
-  `call_at` (and so every unsuffixed generated method) fold any status for
-  which `ApiStatus::is_empty_collection()` is true into a successful data-less response
+  (`no_sms`, `no_cdr`, `no_messages`, …). The typed `Client::call` (and so
+  every unsuffixed generated method) folds any status for which
+  `ApiStatus::is_empty_collection()` is true into a successful data-less response
   -- collection fields deserialize to `None` -- instead of `Error::Api`. The
   `*_raw` methods (and `call_raw`) deliberately keep the strict verbatim
   contract: they still surface an empty status as `Error::Api`, so the raw
   escape hatch reflects exactly what VoIP.ms returned. `check_status` in
   `src/client.rs` classifies the status; the two paths diverge in
-  `call_raw` vs `call`/`call_at`. The classification is hand-curated in the
+  `call_raw` vs `call`. The classification is hand-curated in the
   `empty_statuses` array of `tools/api-response-overrides.json` and emitted
   into `ApiStatus::is_empty_collection()` by `cargo xtask gen`; codes that look like
   `no_*` but signal a real failure (`no_base64file`, `no_callstatus`,

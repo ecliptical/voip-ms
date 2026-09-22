@@ -49,11 +49,11 @@
 //! parameters carry a base64-encoded file ([`Client::set_recording`],
 //! [`Client::send_fax_message`], [`Client::send_mms`],
 //! [`Client::add_lnp_file`]): a file does not fit the request line VoIP.ms
-//! accepts, so those four are a `multipart/form-data` POST. [`Client::call`],
-//! [`Client::call_raw`], and [`Client::call_at`] choose the transport from the
-//! wire name they are given, as every generated method does, so nothing about
-//! the call site changes; [`requires_multipart`] answers the same question
-//! without making the call. Both answer only for a method this crate was
+//! accepts, so those four are a `multipart/form-data` POST. [`Client::call`]
+//! and [`Client::call_raw`] choose the transport from the wire name they are
+//! given, as every generated method does, so nothing about the call site
+//! changes; [`requires_multipart`] answers the same question without making the
+//! call. Both answer only for a method this crate was
 //! generated from: one VoIP.ms has added since is absent from the table and is
 //! sent as a GET. An upload method of that kind goes through
 //! [`Client::call_multipart_raw`].

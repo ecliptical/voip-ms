@@ -1,7 +1,7 @@
 //! Orthogonal verification gate for the generated `ApiStatus` code table.
 //!
 //! Every wire code the crate claims to know is listed here independently of
-//! `generated.rs`; the round-trip asserts `from_wire` and `as_str` agree and
+//! `generated.rs`; the round-trip asserts `from_wire` and `as_wire` agree and
 //! that each is classified as known. A codegen change that drops, renames, or
 //! mistypes a code breaks this without touching the generated file.
 
@@ -487,7 +487,7 @@ const KNOWN_CODES: &[&str] = &[
 fn every_known_code_round_trips_and_is_documented() {
     for &code in KNOWN_CODES {
         let status = ApiStatus::from_wire(code);
-        assert_eq!(status.as_str(), code, "as_str disagrees for {code}");
+        assert_eq!(status.as_wire(), code, "as_wire disagrees for {code}");
         assert!(status.is_documented(), "{code} classified as unknown");
     }
 }
@@ -495,7 +495,7 @@ fn every_known_code_round_trips_and_is_documented() {
 #[test]
 fn unknown_code_is_preserved_and_flagged() {
     let s = ApiStatus::from_wire("totally_made_up_code");
-    assert_eq!(s.as_str(), "totally_made_up_code");
+    assert_eq!(s.as_wire(), "totally_made_up_code");
     assert!(!s.is_documented());
     assert!(s.description().is_none());
 }
@@ -516,7 +516,7 @@ fn known_codes_have_descriptions() {
 fn success_is_a_variant_of_its_own() {
     let status = ApiStatus::from_wire("success");
     assert_eq!(status, ApiStatus::Success);
-    assert_eq!(status.as_str(), "success");
+    assert_eq!(status.as_wire(), "success");
     assert!(status.is_documented());
     assert!(status.description().is_some());
     assert!(!status.is_empty_collection());

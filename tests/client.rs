@@ -71,7 +71,7 @@ async fn api_status_other_than_success_is_an_error() {
     match err {
         Error::Api(s) => {
             assert_eq!(s, ApiStatus::InvalidCredentials);
-            assert_eq!(s.as_str(), "invalid_credentials");
+            assert_eq!(s.as_wire(), "invalid_credentials");
             assert_eq!(s.description(), Some("Username or Password is incorrect"));
             assert!(s.is_documented());
         }
@@ -84,7 +84,7 @@ fn api_status_variants_and_descriptions() {
     // A documented code round-trips to its typed variant and description.
     let status = ApiStatus::from_wire("api_not_enabled");
     assert_eq!(status, ApiStatus::APINotEnabled);
-    assert_eq!(status.as_str(), "api_not_enabled");
+    assert_eq!(status.as_wire(), "api_not_enabled");
     assert_eq!(
         status.description(),
         Some("API has not been enabled or has been disabled")
@@ -98,7 +98,7 @@ fn api_status_variants_and_descriptions() {
     // Codes the docs ship capitalized keep their wire casing on the wire
     // side while normalizing to the lowercase-sibling variant form.
     assert_eq!(
-        ApiStatus::InvalidThreshold.as_str(),
+        ApiStatus::InvalidThreshold.as_wire(),
         "Invalid_threshold",
         "verbatim wire casing is preserved"
     );
@@ -110,15 +110,9 @@ fn api_status_variants_and_descriptions() {
     // An undocumented code is preserved verbatim with no description.
     let unknown = ApiStatus::from_wire("brand_new_code");
     assert_eq!(unknown, ApiStatus::Unknown("brand_new_code".to_string()));
-    assert_eq!(unknown.as_str(), "brand_new_code");
+    assert_eq!(unknown.as_wire(), "brand_new_code");
     assert_eq!(unknown.description(), None);
     assert!(!unknown.is_documented());
-
-    // `From<String>`/`From<&str>` keep working against the enum.
-    assert_eq!(
-        ApiStatus::from("invalid_credentials"),
-        ApiStatus::InvalidCredentials
-    );
 
     // Empty-collection statuses are flagged; `no_*` codes that signal a
     // real failure are not.
@@ -276,33 +270,6 @@ async fn typed_response_via_call_helper() {
 
     assert_eq!(envelope.status, "success");
     assert_eq!(envelope.balance.current_balance, "7.50");
-}
-
-#[tokio::test]
-async fn typed_response_via_call_at_helper() {
-    let (server, client) = fixture().await;
-
-    Mock::given(method("GET"))
-        .and(path("/api/v1/rest.php"))
-        .and(query_param("method", "getBalance"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "status": "success",
-            "balance": {"current_balance": "9.99"}
-        })))
-        .mount(&server)
-        .await;
-
-    #[derive(serde::Deserialize)]
-    struct Balance {
-        current_balance: String,
-    }
-
-    let balance: Balance = client
-        .call_at("getBalance", &GetBalanceParams::default(), "/balance")
-        .await
-        .unwrap();
-
-    assert_eq!(balance.current_balance, "9.99");
 }
 
 #[tokio::test]
@@ -2008,14 +1975,14 @@ async fn call_raw_takes_the_transport_the_method_requires() {
 }
 
 #[test]
-fn offset_timestamps_answers_each_record_listing_method_with_its_const() {
+fn offset_timestamps_answers_each_record_listing_method_with_its_paths() {
     let expected: [(&str, &[&str]); 6] = [
-        ("getCDR", voip_ms::GET_CDR_TIMESTAMPS),
-        ("getSMS", voip_ms::GET_SMS_TIMESTAMPS),
-        ("getMMS", voip_ms::GET_MMS_TIMESTAMPS),
-        ("getResellerCDR", voip_ms::GET_RESELLER_CDR_TIMESTAMPS),
-        ("getResellerSMS", voip_ms::GET_RESELLER_SMS_TIMESTAMPS),
-        ("getResellerMMS", voip_ms::GET_RESELLER_MMS_TIMESTAMPS),
+        ("getCDR", &["/cdr/*/date"]),
+        ("getSMS", &["/sms/*/date"]),
+        ("getMMS", &["/sms/*/date"]),
+        ("getResellerCDR", &["/cdr/*/date"]),
+        ("getResellerSMS", &["/sms/*/date"]),
+        ("getResellerMMS", &["/sms/*/date"]),
     ];
     for (method, paths) in expected {
         assert_eq!(voip_ms::offset_timestamps(method), Some(paths), "{method}");

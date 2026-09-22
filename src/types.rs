@@ -387,8 +387,7 @@ impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 ///
 /// # Wire format
 ///
-/// Serializes as a bare number (`-5`, `5.5`); deserializes tolerantly from a
-/// JSON number or a numeric string.
+/// Serializes as a bare number (`-5`, `5.5`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TimezoneOffset(Decimal);
 
@@ -471,24 +470,6 @@ impl fmt::Display for TimezoneOffset {
     }
 }
 
-impl FromStr for TimezoneOffset {
-    type Err = TimezoneOffsetError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let hours =
-            Decimal::from_str_exact(s.trim()).map_err(|_| TimezoneOffsetError::NotNumeric)?;
-        Self::new(hours)
-    }
-}
-
-impl TryFrom<i64> for TimezoneOffset {
-    type Error = TimezoneOffsetError;
-
-    fn try_from(hours: i64) -> Result<Self, Self::Error> {
-        Self::new(Decimal::from(hours))
-    }
-}
-
 /// Error from constructing a [`TimezoneOffset`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TimezoneOffsetError {
@@ -496,8 +477,6 @@ pub enum TimezoneOffsetError {
     /// returned by [`TimezoneOffset::at`] for a zone whose offset exceeds that
     /// range (e.g. `Pacific/Kiritimati`, +14).
     OutOfRange(Decimal),
-    /// The string was not a number.
-    NotNumeric,
     /// The chosen instant does not exist in the zone (a DST spring-forward
     /// gap), so no offset could be resolved.
     UnresolvableInstant,
@@ -517,7 +496,6 @@ impl fmt::Display for TimezoneOffsetError {
                 write!(f, "timezone offset {v} is outside the range -12 to 13")
             }
 
-            TimezoneOffsetError::NotNumeric => f.write_str("timezone offset is not a number"),
             TimezoneOffsetError::UnresolvableInstant => {
                 f.write_str("timezone offset could not be resolved at the given date")
             }
@@ -1041,58 +1019,30 @@ mod tests {
 
     #[test]
     fn timezone_offset_rejects_out_of_range() {
-        assert!(TimezoneOffset::try_from(-12).is_ok());
-        assert!(TimezoneOffset::try_from(13).is_ok());
+        assert!(TimezoneOffset::new(-12).is_ok());
+        assert!(TimezoneOffset::new(13).is_ok());
         assert_eq!(
-            TimezoneOffset::try_from(14),
+            TimezoneOffset::new(14),
             Err(TimezoneOffsetError::OutOfRange(Decimal::from(14)))
         );
         assert_eq!(
-            TimezoneOffset::try_from(-13),
+            TimezoneOffset::new(-13),
             Err(TimezoneOffsetError::OutOfRange(Decimal::from(-13)))
-        );
-    }
-
-    /// The offset only ever goes out, on the `*ParamsWire` twin, so parsing
-    /// one is `FromStr`'s job rather than a `Deserialize` impl's.
-    #[test]
-    fn timezone_offset_parses_integer_and_fractional_strings() {
-        assert_eq!(
-            "-5".parse::<TimezoneOffset>().unwrap(),
-            TimezoneOffset::try_from(-5).unwrap()
-        );
-        assert_eq!(
-            " 5.5 ".parse::<TimezoneOffset>().unwrap(),
-            TimezoneOffset::new(Decimal::from_str_exact("5.5").unwrap()).unwrap()
-        );
-        assert_eq!(
-            "99".parse::<TimezoneOffset>(),
-            Err(TimezoneOffsetError::OutOfRange(Decimal::from(99)))
-        );
-        assert_eq!(
-            "abc".parse::<TimezoneOffset>(),
-            Err(TimezoneOffsetError::NotNumeric)
         );
     }
 
     #[test]
     fn timezone_offset_serializes_as_bare_number() {
         assert_eq!(
-            serde_json::to_string(&TimezoneOffset::try_from(-5).unwrap()).unwrap(),
+            serde_json::to_string(&TimezoneOffset::new(-5).unwrap()).unwrap(),
             "\"-5\""
         );
     }
 
     #[test]
     fn timezone_offset_displays_utc_label() {
-        assert_eq!(
-            TimezoneOffset::try_from(-5).unwrap().to_string(),
-            "UTC-05:00"
-        );
-        assert_eq!(
-            TimezoneOffset::try_from(13).unwrap().to_string(),
-            "UTC+13:00"
-        );
+        assert_eq!(TimezoneOffset::new(-5).unwrap().to_string(), "UTC-05:00");
+        assert_eq!(TimezoneOffset::new(13).unwrap().to_string(), "UTC+13:00");
         assert_eq!(
             TimezoneOffset::new(Decimal::from_str_exact("5.5").unwrap())
                 .unwrap()
@@ -1108,7 +1058,7 @@ mod tests {
             chrono::FixedOffset::east_opt(0).unwrap()
         );
         assert_eq!(
-            TimezoneOffset::try_from(-5).unwrap().to_fixed_offset(),
+            TimezoneOffset::new(-5).unwrap().to_fixed_offset(),
             chrono::FixedOffset::west_opt(5 * 3600).unwrap()
         );
         // A fractional zone (India, +5:30) keeps its half hour.
@@ -1119,7 +1069,7 @@ mod tests {
             chrono::FixedOffset::east_opt(5 * 3600 + 1800).unwrap()
         );
         assert_eq!(
-            TimezoneOffset::try_from(13).unwrap().to_fixed_offset(),
+            TimezoneOffset::new(13).unwrap().to_fixed_offset(),
             chrono::FixedOffset::east_opt(13 * 3600).unwrap()
         );
     }
@@ -1132,21 +1082,21 @@ mod tests {
         // America/New_York: EST (-5) in winter, EDT (-4) in summer.
         assert_eq!(
             TimezoneOffset::at(chrono_tz::America::New_York, jan).unwrap(),
-            TimezoneOffset::try_from(-5).unwrap()
+            TimezoneOffset::new(-5).unwrap()
         );
         assert_eq!(
             TimezoneOffset::at(chrono_tz::America::New_York, jul).unwrap(),
-            TimezoneOffset::try_from(-4).unwrap()
+            TimezoneOffset::new(-4).unwrap()
         );
         // Arizona does not observe DST: -7 year-round.
         assert_eq!(
             TimezoneOffset::at(chrono_tz::America::Phoenix, jul).unwrap(),
-            TimezoneOffset::try_from(-7).unwrap()
+            TimezoneOffset::new(-7).unwrap()
         );
         // UTC is 0.
         assert_eq!(
             TimezoneOffset::at(chrono_tz::UTC, jan).unwrap(),
-            TimezoneOffset::try_from(0).unwrap()
+            TimezoneOffset::new(0).unwrap()
         );
     }
 
