@@ -205,6 +205,60 @@ fn emit_timestamp_consts(
     out
 }
 
+/// Emit the public `offset_timestamps` lookup, answering each offset op's wire
+/// name with the const [`emit_timestamp_consts`] writes for it.
+fn emit_offset_timestamps(
+    zoned_timestamps: &BTreeMap<String, Vec<String>>,
+    acronyms: &[&'static str],
+) -> String {
+    let doc = "\n/// The paths [`attach_offset`](crate::attach_offset) needs to complete\n\
+               /// `method`'s response timestamps, or `None` for a method whose response\n\
+               /// reports none in an offset the request chose.\n\
+               ///\n\
+               /// `Some` for exactly the record-listing methods, with that method's\n\
+               /// `*_TIMESTAMPS` const, so a caller holding a wire-method name need not\n\
+               /// map names to consts itself. A generated method attaches the offset on\n\
+               /// its own; a raw envelope, such as [`Client::call_raw_by_name`] returns,\n\
+               /// reports the wall clocks without it.\n\
+               ///\n\
+               /// **A method this answers `Some` for must be sent an explicit\n\
+               /// `timezone`.** The offset to attach is the one the request carried.\n\
+               /// Omitting `timezone` selects the account's configured zone, which no API\n\
+               /// call reports, so there is no offset to attach; the generated methods\n\
+               /// send [`TimezoneOffset::UTC`](crate::TimezoneOffset::UTC) when the caller\n\
+               /// names no zone.\n\
+               ///\n\
+               /// Like [`requires_multipart`], it answers only for the methods this crate\n\
+               /// was generated from: a method VoIP.ms has added since answers `None`.\n";
+    if zoned_timestamps.is_empty() {
+        // A `match` holding only the wildcard arm trips clippy's
+        // `match_single_binding` in a consumer's build.
+        return format!(
+            "{doc}pub fn offset_timestamps(_method: &str) -> Option<&'static [&'static str]> {{\n    \
+                 None\n\
+             }}\n"
+        );
+    }
+
+    let arms = zoned_timestamps
+        .keys()
+        .map(|op| {
+            format!(
+                "        {op:?} => Some({}),\n",
+                timestamps_const_name(op, acronyms)
+            )
+        })
+        .collect::<String>();
+    format!(
+        "{doc}pub fn offset_timestamps(method: &str) -> Option<&'static [&'static str]> {{\n    \
+             match method {{\n\
+             {arms}        \
+                 _ => None,\n    \
+             }}\n\
+         }}\n"
+    )
+}
+
 /// What [`base64_file_params`] read out of the table and the mined docs.
 #[derive(Debug)]
 struct Base64FileParams {
@@ -1131,6 +1185,7 @@ fn emit(
     out.push_str(&responses_text);
 
     out.push_str(&emit_requires_multipart(base64_file_params));
+    out.push_str(&emit_offset_timestamps(zoned_timestamps, &acronyms));
     out.push_str("\nimpl Client {\n");
     for op in &wsdl.operations {
         let method = camel_to_snake(op, &acronyms);
@@ -2349,6 +2404,50 @@ mod tests {
         // consumer's build, and the generated module is not theirs to silence.
         assert!(
             rendered.contains("fn requires_multipart(_method: &str)"),
+            "{rendered}"
+        );
+    }
+
+    fn parsed_offset_lookup(table: &BTreeMap<String, Vec<String>>) -> (String, syn::ItemFn) {
+        let rendered = emit_offset_timestamps(table, &acronyms_sorted());
+        let item: syn::ItemFn = syn::parse_str(&rendered)
+            .unwrap_or_else(|e| panic!("emitted lookup does not parse ({e}): {rendered}"));
+        (rendered, item)
+    }
+
+    #[test]
+    fn offset_timestamps_answers_each_op_with_its_own_const() {
+        let table: BTreeMap<String, Vec<String>> = [
+            ("getCDR".to_string(), vec!["/cdr/*/date".to_string()]),
+            ("getSMS".to_string(), vec!["/sms/*/date".to_string()]),
+        ]
+        .into_iter()
+        .collect();
+        let (rendered, item) = parsed_offset_lookup(&table);
+
+        assert_eq!(item.sig.ident, "offset_timestamps");
+        // The arm names the const rather than repeating its paths, so the two
+        // cannot disagree.
+        assert!(
+            rendered.contains(r#""getCDR" => Some(GET_CDR_TIMESTAMPS),"#),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains(r#""getSMS" => Some(GET_SMS_TIMESTAMPS),"#),
+            "{rendered}"
+        );
+        assert!(rendered.contains("_ => None,"), "{rendered}");
+        assert!(!rendered.contains("/cdr/*/date"), "{rendered}");
+    }
+
+    #[test]
+    fn offset_timestamps_over_an_empty_table_still_parses() {
+        let (rendered, item) = parsed_offset_lookup(&BTreeMap::new());
+
+        assert_eq!(item.sig.ident, "offset_timestamps");
+        assert!(!rendered.contains("match"), "{rendered}");
+        assert!(
+            rendered.contains("fn offset_timestamps(_method: &str)"),
             "{rendered}"
         );
     }

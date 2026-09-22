@@ -158,6 +158,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GET_CDR_TIMESTAMPS`, `GET_SMS_TIMESTAMPS`, `GET_MMS_TIMESTAMPS` and their
   three reseller siblings: the paths `attach_offset` needs for each method,
   emitted by the same codegen pass that types the fields.
+- `offset_timestamps(method)`: the by-name counterpart of those six consts. It
+  answers a record-listing method's wire name with that method's const and any
+  other name with `None`, so a caller dispatching through
+  `Client::call_raw_by_name` completes the envelope with `attach_offset`
+  without keeping its own method-to-const map. It is generated from the same
+  table as the consts, so the two cannot drift. `call_raw_by_name` itself
+  still returns the timestamps as VoIP.ms sent them, and a method the lookup
+  answers `Some` for must be sent an explicit `timezone`: omitting it selects
+  the account's configured zone, which no API call reports.
 - `TimezoneOffset::UTC` and `TimezoneOffset::to_fixed_offset`. A zone off the
   hour keeps its fraction through both (`Asia/Kolkata` sends `5.50` and its
   timestamps come back qualified `+05:30`).

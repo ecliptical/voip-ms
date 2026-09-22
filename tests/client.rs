@@ -1994,6 +1994,64 @@ async fn a_call_by_name_takes_the_transport_the_method_requires() {
     assert_eq!(got["status"], "success");
 }
 
+#[test]
+fn offset_timestamps_answers_each_record_listing_method_with_its_const() {
+    let expected: [(&str, &[&str]); 6] = [
+        ("getCDR", voip_ms::GET_CDR_TIMESTAMPS),
+        ("getSMS", voip_ms::GET_SMS_TIMESTAMPS),
+        ("getMMS", voip_ms::GET_MMS_TIMESTAMPS),
+        ("getResellerCDR", voip_ms::GET_RESELLER_CDR_TIMESTAMPS),
+        ("getResellerSMS", voip_ms::GET_RESELLER_SMS_TIMESTAMPS),
+        ("getResellerMMS", voip_ms::GET_RESELLER_MMS_TIMESTAMPS),
+    ];
+    for (method, paths) in expected {
+        assert_eq!(voip_ms::offset_timestamps(method), Some(paths), "{method}");
+    }
+
+    assert_eq!(voip_ms::offset_timestamps("getBalance"), None);
+    assert_eq!(voip_ms::offset_timestamps("someBrandNewMethod"), None);
+}
+
+#[tokio::test]
+async fn a_record_listing_call_by_name_returns_the_bare_wall_clock() {
+    // The raw contract is what VoIP.ms sent, so the offset stays off until the
+    // caller attaches it; the typed deserializer refuses the envelope before
+    // then.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .and(query_param("timezone", "-4"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [{ "date": "2026-09-16 15:14:35" }],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let offset = voip_ms::TimezoneOffset::new(-4).unwrap();
+    let mut envelope = client
+        .call_raw_by_name(
+            "getCDR",
+            &json!({ "date_from": "2026-09-01", "date_to": "2026-09-16", "timezone": offset }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(envelope["cdr"][0]["date"], "2026-09-16 15:14:35");
+    assert!(serde_json::from_value::<voip_ms::GetCDRResponse>(envelope.clone()).is_err());
+
+    let timestamps = voip_ms::offset_timestamps("getCDR").unwrap();
+    voip_ms::attach_offset(&mut envelope, offset.to_fixed_offset(), timestamps);
+    let typed: voip_ms::GetCDRResponse = serde_json::from_value(envelope).unwrap();
+    let date = typed.cdr[0].date.as_ref().and_then(voip_ms::Reported::get);
+    assert_eq!(
+        date.map(|d| d.to_rfc3339()),
+        Some("2026-09-16T15:14:35-04:00".to_string())
+    );
+}
+
 #[cfg(feature = "unchecked-raw")]
 #[tokio::test]
 async fn an_unchecked_call_by_name_takes_the_same_transport() {

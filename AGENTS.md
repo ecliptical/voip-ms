@@ -669,7 +669,12 @@ and `attach_offset` is public because a `call_raw` caller needs the same step
 (`livetest`'s `probe_zoned` is one). Each method's paths are public too, as
 `GET_CDR_TIMESTAMPS` and its siblings, emitted by the same codegen pass that
 retypes the fields -- a raw caller reading them out of a generated method body
-would be copying something that moves with the response shape.
+would be copying something that moves with the response shape. The same pass
+emits `offset_timestamps(method)`, which answers a wire name with its const, so
+a caller dispatching by name does not keep its own method-to-const map. It is a
+lookup and not a step inside `call_raw_by_name`: the raw calls return exactly
+what VoIP.ms sent, and a raw envelope with offsets attached would no longer be
+that.
 
 `attach_offset` skips a blank value. A blank is one record's missing timestamp,
 which the deserializers fold to `None`; suffixing it produces a string that
@@ -758,7 +763,9 @@ adds the status classification on top. The public `call`, `call_raw`, and
 A caller dispatching by wire name rather than through a generated method calls
 `call_raw_by_name` (or `call_raw_unchecked_by_name`), which picks the transport
 the way a generated method does; `requires_multipart(method)` answers the same
-question for a caller that needs it without making the call. The dispatcher
+question for a caller that needs it without making the call, and
+`offset_timestamps(method)` names the timestamps the caller then completes with
+`attach_offset` (decision #8). The dispatcher
 exists because that two-arm choice was written out at each call site instead,
 where no test reached either arm. All generated methods are thin wrappers over
 one of them:

@@ -19374,6 +19374,37 @@ pub fn requires_multipart(method: &str) -> bool {
     )
 }
 
+/// The paths [`attach_offset`](crate::attach_offset) needs to complete
+/// `method`'s response timestamps, or `None` for a method whose response
+/// reports none in an offset the request chose.
+///
+/// `Some` for exactly the record-listing methods, with that method's
+/// `*_TIMESTAMPS` const, so a caller holding a wire-method name need not
+/// map names to consts itself. A generated method attaches the offset on
+/// its own; a raw envelope, such as [`Client::call_raw_by_name`] returns,
+/// reports the wall clocks without it.
+///
+/// **A method this answers `Some` for must be sent an explicit
+/// `timezone`.** The offset to attach is the one the request carried.
+/// Omitting `timezone` selects the account's configured zone, which no API
+/// call reports, so there is no offset to attach; the generated methods
+/// send [`TimezoneOffset::UTC`](crate::TimezoneOffset::UTC) when the caller
+/// names no zone.
+///
+/// Like [`requires_multipart`], it answers only for the methods this crate
+/// was generated from: a method VoIP.ms has added since answers `None`.
+pub fn offset_timestamps(method: &str) -> Option<&'static [&'static str]> {
+    match method {
+        "getCDR" => Some(GET_CDR_TIMESTAMPS),
+        "getMMS" => Some(GET_MMS_TIMESTAMPS),
+        "getResellerCDR" => Some(GET_RESELLER_CDR_TIMESTAMPS),
+        "getResellerMMS" => Some(GET_RESELLER_MMS_TIMESTAMPS),
+        "getResellerSMS" => Some(GET_RESELLER_SMS_TIMESTAMPS),
+        "getSMS" => Some(GET_SMS_TIMESTAMPS),
+        _ => None,
+    }
+}
+
 impl Client {
     /// \- Adds a Charge to a specific Reseller Client
     ///

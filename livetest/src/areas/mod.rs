@@ -219,4 +219,32 @@ mod completeness {
              FILE_CARRYING"
         );
     }
+
+    /// `offset_timestamps` answers for the six record-listing methods and no
+    /// others, over every wire method, for the same reason as the multipart
+    /// set above.
+    #[test]
+    fn offset_timestamps_names_exactly_the_record_listing_methods() {
+        const RECORD_LISTING: &[&str] = &[
+            "getCDR",
+            "getMMS",
+            "getResellerCDR",
+            "getResellerMMS",
+            "getResellerSMS",
+            "getSMS",
+        ];
+
+        let zoned: BTreeSet<&str> = WIRE_METHODS
+            .iter()
+            .copied()
+            .filter(|m| voip_ms::offset_timestamps(m).is_some())
+            .collect();
+
+        assert_eq!(
+            zoned,
+            RECORD_LISTING.iter().copied().collect::<BTreeSet<&str>>(),
+            "the set of methods whose timestamps need an attached offset changed; \
+             confirm the new method takes a timezone and update RECORD_LISTING"
+        );
+    }
 }

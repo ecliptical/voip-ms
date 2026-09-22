@@ -255,7 +255,13 @@ never seen is not among them.
 For a method the crate *does* know, dispatching by wire name rather than through
 the generated method,
 [`Client::call_raw_by_name`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw_by_name)
-picks the transport itself.
+picks the transport itself. It returns what VoIP.ms sent, so the record-listing
+methods' timestamps come back without their offset: send those methods an
+explicit `timezone`, and complete the envelope with
+[`attach_offset`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_offset.html)
+over the paths
+[`offset_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.offset_timestamps.html)
+answers for the method.
 
 ## Error model
 

@@ -246,6 +246,31 @@ impl Client {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// The envelope is what VoIP.ms sent, so for the record-listing methods
+    /// (`getCDR`, `getSMS`, …) its timestamps are wall clocks with no offset,
+    /// and the typed response deserializers refuse them. Send those methods an
+    /// explicit `timezone`, then complete the envelope with
+    /// [`attach_offset`](crate::attach_offset) over the paths
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for the method:
+    ///
+    /// ```no_run
+    /// # async fn example(client: &voip_ms::Client, method: &str) -> Result<(), Box<dyn std::error::Error>> {
+    /// use voip_ms::{TimezoneOffset, attach_offset, offset_timestamps, serde_json::json};
+    ///
+    /// let offset = TimezoneOffset::new(-4)?;
+    /// let mut envelope = client
+    ///     .call_raw_by_name(
+    ///         method,
+    ///         &json!({ "date_from": "2026-09-01", "date_to": "2026-09-16", "timezone": offset }),
+    ///     )
+    ///     .await?;
+    /// if let Some(timestamps) = offset_timestamps(method) {
+    ///     attach_offset(&mut envelope, offset.to_fixed_offset(), timestamps);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn call_raw_by_name<P>(&self, method: &str, params: &P) -> Result<Value>
     where
         P: Serialize + ?Sized,
@@ -443,7 +468,8 @@ impl Client {
 /// Each method's paths are a public const, so a raw caller names them rather
 /// than spelling them out: [`GET_CDR_TIMESTAMPS`](crate::GET_CDR_TIMESTAMPS),
 /// [`GET_SMS_TIMESTAMPS`](crate::GET_SMS_TIMESTAMPS), and their reseller and
-/// MMS siblings.
+/// MMS siblings. [`offset_timestamps`](crate::offset_timestamps) answers the
+/// same paths from a wire-method name.
 ///
 /// A blank value and one that already names a zone are both left alone -- the
 /// first has no wall clock to qualify and stays the empty placeholder the
