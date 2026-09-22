@@ -90,7 +90,7 @@ impl Area for Reference {
             report,
             AREA,
             "getCallAccounts",
-            GetCallAccountsParams,
+            NoParams,
             GetCallAccountsResponse,
             accounts
         );
@@ -99,7 +99,7 @@ impl Area for Reference {
             report,
             AREA,
             "getCallBilling",
-            GetCallBillingParams,
+            NoParams,
             GetCallBillingResponse,
             call_billing
         );
@@ -251,7 +251,7 @@ impl Area for Reference {
             report,
             AREA,
             "getProvinces",
-            GetProvincesParams,
+            NoParams,
             GetProvincesResponse,
             provinces
         );
@@ -281,7 +281,7 @@ impl Area for Reference {
             report,
             AREA,
             "getStates",
-            GetStatesParams,
+            NoParams,
             GetStatesResponse,
             states
         );

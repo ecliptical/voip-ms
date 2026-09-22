@@ -10,6 +10,7 @@
 //!     cargo xtask gen
 
 mod check_flags;
+mod check_types;
 mod dump_fields;
 mod dump_methods;
 mod extract;
@@ -38,24 +39,66 @@ const ACRONYMS: &[&str] = &[
 /// Fields that come from the `Client`, not the per-method request struct.
 const CLIENT_FIELDS: &[&str] = &["api_username", "api_password"];
 
-/// Param-field identifier renames, keyed by `(struct name, WSDL field name)`
-/// mapping to the Rust field identifier to emit instead of the one
-/// [`rust_field_ident`] derives. The WSDL name still travels on the wire (a
-/// `#[serde(rename)]` falls out because the ident now differs from it).
+/// Field identifier renames, keyed by `(struct name, wire field name)` mapping
+/// to the Rust field identifier to emit instead of the one
+/// [`rust_field_ident`] derives. The wire name still travels on the wire (a
+/// `#[serde(rename)]` falls out because the ident now differs from it). Applies
+/// on both the `*Params` and the `*Response` side.
 ///
-/// Reserved for genuine cross-method inconsistency in the upstream WSDL, where
-/// one method names an id differently than its siblings and a consumer who just
-/// read or set the value naturally reuses the sibling's name.
+/// Two things earn an entry:
+///
+/// * genuine cross-method inconsistency in the upstream WSDL, where one method
+///   names an id differently than its siblings and a consumer who just read or
+///   set the value naturally reuses the sibling's name;
+/// * a wire field named `type`, which [`rust_field_ident`] can only escape as
+///   `r#type`. What it holds differs per struct -- a search mode, a message
+///   direction, a file format -- so each gets the word for what it is.
 const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `delRingGroup` names the id `ringgroup` while `getRingGroups` and
     // `setRingGroup` use `ring_group`; align the delete with the family so a
     // caller who just listed or configured a group reuses the same field.
     ("DelRingGroupParams", "ringgroup", "ring_group"),
+    // The reference-data lookups: `type` narrows the catalog to one entry, and
+    // the docs call the value a code ("Code for a specific Address Type").
+    ("E911AddressTypesParams", "type", "code"),
+    ("GetAuthTypesParams", "type", "code"),
+    ("GetInternationalTypesParams", "type", "code"),
+    ("GetJoinWhenEmptyTypesParams", "type", "code"),
+    ("GetReportEstimatedHoldTimeParams", "type", "code"),
+    // Not a country code: it selects which kind of international DID to list.
+    ("GetDIDCountriesParams", "type", "international_type"),
+    // The DID / toll-free searches: how the pattern is matched.
+    ("SearchDIDsCANParams", "type", "search_type"),
+    ("SearchDIDsUSAParams", "type", "search_type"),
+    ("SearchTollFreeCANUSParams", "type", "search_type"),
+    ("SearchTollFreeUSAParams", "type", "search_type"),
+    ("SearchVanityParams", "type", "vanity_type"),
+    // Messaging: sent or received.
+    ("GetMMSParams", "type", "direction"),
+    ("GetResellerMMSParams", "type", "direction"),
+    ("GetResellerSMSParams", "type", "direction"),
+    ("GetSMSParams", "type", "direction"),
+    ("GetMMSResponseSMS", "type", "direction"),
+    ("GetResellerMMSResponseSMS", "type", "direction"),
+    ("GetResellerSMSResponseSMS", "type", "direction"),
+    ("GetSMSResponseSMS", "type", "direction"),
+    // Call recordings report `Incoming` / `Outgoing`.
+    ("GetCallRecordingResponse", "type", "direction"),
+    ("GetCallRecordingsResponseRecording", "type", "direction"),
+    // A porting attachment's `type` is its file format (`pdf`).
+    ("GetLNPAttachResponse", "type", "file_type"),
+    ("GetLNPAttachListResponseList", "type", "file_type"),
+    ("GetLNPDetailsResponseAttachment", "type", "file_type"),
+    (
+        "GetTransactionHistoryResponseTransaction",
+        "type",
+        "transaction_type",
+    ),
 ];
 
-/// The Rust field identifier for a WSDL param, applying any
+/// The Rust field identifier for a wire field, applying any
 /// [`FIELD_IDENT_OVERRIDE`] and otherwise deriving it with [`rust_field_ident`].
-fn param_field_ident(struct_name: &str, fname: &str, acronyms: &[&'static str]) -> String {
+pub(crate) fn field_ident(struct_name: &str, fname: &str, acronyms: &[&'static str]) -> String {
     FIELD_IDENT_OVERRIDE
         .iter()
         .find(|(s, f, _)| *s == struct_name && *f == fname)
@@ -237,6 +280,135 @@ fn documents_base64(doc: &str) -> bool {
         .filter(|c| !c.is_whitespace())
         .collect();
     squished.contains("base64")
+}
+
+/// Params fields the docs mark `(required)` that a `new` constructor must not
+/// ask for, keyed `"wireMethod.field"`.
+///
+/// The offset ops' `timezone` is the only case: the docs mark it required, and
+/// the crate sends UTC when a caller names no zone, so a constructor demanding
+/// one would contradict the method it builds for.
+const REQUIRED_CTOR_SKIP: &[&str] = &[
+    "getCDR.timezone",
+    "getMMS.timezone",
+    "getResellerCDR.timezone",
+    "getResellerMMS.timezone",
+    "getResellerSMS.timezone",
+    "getSMS.timezone",
+];
+
+/// The most required fields a positional constructor stays readable at.
+/// `addLNPPort` has 12 and `createVoicemail` 11; past this bound an unlabeled
+/// argument list reads worse than the struct literal, so no `new` is emitted
+/// and the caller writes the fields out.
+const MAX_CTOR_FIELDS: usize = 6;
+
+/// Emit `impl {struct_name} { pub fn new(..) }` taking the parameters the
+/// mined docs mark `(required)`, or nothing when there are none or too many.
+///
+/// Every field stays `Option` and the struct-update pattern keeps working; the
+/// constructor only spares a caller from guessing which fields VoIP.ms needs.
+fn emit_params_constructor(
+    struct_name: &str,
+    op: &str,
+    body_fields: &[&(String, String)],
+    param_docs: &ParamDocs,
+    resolver: &field_overrides::Resolver,
+    acronyms: &[&'static str],
+) -> String {
+    let docs = param_docs.get(op);
+    let required: Vec<(String, String, bool)> = body_fields
+        .iter()
+        .copied()
+        .filter(|(fname, _)| {
+            !REQUIRED_CTOR_SKIP.contains(&format!("{op}.{fname}").as_str())
+                && docs
+                    .and_then(|d| d.get(fname))
+                    .is_some_and(|doc| doc.contains("(required)"))
+        })
+        .map(|(fname, ftype)| {
+            let override_ = resolver.resolve(struct_name, fname, true);
+            let ty = match override_ {
+                Some(o) => o.rust_type.clone(),
+                None => xsd_to_rust(ftype).to_string(),
+            };
+            let bare = override_.is_some_and(|o| o.param_skip_if.is_some());
+            (field_ident(struct_name, fname, acronyms), ty, bare)
+        })
+        .collect();
+    if required.is_empty() || required.len() > MAX_CTOR_FIELDS {
+        return String::new();
+    }
+
+    let args = required
+        .iter()
+        .map(|(ident, ty, _)| {
+            if ty == "String" {
+                format!("{ident}: impl Into<String>")
+            } else {
+                format!("{ident}: {ty}")
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let mut assignments = String::new();
+    for (ident, ty, bare) in &required {
+        let value = if ty == "String" {
+            format!("{ident}.into()")
+        } else {
+            ident.clone()
+        };
+        if *bare {
+            assignments.push_str(&format!("            {ident}: {value},\n"));
+        } else {
+            assignments.push_str(&format!("            {ident}: Some({value}),\n"));
+        }
+    }
+
+    // An all-required struct has nothing left for the struct-update to fill,
+    // and `clippy::needless_update` says so.
+    if required.len() < body_fields.len() {
+        assignments.push_str("            ..Default::default()\n");
+    }
+
+    let named: Vec<String> = required
+        .iter()
+        .map(|(ident, _, _)| format!("`{ident}`"))
+        .collect();
+    let listed = match named.split_last() {
+        Some((last, [])) => last.clone(),
+        Some((last, head)) => format!("{} and {last}", head.join(", ")),
+        None => unreachable!("an empty list returned above"),
+    };
+
+    let mut out = format!("\nimpl {struct_name} {{\n");
+    // Through `render_doc` for the wrapping, which is also why the text carries
+    // no intra-doc link: it escapes brackets, since the mined parameter
+    // descriptions it usually renders are full of prose like `[Required]`.
+    render_doc(
+        &mut out,
+        "    ",
+        &format!(
+            "A `{struct_name}` with the parameters the VoIP.ms docs mark as required: \
+             {listed}. Every other field keeps its default, so struct-update syntax \
+             still fills in the rest."
+        ),
+    );
+    out.push_str("    ///\n");
+    render_doc(
+        &mut out,
+        "    ",
+        "The marking is the docs' word, not the API's: a field asked for here may still \
+         be optional in practice, and one left out may turn out to be needed.",
+    );
+    out.push_str(&format!(
+        "    pub fn new({args}) -> Self {{\n        \
+             Self {{\n{assignments}        \
+             }}\n    \
+         }}\n\
+         }}\n"
+    ));
+    out
 }
 
 /// Doc emitted on the offset ops' public `timezone` field in place of the
@@ -606,34 +778,53 @@ fn status_variant_name(code: &str, acronyms: &[&'static str]) -> String {
     camel_to_pascal(code, acronyms)
 }
 
-/// Emit the `ApiStatus` enum: one PascalCase variant per documented wire
-/// code (carrying its description as a doc comment) plus an `Unknown(String)`
-/// catch-all, with `as_str`/`from_wire`/`description`/`is_documented` and the
-/// `Display`/`Serialize`/`Deserialize`/`From<String>` impls. The wire strings
-/// are preserved verbatim (including the rare capitalized codes); only the
-/// variant *identifiers* are normalized.
+/// The one status the error-code table does not list, because it is not an
+/// error. It is a variant so a typed response's `status` field names the
+/// ordinary case instead of landing in [`ApiStatus::Unknown`].
+const SUCCESS_STATUS: (&str, &str) = ("success", "The request succeeded");
+
+/// Emit the `ApiStatus` enum: a `Success` variant, one PascalCase variant per
+/// documented wire code (carrying its description as a doc comment), and an
+/// `Unknown(String)` catch-all, with
+/// `as_str`/`from_wire`/`description`/`is_documented`/`is_empty_collection`
+/// and the `Default`/`FromStr`/`Display`/`Serialize`/`Deserialize`/`From<String>`
+/// impls. The wire strings are preserved verbatim (including the rare
+/// capitalized codes); only the variant *identifiers* are normalized.
 fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> String {
     if statuses.is_empty() {
         return String::new();
     }
 
     let acronyms = acronyms_sorted();
-    let variants: Vec<(String, &String, &String)> = statuses
-        .iter()
-        .map(|(code, desc)| (status_variant_name(code, &acronyms), code, desc))
-        .collect();
+    // `Success` leads the list so every match arm below covers it without a
+    // special case; it is the one status that is not an error, and the
+    // error-code table does not list it.
+    let variants: Vec<(String, String, String)> = std::iter::once((
+        "Success".to_string(),
+        SUCCESS_STATUS.0.to_string(),
+        SUCCESS_STATUS.1.to_string(),
+    ))
+    .chain(statuses.iter().map(|(code, desc)| {
+        (
+            status_variant_name(code, &acronyms),
+            code.clone(),
+            desc.clone(),
+        )
+    }))
+    .collect();
 
     let mut out = String::new();
 
     // Enum declaration.
     out.push_str(
-        "\n/// A non-success `status` returned by the VoIP.ms API.\n\
+        "\n/// A `status` returned by the VoIP.ms API.\n\
          ///\n\
          /// Every documented error code from the official API docs' global\n\
-         /// error-code table is a variant; [`ApiStatus::description`] returns its\n\
-         /// documented meaning. The set of codes is documentation, not a stable\n\
-         /// contract — a code VoIP.ms returns but hasn't documented is preserved\n\
-         /// verbatim in [`ApiStatus::Unknown`] rather than lost.\n\
+         /// error-code table is a variant, alongside [`ApiStatus::Success`];\n\
+         /// [`ApiStatus::description`] returns a variant's documented meaning. The\n\
+         /// set of codes is documentation, not a stable contract -- a code VoIP.ms\n\
+         /// returns but hasn't documented is preserved verbatim in\n\
+         /// [`ApiStatus::Unknown`] rather than lost.\n\
          ///\n\
          /// ```\n\
          /// # use voip_ms::ApiStatus;\n\
@@ -643,7 +834,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          /// assert_eq!(status.description(), Some(\"Username or Password is incorrect\"));\n\
          /// assert!(status.is_documented());\n\
          ///\n\
-         /// let unknown = ApiStatus::from_wire(\"some_new_code\");\n\
+         /// let unknown = \"some_new_code\".parse::<ApiStatus>().unwrap();\n\
          /// assert_eq!(unknown, ApiStatus::Unknown(\"some_new_code\".to_string()));\n\
          /// assert_eq!(unknown.description(), None);\n\
          /// assert!(!unknown.is_documented());\n\
@@ -652,7 +843,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          pub enum ApiStatus {\n",
     );
     for (variant, code, desc) in &variants {
-        out.push_str(&format!("    /// `{code}` — {desc}\n"));
+        out.push_str(&format!("    /// `{code}` -- {desc}\n"));
         out.push_str(&format!("    {variant},\n"));
     }
     out.push_str("    /// A `status` value not present in the documented table,\n");
@@ -703,10 +894,10 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
     out.push_str("        !matches!(self, ApiStatus::Unknown(_))\n");
     out.push_str("    }\n\n");
 
-    // is_empty
+    // is_empty_collection
     let empty_variants: Vec<&String> = variants
         .iter()
-        .filter(|(_, code, _)| empty.contains(*code))
+        .filter(|(_, code, _)| empty.contains(code))
         .map(|(variant, _, _)| variant)
         .collect();
     out.push_str("    /// Whether this status means \"the requested collection is empty,\"\n");
@@ -718,7 +909,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
     out.push_str("    /// verbatim. Codes that look like `no_*` but signal a real failure\n");
     out.push_str("    /// (`no_base64file`, `no_callstatus`, `no_provision`, ...) are not\n");
     out.push_str("    /// included.\n");
-    out.push_str("    pub fn is_empty(&self) -> bool {\n");
+    out.push_str("    pub fn is_empty_collection(&self) -> bool {\n");
     if empty_variants.is_empty() {
         out.push_str("        false\n");
     } else {
@@ -741,6 +932,17 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          }\n\n",
     );
 
+    // FromStr -- infallible, so `.parse()` reaches the same place `from_wire`
+    // does for code that is generic over `FromStr`.
+    out.push_str(
+        "impl std::str::FromStr for ApiStatus {\n    \
+             type Err = std::convert::Infallible;\n\n    \
+             fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {\n        \
+                 Ok(ApiStatus::from_wire(s))\n    \
+             }\n\
+         }\n\n",
+    );
+
     // From<String> / From<&str> — keep the prior `ApiStatus::from(String)`
     // ergonomics working against the new enum.
     out.push_str(
@@ -752,15 +954,6 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          impl From<&str> for ApiStatus {\n    \
              fn from(s: &str) -> Self {\n        \
                  ApiStatus::from_wire(s)\n    \
-             }\n\
-         }\n\n",
-    );
-
-    // Serialize
-    out.push_str(
-        "impl serde::Serialize for ApiStatus {\n    \
-             fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {\n        \
-                 s.serialize_str(self.as_str())\n    \
              }\n\
          }\n\n",
     );
@@ -785,55 +978,66 @@ fn emit(
     param_docs: &ParamDocs,
     method_docs: &MethodDocs,
     resolver: &field_overrides::Resolver,
-    enum_decls: &str,
+    enums: &std::collections::HashMap<String, overrides::EnumDef>,
     statuses: &[(String, String)],
     empty_statuses: &BTreeSet<String>,
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
     base64_file_params: &BTreeMap<String, Vec<String>>,
 ) -> String {
     let acronyms = acronyms_sorted();
+    // Which side each declared enum lands on, collected while the structs are
+    // rendered so only the serde direction a field actually uses is emitted.
+    let mut enum_sides = EnumSides::default();
     let mut out = String::new();
     out.push_str(
         "// @generated by xtask from tools/server.wsdl + tools/api-responses.json.\n\
-         // DO NOT EDIT — regenerate with `cargo xtask gen`.\n\
+         // DO NOT EDIT -- regenerate with `cargo xtask gen`.\n\
+         \n\
+         // The type names keep VoIP.ms's own acronym casing (`GetDIDsInfoParams`,\n\
+         // `SendSMSResponse`) so a name reads the same here as in the API docs. That\n\
+         // departs from C-CASE, which clippy reports against a consumer's own build\n\
+         // when they run it over this crate's types.\n\
+         #![allow(clippy::upper_case_acronyms)]\n\
          \n\
          use serde::Serialize;\n\
          use serde_json::Value;\n\
          \n\
          use crate::client::Client;\n\
-         use crate::error::Result;\n",
+         use crate::error::Result;\n\
+         \n\
+         /// The parameters of a method that takes none.\n\
+         #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]\n\
+         pub struct NoParams {}\n",
     );
 
-    out.push_str(enum_decls);
-    out.push_str(&emit_statuses(statuses, empty_statuses));
-    out.push_str(&emit_timestamp_consts(zoned_timestamps, &acronyms));
-
+    let mut body = String::new();
     for op in &wsdl.operations {
         let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
         let input_name = format!("{op}Input");
         let empty = Vec::new();
         let fields = wsdl.types.get(&input_name).unwrap_or(&empty);
-
-        out.push('\n');
-        if let Some(desc) = method_docs.get(op) {
-            render_method_doc(&mut out, "", desc);
-            out.push_str("///\n");
-        }
-        out.push_str(&format!(
-            "/// Parameters for [`Client::{}`] (wire method `{op}`).\n",
-            camel_to_snake(op, &acronyms),
-        ));
-        out.push_str("#[derive(Debug, Default, Clone, Serialize)]\n");
         let body_fields: Vec<&(String, String)> = fields
             .iter()
             .filter(|(n, _)| !CLIENT_FIELDS.contains(&n.as_str()))
             .collect();
+        // A method with no parameters gets no struct: its generated method takes
+        // no argument. Should the WSDL grow one, the method gains an argument --
+        // a breaking change the generator makes visible.
         if body_fields.is_empty() {
-            out.push_str(&format!("pub struct {struct_name} {{}}\n"));
             continue;
         }
 
-        out.push_str(&format!("pub struct {struct_name} {{\n"));
+        body.push('\n');
+        if let Some(desc) = method_docs.get(op) {
+            render_method_doc(&mut body, "", desc);
+            body.push_str("///\n");
+        }
+        body.push_str(&format!(
+            "/// Parameters for [`Client::{}`] (wire method `{op}`).\n",
+            camel_to_snake(op, &acronyms),
+        ));
+        body.push_str("#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]\n");
+        body.push_str(&format!("pub struct {struct_name} {{\n"));
         let docs = param_docs.get(op);
         for (fname, ftype) in body_fields.iter().copied() {
             // Params are WSDL scalars, so the name-based table always applies.
@@ -843,7 +1047,9 @@ fn emit(
                 None => xsd_to_rust(ftype).to_string(),
             };
 
-            let ident = param_field_ident(&struct_name, fname, &acronyms);
+            enum_sides.note_param(enums, &rust_ty);
+
+            let ident = field_ident(&struct_name, fname, &acronyms);
             let rename = (ident.trim_start_matches("r#") != fname).then_some(fname);
             let mined = docs.and_then(|d| d.get(fname));
             if offset_op(op).is_some() && fname == "timezone" {
@@ -856,9 +1062,9 @@ fn emit(
                     OFFSET_TIMEZONE_DOC.to_string()
                 };
 
-                render_doc(&mut out, "    ", &doc);
+                render_doc(&mut body, "    ", &doc);
             } else if let Some(desc) = mined {
-                render_doc(&mut out, "    ", desc);
+                render_doc(&mut body, "    ", desc);
             }
 
             // A `param_skip_if` override emits the field unwrapped (plain `T`,
@@ -866,35 +1072,34 @@ fn emit(
             // `None`. A `param_serializer` supplies the wire form for a type
             // whose own `Serialize` is wrong (a `bool` flag wanting `1`/`0`).
             let param_serializer = override_.and_then(|o| o.param_serializer.as_deref());
-            match override_.and_then(|o| o.param_skip_if.as_deref()) {
-                Some(skip_if) => {
-                    out.push_str(&format!("    #[serde(skip_serializing_if = \"{skip_if}\""));
-                    if let Some(ser) = param_serializer {
-                        out.push_str(&format!(", serialize_with = \"{ser}\""));
-                    }
-                    if let Some(wire) = rename {
-                        out.push_str(&format!(", rename = \"{wire}\""));
-                    }
-                    out.push_str(")]\n");
-                    out.push_str(&format!("    pub {ident}: {rust_ty},\n"));
-                }
-                None => {
-                    out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\"");
-                    if let Some(ser) = param_serializer {
-                        out.push_str(&format!(", serialize_with = \"{ser}\""));
-                    }
-                    if let Some(wire) = rename {
-                        out.push_str(&format!(", rename = \"{wire}\""));
-                    }
-                    out.push_str(")]\n");
-                    out.push_str(&format!("    pub {ident}: Option<{rust_ty}>,\n"));
-                }
+            let skip_if = override_.and_then(|o| o.param_skip_if.as_deref());
+            body.push_str("    #[serde(skip_serializing_if = \"");
+            body.push_str(skip_if.unwrap_or("Option::is_none"));
+            body.push('"');
+            if let Some(ser) = param_serializer {
+                body.push_str(&format!(", serialize_with = \"{ser}\""));
+            }
+            if let Some(wire) = rename {
+                body.push_str(&format!(", rename = \"{wire}\""));
+            }
+            body.push_str(")]\n");
+            match skip_if {
+                Some(_) => body.push_str(&format!("    pub {ident}: {rust_ty},\n")),
+                None => body.push_str(&format!("    pub {ident}: Option<{rust_ty}>,\n")),
             }
         }
-        out.push_str("}\n");
+        body.push_str("}\n");
+        body.push_str(&emit_params_constructor(
+            &struct_name,
+            op,
+            &body_fields,
+            param_docs,
+            resolver,
+            &acronyms,
+        ));
 
         if let Some(off) = offset_op(op) {
-            out.push_str(&emit_offset_wire(
+            body.push_str(&emit_offset_wire(
                 op,
                 off,
                 &struct_name,
@@ -905,11 +1110,24 @@ fn emit(
         }
     }
 
-    out.push_str(&response_codegen::emit_response_structs(
+    let mut response_enums = BTreeSet::new();
+    let responses_text = response_codegen::emit_response_structs(
         &wsdl.operations,
         responses,
         resolver,
-    ));
+        &mut response_enums,
+    );
+    for ty in &response_enums {
+        enum_sides.note_response(enums, ty);
+    }
+
+    // Now that both sides have been rendered, the enum declarations can carry
+    // only the serde direction some field reaches them through.
+    out.push_str(&emit_enums(enums, &enum_sides));
+    out.push_str(&emit_statuses(statuses, empty_statuses));
+    out.push_str(&emit_timestamp_consts(zoned_timestamps, &acronyms));
+    out.push_str(&body);
+    out.push_str(&responses_text);
 
     out.push_str(&emit_requires_multipart(base64_file_params));
     out.push_str("\nimpl Client {\n");
@@ -917,10 +1135,35 @@ fn emit(
         let method = camel_to_snake(op, &acronyms);
         let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
         let response_name = format!("{}Response", camel_to_pascal(op, &acronyms));
+        let takes_params = wsdl.types.get(&format!("{op}Input")).is_some_and(|fields| {
+            fields
+                .iter()
+                .any(|(n, _)| !CLIENT_FIELDS.contains(&n.as_str()))
+        });
         if let Some(desc) = method_docs.get(op) {
             render_method_doc(&mut out, "    ", desc);
             out.push_str("    ///\n");
         }
+        if !takes_params {
+            // No `*Params` struct exists for this method, so the call site
+            // would otherwise have to name an empty one.
+            out.push_str(&format!(
+                "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
+                 ///\n    \
+                 /// The method takes no parameters.\n    \
+                 pub async fn {method}(&self) -> Result<{response_name}> {{\n        \
+                     self.call(\"{op}\", &NoParams {{}}).await\n    \
+                 }}\n\n\
+                 /// Call the `{op}` API method and return the raw JSON envelope.\n    \
+                 ///\n    \
+                 /// The method takes no parameters.\n    \
+                 pub async fn {method}_raw(&self) -> Result<Value> {{\n        \
+                     self.call_raw(\"{op}\", &NoParams {{}}).await\n    \
+                 }}\n\n"
+            ));
+            continue;
+        }
+
         if offset_op(op).is_some() {
             // Route through the wire twin, resolving `timezone` (a `Tz`) to the
             // numeric UTC offset at the query start date, then put that offset
@@ -1076,7 +1319,7 @@ fn emit_offset_wire(
          struct {wire_name} {{\n"
     ));
     for (fname, ftype) in body_fields.iter().copied() {
-        let ident = param_field_ident(struct_name, fname, acronyms);
+        let ident = field_ident(struct_name, fname, acronyms);
         let rename = (ident.trim_start_matches("r#") != fname).then_some(fname);
         if fname == "timezone" {
             out.push_str("    timezone: crate::TimezoneOffset,\n");
@@ -1118,10 +1361,10 @@ fn emit_offset_wire(
     }
     out.push_str("}\n\n");
 
-    let start_ident = param_field_ident(struct_name, off.start_field, acronyms);
+    let start_ident = field_ident(struct_name, off.start_field, acronyms);
     out.push_str(&format!(
         "impl TryFrom<&{struct_name}> for {wire_name} {{\n    \
-             type Error = crate::types::TimezoneOffsetError;\n\n    \
+             type Error = crate::ParamsError;\n\n    \
              fn try_from(p: &{struct_name}) -> std::result::Result<Self, Self::Error> {{\n"
     ));
     // A named zone resolves at the start date; no zone means UTC, so the
@@ -1157,7 +1400,7 @@ fn emit_offset_wire(
 
     out.push_str("        Ok(Self {\n");
     for (fname, ftype) in body_fields.iter().copied() {
-        let ident = param_field_ident(struct_name, fname, acronyms);
+        let ident = field_ident(struct_name, fname, acronyms);
         if fname == "timezone" {
             out.push_str("            timezone,\n");
             continue;
@@ -1210,9 +1453,50 @@ fn enum_deserializer_path(enum_name: &str) -> String {
     format!("deserialize_opt_{}", camel_to_snake(enum_name, &acronyms))
 }
 
-/// Emit Rust enum declarations (plus their (de)serializer helpers) for
-/// every user-defined enum in the overrides JSON.
-fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> String {
+/// Which serde directions each declared enum is actually reached through.
+///
+/// An enum on a param is only ever written, one on a response only ever read,
+/// and most are both. Emitting the unused direction would ship a wire contract
+/// nothing exercises -- and the reader helper for a param-only enum was dead
+/// code the generator had to `#[allow]` to keep the build quiet.
+#[derive(Debug, Default)]
+struct EnumSides {
+    serialize: BTreeSet<String>,
+    deserialize: BTreeSet<String>,
+}
+
+impl EnumSides {
+    /// Record `rust_ty` as reached from a `*Params` field, if it names a
+    /// declared enum. A non-enum type is ignored, so callers pass any type.
+    fn note_param(
+        &mut self,
+        enums: &std::collections::HashMap<String, overrides::EnumDef>,
+        rust_ty: &str,
+    ) {
+        if enums.contains_key(rust_ty) {
+            self.serialize.insert(rust_ty.to_string());
+        }
+    }
+
+    /// Record `rust_ty` as reached from a `*Response` field.
+    fn note_response(
+        &mut self,
+        enums: &std::collections::HashMap<String, overrides::EnumDef>,
+        rust_ty: &str,
+    ) {
+        if enums.contains_key(rust_ty) {
+            self.deserialize.insert(rust_ty.to_string());
+        }
+    }
+}
+
+/// Emit Rust enum declarations for every user-defined enum in the overrides
+/// JSON, each carrying only the serde direction `sides` says a field reaches
+/// it through.
+fn emit_enums(
+    enums: &std::collections::HashMap<String, overrides::EnumDef>,
+    sides: &EnumSides,
+) -> String {
     let mut names: Vec<&String> = enums.keys().collect();
     names.sort();
     let mut out = String::new();
@@ -1283,40 +1567,54 @@ fn emit_enums(enums: &std::collections::HashMap<String, overrides::EnumDef>) -> 
              }}\n\n"
         ));
 
-        // Serialize
+        // FromStr -- infallible, since `Unknown` absorbs anything `from_wire`
+        // does not recognize. It exists so `.parse()` works for code generic
+        // over `FromStr`.
         out.push_str(&format!(
-            "impl serde::Serialize for {name} {{\n    \
-                 fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {{\n        \
-                     s.serialize_str(self.as_wire())\n    \
+            "impl std::str::FromStr for {name} {{\n    \
+                 type Err = std::convert::Infallible;\n\n    \
+                 fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {{\n        \
+                     Ok({name}::from_wire(s))\n    \
                  }}\n\
              }}\n\n"
         ));
 
-        // Deserialize -- tolerant of string / number / bool wire forms.
-        out.push_str(&format!(
-            "impl<'de> serde::Deserialize<'de> for {name} {{\n    \
-                 fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {{\n        \
-                     let s = crate::responses::deserialize_enum_wire_string(d)?;\n        \
-                     Ok({name}::from_wire(&s))\n    \
-                 }}\n\
-             }}\n\n"
-        ));
+        // Serialize -- only for an enum some `*Params` field writes.
+        if sides.serialize.contains(name) {
+            out.push_str(&format!(
+                "impl serde::Serialize for {name} {{\n    \
+                     fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {{\n        \
+                         s.serialize_str(self.as_wire())\n    \
+                     }}\n\
+                 }}\n\n"
+            ));
+        }
 
-        // deserialize_opt helper -- same tolerance, empty / absent -> None.
-        // `allow(dead_code)`: emitted for every enum, but a param-only enum
-        // (used only via `Serialize`) never references its response helper.
-        let helper = enum_deserializer_path(name);
-        out.push_str(&format!(
-            "#[allow(dead_code)]\n\
-             pub(crate) fn {helper}<'de, D>(d: D) -> std::result::Result<Option<{name}>, D::Error>\n\
-             where D: serde::Deserializer<'de> {{\n    \
-                 let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;\n    \
-                 Ok(opt.and_then(|s| {{\n        \
-                     let t = s.trim();\n        \
-                     if t.is_empty() {{ None }} else {{ Some({name}::from_wire(t)) }}\n    \
-                 }}))\n\
-             }}\n"
-        ));
+        // Deserialize, and the `deserialize_opt_*` helper the response fields
+        // name -- only for an enum some `*Response` field reads. Both are
+        // tolerant of the string / number / bool wire forms voip.ms mixes.
+        if sides.deserialize.contains(name) {
+            out.push_str(&format!(
+                "impl<'de> serde::Deserialize<'de> for {name} {{\n    \
+                     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {{\n        \
+                         let s = crate::responses::deserialize_enum_wire_string(d)?;\n        \
+                         Ok({name}::from_wire(&s))\n    \
+                     }}\n\
+                 }}\n\n"
+            ));
+
+            let helper = enum_deserializer_path(name);
+            out.push_str(&format!(
+                "pub(crate) fn {helper}<'de, D>(d: D) -> std::result::Result<Option<{name}>, D::Error>\n\
+                 where D: serde::Deserializer<'de> {{\n    \
+                     let opt = crate::responses::deserialize_opt_string_from_string_number_or_bool(d)?;\n    \
+                     Ok(opt.and_then(|s| {{\n        \
+                         let t = s.trim();\n        \
+                         if t.is_empty() {{ None }} else {{ Some({name}::from_wire(t)) }}\n    \
+                     }}))\n\
+                 }}\n"
+            ));
+        }
     }
     out
 }
@@ -1587,7 +1885,6 @@ fn cmd_gen() -> Result<(), String> {
         );
     }
 
-    let enum_decls = emit_enums(&overrides_doc.enums);
     let resolver = field_overrides::Resolver {
         table: &table,
         per_struct: &field_type_override,
@@ -1599,7 +1896,7 @@ fn cmd_gen() -> Result<(), String> {
         &param_docs,
         &method_docs,
         &resolver,
-        &enum_decls,
+        &overrides_doc.enums,
         &statuses,
         &empty_statuses,
         &zoned_timestamps,
@@ -1736,6 +2033,9 @@ fn load_statuses(path: &Path) -> Result<Vec<(String, String)>, String> {
     // collapse to the same PascalCase identifier would fail to compile.
     let acronyms = acronyms_sorted();
     let mut seen: BTreeMap<String, String> = BTreeMap::new();
+    // `Success` is synthesized (see SUCCESS_STATUS), so a docs refresh that
+    // started listing it would emit the variant twice.
+    seen.insert("Success".to_string(), SUCCESS_STATUS.0.to_string());
     for entry in &doc.statuses {
         let ident = status_variant_name(&entry.code, &acronyms);
         if let Some(prev) = seen.insert(ident.clone(), entry.code.clone()) {
@@ -1781,13 +2081,14 @@ fn main() -> ExitCode {
         "gen" => cmd_gen(),
         "extract-responses" => cmd_extract(&rest),
         "extract-statuses" => cmd_extract_statuses(&rest),
-        "check-flags" => check_flags::cmd_check_flags(),
+        "check-flags" => check_flags::cmd_check_flags(&rest),
+        "check-types" => check_types::cmd_check_types(&rest),
         "dump-methods" => dump_methods::cmd_dump_methods(),
         "dump-fields" => dump_fields::cmd_dump_fields(),
         other => Err(format!(
             "unknown subcommand `{other}` \
              (expected `gen`, `extract-responses`, `extract-statuses`, \
-             `check-flags`, `dump-methods`, or `dump-fields`)"
+             `check-flags`, `check-types`, `dump-methods`, or `dump-fields`)"
         )),
     };
 

@@ -10,6 +10,12 @@ use crate::error::{ApiStatus, Error, Result};
 /// Default base URL for the VoIP.ms REST API.
 pub const DEFAULT_BASE_URL: &str = "https://voip.ms/api/v1/rest.php";
 
+/// [`DEFAULT_BASE_URL`] parsed once, so building a client cannot fail on a
+/// literal this crate controls.
+static DEFAULT_URL: LazyLock<Url> = LazyLock::new(|| {
+    Url::parse(DEFAULT_BASE_URL).expect("the default base URL is a literal and must parse")
+});
+
 /// A URL built only to be discarded: the multipart form reads the query string
 /// `reqwest` serializes the parameters into, and never sends the request.
 static SCRATCH_URL: LazyLock<Url> = LazyLock::new(|| {
@@ -48,15 +54,8 @@ pub struct Client {
 impl Client {
     /// Build a new client with the default base URL and a default
     /// [`reqwest::Client`]. Use [`Client::builder`] for more control.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the default base URL fails to parse, which would indicate a
-    /// bug in this crate.
     pub fn new(api_username: impl Into<String>, api_password: impl Into<String>) -> Self {
-        Self::builder(api_username, api_password)
-            .build()
-            .expect("default VoIP.ms base URL must parse")
+        Self::builder(api_username, api_password).build()
     }
 
     /// Start building a client with custom HTTP client or base URL.
@@ -157,7 +156,7 @@ impl Client {
     ///
     /// The `status` field is inspected: any value other than `success`
     /// causes an [`Error::Api`] -- including the empty-collection statuses
-    /// ([`ApiStatus::is_empty`], e.g. `no_sms`). This is the verbatim escape
+    /// ([`ApiStatus::is_empty_collection`], e.g. `no_sms`). This is the verbatim escape
     /// hatch: it surfaces exactly what VoIP.ms returned. The typed
     /// [`Client::call`] instead folds those into an empty response.
     ///
@@ -235,7 +234,7 @@ impl Client {
     ///
     /// Like [`Client::call_raw`], a non-`success` status is returned as
     /// [`Error::Api`] -- except an empty-collection status
-    /// ([`ApiStatus::is_empty`]), which deserializes into `T` with its
+    /// ([`ApiStatus::is_empty_collection`]), which deserializes into `T` with its
     /// collection fields defaulting to `None` rather than erroring.
     pub async fn call<P, T>(&self, method: &str, params: &P) -> Result<T>
     where
@@ -269,7 +268,7 @@ impl Client {
     /// (e.g. `/balance` or `/dids`).
     ///
     /// As with [`Client::call`], an empty-collection status
-    /// ([`ApiStatus::is_empty`]) is not an error; it carries no data subtree,
+    /// ([`ApiStatus::is_empty_collection`]) is not an error; it carries no data subtree,
     /// so the pointer resolves to JSON `null` and `T`'s fields default to
     /// `None`.
     pub async fn call_at<P, T>(&self, method: &str, params: &P, pointer: &str) -> Result<T>
@@ -328,6 +327,11 @@ impl Client {
     /// The base URL this client posts to.
     pub fn base_url(&self) -> &Url {
         &self.base_url
+    }
+
+    /// The account this client authenticates as.
+    pub fn api_username(&self) -> &str {
+        &self.api_username
     }
 }
 
@@ -475,20 +479,13 @@ impl ClientBuilder {
     }
 
     /// Finalize the builder.
-    pub fn build(self) -> Result<Client> {
-        let base_url = match self.base_url {
-            Some(u) => u,
-            None => Url::parse(DEFAULT_BASE_URL).map_err(|e| {
-                Error::InvalidResponse(format!("default base URL failed to parse: {e}"))
-            })?,
-        };
-        let http = self.http.unwrap_or_default();
-        Ok(Client {
-            http,
-            base_url,
+    pub fn build(self) -> Client {
+        Client {
+            http: self.http.unwrap_or_default(),
+            base_url: self.base_url.unwrap_or_else(|| DEFAULT_URL.clone()),
             api_username: self.api_username,
             api_password: self.api_password,
-        })
+        }
     }
 }
 
@@ -511,7 +508,7 @@ impl fmt::Debug for ClientBuilder {
 ///
 /// Returns `Ok(None)` for `success`, `Err(Error::Api)` for a genuine failure,
 /// and `Ok(Some(status))` for an empty-collection status
-/// ([`ApiStatus::is_empty`], e.g. `no_sms`) -- VoIP.ms's per-method "the list
+/// ([`ApiStatus::is_empty_collection`], e.g. `no_sms`) -- VoIP.ms's per-method "the list
 /// is empty" code. Whether that case is an error is left to the caller:
 /// [`Client::call_raw`] surfaces it verbatim, while the typed
 /// [`Client::call`] folds it into an empty response.
@@ -524,7 +521,7 @@ fn check_status(body: &Value) -> Result<Option<ApiStatus>> {
         return Ok(None);
     }
     let status = ApiStatus::from_wire(status);
-    if status.is_empty() {
+    if status.is_empty_collection() {
         Ok(Some(status))
     } else {
         Err(Error::Api(status))
@@ -547,8 +544,7 @@ mod tests {
         let c = Client::builder("u", "p")
             .base_url(url.clone())
             .http_client(reqwest::Client::new())
-            .build()
-            .unwrap();
+            .build();
         assert_eq!(c.base_url(), &url);
     }
 
@@ -587,10 +583,7 @@ mod tests {
     #[test]
     fn debug_strips_base_url_userinfo() {
         let url = Url::parse("https://proxyuser:proxypass@example.test/api").unwrap();
-        let c = Client::builder("u", "p")
-            .base_url(url.clone())
-            .build()
-            .unwrap();
+        let c = Client::builder("u", "p").base_url(url.clone()).build();
 
         let rendered = format!("{c:?}");
         assert!(!rendered.contains("proxypass"), "Client Debug: {rendered}");

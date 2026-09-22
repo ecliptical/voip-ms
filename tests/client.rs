@@ -2,7 +2,7 @@ use rust_decimal::Decimal;
 use serde_json::{Value, json};
 use voip_ms::{
     ApiStatus, Client, Error, GetBalanceParams, GetCDRParams, GetConferenceParams,
-    GetSubAccountsParams, GetSubAccountsResponse, MaxMembers,
+    GetSubAccountsParams, GetSubAccountsResponse, MaxMembers, ParamsError,
 };
 use wiremock::matchers::{
     body_string_contains, header_regex, method, path, query_param, query_param_is_missing,
@@ -15,8 +15,7 @@ async fn fixture() -> (MockServer, Client) {
     let base_url = format!("{}/api/v1/rest.php", server.uri()).parse().unwrap();
     let client = Client::builder("user@example.com", "secret")
         .base_url(base_url)
-        .build()
-        .unwrap();
+        .build();
     (server, client)
 }
 
@@ -123,14 +122,14 @@ fn api_status_variants_and_descriptions() {
 
     // Empty-collection statuses are flagged; `no_*` codes that signal a
     // real failure are not.
-    assert!(ApiStatus::NoSMS.is_empty());
-    assert!(ApiStatus::NoCDR.is_empty());
-    assert!(ApiStatus::NoMessages.is_empty());
-    assert!(!ApiStatus::NoProvision.is_empty());
-    assert!(!ApiStatus::NoBase64file.is_empty());
-    assert!(!ApiStatus::NoCallstatus.is_empty());
-    assert!(!ApiStatus::InvalidCredentials.is_empty());
-    assert!(!ApiStatus::Unknown("whatever".to_string()).is_empty());
+    assert!(ApiStatus::NoSMS.is_empty_collection());
+    assert!(ApiStatus::NoCDR.is_empty_collection());
+    assert!(ApiStatus::NoMessages.is_empty_collection());
+    assert!(!ApiStatus::NoProvision.is_empty_collection());
+    assert!(!ApiStatus::NoBase64file.is_empty_collection());
+    assert!(!ApiStatus::NoCallstatus.is_empty_collection());
+    assert!(!ApiStatus::InvalidCredentials.is_empty_collection());
+    assert!(!ApiStatus::Unknown("whatever".to_string()).is_empty_collection());
 }
 
 #[tokio::test]
@@ -700,7 +699,7 @@ async fn per_struct_type_enum_serializes() {
         .await;
     client
         .search_dids_usa_raw(&SearchDIDsUSAParams {
-            r#type: Some(SearchType::Starts),
+            search_type: Some(SearchType::Starts),
             ..Default::default()
         })
         .await
@@ -716,7 +715,7 @@ async fn per_struct_type_enum_serializes() {
         .await;
     client
         .get_sms_raw(&GetSMSParams {
-            r#type: Some(MessageType::Received),
+            direction: Some(MessageType::Received),
             ..Default::default()
         })
         .await
@@ -749,8 +748,8 @@ async fn message_type_response_deserializes_numeric_wire() {
         .await
         .unwrap();
     let msgs = envelope.sms;
-    assert_eq!(msgs[0].r#type, Some(MessageType::Received));
-    assert_eq!(msgs[1].r#type, Some(MessageType::Sent));
+    assert_eq!(msgs[0].direction, Some(MessageType::Received));
+    assert_eq!(msgs[1].direction, Some(MessageType::Sent));
 }
 
 #[tokio::test]
@@ -772,7 +771,7 @@ async fn empty_collection_status_yields_empty_response() {
         .get_sms(&voip_ms::GetSMSParams::default())
         .await
         .unwrap();
-    assert_eq!(envelope.status.as_deref(), Some("no_sms"));
+    assert_eq!(envelope.status, ApiStatus::NoSMS);
     assert!(envelope.sms.is_empty());
 
     let err = client
@@ -1653,7 +1652,7 @@ async fn record_listing_timezone_without_start_date_errors() {
     let err = client.get_sms_raw(&params).await.unwrap_err();
     assert!(matches!(
         err,
-        Error::InvalidParams(TimezoneOffsetError::MissingStartDate)
+        Error::InvalidParams(ParamsError::Timezone(TimezoneOffsetError::MissingStartDate))
     ));
 }
 
@@ -1869,7 +1868,7 @@ async fn a_base64_response_payload_survives_its_escaped_slashes() {
 
     let resp = client
         .get_recording_file(&GetRecordingFileParams {
-            recording: Some("295001".into()),
+            recording: Some(295001),
         })
         .await
         .unwrap();
@@ -1940,4 +1939,166 @@ fn requires_multipart_names_exactly_the_file_carrying_methods() {
     // An unknown method is not assumed to need it: a caller reaching for a
     // brand-new wire name gets the default transport, as `call_raw` documents.
     assert!(!voip_ms::requires_multipart("someBrandNewMethod"));
+}
+
+/// A method the WSDL declares no parameters for takes no argument, so a call
+/// site does not name an empty struct to say nothing.
+#[tokio::test]
+async fn a_parameterless_method_takes_no_argument() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getIP"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success", "ip": "203.0.113.7" })),
+        )
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    let typed = client.get_ip().await.unwrap();
+    assert_eq!(typed.ip.as_deref(), Some("203.0.113.7"));
+
+    let raw = client.get_ip_raw().await.unwrap();
+    assert_eq!(raw["ip"], "203.0.113.7");
+}
+
+/// A consumer holding several clients (a reseller plus its sub-accounts)
+/// labels a log line from the client itself rather than carrying the username
+/// beside it.
+#[test]
+fn the_client_names_the_account_it_speaks_for() {
+    let client = Client::new("user@example.com", "secret");
+    assert_eq!(client.api_username(), "user@example.com");
+}
+
+/// The read and write sides of a record now share a type, so a caller who
+/// listed one and then updated it passes the value straight through. Each of
+/// these param fields was `Option<String>` while its response counterpart was
+/// already a number, a decimal, or an enum.
+#[tokio::test]
+async fn realigned_params_serialize_to_the_wire_form_the_response_reports() {
+    use voip_ms::{EstimatedHoldTimeAnnounce, SetForwardingParams, SetQueueParams, WaitTime};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setQueue"))
+        // A record id the response reports as a number.
+        .and(query_param("queue", "32208"))
+        // A count, or the documented word for no cap.
+        .and(query_param("maximum_callers", "unlimited"))
+        .and(query_param("priority_weight", "1"))
+        // Three-valued (`yes`/`no`/`once`), not the boolean its `yes` sample
+        // made it look like.
+        .and(query_param("report_hold_time_agent", "once"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    client
+        .set_queue_raw(&SetQueueParams {
+            queue: Some(32208),
+            maximum_callers: Some(WaitTime::Unlimited),
+            priority_weight: Some(1),
+            report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Once),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setForwarding"))
+        .and(query_param("forwarding", "19183"))
+        // Documented "0 to 10 in increments of 0.5", so a half second has to
+        // survive the round trip.
+        .and(query_param("pause", "1.5"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    client
+        .set_forwarding_raw(&SetForwardingParams {
+            forwarding: Some(19183),
+            pause: Some(Decimal::from_str_exact("1.5").unwrap()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+}
+
+/// An identifier an all-digit doc sample made the extractor read as a number.
+/// A US ZIP with a leading zero and a voicemail PIN with one both survive now;
+/// as `u64` each lost its padding.
+#[tokio::test]
+async fn identifier_fields_keep_their_leading_zeros() {
+    use voip_ms::{GetClientsParams, GetVoicemailsParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getClients"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "clients": [{ "client": "561115", "zip": "02134" }],
+        })))
+        .mount(&server)
+        .await;
+
+    let clients = client
+        .get_clients(&GetClientsParams::default())
+        .await
+        .unwrap();
+    assert_eq!(clients.clients[0].client, Some(561115));
+    assert_eq!(clients.clients[0].zip.as_deref(), Some("02134"));
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getVoicemails"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "voicemails": [{ "mailbox": "1001", "password": "0123" }],
+        })))
+        .mount(&server)
+        .await;
+
+    let boxes = client
+        .get_voicemails(&GetVoicemailsParams::default())
+        .await
+        .unwrap();
+    assert_eq!(boxes.voicemails[0].mailbox, Some(1001));
+    assert_eq!(boxes.voicemails[0].password.as_deref(), Some("0123"));
+}
+
+/// `getClients` and `getDIDsInfo` document their `client` parameter as an id
+/// *or* an e-mail address / sub-account name, so those two keep a `String`
+/// where every other `client` is the numeric id the responses report.
+#[tokio::test]
+async fn the_polymorphic_client_filters_still_take_a_string() {
+    use voip_ms::GetClientsParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getClients"))
+        .and(query_param("client", "john@example.com"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    client
+        .get_clients_raw(&GetClientsParams {
+            client: Some("john@example.com".into()),
+        })
+        .await
+        .unwrap();
 }

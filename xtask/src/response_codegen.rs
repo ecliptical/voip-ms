@@ -37,6 +37,7 @@ pub fn emit_response_structs(
     method_names: &[String],
     responses: &BTreeMap<String, Shape>,
     resolver: &Resolver,
+    enums_used: &mut std::collections::BTreeSet<String>,
 ) -> String {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
@@ -47,7 +48,7 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new(resolver);
+        let mut emitter = Emitter::new(resolver, root.clone(), enums_used);
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -214,18 +215,40 @@ fn collect_timestamps(
     Ok(())
 }
 
+/// The derives every generated `*Response` struct carries.
+///
+/// `PartialEq`/`Eq` let a whole response be compared, deduped, or diffed
+/// without writing it out field by field. No `Default`: a response is
+/// received, never built, and a defaulted one would claim
+/// [`crate::ApiStatus::Success`] over empty fields. The per-field
+/// `#[serde(default)]` is unaffected -- it defaults the field's own type.
+const RESPONSE_DERIVES: &str = "#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]\n";
+
 struct Emitter<'a> {
     /// Structs emitted in dependency-friendly order (children appended
     /// before any later sibling that references them).
     structs: Vec<String>,
     resolver: &'a Resolver<'a>,
+    /// Every substituted type a response field lands on, so the generator can
+    /// emit each declared enum's reader only where one is read.
+    enums_used: &'a mut std::collections::BTreeSet<String>,
+    /// The method's top-level response struct. Its `status` is the envelope's
+    /// own, typed [`crate::ApiStatus`]; a nested struct's same-named field
+    /// (a fax's, a port's) is unrelated and keeps its inferred type.
+    root: String,
 }
 
 impl<'a> Emitter<'a> {
-    fn new(resolver: &'a Resolver<'a>) -> Self {
+    fn new(
+        resolver: &'a Resolver<'a>,
+        root: String,
+        enums_used: &'a mut std::collections::BTreeSet<String>,
+    ) -> Self {
         Self {
             structs: Vec::new(),
             resolver,
+            enums_used,
+            root,
         }
     }
 
@@ -250,8 +273,7 @@ impl<'a> Emitter<'a> {
                 // whole shape for the same reason.
                 let items_ty = self.field_type(name, "items", shape);
                 let body = format!(
-                    "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
-                     pub struct {name} {{\n    \
+                    "{RESPONSE_DERIVES}pub struct {name} {{\n    \
                          #[serde(default, deserialize_with = \"crate::responses::deserialize_vec_from_single_or_seq\")]\n    \
                          pub items: {items_ty},\n\
                      }}\n",
@@ -270,14 +292,14 @@ impl<'a> Emitter<'a> {
                     Some(o) => o.rust_type.clone(),
                     None => self.scalar_rust_type(shape),
                 };
+                self.enums_used.insert(inner_ty.clone());
                 let deser = match override_ {
                     Some(o) => o.response_deserializer.as_deref(),
                     None => scalar_deserializer(shape),
                 };
                 let attrs = render_field_attrs(deser);
                 let body = format!(
-                    "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
-                     pub struct {name} {{\n\
+                    "{RESPONSE_DERIVES}pub struct {name} {{\n\
                          {attrs}    pub value: Option<{inner_ty}>,\n\
                      }}\n",
                 );
@@ -288,8 +310,7 @@ impl<'a> Emitter<'a> {
             Shape::Map(_) => {
                 let map_ty = self.field_type(name, "entries", shape);
                 let body = format!(
-                    "#[derive(Debug, Clone, Default, serde::Deserialize)]\n\
-                     pub struct {name} {{\n    \
+                    "{RESPONSE_DERIVES}pub struct {name} {{\n    \
                          #[serde(default, deserialize_with = \"crate::responses::deserialize_map_from_object\")]\n    \
                          pub entries: {map_ty},\n\
                      }}\n",
@@ -316,10 +337,26 @@ impl<'a> Emitter<'a> {
 
         let acronyms = acronyms_sorted();
         let mut body = String::new();
-        body.push_str("#[derive(Debug, Clone, Default, serde::Deserialize)]\n");
+        body.push_str(RESPONSE_DERIVES);
         body.push_str(&format!("pub struct {name} {{\n"));
         for (fname, sub) in deduped {
-            let rust_ident = crate::rust_field_ident(fname, &acronyms);
+            // The envelope's own status, which `Client::fetch` has already
+            // classified by the time a typed call returns. Typed rather than
+            // left a raw string so a caller reads which case it is -- `success`
+            // or an empty-collection code -- instead of parsing it again. It is
+            // not optional: `check_status` has already required the field.
+            if name == self.root && fname == "status" {
+                body.push_str(
+                    "    /// The status VoIP.ms reported for the call: \
+                     [`ApiStatus::Success`],\n    \
+                     /// or the empty-collection code\n    \
+                     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.\n",
+                );
+                body.push_str("    pub status: ApiStatus,\n");
+                continue;
+            }
+
+            let rust_ident = crate::field_ident(name, fname, &acronyms);
             // The name-based table only applies to scalar-shaped fields: a
             // substituted scalar type can never stand in for a list/object.
             let override_ = self
@@ -329,6 +366,7 @@ impl<'a> Emitter<'a> {
                 Some(o) => o.rust_type.clone(),
                 None => self.field_type(name, fname, sub),
             };
+            self.enums_used.insert(rust_ty.clone());
             let deser = match override_ {
                 Some(o) => o.response_deserializer.as_deref(),
                 None => field_deserializer(sub),
@@ -696,7 +734,12 @@ mod tests {
             skip: &skip,
         };
         let responses = BTreeMap::from([("getCDR".to_string(), shape.clone())]);
-        emit_response_structs(&["getCDR".to_string()], &responses, &resolver)
+        emit_response_structs(
+            &["getCDR".to_string()],
+            &responses,
+            &resolver,
+            &mut Default::default(),
+        )
     }
 
     // The walk naming a field is only half of it: the emitter has to apply the

@@ -407,8 +407,7 @@ async fn fax_record_id(client: &Client, did: &str) -> voip_ms::Result<Option<u64
         .numbers
         .into_iter()
         .find(|n| n.did.as_deref() == Some(did))
-        .and_then(|n| n.id)
-        .and_then(|id| id.parse::<u64>().ok()))
+        .and_then(|n| n.id))
 }
 
 /// Find one available CAN fax rate center in the configured province and return

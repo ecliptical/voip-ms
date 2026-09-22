@@ -4,8 +4,8 @@
 //! The VoIP.ms API frequently returns numbers, booleans, dates, and
 //! decimals as JSON strings (and occasionally as JSON numbers for the
 //! same field across different methods). These helpers normalize both
-//! forms — and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
-//! placeholders as `None` — into Rust types.
+//! forms -- and treat empty / `"0000-00-00"` / `"0000-00-00 00:00:00"`
+//! placeholders as `None` -- into Rust types.
 //!
 //! A few `bool` params also need a serializer: VoIP.ms rejects the
 //! `true`/`false` a bare `bool` would emit, expecting `1`/`0` or

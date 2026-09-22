@@ -28,7 +28,7 @@ picks the transport per method, so nothing about the call site changes.
 
 ```toml
 [dependencies]
-voip-ms = "0.3"
+voip-ms = "0.13"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -36,8 +36,13 @@ By default the crate enables `rustls` verifying against the OS trust store. To
 use the platform's native TLS stack instead:
 
 ```toml
-voip-ms = { version = "0.3", default-features = false, features = ["native-tls"] }
+voip-ms = { version = "0.13", default-features = false, features = ["native-tls"] }
 ```
+
+`chrono`, `chrono_tz`, `reqwest`, `rust_decimal`, `serde`, and `serde_json`
+appear in this crate's public API and are re-exported from its root, so you can
+name their types without adding an independently-versioned dependency of your
+own.
 
 ## Authentication
 
@@ -53,7 +58,7 @@ files, or any other source — pass them when you construct the [`Client`](https
 
 ## Usage
 
-```rust
+```rust,no_run
 use voip_ms::{Client, GetBalanceParams};
 
 #[tokio::main]
@@ -68,33 +73,45 @@ async fn main() -> voip_ms::Result<()> {
 }
 ```
 
-Every API method follows the same pattern: construct a `*Params` struct
-(every field is `Option<T>` and omitted from the request when `None`), then
+Every API method follows the same pattern: construct a `*Params` struct, then
 call either:
 
 * `client.some_method(...)` for typed deserialization into a
   `SomeMethodResponse` struct, or
 * `client.some_method_raw(...)` for a `serde_json::Value` envelope.
 
-All fields on both `*Params` and `*Response` structs are `Option<T>`, so
-you only fill in what you need and unknown omissions never fail
-deserialization. Consult the
-[VoIP.ms API documentation](https://voip.ms/m/apidocs.php) for which
-parameters each method actually requires.
+The eight methods the API declares no parameters for (`get_ip`, `get_states`,
+…) take no argument at all.
+
+Every `*Params` field is `Option<T>` and omitted from the request when `None`,
+so you fill in only what you need. A struct whose documented required fields
+are few enough to read positionally also has a `new` constructor for them:
 
 ```rust
-use voip_ms::{Client, SendSmsParams};
+use voip_ms::SendSMSParams;
+
+let params = SendSMSParams::new("5551234567", "5557654321", "Hello from Rust");
+```
+
+Response fields are `Option<T>` too -- except `status`, which every envelope
+carries, and list/map fields, which are a bare `Vec`/`HashMap` defaulting to
+empty. An omitted field never fails deserialization. Consult the
+[VoIP.ms API documentation](https://voip.ms/m/apidocs.php) for which
+parameters each method actually requires; the `new` constructors follow the
+docs, which are not always exhaustive.
+
+```rust,no_run
+use voip_ms::{Client, SendSMSParams};
 
 #[tokio::main]
 async fn main() -> voip_ms::Result<()> {
     let client = Client::new("you@example.com", "your-api-password");
 
     let resp = client
-        .send_sms(&SendSmsParams {
+        .send_sms(&SendSMSParams {
             did: Some("5551234567".into()),
             dst: Some("5557654321".into()),
             message: Some("Hello from Rust".into()),
-            ..Default::default()
         })
         .await?;
 
@@ -105,7 +122,7 @@ async fn main() -> voip_ms::Result<()> {
 
 ### Reading typed responses
 
-```rust
+```rust,no_run
 use voip_ms::{Client, GetBalanceParams};
 
 #[tokio::main]
@@ -124,17 +141,22 @@ async fn main() -> voip_ms::Result<()> {
 }
 ```
 
+Both families derive `PartialEq` and `Eq`, so a test can assert a whole
+response and a consumer can dedupe or diff records without writing them out
+field by field.
+
 ### Picking a nested field with a JSON pointer
 
 When you only want one nested field, use
 [`Client::call_at`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_at)
 with a JSON pointer and your own type:
 
-```rust
-use serde::Deserialize;
+```rust,no_run
+use voip_ms::serde::Deserialize;
 use voip_ms::{Client, GetDIDsInfoParams};
 
 #[derive(Debug, Deserialize)]
+#[serde(crate = "voip_ms::serde")]
 struct Did {
     did: String,
 }
@@ -160,7 +182,7 @@ reqwest directly.
 
 ```rust
 use std::time::Duration;
-use voip_ms::Client;
+use voip_ms::{Client, reqwest};
 
 let http = reqwest::Client::builder()
     .timeout(Duration::from_secs(30))
@@ -169,8 +191,7 @@ let http = reqwest::Client::builder()
 
 let client = Client::builder("you@example.com", "api-password")
     .http_client(http)
-    .build()
-    .unwrap();
+    .build();
 ```
 
 ### Running the examples
@@ -208,8 +229,8 @@ If VoIP.ms adds an API method that isn't yet exposed as a typed call, use
 [`Client::call_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_raw)
 directly with any `serde`-serializable parameter set:
 
-```rust
-use voip_ms::Client;
+```rust,no_run
+use voip_ms::{Client, serde_json};
 
 #[tokio::main]
 async fn main() -> voip_ms::Result<()> {
@@ -242,17 +263,22 @@ All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voi
   hasn't documented. `ApiStatus::description()` returns the documented
   human-readable meaning (or `None` for `Unknown`), `as_str()` gives the
   verbatim wire string, and `is_documented()` reports whether it's a known
-  variant.
+  variant. `Display` on the error renders both, so a log line reads
+  `API status: did_in_use (DID Number is already in use)`.
 
   One exception: VoIP.ms returns a distinct `no_*` status per list method when
   the collection is empty (`no_sms`, `no_cdr`, `no_messages`, …). The typed
-  methods treat such a status (`ApiStatus::is_empty()`) as a successful empty
+  methods treat such a status (`ApiStatus::is_empty_collection()`) as a successful empty
   response -- the collection field comes back `None` rather than `Err` -- so you
   don't pattern-match a "no SMS" code where an empty list is the natural answer.
   The `*_raw` methods keep the verbatim contract and still surface it as
   `Error::Api`.
 
-  ```rust
+  ```rust,no_run
+  # use voip_ms::{Client, GetBalanceParams};
+  # async fn run() -> voip_ms::Result<()> {
+  # let client = Client::new("you@example.com", "your-api-password");
+  # let params = GetBalanceParams::default();
   match client.get_balance(&params).await {
       Ok(balance) => { /* … */ }
       Err(voip_ms::Error::Api(voip_ms::ApiStatus::InvalidCredentials)) => {
@@ -260,18 +286,24 @@ All errors surface through [`voip_ms::Error`](https://docs.rs/voip-ms/latest/voi
       }
       Err(e) => return Err(e),
   }
+  # Ok(()) }
   ```
 * `Error::InvalidResponse` -- the response was not the expected JSON envelope
   (e.g. missing `status` field).
-* `Error::InvalidParams` -- the parameters could not be converted to their wire
-  form, so nothing was sent.
+* `Error::InvalidParams(ParamsError)` -- the parameters could not be converted
+  to their wire form, so nothing was sent. `ParamsError` names which check
+  failed (today only `ParamsError::Timezone`).
 
 ### Classifying a transport failure
 
 `Error::transport()` reduces a failure to a `TransportFailure`, or `None` when
 the failure is not a transport one:
 
-```rust
+```rust,no_run
+# use voip_ms::{Client, GetBalanceParams};
+# async fn run() -> voip_ms::Result<()> {
+# let client = Client::new("you@example.com", "your-api-password");
+# let params = GetBalanceParams::default();
 use voip_ms::RetryOutlook;
 
 match client.get_balance(&params).await {
@@ -290,6 +322,7 @@ match client.get_balance(&params).await {
         },
     },
 }
+# Ok(()) }
 ```
 
 `never_reached_upstream()` answers whether any account state can have changed;

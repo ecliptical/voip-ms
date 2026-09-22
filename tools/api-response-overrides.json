@@ -180,12 +180,18 @@
     "dialing_mode":            "DialingMode",
     "tfcarrier":               "TollFreeCarrier",
     "billing_type":            "DidBillingType",
-    "locationType":            "LocationType"
+    "locationType":            "LocationType",
+    "report_hold_time_agent":  "EstimatedHoldTimeAnnounce"
   },
   "field_type_skip": [
     "GetVoicemailsResponseVoicemail.urgent",
     "GetFAXMessagesParams.folder",
-    "GetFAXMessagesResponseFAX.folder"
+    "GetFAXMessagesResponseFAX.folder",
+    "GetClientsParams.client",
+    "GetDIDsInfoParams.client",
+    "SetCallHuntingParams.recording",
+    "GetCallHuntingsResponseCallHunting.recording",
+    "GetMusicOnHoldResponseMusicOnHold.volume"
   ],
   "field_type_override": {
     "SearchDIDsCANParams.type":      "SearchType",
@@ -250,7 +256,6 @@
     },
     "getDIDsInfo": {
       "patches": [
-        { "path": "dids[].cnam",           "type": "bool_01" },
         { "path": "dids[].sms_available",  "type": "bool_01" },
         { "path": "dids[].sms_enabled",    "type": "bool_01" }
       ]
@@ -389,7 +394,23 @@
     },
     "getEmailToFax": {
       "patches": [
-        { "path": "emailToFax[].from", "type": "string" }
+        { "path": "emailToFax[].from", "type": "string" },
+        { "path": "emailToFax[].id",   "type": "integer" }
+      ]
+    },
+    "getFaxFolders": {
+      "patches": [
+        { "path": "folders[].id", "type": "integer" }
+      ]
+    },
+    "getFaxMessages": {
+      "patches": [
+        { "path": "faxes[].id", "type": "integer" }
+      ]
+    },
+    "getFaxNumbersInfo": {
+      "patches": [
+        { "path": "numbers[].id", "type": "integer" }
       ]
     },
     "getMediaMMS": {

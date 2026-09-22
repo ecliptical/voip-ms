@@ -109,6 +109,41 @@ arrive as JSON strings from the API; the deserializers in
 `src/responses.rs` (`deserialize_opt_*`) normalize both string and
 native-typed forms and treat `"0000-00-00"` placeholders as `None`.
 
+The one exception is the envelope's own `status`, which is a required
+[`ApiStatus`] on each top-level `*Response`. `Client::fetch` has already
+required the field to exist and classified it before a typed call returns, so
+handing back a raw string would make the caller parse it a second time to
+learn whether it was `success` or an empty-collection code. `ApiStatus` carries
+a `Success` variant for that reason -- it is synthesized by the generator
+(`SUCCESS_STATUS`), since the docs' error-code table lists only errors. A
+nested record's same-named field (a fax's, a port's, an e911 record's) is
+unrelated and keeps its inferred type; `response_codegen.rs` distinguishes them
+by whether the struct is the method's root.
+
+Each family carries the one serde direction it uses -- `*Params` derive
+`Serialize`, `*Response` derive `Deserialize` -- plus `PartialEq` and `Eq`,
+which are independent of serde and let a whole value be compared, deduped, or
+diffed.
+
+The rule for what else a type carries is what the trait costs, not whether
+something uses it today. A serde impl is a wire contract that has to stay
+correct, and a `Default` manufactures a value that may be wrong, so neither is
+emitted without a caller. The purely structural derives (`Hash`,
+`PartialOrd`/`Ord`, `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`) claim nothing
+beyond what the compiler derives and stay on every type that can carry them,
+so a consumer can key a map by `ApiStatus` or sort a `TimezoneOffset` without
+asking. Three places depend on a specific trait being present and will fail
+the build if one is dropped: `check-types`, the `is_copy_ty` table, and the
+probe macros' `Default` bound on a params type.
+
+`*Params` derive `Default`, which is what makes the struct-update idiom of
+decision 3 work. `*Response` do not: a response is received, never built, and
+a defaulted one would claim success over empty fields. That is also why
+`ApiStatus` has no `Default` -- a status has no resting value, and `Success`
+was only ever the answer to "what does the derive need", not to "what does an
+unset status mean". The per-field `#[serde(default)]` is unaffected either way:
+it defaults the field's own type, not the struct.
+
 **Rationale**: The WSDL declares a single generic `arrayResponse` type
 for all 222 operations — there is no machine-readable response schema.
 The HTML docs do have sample outputs in a parseable `print_r` form,
@@ -151,6 +186,23 @@ The trade-off: the type system does not enforce required fields. Users
 must consult the official VoIP.ms docs to know what each method actually
 needs. This is called out in the README.
 
+A `new` constructor softens that without changing the shape. `cargo xtask gen`
+emits one per `*Params` struct from the `(required)` markers the extractor
+mines out of each parameter's description, taking exactly those fields and
+leaving every other at its `Default`. Two bounds keep it honest:
+
+* **The markers are the HTML docs' word, not the API's.** The WSDL
+  over-declares required-ness (which is why decision 3 exists) and the docs are
+  better but not perfect, so the constructor is a convenience and never a
+  contract. A field it asks for may be optional in practice, and one it omits
+  may turn out to be needed. Where the crate deliberately contradicts a marker
+  it needs an entry in `REQUIRED_CTOR_SKIP` (`xtask/src/main.rs`): the offset
+  ops' `timezone` is marked required and defaulted to UTC by decision 5a, so a
+  constructor demanding it would contradict the method it builds for.
+* **A long positional argument list reads worse than a struct literal.**
+  `MAX_CTOR_FIELDS` caps it at six; `AddLNPPortParams` (12 required) and
+  `CreateVoicemailParams` (11) get no `new` at all.
+
 ### 4. Credentials live on the `Client`, not in the request structs
 
 **Decision**: `api_username` and `api_password` are fields on `Client`,
@@ -181,11 +233,28 @@ Field identifiers go through the same tokenizer: a camelCase wire name
 wire form, on both the `*Params` (serialize) and `*Response` (deserialize)
 side. `rust_field_ident` in `xtask/src/main.rs` also keyword-escapes
 (`type` → `r#type`) and `field_`-prefixes names that aren't
-identifier-shaped.
+identifier-shaped. A keyword escape is a last resort, not an outcome:
+`r#type` at a call site says nothing about what the field holds, so every
+`type` field instead gets a descriptive name from `FIELD_IDENT_OVERRIDE`
+(`search_type`, `direction`, `file_type`, `code`, …), keyed by struct and
+applied on both sides. The same table carries a rename where the upstream WSDL
+names one method's id differently than its siblings.
+
+**Type names keep VoIP.ms's acronym casing** (`GetDIDsInfoParams`,
+`SendSMSResponse`, `ApiStatus::NoSIPURI`) even though C-CASE and clippy's
+`upper_case_acronyms` want `GetDidsInfoParams`. The name then reads the same
+here as in the API docs, which is what a reader cross-referencing them needs;
+the renaming alternative was weighed in 0.13 and declined. The generated module
+carries `#![allow(clippy::upper_case_acronyms)]` so the lint does not fire
+against these types in a consumer's own build. Method names are the idiomatic
+form regardless (`get_dids_info`, `send_sms`), because the tokenizer produces
+them.
 
 **How to apply**: When a new VoIP.ms method introduces an acronym that
 produces a single-letter token in `tokenize()`, add it to the `ACRONYMS`
-constant in `xtask/src/main.rs` and regenerate.
+constant in `xtask/src/main.rs` and regenerate. When a new method has a field
+named `type`, give it a `FIELD_IDENT_OVERRIDE` entry naming what it holds in
+that struct rather than letting it emit as `r#type`.
 
 ### 5a. Domain types substituted by field name
 
@@ -276,19 +345,69 @@ in `xtask/src/field_overrides.rs`:
   in the `getSMS`-family params, an email in `getEmailToFax`'s response).
   `cargo xtask gen` warns when a `patches` entry is shadowed by a
   field-name override so retired per-method patches get removed.
-* **Date-range params** (`date_from`, `date_to` in `DATE_FIELDS`) map to
-  [`chrono::NaiveDate`], whose own `Serialize` emits the documented
-  `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is a
-  datetime in some responses and a date in others, so no single type fits.
+* **Calendar dates** (`date_from`, `date_to`, `reseller_nextbilling` in
+  `DATE_FIELDS`) map to [`chrono::NaiveDate`], whose own `Serialize` emits the
+  documented `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is
+  a datetime in some responses and a date in others, so no single type fits.
+* **Numeric ids the WSDL under-types as strings** (`U64_FIELDS`, plus
+  `setConference`'s 20 prompt slots in `CONFERENCE_PROMPT_FIELDS`) map to
+  `u64`. This is the class where the two inference sources disagreed
+  wholesale: the doc samples gave the `get` side `u64` while the WSDL declared
+  the `set`/`create` side `xsd:string`, so a caller who listed a record and
+  then updated it converted each field by hand. Only the param side moves --
+  every response already reported a number -- so no response gains a way to
+  fail. Entries are the *wire* name, which is why `ring_group` is listed twice
+  (`delRingGroup` spells it `ringgroup`).
+* **Identifiers an all-digit sample made look numeric** (`zip`, `password`,
+  `security_code`, `dtmf_digits`, `callerid_prefix` in
+  `IDENTIFIER_STRING_FIELDS`) map to `String`, the same reasoning as
+  `PHONE_STRING_FIELDS`: a ZIP of `02134`, a PIN of `0123`, a dial string with
+  `*` or `#`, and a prefix voip.ms reports as `MIA [555]` all lose information
+  as a number. Here the *response* side moves, and only toward tolerance.
+* **`pause`** (`DECIMAL_FIELDS`) maps to [`rust_decimal::Decimal`]:
+  `setForwarding` documents "0 to 10 in increments of 0.5", which `u64` cannot
+  hold and the response already reported as a decimal.
+* **`maximum_callers`** joins `maximum_wait_time` in `WAIT_TIME_FIELDS` as
+  [`crate::WaitTime`]. The type is selected by its sentinel's wire spelling,
+  not by its name: the queue's caller cap is documented "1 to 60 or
+  'unlimited'", which is `WaitTime`'s exact wire form, where `Seconds` writes
+  `none` and `MaxMembers` a capitalized `Unlimited`.
+
+  Three fields resist this alignment and are recorded in `check-types`'s
+  `DELIBERATE` list rather than forced. `client` is `u64` except on
+  `getClients` and `getDIDsInfo`, whose parameter is documented to accept an
+  e-mail address or a sub-account name as well as the id. `recording` is `u64`
+  except on the call-hunting pair, whose response reports the system recording
+  name `default`. Both use `field_type_skip` for the exceptions.
+  `music_on_hold`'s `volume` is two different things sharing a name: the param
+  is the documented `1`/`0` quiet toggle, the response reports the rendition it
+  produced (`mp3` / `quietmp3`).
+
+  Four questions the documents could not settle were answered against the
+  live API rather than guessed, using `cargo run --example call_raw`:
+  `getReportEstimatedHoldTime` really does offer `once` beside `yes`/`no`, so
+  `report_hold_time_agent` is the enum and not the `bool` its sample implied;
+  a recording slot accepts `none` and `0` interchangeably and always reports
+  `0`, so `u64` loses nothing; `volume=1` stores the quiet rendition while `0`
+  (or anything else) stores the normal one; and a mailbox created from
+  `digits=01` comes back as `1`, so the leading zero the docs' example shows is
+  normalized away and `mailbox` is a number rather than an identifier.
 * **Declarative enum overrides** in
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
   sections. The generator emits the enum type (deriving `Debug`, `Clone`,
-  `PartialEq`, `Eq`, `Hash` -- not `Copy`, since the `Unknown(String)`
-  catch-all holds a `String`), `as_wire` / `from_wire`, `Display`,
-  `Serialize`, `Deserialize`, plus a per-enum
-  `deserialize_opt_*` helper, and substitutes the field's type in
-  every `*Params` and `*Response` struct that has that field. Used
+  `PartialEq`, `Eq` -- not `Copy`, since the `Unknown(String)` catch-all holds
+  a `String`), `as_wire` / `from_wire`, `Display`, and substitutes the field's
+  type in every `*Params` and `*Response` struct that has that field.
+
+  **Only the serde direction a field reaches it through is emitted**, tracked
+  in `EnumSides` while the structs render: `Serialize` for an enum some
+  `*Params` writes, `Deserialize` plus its `deserialize_opt_*` helper for one
+  some `*Response` reads, both for the 15 that are both. Emitting both
+  unconditionally meant every helper needed an `#[allow(dead_code)]` to hide
+  the three nothing called, which is the shape of the problem rather than a
+  fix for it. The same rule retired `ApiStatus`'s `Serialize`,
+  `TimezoneName`'s `Serialize`, and `TimezoneOffset`'s `Deserialize`. Used
   for `DtmfMode`, `Nat`, `EmailAttachmentFormat`,
   `TranscriptionFormat`, `PlayInstructions`, `RingStrategy`,
   `RingGroupOrder`, `VoicemailFolder`, `QueueEmptyBehavior`,
@@ -340,11 +459,28 @@ regenerate. For a new boolean flag, add its field name to
 `xtask/src/field_overrides.rs` (no JSON or new type needed) --
 `cargo xtask check-flags` audits those tables against the doc-mined
 parameter descriptions and reports both uncovered flag-like params and
-stale entries. For a scalar
+stale entries. It reads three spellings (`yes/no`, `Boolean: 1/0`, and a
+`1=`/`0=` value list); the second was added after `cnam` and `sip_traffic`
+stayed integers through an audit that reported "ok", because the bare form
+names no value for the `1=`/`0=` rule to match. For a scalar
 that needs structured parsing (multi-part value, custom validation),
 hand-write it in `src/types.rs`, register the field names in
 `xtask/src/field_overrides.rs::ROUTING_FIELDS`-style const, and add the
 deserializer to `src/responses.rs`.
+
+`cargo xtask check-types` is the complementary audit: it parses
+`src/generated.rs` and reports a field a method family types one way on the
+`set`/`create` side and another on the `get` side. Both audits print and exit
+zero by default, since a finding wants human judgment about which of the two
+types is right; both take `--deny`, which turns a finding into a non-zero exit,
+and CI runs them that way. So "it reports nothing" is a rule rather than a
+note here. A pair whose two types are meant to differ goes in its `DELIBERATE`
+list with the reason, which is the record of *why* rather than a way to
+silence it. A
+collection type is excluded from the comparison: a root response's payload
+list often shares its name with the record id it holds
+(`GetDISAsResponse::disa` against `SetDISAParams::disa`), and no override
+could make those one type.
 
 ### 6. No HTTP-level retry, no auth caching, no rate limiting
 
@@ -584,13 +720,22 @@ Four variants, no more:
   the docs ship a couple of codes capitalized (`Invalid_threshold`), the
   variant's `as_str` preserves the wire casing while the variant
   *identifier* normalizes through the same acronym-aware PascalCase as
-  method/type names (`no_did` → `NoDID`).
+  method/type names (`no_did` → `NoDID`). `Display` on the *error* renders the
+  code with its documented meaning (`API status: did_in_use (DID Number is
+  already in use)`) so a log line says what went wrong; `Display` on
+  `ApiStatus` itself stays the bare wire string, matching `as_str`.
+
+  `ApiStatus::Success` is the one variant the table does not supply. It is
+  synthesized by the generator, because a typed response's `status` field
+  (decision 2) reports it and would otherwise land in `Unknown("success")`.
+  `load_statuses` fails the run if a docs refresh starts listing `success`, so
+  the variant cannot be emitted twice.
 
   **Empty-collection statuses are not errors for typed calls.** VoIP.ms
   returns a distinct `no_*` status per list method when the list is empty
   (`no_sms`, `no_cdr`, `no_messages`, …). The typed `Client::call` /
   `call_at` (and so every unsuffixed generated method) fold any status for
-  which `ApiStatus::is_empty()` is true into a successful data-less response
+  which `ApiStatus::is_empty_collection()` is true into a successful data-less response
   -- collection fields deserialize to `None` -- instead of `Error::Api`. The
   `*_raw` methods (and `call_raw`) deliberately keep the strict verbatim
   contract: they still surface an empty status as `Error::Api`, so the raw
@@ -598,7 +743,7 @@ Four variants, no more:
   `src/client.rs` classifies the status; the two paths diverge in
   `call_raw` vs `call`/`call_at`. The classification is hand-curated in the
   `empty_statuses` array of `tools/api-response-overrides.json` and emitted
-  into `ApiStatus::is_empty()` by `cargo xtask gen`; codes that look like
+  into `ApiStatus::is_empty_collection()` by `cargo xtask gen`; codes that look like
   `no_*` but signal a real failure (`no_base64file`, `no_callstatus`,
   `no_change_billingtype`, `no_provision`, `no_provision_update`,
   `no_sequences`) are deliberately excluded. To reclassify, edit that array
@@ -607,9 +752,14 @@ Four variants, no more:
 * `Error::InvalidResponse(String)` -- the response was 2xx and JSON but
   didn't contain a `status` field. Should be rare; if it happens
   systematically for a method, that's a VoIP.ms-side break.
-* `Error::InvalidParams(TimezoneOffsetError)` -- the parameters could not be
-  converted to their wire form, so no request was sent (see 5a's
-  record-listing offsets).
+* `Error::InvalidParams(ParamsError)` -- the parameters could not be
+  converted to their wire form, so no request was sent. `ParamsError` names
+  which check failed, today only `Timezone(TimezoneOffsetError)` (see 5a's
+  record-listing offsets). The inner enum exists so the next parameter
+  validation is additive: the variant name is general and a specific payload
+  would have forced either a second `Error` variant or a breaking change. Both
+  hops carry `#[from]`, so a generated `TryFrom<&*Params>` returning a
+  `TimezoneOffsetError` still reaches `Error` through one `?`.
 
 ### Transport-failure classification
 
@@ -695,6 +845,8 @@ voip-ms/
     ├── Cargo.toml
     └── src/
         ├── main.rs              # WSDL+responses+overrides → src/generated.rs
+        ├── check_flags.rs       # audit: doc-mined boolean params vs the FLAG_* tables
+        ├── check_types.rs       # audit: a field typed one way to read, another to write
         ├── dump_fields.rs       # response shapes → livetest/src/response_fields.rs (also run by gen)
         ├── dump_methods.rs      # src/generated.rs → livetest/src/wire_methods.rs
         ├── extract.rs           # apidocs HTML → tools/api-responses.json

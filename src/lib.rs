@@ -29,7 +29,7 @@
 //! # Authentication
 //!
 //! VoIP.ms uses an `api_username` (your account email) and an `api_password`
-//! that is **distinct** from your portal password — generate it under the
+//! that is **distinct** from your portal password -- generate it under the
 //! "SOAP and REST/JSON API" page in the customer portal and enable API access
 //! there.
 //!
@@ -44,11 +44,17 @@
 //!
 //! # Wire format
 //!
-//! All calls are HTTP `GET` against the REST endpoint ([`DEFAULT_BASE_URL`],
-//! `…/api/v1/rest.php`) with parameters in the query string. That endpoint
+//! A call is an HTTP `GET` against the REST endpoint ([`DEFAULT_BASE_URL`],
+//! `…/api/v1/rest.php`) with parameters in the query string, except one whose
+//! parameters carry a base64-encoded file ([`Client::set_recording`],
+//! [`Client::send_fax_message`], [`Client::send_mms`],
+//! [`Client::add_lnp_file`]): a file does not fit the request line VoIP.ms
+//! accepts, so those four are a `multipart/form-data` POST. [`Client`] picks
+//! the transport per method, so nothing about the call site changes; a caller
+//! dispatching by wire name asks [`requires_multipart`]. That endpoint
 //! returns the `{ "status": ... }` JSON envelope directly, which this crate
 //! deserializes -- a status other than `success` surfaces as [`Error::Api`],
-//! except an empty-collection status ([`ApiStatus::is_empty`], e.g. `no_sms`),
+//! except an empty-collection status ([`ApiStatus::is_empty_collection`], e.g. `no_sms`),
 //! which the typed methods return as an empty response (the `*_raw` methods
 //! still surface it verbatim). (The generic `…/api/v1/` endpoint instead
 //! defaults to `text/html` and needs an explicit `content_type=json`; this
@@ -61,7 +67,7 @@ mod responses;
 mod types;
 
 pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL, attach_offset};
-pub use error::{Error, Result, RetryOutlook, TransportFailure};
+pub use error::{Error, ParamsError, Result, RetryOutlook, TransportFailure};
 pub use generated::*;
 pub use types::{
     MaxMembers, Routing, RoutingParseError, Seconds, TimezoneName, TimezoneOffset,
@@ -71,4 +77,11 @@ pub use types::{
 // Dependencies whose types appear in this crate's public API. Re-exported so
 // callers can name those types (and `match` on [`Error::Http`]) without adding
 // a separate, independently-versioned dependency of their own.
-pub use {chrono, chrono_tz, reqwest, rust_decimal, serde_json};
+pub use {chrono, chrono_tz, reqwest, rust_decimal, serde, serde_json};
+
+/// Compiles the README's Rust snippets as doctests, so a call site shown there
+/// cannot drift from the surface it demonstrates. The README's own text stays
+/// out of the rendered docs; only `cargo test` sees this.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct Readme;

@@ -26,14 +26,36 @@ pub enum Error {
     /// The API responded with a non-`success` status, surfaced as a typed
     /// [`ApiStatus`] variant (or [`ApiStatus::Unknown`] for a code this crate
     /// doesn't recognize).
-    #[error("API status: {0}")]
+    #[error("API status: {}", render_api_status(.0))]
     Api(ApiStatus),
 
-    /// The request parameters could not be converted to their wire form
-    /// before sending -- e.g. a record-listing `timezone` whose UTC offset
-    /// cannot be resolved or falls outside the range VoIP.ms accepts.
+    /// The request parameters could not be converted to their wire form, so
+    /// nothing was sent.
     #[error("invalid parameters: {0}")]
-    InvalidParams(#[from] crate::types::TimezoneOffsetError),
+    InvalidParams(#[from] ParamsError),
+}
+
+/// The wire code with its documented meaning where there is one
+/// (`did_in_use (DID Number is already in use)`), so an error message says what
+/// went wrong rather than only naming the code.
+fn render_api_status(status: &ApiStatus) -> String {
+    match status.description() {
+        Some(description) => format!("{status} ({description})"),
+        None => status.to_string(),
+    }
+}
+
+/// Why a request's parameters could not be converted to their wire form.
+///
+/// A variant per kind of validation the crate performs before sending, so a
+/// new one is additive rather than a change to [`Error::InvalidParams`].
+#[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ParamsError {
+    /// A record-listing `timezone` whose UTC offset cannot be resolved or
+    /// falls outside the range VoIP.ms accepts.
+    #[error(transparent)]
+    Timezone(#[from] crate::types::TimezoneOffsetError),
 }
 
 /// Wraps the error with its request URL stripped.
@@ -462,7 +484,26 @@ mod tests {
 
         let out_of_range = TimezoneOffset::new(Decimal::from(14))
             .expect_err("+14 is outside the range VoIP.ms accepts");
-        assert_eq!(Error::InvalidParams(out_of_range).transport(), None);
+        assert_eq!(
+            Error::from(ParamsError::from(out_of_range)).transport(),
+            None
+        );
+    }
+
+    /// The code alone ("did_in_use") tells a reader nothing they don't already
+    /// have; the documented meaning is the part worth a log line.
+    #[test]
+    fn api_error_renders_the_documented_meaning() {
+        assert_eq!(
+            Error::Api(ApiStatus::InvalidCredentials).to_string(),
+            "API status: invalid_credentials (Username or Password is incorrect)"
+        );
+
+        // An undocumented code has no meaning to add, so it renders alone.
+        assert_eq!(
+            Error::Api(ApiStatus::Unknown("some_new_code".into())).to_string(),
+            "API status: some_new_code"
+        );
     }
 
     #[test]

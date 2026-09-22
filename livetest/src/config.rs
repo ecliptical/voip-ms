@@ -315,7 +315,7 @@ pub struct Cli {
     /// (`getClientPackages`, `getClientThreshold`, `getResellerBalance`).
     /// Absent: those record skip (no input).
     #[arg(long)]
-    pub reseller_client_id: Option<String>,
+    pub reseller_client_id: Option<u64>,
 
     /// Actually create a reseller client via `signupClient`. Off by default and
     /// gated: it moves money (a new billable client) and has no dry-run, so it
@@ -463,7 +463,7 @@ pub struct PortingConfig {
 /// complete. Secrets are redacted in `Debug`.
 #[derive(Clone, Default)]
 pub struct ResellerConfig {
-    pub client_id: Option<String>,
+    pub client_id: Option<u64>,
     pub signup: bool,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
@@ -608,7 +608,7 @@ impl Config {
         };
 
         let reseller = ResellerConfig {
-            client_id: cli.reseller_client_id.filter(|s| !s.trim().is_empty()),
+            client_id: cli.reseller_client_id,
             signup: cli.signup_reseller_client,
             first_name: cli.signup_first_name.filter(|s| !s.trim().is_empty()),
             last_name: cli.signup_last_name.filter(|s| !s.trim().is_empty()),
@@ -673,7 +673,7 @@ impl Config {
             builder = builder.base_url(url);
         }
 
-        builder.build().context("building the VoIP.ms client")
+        Ok(builder.build())
     }
 }
 

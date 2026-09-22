@@ -137,6 +137,7 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "answered",
     "burst_enabled",
     "busy",
+    "cnam",
     "diversion_header",
     "dont_charge_monthly",
     "dont_charge_setup",
@@ -158,6 +159,7 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "security_code_enabled",
     "send_bye",
     "send_email_enabled",
+    "sip_traffic",
     "skip_password",
     "smpp_enabled",
     "sms_email_enabled",
@@ -170,6 +172,12 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "url_callback_enable",
     "url_callback_retry",
     "url_enabled",
+    // `setMusicOnHold`'s "quiet volume" toggle. Confirmed live: `1` stores
+    // the quiet rendition and `0` (or anything else) the normal one. The
+    // response field of the same name is *not* this flag -- it reports the
+    // rendition that resulted (`mp3` / `quietmp3`) -- so it carries a
+    // `field_type_skip`.
+    "volume",
 ];
 
 /// Boolean flags VoIP.ms encodes on the wire as `yes` / `no`. Typed as `bool`
@@ -334,13 +342,134 @@ pub(crate) const BASE64_FILE_PARAM_PATHS: &[&str] = &[
     "setRecording.file",
 ];
 
-/// Date-range filter params, documented uniformly as `'YYYY-MM-DD'`
+/// Calendar-date fields, documented uniformly as `'YYYY-MM-DD'`
 /// (`Example: '2010-11-30'`). Typed [`chrono::NaiveDate`], whose own
 /// `Serialize` emits exactly that wire form, instead of the WSDL's
-/// `xsd:string`. The bare `date` field is deliberately excluded -- it is a
-/// datetime in some responses (`getLNPDetails`) and a date in others, so no
-/// single type fits.
-const DATE_FIELDS: &[&str] = &["date_from", "date_to"];
+/// `xsd:string`. `reseller_nextbilling` is here so `getSubAccounts` and
+/// `setSubAccount` agree on it; the other two are the date-range filters. The
+/// bare `date` field is deliberately excluded -- it is a datetime in some
+/// responses (`getLNPDetails`) and a date in others, so no single type fits.
+const DATE_FIELDS: &[&str] = &["date_from", "date_to", "reseller_nextbilling"];
+
+/// Numeric id / code fields the WSDL declares as `xsd:string` on the write
+/// side while the doc samples infer `integer` on the read side, so a caller who
+/// listed a record and then updated it had to convert each one by hand. Typed
+/// `u64` on both sides, which is what every response already reported -- only
+/// the param side moves, so no response gains a way to fail.
+///
+/// Most are voip.ms's own record ids, documented uniformly as "ID for a
+/// specific X (Example: 4636)". Entries are the *wire* field name, which is
+/// why `ring_group` appears twice: `delRingGroup` spells it `ringgroup` (see
+/// `FIELD_IDENT_OVERRIDE`). `international_route` is listed although it already
+/// agreed, so the two route codes cannot drift apart again.
+///
+/// The recording-code slots (`agent_announcement`, `caller_announcement`,
+/// `voice_announcement`, `unavailable_message_recording`) are here although
+/// some document "a recording code *or* the word `none`". Confirmed live on a
+/// ring group: `none` and `0` are interchangeable on the way in, and the read
+/// side reports `0` either way, so `u64` loses nothing and `Some(0)` clears
+/// the slot.
+///
+/// `mailbox` is here rather than in [`IDENTIFIER_STRING_FIELDS`] although
+/// `createVoicemail` documents its `digits` as "Example: 01". Confirmed live:
+/// creating a box with `digits=01` yields mailbox `1`, so voip.ms normalizes
+/// the leading zero away and there is none to preserve.
+const U64_FIELDS: &[&str] = &[
+    "agent_announcement",
+    "call_hunting",
+    "callback",
+    "caller_announcement",
+    "canada_routing",
+    "client",
+    "conference",
+    "disa",
+    "filtering",
+    "forwarding",
+    "group",
+    "internal_dialtime",
+    "internal_extension",
+    "internal_voicemail",
+    "international_route",
+    "ivr",
+    "mailbox",
+    "member",
+    "phonebook",
+    "priority_weight",
+    "queue",
+    "recording",
+    "reseller_client",
+    "reseller_package",
+    "ring_group",
+    "ringgroup",
+    "sipuri",
+    "timecondition",
+    "unavailable_message_recording",
+    "voice_announcement",
+    "voicemail",
+];
+
+/// `setConference`'s 20 prompt slots, each documented as "the recording
+/// played when ... (Values from getRecordings)" and reported by
+/// `getConference` as a numeric code. Same correction as [`U64_FIELDS`],
+/// listed apart only because they are one family with one rationale.
+///
+/// Unlike the queue's `agent_announcement` / `voice_announcement`, none
+/// documents the word `none` as an alternative, so an integer holds every
+/// documented value.
+const CONFERENCE_PROMPT_FIELDS: &[&str] = &[
+    "sound_error_menu",
+    "sound_get_pin",
+    "sound_has_joined",
+    "sound_has_left",
+    "sound_invalid_pin",
+    "sound_join",
+    "sound_kicked",
+    "sound_leave",
+    "sound_locked",
+    "sound_locked_now",
+    "sound_muted",
+    "sound_only_one",
+    "sound_only_person",
+    "sound_other_in_party",
+    "sound_participants_muted",
+    "sound_participants_unmuted",
+    "sound_place_into_conference",
+    "sound_there_are",
+    "sound_unlocked_now",
+    "sound_unmuted",
+];
+
+/// Fields that are identifiers or free text, not quantities, but that an
+/// all-digit doc sample made the extractor infer as `integer` on the response
+/// side. Forced to `String` everywhere, which is what the param side already
+/// was, so the read side only becomes more tolerant.
+///
+/// Each would lose information as a number:
+///
+/// * `zip` -- a US ZIP has leading zeros (`02134`) and a Canadian postal code
+///   is alphanumeric (`M5V 3A8`);
+/// * `password` -- a voicemail PIN of `0123` is not 123;
+/// * `security_code` -- `setEmailToFax` documents it as "an alphanumeric code";
+/// * `dtmf_digits` -- a dial string carries `*`, `#`, and pause characters;
+/// * `callerid_prefix` -- `getDIDsInfo` reports `MIA [555]`.
+const IDENTIFIER_STRING_FIELDS: &[&str] = &[
+    "callerid_prefix",
+    "dtmf_digits",
+    "password",
+    "security_code",
+    "zip",
+];
+
+/// Fractional-second durations. `setForwarding`'s `pause` is documented
+/// "Example: 1.5 / Values: 0 to 10 in increments of 0.5", which the WSDL
+/// declares `xsd:string` while the response sample infers `decimal`.
+const DECIMAL_FIELDS: &[&str] = &["pause"];
+
+/// Counts documented as a number *or* the word `unlimited`, which is
+/// [`crate::WaitTime`]'s exact wire contract -- the type is selected by that
+/// spelling rather than by its name, since `Seconds` writes `none` and
+/// `MaxMembers` writes a capitalized `Unlimited`.
+const WAIT_TIME_FIELDS: &[&str] = &["maximum_wait_time", "maximum_callers"];
 
 fn builtin() -> Vec<(&'static str, FieldOverride)> {
     let routing = FieldOverride {
@@ -419,6 +548,25 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         ),
         ..Default::default()
     };
+    // A numeric id whose wire form is a bare number either way, so the param
+    // side needs no serializer; only the response side has to tolerate the
+    // numeric string voip.ms may send instead.
+    let numeric_id = FieldOverride {
+        rust_type: "u64".into(),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_u64_from_string_or_number".into(),
+        ),
+        ..Default::default()
+    };
+    // Decimal's own Serialize emits the bare number the wire wants, so no
+    // param_serializer; the response side tolerates a numeric string.
+    let decimal = FieldOverride {
+        rust_type: "rust_decimal::Decimal".into(),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_decimal_from_string_or_number".into(),
+        ),
+        ..Default::default()
+    };
 
     ROUTING_FIELDS
         .iter()
@@ -431,7 +579,11 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         )
         .chain(std::iter::once(("test", flag_test)))
         .chain(SECONDS_FIELDS.iter().map(|name| (*name, seconds.clone())))
-        .chain(std::iter::once(("maximum_wait_time", wait_time)))
+        .chain(
+            WAIT_TIME_FIELDS
+                .iter()
+                .map(|name| (*name, wait_time.clone())),
+        )
         .chain(std::iter::once(("max_members", max_members)))
         .chain(
             CALLERID_OVERRIDE_FIELDS
@@ -440,9 +592,17 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         )
         .chain(DATE_FIELDS.iter().map(|name| (*name, date.clone())))
         .chain(
+            U64_FIELDS
+                .iter()
+                .chain(CONFERENCE_PROMPT_FIELDS.iter())
+                .map(|name| (*name, numeric_id.clone())),
+        )
+        .chain(DECIMAL_FIELDS.iter().map(|name| (*name, decimal.clone())))
+        .chain(
             PHONE_STRING_FIELDS
                 .iter()
                 .chain(ID_STRING_FIELDS.iter())
+                .chain(IDENTIFIER_STRING_FIELDS.iter())
                 .map(|name| (*name, phone_string.clone())),
         )
         .collect()

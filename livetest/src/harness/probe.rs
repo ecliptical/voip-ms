@@ -188,7 +188,7 @@ where
         // folds it into an empty response. Mirror the typed semantics so an
         // empty account never reads as an API error -- there is simply nothing
         // to deserialize.
-        Err(Error::Api(status)) if status.is_empty() => {
+        Err(Error::Api(status)) if status.is_empty_collection() => {
             return ProbeOutcome::Ok {
                 element_count: Some(0),
                 unmodeled: Vec::new(),

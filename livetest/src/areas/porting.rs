@@ -62,7 +62,7 @@ impl Area for Porting {
             report,
             AREA,
             "getLNPListStatus",
-            GetLNPListStatusParams,
+            NoParams,
             GetLNPListStatusResponse
         );
         skip_needs_input!(report, AREA, "getLNPNotes", "requires a port id");

@@ -54,7 +54,7 @@ impl Area for Subaccount {
             report,
             AREA,
             "getLocations",
-            GetLocationsParams,
+            NoParams,
             GetLocationsResponse,
             locations
         );

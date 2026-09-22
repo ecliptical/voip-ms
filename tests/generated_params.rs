@@ -468,7 +468,7 @@ fn del_phonebook_group_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = DelPhonebookGroupParams {
-        group: Some("x".into()),
+        group: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -640,7 +640,7 @@ fn e911_address_types_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = E911AddressTypesParams {
-        r#type: Some("x".into()),
+        code: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -752,7 +752,7 @@ fn get_auth_types_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetAuthTypesParams {
-        r#type: Some("x".into()),
+        code: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -813,20 +813,6 @@ fn get_cdr_params_roundtrips() {
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
-}
-
-#[test]
-fn get_call_accounts_params_roundtrips() {
-    let p = GetCallAccountsParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
-}
-
-#[test]
-fn get_call_billing_params_roundtrips() {
-    let p = GetCallBillingParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
 }
 
 #[test]
@@ -906,7 +892,7 @@ fn get_call_types_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetCallTypesParams {
-        client: Some("x".into()),
+        client: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -920,7 +906,7 @@ fn get_callbacks_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetCallbacksParams {
-        callback: Some("x".into()),
+        callback: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -934,7 +920,7 @@ fn get_caller_id_filtering_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetCallerIDFilteringParams {
-        filtering: Some("x".into()),
+        filtering: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -962,7 +948,7 @@ fn get_charges_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetChargesParams {
-        client: Some("x".into()),
+        client: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -976,7 +962,7 @@ fn get_client_packages_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetClientPackagesParams {
-        client: Some("x".into()),
+        client: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -990,7 +976,7 @@ fn get_client_threshold_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetClientThresholdParams {
-        client: Some("x".into()),
+        client: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1195,9 +1181,7 @@ fn get_disas_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetDISAsParams {
-        disa: Some("x".into()),
-    };
+    let p2 = GetDISAsParams { disa: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1221,9 +1205,7 @@ fn get_deposits_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetDepositsParams {
-        client: Some("x".into()),
-    };
+    let p2 = GetDepositsParams { client: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1373,17 +1355,10 @@ fn get_forwardings_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetForwardingsParams {
-        forwarding: Some("x".into()),
+        forwarding: Some(1),
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
-}
-
-#[test]
-fn get_ip_params_roundtrips() {
-    let p = GetIPParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
 }
 
 #[test]
@@ -1392,9 +1367,7 @@ fn get_ivrs_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetIVRsParams {
-        ivr: Some("x".into()),
-    };
+    let p2 = GetIVRsParams { ivr: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1406,7 +1379,7 @@ fn get_international_types_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetInternationalTypesParams {
-        r#type: Some("x".into()),
+        code: Some("x".into()),
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
@@ -1419,7 +1392,7 @@ fn get_join_when_empty_types_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetJoinWhenEmptyTypesParams {
-        r#type: Some("x".into()),
+        code: Some("x".into()),
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
@@ -1473,13 +1446,6 @@ fn get_lnp_list_params_roundtrips() {
 }
 
 #[test]
-fn get_lnp_list_status_params_roundtrips() {
-    let p = GetLNPListStatusParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
-}
-
-#[test]
 fn get_lnp_notes_params_roundtrips() {
     let p = GetLNPNotesParams::default();
     let v = serde_json::to_value(&p).unwrap();
@@ -1527,13 +1493,6 @@ fn get_locales_params_roundtrips() {
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
-}
-
-#[test]
-fn get_locations_params_roundtrips() {
-    let p = GetLocationsParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
 }
 
 #[test]
@@ -1627,7 +1586,7 @@ fn get_phonebook_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetPhonebookParams {
-        phonebook: Some("x".into()),
+        phonebook: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1691,20 +1650,13 @@ fn get_protocols_params_roundtrips() {
 }
 
 #[test]
-fn get_provinces_params_roundtrips() {
-    let p = GetProvincesParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
-}
-
-#[test]
 fn get_queues_params_roundtrips() {
     let p = GetQueuesParams::default();
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
     let p2 = GetQueuesParams {
-        queue: Some("x".into()),
+        queue: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1760,7 +1712,7 @@ fn get_recording_file_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetRecordingFileParams {
-        recording: Some("x".into()),
+        recording: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1774,7 +1726,7 @@ fn get_recordings_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetRecordingsParams {
-        recording: Some("x".into()),
+        recording: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1802,7 +1754,7 @@ fn get_report_estimated_hold_time_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetReportEstimatedHoldTimeParams {
-        r#type: Some("x".into()),
+        code: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1816,7 +1768,7 @@ fn get_reseller_balance_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetResellerBalanceParams {
-        client: Some("x".into()),
+        client: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1872,7 +1824,7 @@ fn get_ring_groups_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetRingGroupsParams {
-        ring_group: Some("x".into()),
+        ring_group: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1914,7 +1866,7 @@ fn get_sip_uris_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetSIPURIsParams {
-        sip_uri: Some("x".into()),
+        sip_uri: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1950,20 +1902,13 @@ fn get_servers_info_params_roundtrips() {
 }
 
 #[test]
-fn get_states_params_roundtrips() {
-    let p = GetStatesParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
-}
-
-#[test]
 fn get_static_members_params_roundtrips() {
     let p = GetStaticMembersParams::default();
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
     let p2 = GetStaticMembersParams {
-        queue: Some("x".into()),
+        queue: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2041,13 +1986,6 @@ fn get_transaction_history_params_roundtrips() {
 }
 
 #[test]
-fn get_vpris_params_roundtrips() {
-    let p = GetVPRIsParams::default();
-    let v = serde_json::to_value(&p).unwrap();
-    assert!(v.is_object());
-}
-
-#[test]
 fn get_voicemail_attachment_formats_params_roundtrips() {
     let p = GetVoicemailAttachmentFormatsParams::default();
     let v = serde_json::to_value(&p).unwrap();
@@ -2082,7 +2020,7 @@ fn get_voicemail_message_file_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetVoicemailMessageFileParams {
-        mailbox: Some("x".into()),
+        mailbox: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2096,7 +2034,7 @@ fn get_voicemail_messages_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetVoicemailMessagesParams {
-        mailbox: Some("x".into()),
+        mailbox: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2138,7 +2076,7 @@ fn get_voicemails_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetVoicemailsParams {
-        mailbox: Some("x".into()),
+        mailbox: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2166,7 +2104,7 @@ fn mark_listened_voicemail_message_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = MarkListenedVoicemailMessageParams {
-        mailbox: Some("x".into()),
+        mailbox: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2180,7 +2118,7 @@ fn mark_urgent_voicemail_message_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = MarkUrgentVoicemailMessageParams {
-        mailbox: Some("x".into()),
+        mailbox: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2208,7 +2146,7 @@ fn move_folder_voicemail_message_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = MoveFolderVoicemailMessageParams {
-        mailbox: Some("x".into()),
+        mailbox: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2404,7 +2342,7 @@ fn search_toll_free_can_us_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SearchTollFreeCANUSParams {
-        r#type: Some(SearchType::from_wire("1")),
+        search_type: Some(SearchType::from_wire("1")),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2418,7 +2356,7 @@ fn search_toll_free_usa_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SearchTollFreeUSAParams {
-        r#type: Some(SearchType::from_wire("1")),
+        search_type: Some(SearchType::from_wire("1")),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2432,7 +2370,7 @@ fn search_vanity_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SearchVanityParams {
-        r#type: Some(VanityType::from_wire("1")),
+        vanity_type: Some(VanityType::from_wire("1")),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2502,7 +2440,7 @@ fn send_voicemail_email_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SendVoicemailEmailParams {
-        mailbox: Some("x".into()),
+        mailbox: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2544,7 +2482,7 @@ fn set_callback_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetCallbackParams {
-        callback: Some("x".into()),
+        callback: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2698,7 +2636,7 @@ fn set_disa_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetDISAParams {
-        disa: Some("x".into()),
+        disa: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2782,7 +2720,7 @@ fn set_forwarding_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetForwardingParams {
-        forwarding: Some("x".into()),
+        forwarding: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2796,7 +2734,7 @@ fn set_ivr_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetIVRParams {
-        ivr: Some("x".into()),
+        ivr: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2837,7 +2775,7 @@ fn set_phonebook_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetPhonebookParams {
-        phonebook: Some("x".into()),
+        phonebook: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2851,7 +2789,7 @@ fn set_phonebook_group_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetPhonebookGroupParams {
-        phonebook: Some("x".into()),
+        phonebook: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2865,7 +2803,7 @@ fn set_queue_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetQueueParams {
-        queue: Some("x".into()),
+        queue: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2879,7 +2817,7 @@ fn set_recording_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetRecordingParams {
-        recording: Some("x".into()),
+        recording: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2893,7 +2831,7 @@ fn set_ring_group_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetRingGroupParams {
-        ring_group: Some("x".into()),
+        ring_group: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2907,7 +2845,7 @@ fn set_sip_uri_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetSIPURIParams {
-        sip_uri: Some("x".into()),
+        sip_uri: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2935,7 +2873,7 @@ fn set_static_member_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetStaticMemberParams {
-        member: Some("x".into()),
+        member: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2963,7 +2901,7 @@ fn set_time_condition_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetTimeConditionParams {
-        timecondition: Some("x".into()),
+        timecondition: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -3022,4 +2960,53 @@ fn unconnect_fax_params_roundtrips() {
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
+}
+
+/// The generated constructor sets exactly the fields the docs mark required
+/// and leaves every other at its default, so struct-update syntax still works
+/// on top of it.
+#[test]
+fn required_field_constructors_leave_the_rest_default() {
+    let built = SendSMSParams::new("5551234567", "5551234568", "hello");
+    assert_eq!(
+        built,
+        SendSMSParams {
+            did: Some("5551234567".into()),
+            dst: Some("5551234568".into()),
+            message: Some("hello".into()),
+        }
+    );
+
+    // A struct with optional fields beyond the required ones keeps them.
+    let charge = AddChargeParams::new(1, rust_decimal::Decimal::from(5));
+    assert_eq!(charge.client, Some(1));
+    assert_eq!(charge.charge, Some(rust_decimal::Decimal::from(5)));
+    assert_eq!(charge.description, None);
+    assert!(!charge.test);
+}
+
+/// `getCDR`'s `timezone` is marked required by the docs and defaulted by the
+/// crate, so the constructor must not demand it.
+#[test]
+fn the_offset_ops_constructor_does_not_ask_for_a_timezone() {
+    let day = voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+    let params = GetCDRParams::new(day, day);
+    assert_eq!(params.date_from, Some(day));
+    assert_eq!(params.timezone, None);
+}
+
+/// A whole params struct compares, which is what lets a test assert one
+/// outright instead of field by field.
+#[test]
+fn a_whole_params_struct_compares() {
+    let built = SendSMSParams::new("5551234567", "5557654321", "hello");
+    assert_eq!(
+        built,
+        SendSMSParams {
+            did: Some("5551234567".into()),
+            dst: Some("5557654321".into()),
+            message: Some("hello".into()),
+        }
+    );
+    assert_ne!(built, SendSMSParams::default());
 }

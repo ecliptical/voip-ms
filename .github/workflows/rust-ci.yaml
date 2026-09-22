@@ -37,6 +37,15 @@ jobs:
         # reqwest picks native-tls, so the tests would exercise a stack the
         # crate does not ship, and it drags OpenSSL in.
         run: cargo check --no-default-features --features native-tls
+      - name: Audit the generated surface
+        # Both read the committed inputs and `src/generated.rs`, so they hold
+        # without an API call. `--deny` is what makes "the surface reports
+        # nothing" a rule rather than a note in AGENTS.md: a field typed one
+        # way to read and another to write, or a documented flag left an
+        # integer, fails here instead of reaching a release.
+        run: |
+          cargo xtask check-types --deny
+          cargo xtask check-flags --deny
 
   coverage:
     name: Run tests with coverage

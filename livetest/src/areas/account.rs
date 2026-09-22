@@ -117,7 +117,7 @@ impl Area for Account {
                     AREA,
                     "fixture:getCharges",
                     &GetChargesParams {
-                        client: Some(client.to_string()),
+                        client: Some(client),
                     },
                     |r| Some(r.charges.len()),
                 )
@@ -129,7 +129,7 @@ impl Area for Account {
                     AREA,
                     "fixture:getDeposits",
                     &GetDepositsParams {
-                        client: Some(client.to_string()),
+                        client: Some(client),
                     },
                     |r| Some(r.deposits.len()),
                 )
