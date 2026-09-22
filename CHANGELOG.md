@@ -7,45 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- `Client::call_raw_by_name` sends a wire method over the transport that method
-  requires, so a caller dispatching by name no longer re-derives the choice from
-  `requires_multipart`. The same choice existed in three places -- the live
-  harness's probe, its failure capture, and the `call_raw` example -- with only
-  a comment keeping a fourth from getting it wrong, and no test covering either
-  arm. `call_raw_unchecked_by_name` is its counterpart behind the
-  `unchecked-raw` feature, so a diagnostic dump goes out the way the call did.
-- `ParamsError::Unencodable`, for parameters that have no wire-field rendering:
-  a nested structure, or a value serde reports as something other than a scalar.
-
-### Changed
-
-- A multipart request's fields are rendered directly from the parameters rather
-  than read back out of a query string built to be discarded. The round trip
-  allocated roughly four times an upload's size -- about 30 MB for an 8 MB fax
-  -- to arrive at the same fields. Both transports now render through one
-  serializer, so a value is written the same way on each by construction rather
-  than by round trip; the crate's own tests assert that rendering against
-  `serde_urlencoded`, which is what the query string applies.
-- Parameters that cannot be rendered as fields fail as
-  `Error::InvalidParams(ParamsError::Unencodable)` naming the parameter, on both
-  transports. They previously surfaced as `Error::Http` wrapping the encoder's
-  error, which reads as a transport failure for a request that was never sent.
-
-### Fixed
-
-- `cargo xtask gen` fails rather than warns when the Rust it emits does not
-  parse or `rustfmt` rejects it, and writes nothing in that case. A missing
-  `rustfmt` is still only a warning. Neither check reads inside a macro body, so
-  an emitted `matches!` arm list that can be empty still needs its own branch;
-  CI now regenerates and compiles the result, which is the check that does.
-- CI regenerates `src/generated.rs`, `livetest/src/response_fields.rs`, and
-  `livetest/src/wire_methods.rs` and fails on a difference. A generator change
-  that altered the emitted surface used to reach `main` and be found by whoever
-  next ran `cargo xtask gen`, as a diff they did not make.
-
-## [0.13.0] - 2026-09-21
+## [0.13.0] - YYYY-MM-DD
 
 ### Fixed
 
@@ -66,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     on a first test.
   - A multipart call carries the credentials as form fields, so for those four
     methods the API password no longer appears in the request URL.
+  - Both transports render the parameters through one serializer, so a value is
+    written the same way as a form field as in a query string. The crate's own
+    tests assert that rendering against `serde_urlencoded`, which is what the
+    query string applies.
 - **Breaking**: every response date is `Option<Reported<T>>` -- 19 fields across
   `getDIDsInfo`, `getSubAccounts`, `getFAXMessages`, `getVoicemailMessages`,
   `getRegistrationStatus`, `getCharges`, `getDeposits`, `getLNPDetails`,
@@ -81,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     to the very class of surprise it exists to catch.
   - Read one with `.get()` (or `.value()` / `.into_value()`), and reach what
     could not be read with `.unreadable()`.
+  - The zero-date placeholder reads as `None` in either spelling. A date field
+    can receive `0000-00-00 00:00:00` and a datetime field a bare `0000-00-00`,
+    and each reader used to fold only its own spelling and fail the envelope on
+    the other.
   - Params are unchanged. They are written, never received, so they keep the
     bare `chrono::NaiveDate` / `NaiveDateTime`.
   - The six record-listing timestamps are `Option<Reported<DateTime<FixedOffset>>>`
@@ -131,6 +101,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   harness's completeness gate partitions. It has read only `call_raw` since
   before those methods moved to a POST in this release, so re-running it would
   have dropped them.
+- `cargo xtask gen` fails rather than warns when the Rust it emits does not
+  parse or `rustfmt` rejects it, and writes nothing in that case. A missing
+  `rustfmt` is still only a warning. Neither check reads inside a macro body, so
+  an emitted `matches!` arm list that can be empty still needs its own branch;
+  CI regenerates and compiles the result, which is the check that does.
+- CI regenerates `src/generated.rs`, `livetest/src/response_fields.rs`, and
+  `livetest/src/wire_methods.rs` and fails on a difference. A generator change
+  that altered the emitted surface used to reach `main` and be found by whoever
+  next ran `cargo xtask gen`, as a diff they did not make. CI also builds the
+  workspace docs with `RUSTDOCFLAGS="-D warnings"`, since `build` and `clippy`
+  never run rustdoc and a broken intra-doc link shipped green.
 - The README's snippets compile. They named `SendSmsParams` (the type is
   `SendSMSParams`), pinned `voip-ms = "0.3"`, and claimed every `*Params` and
   `*Response` field is `Option<T>`, which stopped being true in 0.6.0. They are
@@ -159,8 +140,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `call_raw_unchecked` under the `unchecked-raw` feature, so diagnosing an
   unexpected status on a file method can use the transport that method needs.
 - `requires_multipart(method)`: whether a wire method has to be a POST. The
-  generated methods apply it themselves; it is public for a caller that
-  dispatches by method name and so cannot otherwise tell.
+  generated methods and `Client::call_raw_by_name` apply it themselves; it is
+  public for a caller that needs the answer without making the call.
+- `Client::call_raw_by_name` sends a wire method over the transport that method
+  requires, for a caller dispatching by name rather than through a generated
+  method, so the caller does not re-derive the choice from
+  `requires_multipart`. `call_raw_unchecked_by_name` is its counterpart behind
+  the `unchecked-raw` feature, so a diagnostic dump goes out the way the call
+  did.
+- `ParamsError::Unencodable`, for parameters that have no wire-field rendering:
+  a nested structure, or a value serde reports as something other than a scalar.
 - `attach_offset` completes the bare wall clocks in a record-listing envelope
   with the offset the request carried, the step the typed methods take before
   deserializing. Public because a `call_raw` caller needs it too: the raw
@@ -189,9 +178,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An `examples/call_raw.rs` that calls any wire method by name with
   `key=value` parameters and prints the envelope. The typed methods answer what
   a value *is*; this answers what VoIP.ms actually sent, which is what settles a
-  field whose documentation and response sample disagree. It picks the
-  transport with `requires_multipart` and prints a non-`success` status rather
-  than raising it, so an error envelope reads as easily as a successful one.
+  field whose documentation and response sample disagree. It sends the call
+  through `Client::call_raw_by_name`, so the transport is the method's, and
+  prints a non-`success` status rather than raising it, so an error envelope
+  reads as easily as a successful one.
 - `Client::api_username()`, so a consumer holding several clients (a reseller
   plus its sub-accounts) can label a log line from the client rather than
   carrying the username beside it. `Debug` already printed it.
@@ -219,6 +209,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the report prints the `additions` entry to paste. `getCDR` also moved to probe
   depth, so a read-only run sees a populated record -- the only place the
   per-record fields are visible at all.
+- The live harness reports a `degraded` outcome for a response value the typed
+  surface read into a catch-all variant (`Unreadable`, `Unrecognized`,
+  `Unknown`) rather than failing on. That tolerance otherwise hides from the raw-vs-typed
+  probe the very spelling change that probe exists to catch. The values the
+  crate reads that way by design, such as legacy zone names, are listed in
+  `EXPECTED_DEGRADED`, so only a new one fails a run.
 - The response overrides gained an `additions` section, which appends a scalar
   field to an extracted shape (`{ "path": "cdr[].ip", "type": "string" }`). A
   docs-driven extractor cannot see an undocumented field by construction, and
@@ -231,6 +227,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reqwest`'s `multipart` feature is enabled. Feature selection is additive, so
   a consumer that names its own `reqwest` features keeps them and gains
   `multipart` -- and the dependencies it brings -- along with them.
+- Parameters that cannot be rendered as fields fail as
+  `Error::InvalidParams(ParamsError::Unencodable)` naming the parameter, on both
+  transports. They previously surfaced as `Error::Http` wrapping the encoder's
+  error, which reads as a transport failure for a request that was never sent.
 - `Error::Api`'s `Display` renders the documented meaning beside the code:
   `API status: did_in_use (DID Number is already in use)`. An undocumented code
   still renders alone. `as_str()` and `ApiStatus`'s own `Display` are unchanged.
