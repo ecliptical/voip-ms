@@ -1063,7 +1063,7 @@ fn emit(
          \n\
          /// The parameters of a method that takes none.\n\
          #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]\n\
-         pub struct NoParams {}\n",
+         pub struct NoParams;\n",
     );
 
     let mut body = String::new();
@@ -1203,13 +1203,13 @@ fn emit(
                  ///\n    \
                  /// The method takes no parameters.\n    \
                  pub async fn {method}(&self) -> Result<{response_name}> {{\n        \
-                     self.call(\"{op}\", &NoParams {{}}).await\n    \
+                     self.call(\"{op}\", &NoParams).await\n    \
                  }}\n\n\
                  /// Call the `{op}` API method and return the raw JSON envelope.\n    \
                  ///\n    \
                  /// The method takes no parameters.\n    \
                  pub async fn {method}_raw(&self) -> Result<Value> {{\n        \
-                     self.call_raw(\"{op}\", &NoParams {{}}).await\n    \
+                     self.call_raw(\"{op}\", &NoParams).await\n    \
                  }}\n\n"
             ));
             continue;

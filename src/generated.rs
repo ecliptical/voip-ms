@@ -15,7 +15,7 @@ use crate::error::Result;
 
 /// The parameters of a method that takes none.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
-pub struct NoParams {}
+pub struct NoParams;
 
 /// Sub-account call-pickup permissions.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -20250,14 +20250,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_call_accounts(&self) -> Result<GetCallAccountsResponse> {
-        self.call("getCallAccounts", &NoParams {}).await
+        self.call("getCallAccounts", &NoParams).await
     }
 
     /// Call the `getCallAccounts` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_call_accounts_raw(&self) -> Result<Value> {
-        self.call_raw("getCallAccounts", &NoParams {}).await
+        self.call_raw("getCallAccounts", &NoParams).await
     }
 
     /// \- Retrieves a list of Call Billing Options.
@@ -20266,14 +20266,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_call_billing(&self) -> Result<GetCallBillingResponse> {
-        self.call("getCallBilling", &NoParams {}).await
+        self.call("getCallBilling", &NoParams).await
     }
 
     /// Call the `getCallBilling` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_call_billing_raw(&self) -> Result<Value> {
-        self.call_raw("getCallBilling", &NoParams {}).await
+        self.call_raw("getCallBilling", &NoParams).await
     }
 
     /// \- Retrieves a list of Call Huntings if no additional parameter is
@@ -20957,14 +20957,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_ip(&self) -> Result<GetIPResponse> {
-        self.call("getIP", &NoParams {}).await
+        self.call("getIP", &NoParams).await
     }
 
     /// Call the `getIP` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_ip_raw(&self) -> Result<Value> {
-        self.call_raw("getIP", &NoParams {}).await
+        self.call_raw("getIP", &NoParams).await
     }
 
     /// \- Retrieves a list of IVRs if no additional parameter is provided.
@@ -21085,14 +21085,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_lnp_list_status(&self) -> Result<GetLNPListStatusResponse> {
-        self.call("getLNPListStatus", &NoParams {}).await
+        self.call("getLNPListStatus", &NoParams).await
     }
 
     /// Call the `getLNPListStatus` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_lnp_list_status_raw(&self) -> Result<Value> {
-        self.call_raw("getLNPListStatus", &NoParams {}).await
+        self.call_raw("getLNPListStatus", &NoParams).await
     }
 
     /// \- Retrieve the list of notes from the given portability process.
@@ -21153,14 +21153,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_locations(&self) -> Result<GetLocationsResponse> {
-        self.call("getLocations", &NoParams {}).await
+        self.call("getLocations", &NoParams).await
     }
 
     /// Call the `getLocations` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_locations_raw(&self) -> Result<Value> {
-        self.call_raw("getLocations", &NoParams {}).await
+        self.call_raw("getLocations", &NoParams).await
     }
 
     /// \- Retrieves a list of Lock Modes if no additional parameter is provided.
@@ -21366,14 +21366,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_provinces(&self) -> Result<GetProvincesResponse> {
-        self.call("getProvinces", &NoParams {}).await
+        self.call("getProvinces", &NoParams).await
     }
 
     /// Call the `getProvinces` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_provinces_raw(&self) -> Result<Value> {
-        self.call_raw("getProvinces", &NoParams {}).await
+        self.call_raw("getProvinces", &NoParams).await
     }
 
     /// \- Retrieves a list of Queue entries if no additional parameter is
@@ -21754,14 +21754,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_states(&self) -> Result<GetStatesResponse> {
-        self.call("getStates", &NoParams {}).await
+        self.call("getStates", &NoParams).await
     }
 
     /// Call the `getStates` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_states_raw(&self) -> Result<Value> {
-        self.call_raw("getStates", &NoParams {}).await
+        self.call_raw("getStates", &NoParams).await
     }
 
     /// \- Retrieves a list of Static Members from a queue if no additional
@@ -21873,14 +21873,14 @@ impl Client {
     ///
     /// The method takes no parameters.
     pub async fn get_vpris(&self) -> Result<GetVPRIsResponse> {
-        self.call("getVPRIs", &NoParams {}).await
+        self.call("getVPRIs", &NoParams).await
     }
 
     /// Call the `getVPRIs` API method and return the raw JSON envelope.
     ///
     /// The method takes no parameters.
     pub async fn get_vpris_raw(&self) -> Result<Value> {
-        self.call_raw("getVPRIs", &NoParams {}).await
+        self.call_raw("getVPRIs", &NoParams).await
     }
 
     /// \- Retrieves a list of Email Attachment Format Options if no additional
