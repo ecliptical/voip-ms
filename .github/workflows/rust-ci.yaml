@@ -46,6 +46,15 @@ jobs:
         run: |
           cargo xtask check-types --deny
           cargo xtask check-flags --deny
+      - name: Check the generated surface is what the generator emits
+        # `src/generated.rs` is committed, so an edit to `xtask` reaches a
+        # release only if someone re-ran `gen`. Regenerating here and demanding
+        # a clean tree makes the two move together: a hand-edit to the
+        # `@generated` file, or a generator change committed without its
+        # output, fails instead of shipping.
+        run: |
+          cargo xtask gen
+          git diff --exit-code -- src/generated.rs livetest/src/response_fields.rs
 
   coverage:
     name: Run tests with coverage

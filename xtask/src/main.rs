@@ -1448,6 +1448,34 @@ pub(crate) fn repo_root() -> PathBuf {
 
 /// Snake-cased name used for the per-enum `deserialize_opt_*` helper
 /// emitted into `generated.rs`.
+/// Record a per-struct type assignment, refusing a second one that disagrees.
+///
+/// Four tables feed this map and `BTreeMap::insert` is last-writer-wins, so a
+/// path reached by two of them would take whichever ran last and drop the other
+/// on a run that reported success. `getTransactionHistory` is the live example:
+/// it takes a date window, so a `timezone` parameter appearing on it would put
+/// it in `OFFSET_OPS`, whose loop runs after the range assignment and would
+/// replace it with a zoned timestamp. Re-asserting the same type is allowed --
+/// only a disagreement is a contradiction.
+fn assign_field_type(
+    assignments: &mut BTreeMap<String, field_overrides::FieldOverride>,
+    path: String,
+    ov: field_overrides::FieldOverride,
+) -> Result<(), String> {
+    if let Some(existing) = assignments.get(&path)
+        && existing.rust_type != ov.rust_type
+    {
+        return Err(format!(
+            "`{path}` is assigned two types, `{}` and `{}`; the tables in `gen` \
+             disagree and one of the entries has to go",
+            existing.rust_type, ov.rust_type
+        ));
+    }
+
+    assignments.insert(path, ov);
+    Ok(())
+}
+
 fn enum_deserializer_path(enum_name: &str) -> String {
     let acronyms = acronyms_sorted();
     format!("deserialize_opt_{}", camel_to_snake(enum_name, &acronyms))
@@ -1796,14 +1824,15 @@ fn cmd_gen() -> Result<(), String> {
                 "field_type_override `{path}` maps to unknown enum `{enum_name}`"
             ));
         }
-        field_type_override.insert(
+        assign_field_type(
+            &mut field_type_override,
             path.clone(),
             field_overrides::FieldOverride {
                 rust_type: enum_name.clone(),
                 response_deserializer: Some(enum_deserializer_path(enum_name)),
                 ..Default::default()
             },
-        );
+        )?;
     }
 
     // Timezone assignments, hand-written here rather than in the JSON (whose
@@ -1815,21 +1844,30 @@ fn cmd_gen() -> Result<(), String> {
     // public field serializes as the readable IANA name).
     let acronyms = acronyms_sorted();
     for path in field_overrides::NAMED_ZONE_TZ_PARAM_PATHS {
-        field_type_override.insert((*path).to_string(), field_overrides::tz_param_override());
+        assign_field_type(
+            &mut field_type_override,
+            (*path).to_string(),
+            field_overrides::tz_param_override(),
+        )?;
     }
 
     for path in field_overrides::NAMED_ZONE_TZ_RESPONSE_PATHS {
-        field_type_override.insert((*path).to_string(), field_overrides::tz_response_override());
+        assign_field_type(
+            &mut field_type_override,
+            (*path).to_string(),
+            field_overrides::tz_response_override(),
+        )?;
     }
 
     // A transaction-history row's `date` is a point in time or the window the
     // row summarizes, so it is typed per struct here for the same reason -- the
     // JSON section takes declared enums only.
     for path in field_overrides::TRANSACTION_DATE_RESPONSE_PATHS {
-        field_type_override.insert(
+        assign_field_type(
+            &mut field_type_override,
             (*path).to_string(),
             field_overrides::transaction_date_override(),
-        );
+        )?;
     }
 
     // Each offset op's response reports its timestamps in the offset the
@@ -1858,10 +1896,11 @@ fn cmd_gen() -> Result<(), String> {
         }
 
         for f in &fields {
-            field_type_override.insert(
+            assign_field_type(
+                &mut field_type_override,
                 f.struct_path.clone(),
                 field_overrides::zoned_timestamp_override(),
-            );
+            )?;
         }
 
         zoned_timestamps.insert(
@@ -2214,5 +2253,34 @@ mod tests {
         assert!(!documents_base64(
             "Url to media file (Example: 'https://voip.ms/x.jpg')"
         ));
+    }
+
+    #[test]
+    fn two_tables_assigning_one_field_different_types_fails_the_run() {
+        let mut assignments = BTreeMap::new();
+        let path = "GetTransactionHistoryResponseTransaction.date".to_string();
+        assign_field_type(
+            &mut assignments,
+            path.clone(),
+            field_overrides::transaction_date_override(),
+        )
+        .unwrap();
+
+        let err = assign_field_type(
+            &mut assignments,
+            path.clone(),
+            field_overrides::zoned_timestamp_override(),
+        )
+        .unwrap_err();
+        assert!(err.contains("assigned two types"), "{err}");
+
+        // Re-asserting the same type is not a disagreement, so a path listed
+        // twice in one table is harmless rather than a build failure.
+        assign_field_type(
+            &mut assignments,
+            path,
+            field_overrides::transaction_date_override(),
+        )
+        .unwrap();
     }
 }

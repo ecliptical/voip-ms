@@ -280,13 +280,11 @@ pub(crate) fn tz_response_override() -> FieldOverride {
 /// response on. Assigned per struct, since `date` elsewhere is a point in time
 /// and never a span. Keyed `"StructName.field"`.
 ///
-/// The range is the *requested window*, not a billing period: the report ends
-/// with a synthesized row per usage-metered charge (CNAM queries, communication
-/// charges) totaling it over the range the caller asked for, and that row
-/// carries the range in place of a timestamp and reports `uniqueid` as the
-/// literal `n/a`. The customer portal shows the same row for the same search
-/// range, and the four values in the production logs changed within one
-/// four-minute session as the caller varied the window.
+/// The range is the *requested window*: the report totals each usage-metered
+/// charge over the range the call asked for, and that row carries the range in
+/// place of a timestamp. `getCharges` and `getDeposits` are the same ledger for
+/// a reseller client and are deliberately absent, because neither takes a date
+/// range and so neither has a window to report.
 ///
 /// This is why `getCharges` and `getDeposits` are not in this list even though
 /// they are the same ledger kept for a reseller client. Neither takes a date

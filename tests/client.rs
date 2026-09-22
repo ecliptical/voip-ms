@@ -2107,9 +2107,9 @@ async fn the_polymorphic_client_filters_still_take_a_string() {
 async fn a_transaction_history_span_does_not_lose_the_response() {
     use voip_ms::{GetTransactionHistoryParams, TransactionDate, chrono::NaiveDate};
 
-    // The row that aggregates communication charges over the requested window
-    // reports that window in place of a timestamp. Read strictly, it failed the
-    // whole envelope and took every transaction beside it.
+    // The row that totals a usage-metered charge over the requested window
+    // reports that window in place of a timestamp: it reads as a `Period`, and
+    // every row beside it still deserializes.
     let (server, client) = fixture().await;
 
     Mock::given(method("GET"))
@@ -2159,7 +2159,7 @@ async fn a_transaction_history_span_does_not_lose_the_response() {
         ))
     );
     // The migration path the changelog gives: the previous wall clock, and
-    // `None` where the row names a span the old type could not hold.
+    // `None` where the row names a window rather than a point in time.
     assert_eq!(
         envelope.transactions[0]
             .date

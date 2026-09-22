@@ -366,23 +366,31 @@ in `xtask/src/field_overrides.rs`:
   `CNAM Queries` row dated `2026-04-01 to 2026-09-22`, the search range
   verbatim. The row is synthesized rather than recorded, so it has no
   transaction to name and reports `uniqueid` as the literal `n/a`, which is the
-  cheapest way for a consumer to tell it from a real one. The production logs
-  behind issue #28 agree: four values, changing within one four-minute session
-  as the caller varied the window, two of them
-  (`2026-08-07 to 2026-08-07`, `2026-08-01 to 2026-08-07`) aligning to no
-  billing period at all.
+  cheapest way for a consumer to tell it from a real one. Production logs agree:
+  four distinct range values inside one four-minute session as the caller varied
+  the window, two of them (`2026-08-07 to 2026-08-07`,
+  `2026-08-01 to 2026-08-07`) aligning to no billing period at all.
 
   That is what keeps the type off `getCharges` and `getDeposits`, which are the
   same ledger kept for a reseller client. Neither takes a date range -- `client`
   is their only parameter -- so neither has a window to aggregate over and
-  neither can produce the row; both stay `NaiveDate`. The reasoning generalizes:
-  a range in a `date` field is a property of a *report with a window*, so the
-  methods to suspect are the ones that take `date_from` / `date_to`, not the
-  ones that merely list a ledger.
+  neither can produce the row; both stay `NaiveDate`.
+
+  The reasoning generalizes: a range in a `date` field is a property of a
+  *report that totals something over a window*, so the methods to suspect are
+  the ones taking `date_from` / `date_to`. Walking that set leaves nothing else
+  to fix. The `OFFSET_OPS` six are zoned (decision #8);
+  `getCallTranscriptions` and `getVoicemailTranscriptions` report `date` as
+  `String` and cannot fail on any value; `getCallRecordings` has no `date`.
+  `getConferenceRecordings` and `getVoicemailMessages` are the two that share
+  the shape and keep `NaiveDateTime`: each lists individual records and totals
+  nothing, so there is no per-charge sum for a window row to carry -- a
+  recording and a voicemail each happened at an instant. Revisit that only if
+  one of them grows a summary row.
 
   `On` is a separate variant rather than a midnight `At` because folding a bare
   date into a timestamp would invent a time of day and render it back with one,
-  breaking the `Display` round-trip every variant holds.
+  so `Display` would report a precision the wire never carried.
 * **Numeric ids the WSDL under-types as strings** (`U64_FIELDS`, plus
   `setConference`'s 20 prompt slots in `CONFERENCE_PROMPT_FIELDS`) map to
   `u64`. This is the class where the two inference sources disagreed

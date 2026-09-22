@@ -69,6 +69,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `TransactionDate`: the type `GetTransactionHistoryResponseTransaction::date`
+  now holds. Four variants -- `At` (a timestamp), `On` (a date with no time of
+  day), `Period { from, to }` (the window an aggregate row totals over) and
+  `Unrecognized` (anything else, verbatim) -- with `at()`, `date()` and
+  `period()` to read one without a `match`, plus `Display` and `FromStr` in the
+  wire spelling and `Deserialize` for reading one out of a raw envelope.
+  Parsing cannot fail, so a value this crate does not understand costs its own
+  field and nothing else.
 - `Client::call_multipart` and `Client::call_multipart_raw`: the multipart-POST
   counterparts of `Client::call` and `Client::call_raw`, for calling a method
   with a file payload that this crate hasn't been regenerated for. Same status
@@ -340,6 +348,7 @@ The rest is mechanical and the compiler finds all of it:
 | `report_hold_time_agent: Some("yes".into())` | `report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Yes)` |
 | `client.zip` as `u64` | `client.zip` as `String` (and `password`, `security_code`, `dtmf_digits`, `callerid_prefix`) |
 | `transaction.date` as `NaiveDateTime` | `transaction.date.as_ref().and_then(TransactionDate::at)` for the same value |
+| `sort_by_key(\|t\| t.date)` / `max_by_key` / `t.date > cutoff` | key on `t.date.as_ref().and_then(TransactionDate::date)` -- `at()` reports `None` for a date-only row as well as an aggregate one, so ordering by it silently collects both at one end |
 | `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))`, and `ParamsError` is `#[non_exhaustive]`, so a `match` on it needs a wildcard arm |
 
 ## [0.12.2] - 2026-09-17

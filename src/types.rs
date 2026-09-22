@@ -609,8 +609,11 @@ impl<'de> Deserialize<'de> for TimezoneName {
 /// [`TransactionDate::Unrecognized`] and round-trips unchanged, so one
 /// unreadable row cannot fail the whole response.
 ///
-/// Every variant round-trips through [`Display`](std::fmt::Display) as VoIP.ms
-/// spelled it, so a value read here can be echoed back verbatim.
+/// [`Display`](std::fmt::Display) renders every variant in the canonical wire
+/// spelling, which is what VoIP.ms sends but not always the bytes that arrived:
+/// parsing trims, [`chrono`] accepts unpadded components it renders padded, and
+/// a window bounded by timestamps keeps only the days. Only
+/// [`TransactionDate::Unrecognized`] holds the value as received, trimmed.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TransactionDate {
     /// The instant the row posted (wire: `2016-06-03 00:03:46`).
@@ -628,9 +631,17 @@ pub enum TransactionDate {
 /// Separates the two dates of a [`TransactionDate::Period`] on the wire.
 const PERIOD_SEPARATOR: &str = " to ";
 
-/// The wire spelling of a [`TransactionDate::At`] timestamp, the same one
-/// `deserialize_opt_datetime` reads for every other VoIP.ms datetime.
-const DATETIME_WIRE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+/// One bound of a [`TransactionDate::Period`]. A bound may arrive as a bare
+/// date or as a timestamp; only the day bounds the window, so a timestamp
+/// contributes its date and the time of day is dropped.
+fn period_bound(s: &str) -> Option<NaiveDate> {
+    let trimmed = s.trim();
+    trimmed.parse::<NaiveDate>().ok().or_else(|| {
+        NaiveDateTime::parse_from_str(trimmed, crate::responses::DATETIME_WIRE_FORMAT)
+            .ok()
+            .map(|at| at.date())
+    })
+}
 
 impl TransactionDate {
     /// The instant, or `None` unless the row reported one to the second.
@@ -664,7 +675,9 @@ impl TransactionDate {
 impl fmt::Display for TransactionDate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TransactionDate::At(at) => write!(f, "{}", at.format(DATETIME_WIRE_FORMAT)),
+            TransactionDate::At(at) => {
+                write!(f, "{}", at.format(crate::responses::DATETIME_WIRE_FORMAT))
+            }
             TransactionDate::On(on) => write!(f, "{on}"),
             TransactionDate::Period { from, to } => write!(f, "{from}{PERIOD_SEPARATOR}{to}"),
             TransactionDate::Unrecognized(s) => f.write_str(s),
@@ -677,18 +690,16 @@ impl FromStr for TransactionDate {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((from, to)) = s.split_once(PERIOD_SEPARATOR) {
-            return Ok(
-                match (
-                    from.trim().parse::<NaiveDate>(),
-                    to.trim().parse::<NaiveDate>(),
-                ) {
-                    (Ok(from), Ok(to)) => TransactionDate::Period { from, to },
-                    _ => TransactionDate::Unrecognized(s.to_string()),
-                },
-            );
+            return Ok(match (period_bound(from), period_bound(to)) {
+                // A window runs forward. A reversed pair is not one, so it is
+                // left unread rather than handing a caller a negative width
+                // with nothing to signal it.
+                (Some(from), Some(to)) if from <= to => TransactionDate::Period { from, to },
+                _ => TransactionDate::Unrecognized(s.to_string()),
+            });
         }
 
-        if let Ok(at) = NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT) {
+        if let Ok(at) = NaiveDateTime::parse_from_str(s, crate::responses::DATETIME_WIRE_FORMAT) {
             return Ok(TransactionDate::At(at));
         }
 
@@ -696,6 +707,33 @@ impl FromStr for TransactionDate {
             Ok(on) => TransactionDate::On(on),
             Err(_) => TransactionDate::Unrecognized(s.to_string()),
         })
+    }
+}
+
+impl<'de> Deserialize<'de> for TransactionDate {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct DateVisitor;
+
+        impl<'de> Visitor<'de> for DateVisitor {
+            type Value = TransactionDate;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a transaction date: a timestamp, a date, or `<from> to <to>`")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<TransactionDate, E>
+            where
+                E: DeError,
+            {
+                let Ok(date) = TransactionDate::from_str(v);
+                Ok(date)
+            }
+        }
+
+        deserializer.deserialize_str(DateVisitor)
     }
 }
 
@@ -1025,12 +1063,50 @@ mod tests {
     }
 
     /// A half-parsed span is unrecognized rather than silently half-read: one
-    /// side alone says nothing about what the row covers.
+    /// side alone says nothing about what the row covers. A reversed one is
+    /// not a window at all, so it keeps the value rather than reporting a
+    /// negative width.
     #[test]
     fn transaction_date_keeps_a_malformed_span_verbatim() {
-        for wire in ["2026-08-01 to never", "not-a-date to 2026-08-31"] {
+        for wire in [
+            "2026-08-01 to never",
+            "not-a-date to 2026-08-31",
+            "2026-08-31 to 2026-08-01",
+        ] {
             let Ok(parsed) = wire.parse::<TransactionDate>();
             assert_eq!(parsed, TransactionDate::Unrecognized(wire.to_string()));
+        }
+    }
+
+    /// Only the day bounds a window, so a bound given to the second still
+    /// reads as one rather than falling to `Unrecognized`, where `period()`
+    /// would answer `None` and a caller aggregating by window would skip the
+    /// row.
+    #[test]
+    fn transaction_date_reads_a_span_bounded_by_timestamps() {
+        let Ok(parsed) = "2026-08-01 00:00:00 to 2026-08-31 23:59:59".parse::<TransactionDate>();
+        assert_eq!(
+            parsed.period(),
+            Some((
+                NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 8, 31).unwrap()
+            ))
+        );
+    }
+
+    /// The type is response-only, so it carries `Deserialize` and no
+    /// `Serialize` -- and a raw envelope has to be readable through it.
+    #[test]
+    fn transaction_date_deserializes_every_form() {
+        for wire in [
+            "2016-06-03 00:03:46",
+            "2010-10-29",
+            "2026-08-01 to 2026-08-31",
+            "whenever",
+        ] {
+            let back: TransactionDate = serde_json::from_str(&format!("\"{wire}\"")).unwrap();
+            assert_eq!(back, wire.parse::<TransactionDate>().unwrap());
+            assert_eq!(back.to_string(), wire);
         }
     }
 
