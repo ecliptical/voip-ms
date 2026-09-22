@@ -13,14 +13,19 @@
 //! upload's size to reach the same fields. This module's tests assert the two
 //! renderings agree value by value, against `serde_urlencoded` itself.
 //!
-//! **No value is rendered through `Display`.** A field's wire form is a
-//! contract with VoIP.ms; `Display` is free to render for a person, and in this
-//! crate it does -- [`crate::Error`] prints `API status: did_in_use (DID Number
-//! is already in use)` where [`crate::ApiStatus`] prints `did_in_use`. A
-//! `to_string()` here would read as a wire encoder while being a presentation
-//! one, so each scalar names an encoder instead: `itoa` and `ryu` for numbers,
-//! the two literals for a bool, the text itself for a string, a char, or a
-//! variant's wire name.
+//! **No field's wire form rests on a `Display` impl that could change.** A
+//! wire form is a contract with VoIP.ms, where `Display` is free to render for
+//! a person -- [`crate::Error`] prints `API status: did_in_use (DID Number is
+//! already in use)` where [`crate::ApiStatus`] prints `did_in_use`.
+//!
+//! That rules out borrowing a *type's* rendering, not `to_string` as such. A
+//! primitive integer's `Display` is specified by the standard library as its
+//! decimal digits and cannot drift, so the integer arms use it. A float's is
+//! equally fixed but fixed to something else -- `1` for `1.0`, and never an
+//! exponent -- so the float arms render through `ryu`, which is what
+//! `serde_urlencoded` and `serde_json` use for the same job. Nothing here calls
+//! `to_string` on a domain type: one arrives through its own `Serialize` impl,
+//! which hands this serializer a string or a number.
 
 use std::fmt::{self, Display};
 
@@ -572,22 +577,17 @@ impl ser::SerializeTupleStruct for PairElements<'_> {
 /// One parameter's value. `Ok(None)` is an absent value, which carries no field
 /// at all.
 ///
-/// Nothing here renders through `Display`. A parameter's wire form is a
-/// contract with VoIP.ms, where `Display` is a presentation trait free to render
-/// for a reader -- this crate's own [`crate::Error`] does exactly that, printing
-/// `API status: did_in_use (DID Number is already in use)` where
-/// [`crate::ApiStatus`] prints the bare code. So each arm names an encoder for
-/// the job: `itoa` and `ryu` for numbers (what `serde_urlencoded` and
-/// `serde_json` use), the two literals for a bool, and the text itself for a
-/// string, a char, or a variant's wire name.
+/// Each arm renders a value whose text this crate controls: the module doc says
+/// why that rules out a domain type's `Display` but not a primitive integer's.
 struct PartSerializer;
 
-/// An integer arm: `itoa`'s decimal rendering, by value, never `Display`.
+/// An integer arm: its decimal digits, which is all `to_string` can produce for
+/// a primitive integer.
 macro_rules! integer_arms {
     ($($method:ident($ty:ty);)*) => {
         $(
             fn $method(self, v: $ty) -> Result<Self::Ok, Self::Error> {
-                Ok(Some(itoa::Buffer::new().format(v).to_owned()))
+                Ok(Some(v.to_string()))
             }
         )*
     };
@@ -828,9 +828,9 @@ mod tests {
         }
     }
 
-    /// `itoa` renders an integer exactly as `Display` does, so the choice is
-    /// about which contract the code is claiming, not about the bytes. Pinned
-    /// at the range ends, where a hand-rolled encoder would be wrong.
+    /// The integer arms do use `to_string`, which is sound because a primitive
+    /// integer's `Display` is its decimal digits by specification. Pinned at the
+    /// range ends, where a hand-rolled encoder would be the thing that slipped.
     #[test]
     fn an_integer_renders_as_its_digits() {
         agrees(&one(i64::MIN));

@@ -116,6 +116,24 @@ impl Routing {
     }
 }
 
+impl Routing {
+    /// The `tag:payload` string VoIP.ms carries, the inverse of
+    /// [`Routing::from_str`].
+    ///
+    /// This is the wire form, stated once and separately from [`Display`]. The
+    /// two render the same text today, and the separation is what lets that stop
+    /// being true: a `Display` made friendlier for a log would otherwise change
+    /// what every routing field sends, with nothing in the type system to notice.
+    ///
+    /// [`Display`]: std::fmt::Display
+    /// [`Routing::from_str`]: std::str::FromStr::from_str
+    pub fn to_wire(&self) -> String {
+        format!("{}:{}", self.tag(), self.value())
+    }
+}
+
+/// Renders the wire form ([`Routing::to_wire`]) for now, which is what a reader
+/// of a routing field expects to see. Nothing on the wire depends on it.
 impl fmt::Display for Routing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}:{}", self.tag(), self.value())
@@ -182,7 +200,7 @@ impl Serialize for Routing {
     where
         S: Serializer,
     {
-        serializer.collect_str(self)
+        serializer.serialize_str(&self.to_wire())
     }
 }
 
@@ -639,7 +657,34 @@ mod tests {
         // Split is on the FIRST colon so sip URIs survive intact.
         let r = Routing::from_str("sip:5552223333@sip.voip.ms:5060").unwrap();
         assert_eq!(r, Routing::Sip("5552223333@sip.voip.ms:5060".into()));
-        assert_eq!(r.to_string(), "sip:5552223333@sip.voip.ms:5060");
+        assert_eq!(r.to_wire(), "sip:5552223333@sip.voip.ms:5060");
+    }
+
+    #[test]
+    fn the_wire_form_is_what_serde_sends_and_from_str_accepts() {
+        // `to_wire` is the contract, not `Display`: the two agree today, and
+        // this is what has to keep holding if one of them changes.
+        for r in [
+            Routing::None,
+            Routing::Account("100001_VoIP".into()),
+            Routing::Sip("5552223333@sip.voip.ms:5060".into()),
+            Routing::Unknown {
+                tag: "future".into(),
+                value: "abc".into(),
+            },
+        ] {
+            let wire = r.to_wire();
+            assert_eq!(
+                Routing::from_str(&wire).unwrap(),
+                r,
+                "the wire form must parse back to the value that produced it"
+            );
+            assert_eq!(
+                serde_json::to_string(&r).unwrap(),
+                serde_json::to_string(&wire).unwrap(),
+                "serde sends the wire form"
+            );
+        }
     }
 
     #[test]

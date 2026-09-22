@@ -709,23 +709,29 @@ as other than a scalar -- is `Error::InvalidParams(ParamsError::Unencodable)`
 naming the parameter, and nothing is sent. Neither transport can carry one, so
 this is not a property of the transport that happened to be chosen.
 
-**Nothing reaches the wire through `Display`.** A field's wire form is a
+**No wire form rests on a `Display` impl that could change.** A wire form is a
 contract with VoIP.ms; `Display` is free to render for a person, and in this
 crate it does -- `Error` prints `API status: did_in_use (DID Number is already
 in use)` where `ApiStatus` prints `did_in_use`, and `TransportFailure` has no
 `Display` at all for the same reason (see "Transport-failure classification").
-A `to_string()` on the wire path reads as an encoder while being a presentation
-trait, and the next person to add one inherits whatever that type's `Display`
-later becomes. So `form.rs` names an encoder per scalar: `itoa` for integers and
-`ryu` for floats (what `serde_urlencoded` and `serde_json` use for the same
-job), the two literals for a bool, and the text itself for a string, a char, or
-a variant's wire name. `Display` stays where it belongs -- error messages, the
-`Debug` impls, a log line.
+The risk is a wire form that is only *incidentally* a `Display` impl, so that
+making the rendering friendlier for a log silently changes what is sent.
 
-**How to apply**: a new arm in `form.rs`, or any other value written to a
-request, names what encodes it. If a type's only path to text is its `Display`,
-that is the signal to give it an explicit wire form rather than to borrow the
-one meant for a reader.
+That rules out borrowing a *type's* rendering, not `to_string` as such. In
+`form.rs` the integer arms use it, since a primitive integer's `Display` is its
+decimal digits by specification and cannot drift; the float arms do not, since a
+float's is fixed to something else (`1` for `1.0`, never an exponent) and so go
+through `ryu`. `Routing` states its wire form as `Routing::to_wire`, which
+`Serialize` calls and `FromStr` inverts, leaving its `Display` free to change --
+the two render the same text today and only the first is a contract.
+`TimezoneOffset` still serializes through `collect_str` over `rust_decimal`'s
+`Display`, whose scale is load-bearing (`Asia/Kolkata` sends `5.50`).
+
+**How to apply**: give a domain type that goes on the wire an explicit wire form
+(`to_wire` / `as_wire`) and have `Serialize` call that. If a type's only route
+to text is its `Display`, treat that as the signal to add one rather than to
+borrow the rendering meant for a reader. `Display` stays in error messages, the
+`Debug` impls, and log lines.
 
 If a regeneration drift is ever needed (e.g. a method needs custom
 encoding), break that one method out of the codegen with an explicit
