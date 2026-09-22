@@ -33,9 +33,11 @@ chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = { version = "0.10", features = ["serde"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "multipart", "query"] }
 rust_decimal = "1.43"
-# Float rendering in `src/form.rs`, matching what `reqwest`'s `.query()` would
-# have produced: `Display` drops the fraction on a whole float, so the two
-# transports would disagree on `1.0` without it.
+# The wire renderings in `src/form.rs`. A parameter's wire form is a contract,
+# and `Display` is a presentation trait, so neither is rendered through it --
+# these two are the encoders `serde_urlencoded` and `serde_json` use for the
+# same job.
+itoa = "1.0"
 ryu = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

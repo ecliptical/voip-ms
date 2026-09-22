@@ -12,6 +12,15 @@
 //! reading them back out -- a round trip that allocated roughly four times an
 //! upload's size to reach the same fields. This module's tests assert the two
 //! renderings agree value by value, against `serde_urlencoded` itself.
+//!
+//! **No value is rendered through `Display`.** A field's wire form is a
+//! contract with VoIP.ms; `Display` is free to render for a person, and in this
+//! crate it does -- [`crate::Error`] prints `API status: did_in_use (DID Number
+//! is already in use)` where [`crate::ApiStatus`] prints `did_in_use`. A
+//! `to_string()` here would read as a wire encoder while being a presentation
+//! one, so each scalar names an encoder instead: `itoa` and `ryu` for numbers,
+//! the two literals for a bool, the text itself for a string, a char, or a
+//! variant's wire name.
 
 use std::fmt::{self, Display};
 
@@ -74,7 +83,7 @@ where
         .serialize(PartSerializer)
         .map_err(|e| e.in_field(key))?
     {
-        out.push((key.to_string(), rendered));
+        out.push((key.to_owned(), rendered));
     }
 
     Ok(())
@@ -562,7 +571,27 @@ impl ser::SerializeTupleStruct for PairElements<'_> {
 
 /// One parameter's value. `Ok(None)` is an absent value, which carries no field
 /// at all.
+///
+/// Nothing here renders through `Display`. A parameter's wire form is a
+/// contract with VoIP.ms, where `Display` is a presentation trait free to render
+/// for a reader -- this crate's own [`crate::Error`] does exactly that, printing
+/// `API status: did_in_use (DID Number is already in use)` where
+/// [`crate::ApiStatus`] prints the bare code. So each arm names an encoder for
+/// the job: `itoa` and `ryu` for numbers (what `serde_urlencoded` and
+/// `serde_json` use), the two literals for a bool, and the text itself for a
+/// string, a char, or a variant's wire name.
 struct PartSerializer;
+
+/// An integer arm: `itoa`'s decimal rendering, by value, never `Display`.
+macro_rules! integer_arms {
+    ($($method:ident($ty:ty);)*) => {
+        $(
+            fn $method(self, v: $ty) -> Result<Self::Ok, Self::Error> {
+                Ok(Some(itoa::Buffer::new().format(v).to_owned()))
+            }
+        )*
+    };
+}
 
 /// The arms with no scalar form, each rejected the same way.
 macro_rules! no_scalar_form {
@@ -588,65 +617,39 @@ impl Serializer for PartSerializer {
     type SerializeStructVariant = Impossible<Option<String>, FormError>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(if v { "true" } else { "false" }.to_string()))
+        Ok(Some(if v { "true" } else { "false" }.to_owned()))
     }
 
-    fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
+    integer_arms! {
+        serialize_i8(i8);
+        serialize_i16(i16);
+        serialize_i32(i32);
+        serialize_i64(i64);
+        serialize_i128(i128);
+        serialize_u8(u8);
+        serialize_u16(u16);
+        serialize_u32(u32);
+        serialize_u64(u64);
+        serialize_u128(u128);
     }
 
-    fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
-    }
-
-    /// `ryu`'s rendering, which is `serde_urlencoded`'s: it keeps the fraction
-    /// on a whole float (`1.0`, where `Display` writes `1`).
+    /// `ryu`'s rendering, which keeps the fraction on a whole float (`1.0`) and
+    /// switches to an exponent for a large or small one (`1e300`).
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(ryu::Buffer::new().format(v).to_string()))
+        Ok(Some(ryu::Buffer::new().format(v).to_owned()))
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(ryu::Buffer::new().format(v).to_string()))
+        Ok(Some(ryu::Buffer::new().format(v).to_owned()))
     }
 
+    /// The character's own UTF-8, which is what a field carries.
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
+        Ok(Some(String::from(v)))
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(v.to_string()))
+        Ok(Some(v.to_owned()))
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
@@ -666,7 +669,7 @@ impl Serializer for PartSerializer {
         _index: u32,
         variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        Ok(Some(variant.to_string()))
+        Ok(Some(variant.to_owned()))
     }
 
     fn serialize_newtype_struct<T>(
@@ -806,15 +809,36 @@ mod tests {
         agrees(&one(Some(3u32)));
     }
 
-    /// A whole float is the one value `Display` and the query string disagree
-    /// on, which is why the rendering is not `to_string`.
+    /// Where rendering through `Display` would have reached the wire with a
+    /// different value. The rule this module states is broader -- no arm goes
+    /// through `Display` -- but the integer arms agree with it by coincidence,
+    /// so these are the cases that can catch a regression.
     #[test]
-    fn a_whole_float_keeps_its_fraction() {
+    fn a_float_is_not_rendered_the_way_a_reader_would_see_it() {
+        for (value, wire) in [(1.0f64, "1.0"), (1e300, "1e300"), (1.0e-7, "1e-7")] {
+            assert_eq!(
+                to_fields(&one(value)).unwrap(),
+                vec![("value".to_string(), wire.to_string())],
+            );
+            assert_ne!(
+                value.to_string(),
+                wire,
+                "the premise: `Display` writes something else"
+            );
+        }
+    }
+
+    /// `itoa` renders an integer exactly as `Display` does, so the choice is
+    /// about which contract the code is claiming, not about the bytes. Pinned
+    /// at the range ends, where a hand-rolled encoder would be wrong.
+    #[test]
+    fn an_integer_renders_as_its_digits() {
+        agrees(&one(i64::MIN));
+        agrees(&one(u128::MAX));
         assert_eq!(
-            to_fields(&one(1.0f64)).unwrap(),
-            vec![("value".to_string(), "1.0".to_string())]
+            to_fields(&one(i8::MIN)).unwrap(),
+            vec![("value".to_string(), "-128".to_string())]
         );
-        assert_eq!(1.0f64.to_string(), "1");
     }
 
     #[test]

@@ -89,9 +89,9 @@ impl Client {
         P: Serialize + ?Sized,
     {
         let mut fields = vec![
-            ("api_username".to_string(), self.api_username.clone()),
-            ("api_password".to_string(), self.api_password.clone()),
-            ("method".to_string(), method.to_string()),
+            ("api_username".to_owned(), self.api_username.clone()),
+            ("api_password".to_owned(), self.api_password.clone()),
+            ("method".to_owned(), method.to_owned()),
         ];
         fields.extend(
             form::to_fields(params)

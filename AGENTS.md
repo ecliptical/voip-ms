@@ -709,6 +709,24 @@ as other than a scalar -- is `Error::InvalidParams(ParamsError::Unencodable)`
 naming the parameter, and nothing is sent. Neither transport can carry one, so
 this is not a property of the transport that happened to be chosen.
 
+**Nothing reaches the wire through `Display`.** A field's wire form is a
+contract with VoIP.ms; `Display` is free to render for a person, and in this
+crate it does -- `Error` prints `API status: did_in_use (DID Number is already
+in use)` where `ApiStatus` prints `did_in_use`, and `TransportFailure` has no
+`Display` at all for the same reason (see "Transport-failure classification").
+A `to_string()` on the wire path reads as an encoder while being a presentation
+trait, and the next person to add one inherits whatever that type's `Display`
+later becomes. So `form.rs` names an encoder per scalar: `itoa` for integers and
+`ryu` for floats (what `serde_urlencoded` and `serde_json` use for the same
+job), the two literals for a bool, and the text itself for a string, a char, or
+a variant's wire name. `Display` stays where it belongs -- error messages, the
+`Debug` impls, a log line.
+
+**How to apply**: a new arm in `form.rs`, or any other value written to a
+request, names what encodes it. If a type's only path to text is its `Display`,
+that is the signal to give it an explicit wire form rather than to borrow the
+one meant for a reader.
+
 If a regeneration drift is ever needed (e.g. a method needs custom
 encoding), break that one method out of the codegen with an explicit
 skip-list and hand-write it in `src/client.rs`. Do not pollute
