@@ -1666,8 +1666,8 @@ fn rustfmt(rendered: &str) -> Result<Option<String>, String> {
     rustfmt_with(rendered, Stdio::inherit())
 }
 
-/// [`rustfmt`], with somewhere else to put its diagnostic -- the tests silence
-/// it rather than print a bare `error:` line into a run that passed.
+/// [`rustfmt`], with its diagnostic sent where `stderr` says rather than
+/// inherited.
 fn rustfmt_with(rendered: &str, stderr: Stdio) -> Result<Option<String>, String> {
     let mut child = match Command::new("rustfmt")
         .args(["--edition", "2024", "--emit", "stdout"])

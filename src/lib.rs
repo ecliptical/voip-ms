@@ -57,12 +57,12 @@
 //! added since is absent from the table and so reads as a GET. For that one,
 //! choose [`Client::call_multipart_raw`] yourself.
 //!
-//! That endpoint
-//! returns the `{ "status": ... }` JSON envelope directly, which this crate
-//! deserializes -- a status other than `success` surfaces as [`Error::Api`],
-//! except an empty-collection status ([`ApiStatus::is_empty_collection`], e.g. `no_sms`),
-//! which the typed methods return as an empty response (the `*_raw` methods
-//! still surface it verbatim). (The generic `…/api/v1/` endpoint instead
+//! The REST endpoint returns the `{ "status": ... }` JSON envelope directly,
+//! which this crate deserializes -- a status other than `success` surfaces as
+//! [`Error::Api`], except an empty-collection status
+//! ([`ApiStatus::is_empty_collection`], e.g. `no_sms`), which the typed methods
+//! return as an empty response (the `*_raw` methods still surface it
+//! verbatim). (The generic `…/api/v1/` endpoint instead
 //! defaults to `text/html` and needs an explicit `content_type=json`; this
 //! crate does not use it.)
 
