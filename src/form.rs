@@ -13,6 +13,11 @@
 //! upload's size to reach the same fields. This module's tests assert the two
 //! renderings agree value by value, against `serde_urlencoded` itself.
 //!
+//! Rendering once for both transports puts the multipart POST's saving on the
+//! GET's bill, so a field owns only what it must: see [`Field`]. What is left
+//! is one `String` per parameter value, on a payload the 8190-byte request line
+//! already bounds.
+//!
 //! **No field's wire form rests on a `Display` impl that could change.** A
 //! wire form is a contract with VoIP.ms, where `Display` is free to render for
 //! a person -- [`crate::Error`] prints `API status: did_in_use (DID Number is
@@ -27,16 +32,26 @@
 //! `to_string` on a domain type: one arrives through its own `Serialize` impl,
 //! which hands this serializer a string or a number.
 
+use std::borrow::Cow;
 use std::fmt::{self, Display};
 
 use serde::Serialize;
 use serde::ser::{self, Impossible, Serializer};
 
+/// One rendered field.
+///
+/// The name borrows where it can: a struct hands `serde` its field names as
+/// `&'static str`, which is every generated parameter, so only a map key (a
+/// caller's own `BTreeMap` or `json!`) has to be owned. The value never can be
+/// -- `Serializer::serialize_str` elides its lifetime, so the text is only
+/// guaranteed to live for that call.
+pub(crate) type Field = (Cow<'static, str>, String);
+
 /// Render `params` as the wire fields they carry.
 ///
 /// A field whose value is absent (`None`) carries nothing at all, which is how
 /// a query string omits it.
-pub(crate) fn to_fields<P>(params: &P) -> Result<Vec<(String, String)>, FormError>
+pub(crate) fn to_fields<P>(params: &P) -> Result<Vec<Field>, FormError>
 where
     P: Serialize + ?Sized,
 {
@@ -80,23 +95,26 @@ impl ser::Error for FormError {
 }
 
 /// Render one value and push it under `key`, unless it is absent.
-fn push_field<T>(out: &mut Vec<(String, String)>, key: &str, value: &T) -> Result<(), FormError>
+fn push_field<T>(out: &mut Vec<Field>, key: Cow<'static, str>, value: &T) -> Result<(), FormError>
 where
     T: ?Sized + Serialize,
 {
-    if let Some(rendered) = value
+    match value
         .serialize(PartSerializer)
-        .map_err(|e| e.in_field(key))?
+        .map_err(|e| e.in_field(&key))?
     {
-        out.push((key.to_owned(), rendered));
-    }
+        Some(rendered) => {
+            out.push((key, rendered));
+            Ok(())
+        }
 
-    Ok(())
+        None => Ok(()),
+    }
 }
 
 /// The parameter set itself: a struct, a map, or a sequence of pairs.
 struct FieldsSerializer<'a> {
-    out: &'a mut Vec<(String, String)>,
+    out: &'a mut Vec<Field>,
     /// The map key awaiting its value. `serde` hands the two over separately.
     key: Option<String>,
 }
@@ -268,7 +286,7 @@ impl ser::SerializeStruct for FieldsSerializer<'_> {
     where
         T: ?Sized + Serialize,
     {
-        push_field(self.out, key, value)
+        push_field(self.out, Cow::Borrowed(key), value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
@@ -301,7 +319,7 @@ impl ser::SerializeMap for FieldsSerializer<'_> {
             .take()
             .ok_or_else(|| ser::Error::custom("a parameter value arrived before its name"))?;
 
-        push_field(self.out, &key, value)
+        push_field(self.out, Cow::Owned(key), value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
@@ -311,7 +329,7 @@ impl ser::SerializeMap for FieldsSerializer<'_> {
 
 /// A parameter set given as a sequence of `(name, value)` pairs.
 struct PairsSerializer<'a> {
-    out: &'a mut Vec<(String, String)>,
+    out: &'a mut Vec<Field>,
 }
 
 impl ser::SerializeSeq for PairsSerializer<'_> {
@@ -348,7 +366,7 @@ impl ser::SerializeTuple for PairsSerializer<'_> {
 
 /// One element of a sequence of pairs, which must be a two-element tuple.
 struct PairSerializer<'a> {
-    out: &'a mut Vec<(String, String)>,
+    out: &'a mut Vec<Field>,
 }
 
 /// The arms that are not a `(name, value)` pair, each rejected the same way.
@@ -500,7 +518,7 @@ impl<'a> Serializer for PairSerializer<'a> {
 
 /// The two elements of one `(name, value)` pair, as `serde` hands them over.
 struct PairElements<'a> {
-    out: &'a mut Vec<(String, String)>,
+    out: &'a mut Vec<Field>,
     key: Option<String>,
 }
 
@@ -517,7 +535,7 @@ impl PairElements<'_> {
                 Ok(())
             }
 
-            Some(key) => push_field(self.out, &key, element),
+            Some(key) => push_field(self.out, Cow::Owned(key), element),
         }
     }
 
@@ -776,6 +794,22 @@ mod tests {
         serde_urlencoded::from_str(&encoded).map_err(|_| ())
     }
 
+    /// This module's rendering, with the borrowed names flattened so it can be
+    /// compared against what the query string carries.
+    fn fields_of<T>(params: &T) -> Result<Vec<(String, String)>, ()>
+    where
+        T: ?Sized + Serialize,
+    {
+        to_fields(params)
+            .map(|fields| {
+                fields
+                    .into_iter()
+                    .map(|(name, value)| (name.into_owned(), value))
+                    .collect()
+            })
+            .map_err(|_| ())
+    }
+
     /// Assert this module renders `params` into the same fields the query
     /// string carries -- including agreeing on a parameter set neither can
     /// render.
@@ -784,8 +818,15 @@ mod tests {
     where
         T: ?Sized + Serialize,
     {
-        let ours = to_fields(params).map_err(|_| ());
-        assert_eq!(ours, query_fields(params));
+        assert_eq!(fields_of(params), query_fields(params));
+    }
+
+    /// The one field `params` renders to.
+    #[track_caller]
+    fn only_field<T: Serialize>(params: &T) -> (String, String) {
+        let mut fields = fields_of(params).expect("renders");
+        assert_eq!(fields.len(), 1, "expected exactly one field: {fields:?}");
+        fields.pop().expect("one field")
     }
 
     /// One field of `value`, which is how a parameter reaches either transport.
@@ -847,8 +888,8 @@ mod tests {
     fn a_float_is_not_rendered_the_way_a_reader_would_see_it() {
         for (value, wire) in [(1.0f64, "1.0"), (1e300, "1e300"), (1.0e-7, "1e-7")] {
             assert_eq!(
-                to_fields(&one(value)).unwrap(),
-                vec![("value".to_string(), wire.to_string())],
+                only_field(&one(value)),
+                ("value".to_string(), wire.to_string())
             );
             assert_ne!(
                 value.to_string(),
@@ -866,8 +907,8 @@ mod tests {
         agrees(&one(i64::MIN));
         agrees(&one(u128::MAX));
         assert_eq!(
-            to_fields(&one(i8::MIN)).unwrap(),
-            vec![("value".to_string(), "-128".to_string())]
+            only_field(&one(i8::MIN)),
+            ("value".to_string(), "-128".to_string())
         );
     }
 
@@ -875,6 +916,22 @@ mod tests {
     fn an_absent_value_carries_no_field_at_all() {
         agrees(&one(Option::<u32>::None));
         assert!(to_fields(&one(Option::<u32>::None)).unwrap().is_empty());
+    }
+
+    /// What [`Field`]'s `Cow` is for: the common path copies values only.
+    #[test]
+    fn a_struct_field_name_is_borrowed_rather_than_copied() {
+        let from_struct = to_fields(&one("x")).unwrap();
+        assert!(
+            matches!(from_struct[0].0, Cow::Borrowed(_)),
+            "a generated parameter's name is a &'static str serde hands over"
+        );
+
+        let from_map = to_fields(&BTreeMap::from([("value", "x")])).unwrap();
+        assert!(
+            matches!(from_map[0].0, Cow::Owned(_)),
+            "a map key is rendered, so it is the one name that has to be owned"
+        );
     }
 
     #[test]
@@ -904,8 +961,8 @@ mod tests {
         agrees(&one(Unit));
         agrees(&Unit);
         assert_eq!(
-            to_fields(&one(Unit)).unwrap(),
-            vec![("value".to_string(), "Unit".to_string())]
+            only_field(&one(Unit)),
+            ("value".to_string(), "Unit".to_string())
         );
         assert!(to_fields(&Unit).unwrap().is_empty());
     }

@@ -2,6 +2,7 @@ use reqwest::{Url, multipart};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
+use std::borrow::Cow;
 use std::fmt;
 use std::sync::LazyLock;
 
@@ -84,18 +85,35 @@ impl Client {
     /// but is written the same way on both. A parameter with no field rendering
     /// -- a nested structure, or a value that is not a scalar -- is
     /// [`Error::InvalidParams`] and nothing is sent.
-    fn wire_fields<P>(&self, method: &str, params: &P) -> Result<Vec<(String, String)>>
+    ///
+    /// Everything this function can borrow, it borrows: the three fixed names,
+    /// the credentials, and the method. Only a rendered parameter value has to
+    /// be owned, since `serde` hands one over for the length of a call. A GET
+    /// is the common case and it pays for the fields it does not need owned.
+    fn wire_fields<'a, P>(
+        &'a self,
+        method: &'a str,
+        params: &P,
+    ) -> Result<Vec<(Cow<'static, str>, Cow<'a, str>)>>
     where
         P: Serialize + ?Sized,
     {
         let mut fields = vec![
-            ("api_username".to_owned(), self.api_username.clone()),
-            ("api_password".to_owned(), self.api_password.clone()),
-            ("method".to_owned(), method.to_owned()),
+            (
+                Cow::Borrowed("api_username"),
+                Cow::Borrowed(self.api_username.as_str()),
+            ),
+            (
+                Cow::Borrowed("api_password"),
+                Cow::Borrowed(self.api_password.as_str()),
+            ),
+            (Cow::Borrowed("method"), Cow::Borrowed(method)),
         ];
         fields.extend(
             form::to_fields(params)
-                .map_err(|e| Error::InvalidParams(ParamsError::Unencodable(e.into_message())))?,
+                .map_err(|e| Error::InvalidParams(ParamsError::Unencodable(e.into_message())))?
+                .into_iter()
+                .map(|(name, value)| (name, Cow::Owned(value))),
         );
 
         Ok(fields)
@@ -110,11 +128,13 @@ impl Client {
         let fields = self.wire_fields(method, params)?;
         let request = match transport {
             Transport::Get => self.http.get(self.base_url.clone()).query(&fields),
+            // A form part owns what it carries, so the three borrowed fields are
+            // copied here rather than on every GET.
             Transport::MultipartPost => {
                 let form = fields
                     .into_iter()
                     .fold(multipart::Form::new(), |form, (name, value)| {
-                        form.text(name, value)
+                        form.text(name, value.into_owned())
                     });
                 self.http.post(self.base_url.clone()).multipart(form)
             }
