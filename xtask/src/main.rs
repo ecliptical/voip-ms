@@ -984,7 +984,7 @@ fn emit(
     empty_statuses: &BTreeSet<String>,
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
     base64_file_params: &BTreeMap<String, Vec<String>>,
-) -> String {
+) -> Result<String, String> {
     let acronyms = acronyms_sorted();
     // Which side each declared enum lands on, collected while the structs are
     // rendered so only the serde direction a field actually uses is emitted.
@@ -1117,7 +1117,7 @@ fn emit(
         responses,
         resolver,
         &mut response_enums,
-    );
+    )?;
     for ty in &response_enums {
         enum_sides.note_response(enums, ty);
     }
@@ -1242,7 +1242,7 @@ fn emit(
     }
 
     out.push_str("}\n");
-    out
+    Ok(out)
 }
 
 /// The `///` lines naming why a method posts, agreeing in number with however
@@ -2032,7 +2032,7 @@ fn cmd_gen() -> Result<(), String> {
         &empty_statuses,
         &zoned_timestamps,
         &base64_file_params.by_op,
-    );
+    )?;
     write_rust(&out_path, &rendered)?;
     println!(
         "wrote {} ({} methods, {} method descriptions, {} typed responses, \

@@ -467,7 +467,7 @@ fn attach_at(value: &mut Value, path: &str, suffix: &str) {
     let Some((segment, rest)) = path.split_once('/') else {
         if let Some(Value::String(s)) = value.get_mut(path)
             && !s.trim().is_empty()
-            && !names_zone(s)
+            && !crate::responses::names_offset(s)
         {
             s.push_str(suffix);
         }
@@ -494,19 +494,6 @@ fn attach_at(value: &mut Value, path: &str, suffix: &str) {
         // `deserialize_vec_from_single_or_seq` accepts on the way in.
         other => attach_at(other, rest, suffix),
     }
-}
-
-/// Whether a timestamp already names a UTC offset (`Z`, `-04:00`, `+0530`).
-/// VoIP.ms reports none today; leaving such a value alone keeps a second
-/// suffix off it should that change.
-fn names_zone(s: &str) -> bool {
-    let s = s.trim_end();
-    s.ends_with('Z')
-        || s.rsplit_once(['+', '-']).is_some_and(|(head, zone)| {
-            !head.is_empty()
-                && (zone.len() == 4 || zone.len() == 5)
-                && zone.chars().all(|c| c.is_ascii_digit() || c == ':')
-        })
 }
 
 /// Stands in for the API password wherever a client is formatted.

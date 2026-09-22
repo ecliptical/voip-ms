@@ -129,13 +129,18 @@ offset and still does not parse degrades like any other value. A JSON list or
 object where a scalar belongs is a shape, and no scalar type can stand in for
 one, so that is rejected too.
 
-**The class is not closed.** Four scalar helpers still fail the whole envelope
-on a well-shaped string they cannot read:
-`deserialize_opt_u64_from_string_or_number` (`"1,234"`),
+**The class is not closed.** Seven readers still fail the whole envelope on a
+well-shaped string they cannot read. Four are scalar helpers in
+`src/responses.rs`: `deserialize_opt_u64_from_string_or_number` (`"1,234"`),
 `deserialize_opt_decimal_from_string_or_number` (`"$1.00"`),
 `deserialize_opt_bool_from_string_number_or_yn` (`"maybe"`) and
-`deserialize_opt_routing`. That is the remaining exposure, and it is not
-hypothetical: `GetTransactionHistoryResponseTransaction::ammount` is a strict
+`deserialize_opt_routing`. The other three are the sentinel types in
+`src/types.rs` -- [`crate::Seconds`], [`crate::WaitTime`] and
+[`crate::MaxMembers`] -- which accept a number, a numeric string or their own
+sentinel word and reject everything else, so a `getQueues` row reporting
+`announce_frequency` as `"every 30s"` costs the response. Those reach
+`maximum_wait_time`, `maximum_callers`, `max_members` and the `SECONDS_FIELDS`
+set. That is the whole remaining exposure, and it is not hypothetical: `GetTransactionHistoryResponseTransaction::ammount` is a strict
 `Decimal` on the same row whose `uniqueid` VoIP.ms already reports as the
 literal `n/a`. Extending `Reported<T>` to them is the same change made here for
 dates, and wants the same thing first -- an observation, or a decision recorded

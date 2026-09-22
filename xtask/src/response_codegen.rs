@@ -38,7 +38,7 @@ pub fn emit_response_structs(
     responses: &BTreeMap<String, Shape>,
     resolver: &Resolver,
     enums_used: &mut std::collections::BTreeSet<String>,
-) -> String {
+) -> Result<String, String> {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
     for op in method_names {
@@ -56,10 +56,14 @@ pub fn emit_response_structs(
             crate::camel_to_snake(op, &acronyms),
         ));
 
+        if !emitter.unsupported.is_empty() {
+            return Err(format!("{op}: {}", emitter.unsupported.join("; ")));
+        }
+
         out.push_str(&emitter.into_text());
     }
 
-    out
+    Ok(out)
 }
 
 /// Where one response timestamp lands in the emitted structs, and the path
@@ -236,6 +240,9 @@ struct Emitter<'a> {
     /// own, typed `voip_ms::ApiStatus`; a nested struct's same-named field
     /// (a fax's, a port's) is unrelated and keeps its inferred type.
     root: String,
+    /// Shapes this emitter would have to guess at, collected rather than
+    /// emitted. See [`Emitter::element_scalar_type`].
+    unsupported: Vec<String>,
 }
 
 impl<'a> Emitter<'a> {
@@ -249,6 +256,7 @@ impl<'a> Emitter<'a> {
             resolver,
             enums_used,
             root,
+            unsupported: Vec::new(),
         }
     }
 
@@ -418,7 +426,7 @@ impl<'a> Emitter<'a> {
 
             Shape::List(inner) => {
                 let elem_ty = match &**inner {
-                    Shape::Scalar { .. } => self.scalar_rust_type(inner),
+                    Shape::Scalar { .. } => self.element_scalar_type(parent, fname, inner),
                     Shape::Object(_) => {
                         let child = element_type_name(parent, fname);
                         self.emit_struct(&child, inner);
@@ -447,6 +455,35 @@ impl<'a> Emitter<'a> {
                 format!("std::collections::HashMap<String, {value_ty}>")
             }
         }
+    }
+
+    /// The Rust type for a scalar sitting *inside* a list or a map.
+    ///
+    /// A bare element cannot be a date. The date scalars render as
+    /// `voip_ms::Reported<T>`, whose only job is to hold a value the field
+    /// deserializer could not parse, so it carries no `Deserialize` of its
+    /// own -- and `deserialize_vec_from_single_or_seq` and
+    /// `deserialize_map_from_object` both require the element to have one.
+    /// Emitting it anyway writes a `src/generated.rs` that does not compile,
+    /// which reaches the next person as a build error in a file they are told
+    /// not to hand-edit.
+    ///
+    /// Nothing in the docs returns one today. A refresh that does needs the
+    /// wrapper taught to deserialize, or the element left bare and the
+    /// tolerance given up for it -- a decision, not a default, which is why
+    /// this refuses rather than guesses.
+    fn element_scalar_type(&mut self, parent: &str, fname: &str, shape: &Shape) -> String {
+        let ty = self.scalar_rust_type(shape);
+        if ty.starts_with("crate::Reported<") {
+            self.unsupported.push(format!(
+                "{parent}.{fname} is a collection of dates, whose element would be \
+                 `{ty}` -- a type with no `Deserialize`, so the emitted code would \
+                 not compile. Teach `Reported` to deserialize, or type this field \
+                 by hand in the overrides."
+            ));
+        }
+
+        ty
     }
 
     fn scalar_rust_type(&self, shape: &Shape) -> String {
@@ -740,6 +777,33 @@ mod tests {
             &resolver,
             &mut Default::default(),
         )
+        .expect("the fixtures here emit no unsupported shape")
+    }
+
+    /// A list of dates would emit `Vec<voip_ms::Reported<..>>`, whose element
+    /// has no `Deserialize`. Nothing returns one today, so this is the tripwire
+    /// for the docs refresh that does -- refusing here beats writing a
+    /// `src/generated.rs` that does not compile.
+    #[test]
+    fn a_collection_of_dates_is_refused_rather_than_emitted() {
+        let shape = object(&[("dates", Shape::List(Box::new(datetime())))]);
+        let table = crate::field_overrides::Table::with_builtins();
+        let per_struct = BTreeMap::new();
+        let skip = Default::default();
+        let resolver = Resolver {
+            table: &table,
+            per_struct: &per_struct,
+            skip: &skip,
+        };
+        let responses = BTreeMap::from([("getThing".to_string(), shape)]);
+        let err = emit_response_structs(
+            &["getThing".to_string()],
+            &responses,
+            &resolver,
+            &mut Default::default(),
+        )
+        .unwrap_err();
+        assert!(err.contains("collection of dates"), "{err}");
     }
 
     // The walk naming a field is only half of it: the emitter has to apply the

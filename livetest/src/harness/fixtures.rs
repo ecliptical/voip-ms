@@ -233,7 +233,7 @@ where
 }
 
 /// Fold a teardown `del_*` result so a delete of an already-absent resource
-/// counts as success: an "absent" status (`voip_ms::ApiStatus::is_empty_collection`,
+/// counts as success: an "absent" status ([`ApiStatus::is_empty_collection`],
 /// e.g. `no_conference`, or an `invalid_*` "not a valid `<resource>` ID" code) means
 /// the object the teardown targets is gone, which is the teardown's goal.
 ///

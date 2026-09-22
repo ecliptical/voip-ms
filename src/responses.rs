@@ -219,28 +219,47 @@ fn is_blank_or_zero_date(trimmed: &str) -> bool {
     trimmed.is_empty() || trimmed.starts_with("0000-00-00")
 }
 
-/// Whether a trimmed timestamp names a UTC offset.
+/// Whether a trimmed wire value *is* the zero-date placeholder, rather than
+/// merely starting with it.
 ///
-/// The record-listing contract is that every value reaching the typed side has
-/// one, put there by [`crate::attach_offset`]. Checking for it separately is
-/// what lets a *malformed* qualified timestamp degrade while an *unqualified*
-/// one still fails: only the second breaks the contract.
-fn carries_offset(trimmed: &str) -> bool {
-    if trimmed.ends_with('Z') || trimmed.ends_with('z') {
+/// [`is_blank_or_zero_date`] tests the prefix, which is right where the whole
+/// value is one timestamp: the offset a record-listing value carries is
+/// appended to the placeholder too. It is wrong where the value can be a range,
+/// so `deserialize_opt_transaction_date` asks this instead.
+fn is_zero_date(trimmed: &str) -> bool {
+    trimmed.is_empty() || trimmed == "0000-00-00" || trimmed == "0000-00-00 00:00:00"
+}
+
+/// Whether a timestamp already names a UTC offset (`Z`, `-04:00`, `+0530`).
+///
+/// Both sides of the record-listing contract ask this question, and they have
+/// to agree: [`crate::attach_offset`] skips a value that already names one, and
+/// the deserializer rejects one that does not. Two predicates would disagree at
+/// the edges -- a value one skips and the other refuses costs the whole
+/// envelope, and a value one suffixes and the other accepts is corrupted and
+/// then reported as unreadable -- so this is the single answer, called from
+/// both.
+///
+/// The offset is looked for after the last `T` or space, so the date's own
+/// hyphens cannot be mistaken for its sign. The digit count is deliberately
+/// loose (`-4:00` as well as `-04:00`): being generous here is safe, since a
+/// value this accepts and chrono rejects degrades, while one this refuses fails
+/// the envelope.
+pub(crate) fn names_offset(s: &str) -> bool {
+    let s = s.trim();
+    if s.ends_with('Z') || s.ends_with('z') {
         return true;
     }
 
-    // The offset is the tail after the last sign, which the date's own hyphens
-    // must not match -- so only a sign in the time portion counts.
-    let time = match trimmed.rfind(['T', ' ']) {
-        Some(at) => &trimmed[at..],
-        None => return false,
+    let Some(at) = s.rfind(['T', ' ']) else {
+        return false;
     };
 
-    time.rfind(['+', '-']).is_some_and(|at| {
-        let tail = &time[at + 1..];
-        let digits = tail.chars().filter(char::is_ascii_digit).count();
-        tail.chars().all(|c| c.is_ascii_digit() || c == ':') && (digits == 4 || digits == 2)
+    s[at..].rsplit_once(['+', '-']).is_some_and(|(head, zone)| {
+        !head.is_empty()
+            && !zone.is_empty()
+            && zone.chars().all(|c| c.is_ascii_digit() || c == ':')
+            && zone.chars().filter(char::is_ascii_digit).count() <= 4
     })
 }
 
@@ -263,34 +282,28 @@ pub(crate) fn deserialize_opt_datetime_offset<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            if is_blank_or_zero_date(trimmed) {
-                return Ok(None);
-            }
+    let Some(text) = opt_wire_text(deserializer)? else {
+        return Ok(None);
+    };
 
-            if !carries_offset(trimmed) {
-                return Err(D::Error::custom(format!(
-                    "record-listing timestamp {s} names no UTC offset"
-                )));
-            }
-
-            Ok(Some(
-                match DateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S%:z")
-                    .or_else(|_| DateTime::parse_from_rfc3339(trimmed))
-                {
-                    Ok(at) => Reported::Parsed(at),
-                    Err(_) => Reported::Unreadable(trimmed.to_string()),
-                },
-            ))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected datetime string, got {other}"
-        ))),
+    if is_blank_or_zero_date(&text) {
+        return Ok(None);
     }
+
+    if !names_offset(&text) {
+        return Err(D::Error::custom(format!(
+            "record-listing timestamp {text} names no UTC offset"
+        )));
+    }
+
+    Ok(Some(
+        match DateTime::parse_from_str(&text, "%Y-%m-%d %H:%M:%S%:z")
+            .or_else(|_| DateTime::parse_from_rfc3339(&text))
+        {
+            Ok(at) => Reported::Parsed(at),
+            Err(_) => Reported::Unreadable(text),
+        },
+    ))
 }
 
 pub(crate) fn deserialize_opt_routing<'de, D>(deserializer: D) -> Result<Option<Routing>, D::Error>
@@ -451,7 +464,12 @@ where
         return Ok(None);
     };
 
-    if is_blank_or_zero_date(&text) {
+    // The placeholder is the whole value, not a prefix of it: this is the one
+    // field that can report a range, and `0000-00-00 to 2026-08-31` says a
+    // window was reported even though its start is the zero date. Folding on
+    // the prefix would make that indistinguishable from an absent field, which
+    // is the information `TransactionDate` exists to keep.
+    if is_zero_date(&text) {
         return Ok(None);
     }
 
@@ -809,7 +827,13 @@ mod tests {
         // one is the failure that typing exists to prevent.
         assert!(call(json!("2024-03-15 08:30:00")).is_err());
         assert!(call(json!("2024-03-15")).is_err());
+        // A bare number reaches the same judgment as any other text rather than
+        // being rejected for its JSON type: it names no offset, so it fails the
+        // contract like an unqualified string, not because it was not a string.
         assert!(call(json!(0)).is_err());
+        // A shape is still rejected: no timestamp can stand in for one.
+        assert!(call(json!({"a": 1})).is_err());
+        assert!(call(json!([1])).is_err());
         // A value that *carries* an offset but does not parse is an odd value,
         // not a broken contract, so it costs its own field instead of every
         // row in what are the API's longest responses.
@@ -824,13 +848,17 @@ mod tests {
     /// The offset check reads the time portion, so the date's own hyphens
     /// never look like one and a zone-less value cannot slip through.
     #[test]
-    fn carries_offset_reads_the_time_not_the_date() {
-        assert!(carries_offset("2024-03-15 08:30:00-04:00"));
-        assert!(carries_offset("2024-03-15 08:30:00+0530"));
-        assert!(carries_offset("2024-03-15T08:30:00Z"));
-        assert!(!carries_offset("2024-03-15 08:30:00"));
-        assert!(!carries_offset("2024-03-15"));
-        assert!(!carries_offset("2024-03-15 08:30:00-oops"));
+    fn names_offset_reads_the_time_not_the_date() {
+        assert!(names_offset("2024-03-15 08:30:00-04:00"));
+        assert!(names_offset("2024-03-15 08:30:00+0530"));
+        assert!(names_offset("2024-03-15T08:30:00Z"));
+        // Unpadded and short forms count: `attach_offset` must skip exactly
+        // what this accepts, and suffixing one of these would corrupt it.
+        assert!(names_offset("2024-03-15 19:14:35-4:00"));
+        assert!(names_offset("2024-03-15 19:14:35-05"));
+        assert!(!names_offset("2024-03-15 08:30:00"));
+        assert!(!names_offset("2024-03-15"));
+        assert!(!names_offset("2024-03-15 08:30:00-oops"));
     }
 
     #[test]
@@ -840,6 +868,14 @@ mod tests {
         assert_eq!(call(json!("")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00")).unwrap(), None);
+        // The placeholder is the whole value here, so a window whose start is
+        // the zero date still reports as a window rather than as absence.
+        assert_eq!(
+            call(json!("0000-00-00 to 2026-08-31")).unwrap(),
+            Some(TransactionDate::Unrecognized(
+                "0000-00-00 to 2026-08-31".to_string()
+            ))
+        );
         // A date with no time of day stays a date rather than gaining a midnight.
         assert_eq!(
             call(json!("2010-10-29")).unwrap(),

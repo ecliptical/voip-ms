@@ -240,7 +240,29 @@ where
 /// The catch-all variants a tolerant type parks a value it could not read in.
 /// `Unknown {` is [`voip_ms::Routing`]'s, which is a struct variant; the rest
 /// are tuple variants.
-const CATCH_ALL_VARIANTS: &[&str] = &["Unreadable(", "Unrecognized(", "Unknown(", "Unknown {"];
+const CATCH_ALL_VARIANTS: &[&str] = &["Unreadable", "Unrecognized", "Unknown"];
+
+/// Degraded values this harness expects and does not report.
+///
+/// Not every catch-all is drift. VoIP.ms's `getTimezones` catalog still lists
+/// names the IANA database dropped, and a long-lived mailbox can carry one, so
+/// those land in `Unrecognized` on every run by design. Without an allowlist,
+/// an account holding one would exit non-zero forever and the operator's only
+/// move would be to ignore the exit code -- which is the signal this check
+/// exists to give. Same idea as `check-types`'s `DELIBERATE`: a *new* degraded
+/// value is the finding.
+///
+/// Matched against the rendered payload, so an entry is the value VoIP.ms
+/// sends, not the variant holding it.
+const EXPECTED_DEGRADED: &[&str] = &[
+    "Asia/Beijing",
+    "Canada/East-Saskatchewan",
+    "Factory",
+    "Riyadh87",
+    "Riyadh88",
+    "Riyadh89",
+    "US/Pacific-New",
+];
 
 /// The values a deserialized response could not read, as `Debug` renders them.
 ///
@@ -252,28 +274,120 @@ const CATCH_ALL_VARIANTS: &[&str] = &["Unreadable(", "Unrecognized(", "Unknown("
 ///
 /// It reads `Debug` because that is the only uniform view of a `*Response`:
 /// the type carries no `Serialize` (a response is received, never built), and
-/// a per-type accessor would mean touching all 222 of them.
+/// a per-type accessor would mean touching all 222 of them. Reading `Debug`
+/// costs two things this guards against: a variant name appearing inside a
+/// string field would false-positive, so a match must start at a token
+/// boundary; and a payload can contain the delimiter that closes it, so the
+/// end is found by depth rather than by the first one.
 fn degraded_values(typed: &impl Debug) -> Vec<String> {
     let rendered = format!("{typed:?}");
+    let bytes = rendered.as_bytes();
     let mut found: Vec<String> = Vec::new();
-    for variant in CATCH_ALL_VARIANTS {
-        let mut rest = rendered.as_str();
-        while let Some(at) = rest.find(variant) {
-            let tail = &rest[at..];
-            let end = tail
-                .find(['(', '{'].as_slice())
-                .map_or(tail.len(), |i| i + 1);
-            let payload_end = tail[end..]
-                .find([')', '}'].as_slice())
-                .map_or(tail.len(), |i| end + i + 1);
-            found.push(tail[..payload_end].to_string());
-            rest = &rest[at + variant.len()..];
+
+    for (at, _) in Scan::new(bytes).filter(|(_, b)| *b == b'(' || *b == b'{') {
+        // `Debug` renders a tuple variant as `Name(..)` and a struct variant as
+        // `Name { .. }`, so the name ends either at the delimiter or one space
+        // before it.
+        let head = rendered[..at].strip_suffix(' ').unwrap_or(&rendered[..at]);
+        let Some(variant) = CATCH_ALL_VARIANTS.iter().find(|v| head.ends_with(**v)) else {
+            continue;
+        };
+
+        // A variant name is preceded by a delimiter, a space or `::` -- never by
+        // a letter -- which keeps a nested type name from matching its suffix.
+        let start = head.len() - variant.len();
+        if rendered[..start]
+            .chars()
+            .next_back()
+            .is_some_and(|c| c.is_alphanumeric() || c == '_')
+        {
+            continue;
         }
+
+        let Some(end) = matching_delimiter(bytes, at) else {
+            continue;
+        };
+
+        found.push(rendered[start..=end].to_string());
     }
 
+    found.retain(|value| !EXPECTED_DEGRADED.iter().any(|known| value.contains(known)));
     found.sort();
     found.dedup();
     found
+}
+
+/// The bytes of a `Debug` rendering that are structure rather than content:
+/// everything outside a string literal.
+///
+/// A variant name only means a variant where `Debug` wrote it. The same text
+/// inside a field value is something VoIP.ms sent -- a `description` quoting an
+/// error, a CNAM -- and reporting it would fail a live run over a string.
+struct Scan<'a> {
+    bytes: &'a [u8],
+    at: usize,
+    in_string: bool,
+    escaped: bool,
+}
+
+impl<'a> Scan<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            at: 0,
+            in_string: false,
+            escaped: false,
+        }
+    }
+}
+
+impl Iterator for Scan<'_> {
+    type Item = (usize, u8);
+
+    fn next(&mut self) -> Option<(usize, u8)> {
+        while self.at < self.bytes.len() {
+            let at = self.at;
+            let b = self.bytes[at];
+            self.at += 1;
+
+            if self.escaped {
+                self.escaped = false;
+                continue;
+            }
+
+            match b {
+                b'\\' if self.in_string => self.escaped = true,
+                b'"' => self.in_string = !self.in_string,
+                _ if self.in_string => {}
+                _ => return Some((at, b)),
+            }
+        }
+
+        None
+    }
+}
+
+/// The index of the delimiter closing the one at `open`, counting nesting so a
+/// payload holding its own closer is not cut short.
+fn matching_delimiter(bytes: &[u8], open: usize) -> Option<usize> {
+    let close = if bytes[open] == b'(' { b')' } else { b'}' };
+    let mut depth = 0usize;
+    for (at, b) in Scan::new(bytes) {
+        if at < open {
+            continue;
+        }
+
+        if b == bytes[open] {
+            depth += 1;
+        } else if b == close {
+            depth -= 1;
+            if depth == 0 {
+                return Some(at);
+            }
+        }
+    }
+
+    None
 }
 
 fn pretty(value: &Value) -> String {
@@ -324,5 +438,51 @@ mod tests {
             NaiveDate::from_ymd_opt(2026, 10, 8).unwrap(),
         ))];
         assert!(degraded_values(&clean).is_empty());
+    }
+
+    /// The payload is reported whole. A value carrying the delimiter that
+    /// closes it is exactly the kind of surprise worth reporting accurately,
+    /// and a truncated one is pasted into an override as something VoIP.ms
+    /// never sent.
+    #[test]
+    fn a_payload_holding_its_own_delimiter_is_not_truncated() {
+        let found = degraded_values(&Reported::<NaiveDate>::Unreadable(
+            "2026-08-01 (approx)".to_string(),
+        ));
+        assert_eq!(found, ["Unreadable(\"2026-08-01 (approx)\")"]);
+    }
+
+    /// A variant name inside a string field is field content, not a variant.
+    /// Reporting it would fail a run over a `description` that happens to
+    /// mention one.
+    #[test]
+    fn a_variant_name_inside_a_field_value_is_not_a_finding() {
+        // A tuple rather than a struct: the point is a variant name sitting in
+        // a *string* inside a composite, which is how a `description` or a CNAM
+        // echoing an error would reach the scan.
+        let row = (
+            "description",
+            "carrier reported Unknown(code 3)".to_string(),
+        );
+        let found = degraded_values(&row);
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    /// A legacy zone name is permanent and by design, so it must not make every
+    /// live run exit non-zero -- the operator would have to ignore the exit code
+    /// to keep working, which is the signal this check exists to give.
+    #[test]
+    fn an_expected_degraded_value_is_not_reported() {
+        let found = degraded_values(&voip_ms::TimezoneName::Unrecognized(
+            "US/Pacific-New".to_string(),
+        ));
+        assert!(found.is_empty(), "{found:?}");
+
+        // A zone name that is not on the list still reports: the allowlist is
+        // the known cases, not the whole family.
+        let novel = degraded_values(&voip_ms::TimezoneName::Unrecognized(
+            "Mars/Olympus".to_string(),
+        ));
+        assert_eq!(novel.len(), 1, "{novel:?}");
     }
 }

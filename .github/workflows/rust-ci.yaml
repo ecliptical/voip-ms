@@ -51,9 +51,10 @@ jobs:
         # `clippy` never run rustdoc -- so a broken intra-doc link or an
         # angle-bracket placeholder read as an HTML tag ships green and shows up
         # only in the rendered docs. `--workspace` covers `xtask` and `livetest`
-        # too: neither is published, but both are read, and neither can link to
-        # the types in `voip-ms` (they do not depend on it), which is the
-        # mistake this catches.
+        # too: neither is published, but both are read. `xtask` is the one that
+        # cannot link to a `voip-ms` type -- it generates that crate's source,
+        # so it cannot depend on it, and `crate::Routing` there names nothing.
+        # `livetest` does depend on `voip-ms` and links to its types freely.
         run: RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" cargo doc --no-deps --workspace
       - name: Confirm the committed surface is what the generator emits
         # Nothing else regenerates. Without this, a generator change that alters
