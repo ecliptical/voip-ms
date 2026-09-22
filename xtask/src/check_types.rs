@@ -47,6 +47,21 @@ const DELIBERATE: &[&str] = &[
     "voicemail.timezone",
 ];
 
+/// The type a field carries for comparison, with a response's
+/// `voip_ms::Reported<T>` wrapper removed.
+///
+/// Reading `voip_ms::Reported<T>` where the param writes a bare `T` is the crate-wide
+/// rule rather than an exception: a param is written and cannot receive a value
+/// this crate does not understand, a response can. Comparing the wrapper
+/// against the bare type would report every date field that appears on both
+/// sides, which is a finding about the rule and not about the field.
+fn unwrap_reported(rust_type: &str) -> &str {
+    rust_type
+        .strip_prefix("crate::Reported<")
+        .and_then(|inner| inner.strip_suffix('>'))
+        .unwrap_or(rust_type)
+}
+
 /// One emitted field: where it sits and what it is typed as.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Field {
@@ -121,7 +136,7 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
         let types: BTreeSet<&str> = written
             .iter()
             .chain(read)
-            .map(|f| f.rust_type.as_str())
+            .map(|f| unwrap_reported(&f.rust_type))
             .collect();
         if types.len() < 2 {
             continue;

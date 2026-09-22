@@ -1015,7 +1015,7 @@ fn voicemail_message_date_accepts_full_timestamp() {
     .unwrap();
     let messages = vm.messages;
     assert_eq!(
-        messages[0].date,
+        messages[0].date.as_ref().and_then(voip_ms::Reported::get),
         Some(
             chrono::NaiveDate::from_ymd_opt(2023, 6, 26)
                 .unwrap()
@@ -1502,7 +1502,9 @@ async fn record_listing_without_a_zone_asks_for_utc() {
     let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
     assert_eq!(
         envelope.cdr[0].date,
-        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap())
+        Some(voip_ms::Reported::Parsed(
+            voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap()
+        ))
     );
 }
 
@@ -1531,7 +1533,11 @@ async fn record_listing_timestamps_carry_the_offset_that_was_sent() {
         timezone: Some(voip_ms::chrono_tz::America::New_York),
         ..Default::default()
     };
-    let date = client.get_cdr(&params).await.unwrap().cdr[0].date.unwrap();
+    let date = client.get_cdr(&params).await.unwrap().cdr[0]
+        .date
+        .as_ref()
+        .and_then(voip_ms::Reported::get)
+        .unwrap();
     assert_eq!(
         date,
         voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T15:14:35-04:00").unwrap()
@@ -1562,7 +1568,9 @@ async fn record_listing_timestamps_qualify_a_single_bare_record() {
     let envelope = client.get_sms(&GetSMSParams::default()).await.unwrap();
     assert_eq!(
         envelope.sms[0].date,
-        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-03-30T10:24:16+00:00").unwrap())
+        Some(voip_ms::Reported::Parsed(
+            voip_ms::chrono::DateTime::parse_from_rfc3339("2026-03-30T10:24:16+00:00").unwrap()
+        ))
     );
 }
 
@@ -1593,7 +1601,9 @@ async fn record_listing_blank_timestamp_does_not_lose_the_response() {
     assert_eq!(envelope.cdr[1].date, None);
     assert_eq!(
         envelope.cdr[2].date,
-        Some(voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap())
+        Some(voip_ms::Reported::Parsed(
+            voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-16T19:14:35+00:00").unwrap()
+        ))
     );
 }
 
@@ -1622,7 +1632,11 @@ async fn record_listing_half_hour_zone_stamps_the_offset_it_sent() {
         timezone: Some(voip_ms::chrono_tz::Asia::Kolkata),
         ..Default::default()
     };
-    let date = client.get_cdr(&params).await.unwrap().cdr[0].date.unwrap();
+    let date = client.get_cdr(&params).await.unwrap().cdr[0]
+        .date
+        .as_ref()
+        .and_then(voip_ms::Reported::get)
+        .unwrap();
     assert_eq!(
         date,
         voip_ms::chrono::DateTime::parse_from_rfc3339("2026-09-17T00:44:35+05:30").unwrap()
@@ -2210,4 +2224,151 @@ async fn the_polymorphic_client_filters_still_take_a_string() {
         })
         .await
         .unwrap();
+}
+
+#[tokio::test]
+async fn an_unreadable_date_costs_its_own_field_and_nothing_else() {
+    use voip_ms::{GetDIDsInfoParams, Reported, chrono::NaiveDate};
+
+    // A response is one value built from one envelope, so a date VoIP.ms
+    // spells in a form this crate does not model reads as `Unreadable` with
+    // the text intact: the records beside it survive, and the value is still
+    // there to salvage.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getDIDsInfo"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "dids": [
+                { "did": "5551234567", "next_billing": "2026-10-08" },
+                { "did": "5557654321", "next_billing": "08/10/2026" },
+                { "did": "5559999999", "next_billing": "0000-00-00" },
+            ],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_dids_info(&GetDIDsInfoParams::default())
+        .await
+        .unwrap();
+
+    assert_eq!(envelope.dids.len(), 3);
+    assert_eq!(
+        envelope.dids[0].next_billing,
+        Some(Reported::Parsed(
+            NaiveDate::from_ymd_opt(2026, 10, 8).unwrap()
+        ))
+    );
+    assert_eq!(
+        envelope.dids[1].next_billing,
+        Some(Reported::Unreadable("08/10/2026".to_string()))
+    );
+    // The placeholder is still absence, not an unreadable value.
+    assert_eq!(envelope.dids[2].next_billing, None);
+    // And the row that could not be read still carries the rest of itself.
+    assert_eq!(envelope.dids[1].did.as_deref(), Some("5557654321"));
+}
+
+#[tokio::test]
+async fn a_transaction_history_span_does_not_lose_the_response() {
+    use voip_ms::{GetTransactionHistoryParams, TransactionDate, chrono::NaiveDate};
+
+    // The row that totals a usage-metered charge over the requested window
+    // reports that window in place of a timestamp: it reads as a `Period`, and
+    // every row beside it still deserializes.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getTransactionHistory"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "transactions": [
+                {
+                    "date": "2026-09-08 01:19:49",
+                    "uniqueid": "61971626x8ae57cb9",
+                    "type": "DID6474785907",
+                    "description": "DID Monthly Fee: 6474785907",
+                    "ammount": "-0.85",
+                },
+                {
+                    "date": "2026-08-01 to 2026-08-31",
+                    "uniqueid": "n/a",
+                    "type": "CNAM Queries",
+                    "description": "CNAM Queries",
+                    "ammount": "-0.1760",
+                },
+                { "date": "", "uniqueid": "3" },
+                { "date": "2026-08-14", "uniqueid": "4" },
+            ],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_transaction_history(&GetTransactionHistoryParams {
+            date_from: NaiveDate::from_ymd_opt(2026, 8, 1),
+            date_to: NaiveDate::from_ymd_opt(2026, 9, 21),
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(envelope.transactions.len(), 4);
+    assert_eq!(
+        envelope.transactions[0].date,
+        Some(TransactionDate::At(
+            NaiveDate::from_ymd_opt(2026, 9, 8)
+                .unwrap()
+                .and_hms_opt(1, 19, 49)
+                .unwrap()
+        ))
+    );
+    // The migration path the changelog gives: the previous wall clock, and
+    // `None` where the row names a window rather than a point in time.
+    assert_eq!(
+        envelope.transactions[0]
+            .date
+            .as_ref()
+            .and_then(TransactionDate::at),
+        Some(
+            NaiveDate::from_ymd_opt(2026, 9, 8)
+                .unwrap()
+                .and_hms_opt(1, 19, 49)
+                .unwrap()
+        )
+    );
+    assert_eq!(
+        envelope.transactions[1]
+            .date
+            .as_ref()
+            .and_then(TransactionDate::at),
+        None
+    );
+    assert_eq!(
+        envelope.transactions[1].date,
+        Some(TransactionDate::Period {
+            from: NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+            to: NaiveDate::from_ymd_opt(2026, 8, 31).unwrap(),
+        })
+    );
+    assert_eq!(envelope.transactions[2].date, None);
+    // A date with no time of day stays a date rather than gaining a midnight.
+    assert_eq!(
+        envelope.transactions[3].date,
+        Some(TransactionDate::On(
+            NaiveDate::from_ymd_opt(2026, 8, 14).unwrap()
+        ))
+    );
+    // The synthesized row names no transaction and is metered to four decimal
+    // places; both survive beside the range.
+    assert_eq!(envelope.transactions[1].uniqueid.as_deref(), Some("n/a"));
+    assert_eq!(
+        envelope.transactions[1].ammount,
+        Some(Decimal::from_str_exact("-0.1760").unwrap())
+    );
 }

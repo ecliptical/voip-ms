@@ -10,7 +10,7 @@
 //! Two layers contribute entries:
 //!
 //! 1. The hard-coded [`builtin`] table — used for hand-written domain
-//!    types like [`crate::Routing`] whose semantics span many fields.
+//!    types like `voip_ms::Routing` whose semantics span many fields.
 //! 2. The `field_types` and `enums` sections of
 //!    `tools/api-response-overrides.json`, loaded into a runtime
 //!    [`Table`] alongside the built-ins. This is how data-driven
@@ -19,7 +19,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// How a particular field name should be typed.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct FieldOverride {
     /// Fully-qualified Rust type to substitute for `String`.
     pub rust_type: String,
@@ -27,7 +27,7 @@ pub struct FieldOverride {
     /// substituted type doesn't itself serialize to the wire form
     /// VoIP.ms expects -- e.g. a plain `bool` whose flag must travel as
     /// `1`/`0` rather than `true`/`false`. Types that carry their own
-    /// `Serialize` (like [`crate::Routing`]) leave this `None`.
+    /// `Serialize` (like `voip_ms::Routing`) leave this `None`.
     pub param_serializer: Option<String>,
     /// When set, the param field is emitted as plain `T` (not
     /// `Option<T>`) and skipped on the wire when equal to its default
@@ -38,6 +38,21 @@ pub struct FieldOverride {
     /// referenced function must accept `Option<T>` and treat empty /
     /// absent inputs as `None`.
     pub response_deserializer: Option<String>,
+    /// Rust type to substitute on the *response* side only, when it differs
+    /// from [`Self::rust_type`]. A param is written and so cannot receive a
+    /// value this crate does not understand; a response can, which is why the
+    /// date fields read as `voip_ms::Reported<T>` and write as the bare `T`.
+    pub response_rust_type: Option<String>,
+}
+
+impl FieldOverride {
+    /// The type to emit on the response side: [`Self::response_rust_type`]
+    /// where the two sides differ, otherwise [`Self::rust_type`].
+    pub fn response_type(&self) -> &str {
+        self.response_rust_type
+            .as_deref()
+            .unwrap_or(&self.rust_type)
+    }
 }
 
 /// Runtime table of field-name overrides. Built from both built-in
@@ -109,7 +124,7 @@ impl<'a> Resolver<'a> {
     }
 }
 
-/// Field names that should be typed as [`crate::Routing`] instead of
+/// Field names that should be typed as `voip_ms::Routing` instead of
 /// `String`. All of these encode a `tag:value` routing target.
 const ROUTING_FIELDS: &[&str] = &[
     "routing",
@@ -209,9 +224,9 @@ pub(crate) const FLAG_YES_NO_FIELDS: &[&str] = &[
 ];
 
 /// Queue/announcement durations documented as a number of seconds *or* the
-/// word `none` (no limit / no delay). Typed as [`crate::Seconds`], which holds
+/// word `none` (no limit / no delay). Typed as `voip_ms::Seconds`, which holds
 /// the count or an unbounded sentinel; `maximum_wait_time` uses the word
-/// `unlimited` instead and is typed [`crate::WaitTime`] separately.
+/// `unlimited` instead and is typed `voip_ms::WaitTime` separately.
 const SECONDS_FIELDS: &[&str] = &[
     "announce_position_frecuency",
     "announce_round_seconds",
@@ -223,7 +238,7 @@ const SECONDS_FIELDS: &[&str] = &[
 
 /// The named-zone `timezone` params: IANA zone names (`America/New_York`)
 /// stored on a mailbox or selecting a `getTimezones` catalog entry. Typed
-/// [`chrono_tz::Tz`] per struct rather than by field name, because the same
+/// `chrono_tz::Tz` per struct rather than by field name, because the same
 /// field name on the CDR / SMS / MMS record-listing methods is a different
 /// contract entirely -- a numeric UTC offset -- handled by the `OFFSET_OPS`
 /// wire transform in `main.rs`. Keyed `"StructName.field"`.
@@ -233,7 +248,7 @@ pub(crate) const NAMED_ZONE_TZ_PARAM_PATHS: &[&str] = &[
     "GetTimezonesParams.timezone",
 ];
 
-/// The named-zone *response* fields. Typed [`crate::TimezoneName`] rather than
+/// The named-zone *response* fields. Typed `voip_ms::TimezoneName` rather than
 /// `Tz`: voip.ms still reports legacy names the IANA database has dropped
 /// (`Asia/Beijing`, `US/Pacific-New`, `Factory`, ...), so a response value
 /// must be able to carry an unrecognized name verbatim. Params stay strict
@@ -243,7 +258,7 @@ pub(crate) const NAMED_ZONE_TZ_RESPONSE_PATHS: &[&str] = &[
     "GetTimezonesResponseTimezone.value",
 ];
 
-/// The [`FieldOverride`] typing a param as [`chrono_tz::Tz`]: the IANA name
+/// The [`FieldOverride`] typing a param as `chrono_tz::Tz`: the IANA name
 /// travels on the wire via `serialize_opt_tz`.
 pub(crate) fn tz_param_override() -> FieldOverride {
     FieldOverride {
@@ -257,18 +272,44 @@ pub(crate) fn tz_param_override() -> FieldOverride {
 /// clock voip.ms reports, qualified by the UTC offset the request carried.
 pub(crate) fn zoned_timestamp_override() -> FieldOverride {
     FieldOverride {
-        rust_type: "chrono::DateTime<chrono::FixedOffset>".into(),
+        rust_type: "crate::Reported<chrono::DateTime<chrono::FixedOffset>>".into(),
         response_deserializer: Some("crate::responses::deserialize_opt_datetime_offset".into()),
         ..Default::default()
     }
 }
 
-/// The [`FieldOverride`] typing a response field as [`crate::TimezoneName`],
+/// The [`FieldOverride`] typing a response field as `voip_ms::TimezoneName`,
 /// which preserves names the IANA database doesn't recognize.
 pub(crate) fn tz_response_override() -> FieldOverride {
     FieldOverride {
         rust_type: "crate::TimezoneName".into(),
         response_deserializer: Some("crate::responses::deserialize_opt_timezone_name".into()),
+        ..Default::default()
+    }
+}
+
+/// The response fields typed `voip_ms::TransactionDate`. A
+/// `getTransactionHistory` row reports either when it posted or a span
+/// (`2026-08-01 to 2026-08-31`) in the same field, which the doc sample's lone
+/// timestamp does not show and a strict `NaiveDateTime` fails the whole
+/// response on. Assigned per struct, since `date` elsewhere is a point in time
+/// and never a span. Keyed `"StructName.field"`.
+///
+/// The range is the *requested window*: the report totals each usage-metered
+/// charge over the range the call asked for, and that row carries the range in
+/// place of a timestamp. `getCharges` and `getDeposits` are the same ledger for
+/// a reseller client and are deliberately absent, because neither takes a date
+/// range and so neither has a window to report.
+pub(crate) const TRANSACTION_DATE_RESPONSE_PATHS: &[&str] =
+    &["GetTransactionHistoryResponseTransaction.date"];
+
+/// The [`FieldOverride`] typing a response field as `voip_ms::TransactionDate`,
+/// which carries a timestamp, a bare date, a date span, or an unrecognized
+/// value verbatim.
+pub(crate) fn transaction_date_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "crate::TransactionDate".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_transaction_date".into()),
         ..Default::default()
     }
 }
@@ -343,9 +384,12 @@ pub(crate) const BASE64_FILE_PARAM_PATHS: &[&str] = &[
 ];
 
 /// Calendar-date fields, documented uniformly as `'YYYY-MM-DD'`
-/// (`Example: '2010-11-30'`). Typed [`chrono::NaiveDate`], whose own
+/// (`Example: '2010-11-30'`). Typed `chrono::NaiveDate`, whose own
 /// `Serialize` emits exactly that wire form, instead of the WSDL's
-/// `xsd:string`. `reseller_nextbilling` is here so `getSubAccounts` and
+/// `xsd:string` -- on the param side, which is the only side that writes. A
+/// response reads the same field as `voip_ms::Reported<chrono::NaiveDate>`,
+/// like every other response date.
+/// `reseller_nextbilling` is here so `getSubAccounts` and
 /// `setSubAccount` agree on it; the other two are the date-range filters. The
 /// bare `date` field is deliberately excluded -- it is a datetime in some
 /// responses (`getLNPDetails`) and a date in others, so no single type fits.
@@ -466,7 +510,7 @@ const IDENTIFIER_STRING_FIELDS: &[&str] = &[
 const DECIMAL_FIELDS: &[&str] = &["pause"];
 
 /// Counts documented as a number *or* the word `unlimited`, which is
-/// [`crate::WaitTime`]'s exact wire contract -- the type is selected by that
+/// `voip_ms::WaitTime`'s exact wire contract -- the type is selected by that
 /// spelling rather than by its name, since `Seconds` writes `none` and
 /// `MaxMembers` writes a capitalized `Unlimited`.
 const WAIT_TIME_FIELDS: &[&str] = &["maximum_wait_time", "maximum_callers"];
@@ -530,11 +574,13 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         ..Default::default()
     };
     // NaiveDate's own Serialize emits the `%Y-%m-%d` wire form, so no
-    // param_serializer; the response deserializer also folds the
-    // `0000-00-00` placeholder to None should a response ever carry one.
+    // param_serializer. The response side reads a `Reported`, like every other
+    // response date: the param is written and cannot receive a surprise, the
+    // response can.
     let date = FieldOverride {
         rust_type: "chrono::NaiveDate".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_date".into()),
+        response_rust_type: Some("crate::Reported<chrono::NaiveDate>".into()),
+        response_deserializer: Some("crate::responses::deserialize_opt_reported_date".into()),
         ..Default::default()
     };
     // A phone number stays `String` on both the param and response side. On

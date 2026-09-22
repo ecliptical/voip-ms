@@ -25,9 +25,12 @@ use rust_decimal::Decimal;
 use serde::de::Error as DeError;
 use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
+use std::convert::Infallible;
 use std::str::FromStr;
 
-use crate::types::{MaxMembers, Routing, Seconds, TimezoneName, WaitTime};
+use crate::types::{
+    MaxMembers, Reported, Routing, Seconds, TimezoneName, TransactionDate, WaitTime,
+};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -198,86 +201,109 @@ where
     }
 }
 
-pub(crate) fn deserialize_opt_date<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            if trimmed.is_empty() || trimmed == "0000-00-00" {
-                return Ok(None);
-            }
-            NaiveDate::parse_from_str(trimmed, "%Y-%m-%d")
-                .map(Some)
-                .map_err(|e| D::Error::custom(format!("invalid date {s}: {e}")))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected date string, got {other}"
-        ))),
-    }
+/// The wire spelling of a VoIP.ms timestamp.
+pub(crate) const DATETIME_WIRE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
+/// The wire spelling of a VoIP.ms calendar date.
+const DATE_WIRE_FORMAT: &str = "%Y-%m-%d";
+
+/// Whether a trimmed wire value carries no date: absent, or the zero-date
+/// placeholder.
+///
+/// The placeholder is recognized by its date rather than by an exact match,
+/// because either precision reaches either kind of field -- a `NaiveDate` field
+/// can receive `0000-00-00 00:00:00` and a `NaiveDateTime` field a bare
+/// `0000-00-00`, and an exact comparison folds one spelling while failing the
+/// whole envelope on the other.
+fn is_blank_or_zero_date(trimmed: &str) -> bool {
+    trimmed.is_empty() || trimmed.starts_with("0000-00-00")
 }
 
-pub(crate) fn deserialize_opt_datetime<'de, D>(
-    deserializer: D,
-) -> Result<Option<NaiveDateTime>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            if trimmed.is_empty() || trimmed == "0000-00-00 00:00:00" {
-                return Ok(None);
-            }
-            NaiveDateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S")
-                .map(Some)
-                .map_err(|e| D::Error::custom(format!("invalid datetime {s}: {e}")))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected datetime string, got {other}"
-        ))),
+/// Whether a trimmed wire value *is* the zero-date placeholder, rather than
+/// merely starting with it.
+///
+/// [`is_blank_or_zero_date`] tests the prefix, which is right where the whole
+/// value is one timestamp: the offset a record-listing value carries is
+/// appended to the placeholder too. It is wrong where the value can be a range,
+/// so `deserialize_opt_transaction_date` asks this instead.
+fn is_zero_date(trimmed: &str) -> bool {
+    trimmed.is_empty() || trimmed == "0000-00-00" || trimmed == "0000-00-00 00:00:00"
+}
+
+/// Whether a timestamp already names a UTC offset (`Z`, `-04:00`, `+0530`).
+///
+/// Both sides of the record-listing contract ask this question, and they have
+/// to agree: [`crate::attach_offset`] skips a value that already names one, and
+/// the deserializer rejects one that does not. Two predicates would disagree at
+/// the edges -- a value one skips and the other refuses costs the whole
+/// envelope, and a value one suffixes and the other accepts is corrupted and
+/// then reported as unreadable -- so this is the single answer, called from
+/// both.
+///
+/// The offset is looked for after the last `T` or space, so the date's own
+/// hyphens cannot be mistaken for its sign. The digit count is deliberately
+/// loose (`-4:00` as well as `-04:00`): being generous here is safe, since a
+/// value this accepts and chrono rejects degrades, while one this refuses fails
+/// the envelope.
+pub(crate) fn names_offset(s: &str) -> bool {
+    let s = s.trim();
+    if s.ends_with('Z') || s.ends_with('z') {
+        return true;
     }
+
+    let Some(at) = s.rfind(['T', ' ']) else {
+        return false;
+    };
+
+    s[at..].rsplit_once(['+', '-']).is_some_and(|(head, zone)| {
+        !head.is_empty()
+            && !zone.is_empty()
+            && zone.chars().all(|c| c.is_ascii_digit() || c == ':')
+            && zone.chars().filter(char::is_ascii_digit).count() <= 4
+    })
 }
 
 /// Deserialize a timestamp that names its UTC offset.
 ///
 /// The record-listing methods (`getCDR`, `getSMS`, …) report a wall clock in
 /// the offset the request asked for but leave the offset off the value;
-/// [`crate::attach_offset`] puts it back before this parses it. A value with no
-/// offset is rejected rather than read as UTC -- an unqualified timestamp
-/// silently taken for an absolute one is the whole failure this typing exists
-/// to prevent.
+/// [`crate::attach_offset`] puts it back before this parses it.
+///
+/// A value with **no offset** is rejected rather than read as UTC: an
+/// unqualified timestamp silently taken for an absolute one is the whole
+/// failure this typing exists to prevent, and that is a broken contract rather
+/// than an odd value. A value that *has* an offset but does not parse is an odd
+/// value, so it degrades into [`Reported::Unreadable`] and costs its own field
+/// -- these are the highest-row-count methods in the API, so failing the
+/// envelope there costs the most.
 pub(crate) fn deserialize_opt_datetime_offset<'de, D>(
     deserializer: D,
-) -> Result<Option<DateTime<FixedOffset>>, D::Error>
+) -> Result<Option<Reported<DateTime<FixedOffset>>>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            // The placeholder carries the offset too once attached, so it is
-            // recognized by its date rather than by the whole string.
-            if trimmed.is_empty() || trimmed.starts_with("0000-00-00") {
-                return Ok(None);
-            }
+    let Some(text) = opt_wire_text(deserializer)? else {
+        return Ok(None);
+    };
 
-            DateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S%:z")
-                .or_else(|_| DateTime::parse_from_rfc3339(trimmed))
-                .map(Some)
-                .map_err(|e| D::Error::custom(format!("invalid datetime {s}: {e}")))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected datetime string, got {other}"
-        ))),
+    if is_blank_or_zero_date(&text) {
+        return Ok(None);
     }
+
+    if !names_offset(&text) {
+        return Err(D::Error::custom(format!(
+            "record-listing timestamp {text} names no UTC offset"
+        )));
+    }
+
+    Ok(Some(
+        match DateTime::parse_from_str(&text, "%Y-%m-%d %H:%M:%S%:z")
+            .or_else(|_| DateTime::parse_from_rfc3339(&text))
+        {
+            Ok(at) => Reported::Parsed(at),
+            Err(_) => Reported::Unreadable(text),
+        },
+    ))
 }
 
 pub(crate) fn deserialize_opt_routing<'de, D>(deserializer: D) -> Result<Option<Routing>, D::Error>
@@ -302,6 +328,115 @@ where
     }
 }
 
+/// Deserialize an optional response date, keeping the wire text when it does
+/// not parse.
+///
+/// `parse` is the strict reading; whatever it rejects is kept verbatim in
+/// [`Reported::Unreadable`] rather than failing the deserialization. A `*Response` is one value
+/// built from one envelope, so erroring on a single field discards every record
+/// beside it -- the break this crate has already paid for twice. Keeping the
+/// text rather than answering `None` leaves the value salvageable and leaves
+/// "unreadable" distinguishable from "absent", which is what the live drift
+/// harness reads.
+fn deserialize_opt_reported<'de, T, D>(
+    deserializer: D,
+    parse: fn(&str) -> Option<T>,
+) -> Result<Option<Reported<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let Some(text) = opt_wire_text(deserializer)? else {
+        return Ok(None);
+    };
+
+    if is_blank_or_zero_date(&text) {
+        return Ok(None);
+    }
+
+    Ok(Some(match parse(&text) {
+        Some(value) => Reported::Parsed(value),
+        None => Reported::Unreadable(text),
+    }))
+}
+
+/// Deserialize a response field's calendar date, keeping the wire text when it
+/// does not parse. See [`deserialize_opt_reported`].
+pub(crate) fn deserialize_opt_reported_date<'de, D>(
+    deserializer: D,
+) -> Result<Option<Reported<NaiveDate>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_reported(deserializer, |s| {
+        NaiveDate::parse_from_str(s, DATE_WIRE_FORMAT).ok()
+    })
+}
+
+/// Deserialize a response field's timestamp, keeping the wire text when it does
+/// not parse. See [`deserialize_opt_reported`].
+pub(crate) fn deserialize_opt_reported_datetime<'de, D>(
+    deserializer: D,
+) -> Result<Option<Reported<NaiveDateTime>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_reported(deserializer, |s| {
+        NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT).ok()
+    })
+}
+
+/// The trimmed wire text of an optional scalar field, or `None` when the field
+/// is absent or blank.
+///
+/// A number or a bool renders to its text rather than being rejected: VoIP.ms
+/// sends the same field as a string on one method and a bare scalar on another,
+/// so the spelling is not a contract. A list or an object is rejected, because
+/// that is a shape, and no scalar type can stand in for one.
+fn opt_wire_text<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let text = match Option::<Value>::deserialize(deserializer)? {
+        None | Some(Value::Null) => return Ok(None),
+        Some(Value::String(s)) => s,
+        Some(v @ (Value::Number(_) | Value::Bool(_))) => v.to_string(),
+        Some(other) => {
+            return Err(D::Error::custom(format!(
+                "expected string, number, or bool, got {other}"
+            )));
+        }
+    };
+
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(trimmed.to_string()))
+}
+
+/// Deserialize an optional field into a type that parses infallibly from the
+/// wire text.
+///
+/// Every type reaching this carries a catch-all variant, so it holds whatever
+/// arrived: failing instead would cost the record, the envelope, and every row
+/// beside it over one odd value, which is what these types exist to prevent.
+/// Placeholder folding is *not* done here -- it is a date's contract, not every
+/// caller's, and folding a `0000-00-00 to ...` range would discard the fact
+/// that a range was reported at all.
+fn deserialize_opt_from_wire_text<'de, T, D>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    T: FromStr<Err = Infallible>,
+    D: Deserializer<'de>,
+{
+    let Some(text) = opt_wire_text(deserializer)? else {
+        return Ok(None);
+    };
+
+    let Ok(parsed) = text.parse::<T>();
+    Ok(Some(parsed))
+}
+
 /// Deserialize an optional named-zone response field into a [`TimezoneName`]:
 /// a parsed zone when the IANA database recognizes the name, the verbatim
 /// string when it doesn't (voip.ms still reports legacy names like
@@ -312,22 +447,34 @@ pub(crate) fn deserialize_opt_timezone_name<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            if trimmed.is_empty() {
-                return Ok(None);
-            }
+    deserialize_opt_from_wire_text::<TimezoneName, D>(deserializer)
+}
 
-            let Ok(name) = trimmed.parse::<TimezoneName>();
-            Ok(Some(name))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected IANA timezone string, got {other}"
-        ))),
+/// Deserialize a transaction-history row's `date` into a [`TransactionDate`]:
+/// a timestamp or a bare date when the row names a point in time, a pair of
+/// dates when it names a window, the value verbatim when it is none of those,
+/// and `None` for absent / empty / the placeholder.
+pub(crate) fn deserialize_opt_transaction_date<'de, D>(
+    deserializer: D,
+) -> Result<Option<TransactionDate>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let Some(text) = opt_wire_text(deserializer)? else {
+        return Ok(None);
+    };
+
+    // The placeholder is the whole value, not a prefix of it: this is the one
+    // field that can report a range, and `0000-00-00 to 2026-08-31` says a
+    // window was reported even though its start is the zero date. Folding on
+    // the prefix would make that indistinguishable from an absent field, which
+    // is the information `TransactionDate` exists to keep.
+    if is_zero_date(&text) {
+        return Ok(None);
     }
+
+    let Ok(date) = text.parse::<TransactionDate>();
+    Ok(Some(date))
 }
 
 pub(crate) fn deserialize_opt_seconds<'de, D>(deserializer: D) -> Result<Option<Seconds>, D::Error>
@@ -604,36 +751,54 @@ mod tests {
     }
 
     #[test]
-    fn opt_date_folds_zero_placeholder_and_rejects_bad() {
-        let call = deserialize_opt_date::<serde_json::Value>;
+    fn opt_reported_date_folds_placeholders_and_keeps_what_it_cannot_read() {
+        let call = deserialize_opt_reported_date::<serde_json::Value>;
         assert_eq!(call(json!(null)).unwrap(), None);
         assert_eq!(call(json!("")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00")).unwrap(), None);
         assert_eq!(
             call(json!("2024-03-15")).unwrap(),
-            Some(NaiveDate::from_ymd_opt(2024, 3, 15).unwrap())
+            Some(Reported::Parsed(
+                NaiveDate::from_ymd_opt(2024, 3, 15).unwrap()
+            ))
         );
-        assert!(call(json!("15/03/2024")).is_err());
-        assert!(call(json!(20240315)).is_err());
+        // Unreadable keeps the value instead of erroring, so one odd date
+        // costs its own field and not the records beside it.
+        assert_eq!(
+            call(json!("15/03/2024")).unwrap(),
+            Some(Reported::Unreadable("15/03/2024".to_string()))
+        );
+        assert_eq!(
+            call(json!(20240315)).unwrap(),
+            Some(Reported::Unreadable("20240315".to_string()))
+        );
     }
 
     #[test]
-    fn opt_datetime_folds_zero_placeholder_and_rejects_bad() {
-        let call = deserialize_opt_datetime::<serde_json::Value>;
+    fn opt_reported_datetime_folds_placeholders_and_keeps_what_it_cannot_read() {
+        let call = deserialize_opt_reported_datetime::<serde_json::Value>;
         assert_eq!(call(json!(null)).unwrap(), None);
         assert_eq!(call(json!("")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
         assert_eq!(
             call(json!("2024-03-15 08:30:00")).unwrap(),
-            Some(
+            Some(Reported::Parsed(
                 NaiveDate::from_ymd_opt(2024, 3, 15)
                     .unwrap()
                     .and_hms_opt(8, 30, 0)
                     .unwrap()
-            )
+            ))
         );
-        assert!(call(json!("2024-03-15")).is_err());
-        assert!(call(json!(0)).is_err());
+        // A date where a timestamp was documented is exactly the drift this
+        // wrapper exists for: it is kept, not guessed at and not discarded.
+        assert_eq!(
+            call(json!("2024-03-15")).unwrap(),
+            Some(Reported::Unreadable("2024-03-15".to_string()))
+        );
+        assert_eq!(
+            call(json!(0)).unwrap(),
+            Some(Reported::Unreadable("0".to_string()))
+        );
     }
 
     #[test]
@@ -647,15 +812,153 @@ mod tests {
         assert_eq!(call(json!("0000-00-00 00:00:00-04:00")).unwrap(), None);
         assert_eq!(
             call(json!("2024-03-15 08:30:00-04:00")).unwrap(),
-            Some(DateTime::parse_from_rfc3339("2024-03-15T08:30:00-04:00").unwrap())
+            Some(Reported::Parsed(
+                DateTime::parse_from_rfc3339("2024-03-15T08:30:00-04:00").unwrap()
+            ))
         );
         assert_eq!(
             call(json!("2024-03-15T08:30:00Z")).unwrap(),
-            Some(DateTime::parse_from_rfc3339("2024-03-15T08:30:00+00:00").unwrap())
+            Some(Reported::Parsed(
+                DateTime::parse_from_rfc3339("2024-03-15T08:30:00+00:00").unwrap()
+            ))
         );
-        // An unqualified wall clock is rejected rather than read as UTC.
+        // An unqualified wall clock is rejected rather than read as UTC: the
+        // offset is the contract these methods are typed around, and inventing
+        // one is the failure that typing exists to prevent.
         assert!(call(json!("2024-03-15 08:30:00")).is_err());
+        assert!(call(json!("2024-03-15")).is_err());
+        // A bare number reaches the same judgment as any other text rather than
+        // being rejected for its JSON type: it names no offset, so it fails the
+        // contract like an unqualified string, not because it was not a string.
         assert!(call(json!(0)).is_err());
+        // A shape is still rejected: no timestamp can stand in for one.
+        assert!(call(json!({"a": 1})).is_err());
+        assert!(call(json!([1])).is_err());
+        // A value that *carries* an offset but does not parse is an odd value,
+        // not a broken contract, so it costs its own field instead of every
+        // row in what are the API's longest responses.
+        assert_eq!(
+            call(json!("2026-02-30 00:00:00-04:00")).unwrap(),
+            Some(Reported::Unreadable(
+                "2026-02-30 00:00:00-04:00".to_string()
+            ))
+        );
+    }
+
+    /// The offset check reads the time portion, so the date's own hyphens
+    /// never look like one and a zone-less value cannot slip through.
+    #[test]
+    fn names_offset_reads_the_time_not_the_date() {
+        assert!(names_offset("2024-03-15 08:30:00-04:00"));
+        assert!(names_offset("2024-03-15 08:30:00+0530"));
+        assert!(names_offset("2024-03-15T08:30:00Z"));
+        // Unpadded and short forms count: `attach_offset` must skip exactly
+        // what this accepts, and suffixing one of these would corrupt it.
+        assert!(names_offset("2024-03-15 19:14:35-4:00"));
+        assert!(names_offset("2024-03-15 19:14:35-05"));
+        assert!(!names_offset("2024-03-15 08:30:00"));
+        assert!(!names_offset("2024-03-15"));
+        assert!(!names_offset("2024-03-15 08:30:00-oops"));
+    }
+
+    #[test]
+    fn opt_transaction_date_reads_a_timestamp_a_date_a_span_and_anything_else() {
+        let call = deserialize_opt_transaction_date::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00")).unwrap(), None);
+        // The placeholder is the whole value here, so a window whose start is
+        // the zero date still reports as a window rather than as absence.
+        assert_eq!(
+            call(json!("0000-00-00 to 2026-08-31")).unwrap(),
+            Some(TransactionDate::Unrecognized(
+                "0000-00-00 to 2026-08-31".to_string()
+            ))
+        );
+        // A date with no time of day stays a date rather than gaining a midnight.
+        assert_eq!(
+            call(json!("2010-10-29")).unwrap(),
+            Some(TransactionDate::On(
+                NaiveDate::from_ymd_opt(2010, 10, 29).unwrap()
+            ))
+        );
+        assert_eq!(
+            call(json!("2016-06-03 00:03:46")).unwrap(),
+            Some(TransactionDate::At(
+                NaiveDate::from_ymd_opt(2016, 6, 3)
+                    .unwrap()
+                    .and_hms_opt(0, 3, 46)
+                    .unwrap()
+            ))
+        );
+        assert_eq!(
+            call(json!("2026-08-01 to 2026-08-31")).unwrap(),
+            Some(TransactionDate::Period {
+                from: NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+                to: NaiveDate::from_ymd_opt(2026, 8, 31).unwrap(),
+            })
+        );
+        // No form parses, so the value survives instead of failing the record
+        // it belongs to -- and every record beside it.
+        assert_eq!(
+            call(json!("whenever")).unwrap(),
+            Some(TransactionDate::Unrecognized("whenever".to_string()))
+        );
+        // Nor does a shape that is not a string: the sibling fields of this
+        // struct all accept a bare number, so this one cannot be the single
+        // field that fails the envelope over one.
+        assert_eq!(
+            call(json!(0)).unwrap(),
+            Some(TransactionDate::Unrecognized("0".to_string()))
+        );
+        assert_eq!(
+            call(json!(true)).unwrap(),
+            Some(TransactionDate::Unrecognized("true".to_string()))
+        );
+    }
+
+    /// Both zero-date spellings reach both kinds of field, so each deserializer
+    /// folds the one its own format cannot parse as well as its own.
+    #[test]
+    fn every_date_deserializer_folds_both_zero_date_spellings() {
+        let date = deserialize_opt_reported_date::<serde_json::Value>;
+        assert_eq!(date(json!("0000-00-00")).unwrap(), None);
+        assert_eq!(date(json!("0000-00-00 00:00:00")).unwrap(), None);
+
+        let datetime = deserialize_opt_reported_datetime::<serde_json::Value>;
+        assert_eq!(datetime(json!("0000-00-00 00:00:00")).unwrap(), None);
+        assert_eq!(datetime(json!("0000-00-00")).unwrap(), None);
+
+        let offset = deserialize_opt_datetime_offset::<serde_json::Value>;
+        assert_eq!(offset(json!("0000-00-00")).unwrap(), None);
+        assert_eq!(offset(json!("0000-00-00 00:00:00-04:00")).unwrap(), None);
+    }
+
+    /// The zone reader tolerates a scalar spelling and rejects a shape, which
+    /// is the rule the date readers follow -- and it had no test of its own
+    /// while every other `deserialize_opt_*` did.
+    #[test]
+    fn opt_timezone_name_tolerates_a_scalar_and_rejects_a_shape() {
+        let call = deserialize_opt_timezone_name::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("  ")).unwrap(), None);
+        assert_eq!(
+            call(json!("America/New_York")).unwrap(),
+            Some(TimezoneName::Known(chrono_tz::America::New_York))
+        );
+        // A legacy name the IANA database dropped survives verbatim.
+        assert_eq!(
+            call(json!("US/Pacific-New")).unwrap(),
+            Some(TimezoneName::Unrecognized("US/Pacific-New".to_string()))
+        );
+        assert_eq!(
+            call(json!(5)).unwrap(),
+            Some(TimezoneName::Unrecognized("5".to_string()))
+        );
+        // A JSON object is a shape, and no zone name can stand in for one.
+        assert!(call(json!({"a": 1})).is_err());
+        assert!(call(json!(["America/New_York"])).is_err());
     }
 
     #[test]

@@ -9,7 +9,15 @@
 //!
 //! A typed deserialization that *succeeds* still proves nothing about fidelity,
 //! so the same raw envelope also goes through the key diff in
-//! [`super::keydiff`], which reports what the typed shape silently dropped.
+//! [`super::keydiff`], which reports what the typed shape silently dropped --
+//! and the deserialized value is scanned for the tolerant types' catch-all
+//! variants, which is what a *value* the crate cannot read now looks like.
+//!
+//! Those three checks answer three different questions: drift is "the crate
+//! could not read the envelope", unmodeled is "the crate dropped part of it",
+//! degraded is "the crate read it but did not understand one value".
+
+use std::fmt::Debug;
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -27,6 +35,7 @@ pub enum ProbeOutcome {
     Ok {
         element_count: Option<usize>,
         unmodeled: Vec<String>,
+        degraded: Vec<String>,
     },
     /// Raw succeeded but the typed deserialization failed: a drift bug.
     Drift { error: String, raw_json: String },
@@ -51,7 +60,7 @@ pub async fn probe<P, T>(
 ) -> ProbeOutcome
 where
     P: Serialize + Sync,
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     probe_qualified(client, method, params, |_| {}, count).await
 }
@@ -121,7 +130,7 @@ pub async fn probe_zoned<T>(
     count: impl Fn(&T) -> Option<usize>,
 ) -> ProbeOutcome
 where
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     let fixed = request.offset.to_fixed_offset();
     probe_qualified(
@@ -148,7 +157,7 @@ pub async fn probe_zoned_default<P, T>(
 ) -> ProbeOutcome
 where
     P: Serialize + Default,
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     match ZonedRequest::new(&P::default(), TimezoneOffset::UTC) {
         Ok(request) => probe_zoned(client, method, &request, timestamps, count).await,
@@ -174,7 +183,7 @@ async fn probe_qualified<P, T>(
 ) -> ProbeOutcome
 where
     P: Serialize + Sync,
-    T: DeserializeOwned,
+    T: DeserializeOwned + Debug,
 {
     let raw = match client.call_raw_by_name(method, params).await {
         Ok(value) => value,
@@ -187,6 +196,7 @@ where
             return ProbeOutcome::Ok {
                 element_count: Some(0),
                 unmodeled: Vec::new(),
+                degraded: Vec::new(),
             };
         }
         Err(Error::Api(status)) => return ProbeOutcome::ApiError(status.to_string()),
@@ -216,6 +226,7 @@ where
     qualify(&mut qualified);
     match serde_json::from_value::<T>(qualified) {
         Ok(typed) => ProbeOutcome::Ok {
+            degraded: degraded_values(&typed),
             element_count: count(&typed),
             unmodeled,
         },
@@ -226,6 +237,252 @@ where
     }
 }
 
+/// The catch-all variants a tolerant type parks a value it could not read in.
+/// `Unknown {` is [`voip_ms::Routing`]'s, which is a struct variant; the rest
+/// are tuple variants.
+const CATCH_ALL_VARIANTS: &[&str] = &["Unreadable", "Unrecognized", "Unknown"];
+
+/// Degraded values this harness expects and does not report.
+///
+/// Not every catch-all is drift. VoIP.ms's `getTimezones` catalog still lists
+/// names the IANA database dropped, and a long-lived mailbox can carry one, so
+/// those land in `Unrecognized` on every run by design. Without an allowlist,
+/// an account holding one would exit non-zero forever and the operator's only
+/// move would be to ignore the exit code -- which is the signal this check
+/// exists to give. Same idea as `check-types`'s `DELIBERATE`: a *new* degraded
+/// value is the finding.
+///
+/// Matched against the rendered payload, so an entry is the value VoIP.ms
+/// sends, not the variant holding it.
+const EXPECTED_DEGRADED: &[&str] = &[
+    "Asia/Beijing",
+    "Canada/East-Saskatchewan",
+    "Factory",
+    "Riyadh87",
+    "Riyadh88",
+    "Riyadh89",
+    "US/Pacific-New",
+];
+
+/// The values a deserialized response could not read, as `Debug` renders them.
+///
+/// Tolerance is what stopped one odd value failing a whole envelope, and it
+/// took this probe's only signal with it: a re-spelled date now deserializes
+/// *successfully* into a catch-all variant, so the typed read no longer fails
+/// and `keydiff` stays quiet because the key is modeled. Without this, the
+/// harness would pass silently on the very input that opened issue #28.
+///
+/// It reads `Debug` because that is the only uniform view of a `*Response`:
+/// the type carries no `Serialize` (a response is received, never built), and
+/// a per-type accessor would mean touching all 222 of them. Reading `Debug`
+/// costs two things this guards against: a variant name appearing inside a
+/// string field would false-positive, so a match must start at a token
+/// boundary; and a payload can contain the delimiter that closes it, so the
+/// end is found by depth rather than by the first one.
+fn degraded_values(typed: &impl Debug) -> Vec<String> {
+    let rendered = format!("{typed:?}");
+    let bytes = rendered.as_bytes();
+    let mut found: Vec<String> = Vec::new();
+
+    for (at, _) in Scan::new(bytes).filter(|(_, b)| *b == b'(' || *b == b'{') {
+        // `Debug` renders a tuple variant as `Name(..)` and a struct variant as
+        // `Name { .. }`, so the name ends either at the delimiter or one space
+        // before it.
+        let head = rendered[..at].strip_suffix(' ').unwrap_or(&rendered[..at]);
+        let Some(variant) = CATCH_ALL_VARIANTS.iter().find(|v| head.ends_with(**v)) else {
+            continue;
+        };
+
+        // A variant name is preceded by a delimiter, a space or `::` -- never by
+        // a letter -- which keeps a nested type name from matching its suffix.
+        let start = head.len() - variant.len();
+        if rendered[..start]
+            .chars()
+            .next_back()
+            .is_some_and(|c| c.is_alphanumeric() || c == '_')
+        {
+            continue;
+        }
+
+        let Some(end) = matching_delimiter(bytes, at) else {
+            continue;
+        };
+
+        found.push(rendered[start..=end].to_string());
+    }
+
+    found.retain(|value| !EXPECTED_DEGRADED.iter().any(|known| value.contains(known)));
+    found.sort();
+    found.dedup();
+    found
+}
+
+/// The bytes of a `Debug` rendering that are structure rather than content:
+/// everything outside a string literal.
+///
+/// A variant name only means a variant where `Debug` wrote it. The same text
+/// inside a field value is something VoIP.ms sent -- a `description` quoting an
+/// error, a CNAM -- and reporting it would fail a live run over a string.
+struct Scan<'a> {
+    bytes: &'a [u8],
+    at: usize,
+    in_string: bool,
+    escaped: bool,
+}
+
+impl<'a> Scan<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            at: 0,
+            in_string: false,
+            escaped: false,
+        }
+    }
+}
+
+impl Iterator for Scan<'_> {
+    type Item = (usize, u8);
+
+    fn next(&mut self) -> Option<(usize, u8)> {
+        while self.at < self.bytes.len() {
+            let at = self.at;
+            let b = self.bytes[at];
+            self.at += 1;
+
+            if self.escaped {
+                self.escaped = false;
+                continue;
+            }
+
+            match b {
+                b'\\' if self.in_string => self.escaped = true,
+                b'"' => self.in_string = !self.in_string,
+                _ if self.in_string => {}
+                _ => return Some((at, b)),
+            }
+        }
+
+        None
+    }
+}
+
+/// The index of the delimiter closing the one at `open`, counting nesting so a
+/// payload holding its own closer is not cut short.
+fn matching_delimiter(bytes: &[u8], open: usize) -> Option<usize> {
+    let close = if bytes[open] == b'(' { b')' } else { b'}' };
+    let mut depth = 0usize;
+    for (at, b) in Scan::new(bytes) {
+        if at < open {
+            continue;
+        }
+
+        if b == bytes[open] {
+            depth += 1;
+        } else if b == close {
+            depth -= 1;
+            if depth == 0 {
+                return Some(at);
+            }
+        }
+    }
+
+    None
+}
+
 fn pretty(value: &Value) -> String {
     serde_json::to_string_pretty(value).unwrap_or_else(|_| value.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use voip_ms::{Reported, TransactionDate, chrono::NaiveDate};
+
+    /// The signal this replaces: before tolerance, these values failed the
+    /// typed read and the probe reported drift. They now deserialize, so the
+    /// catch-all variant is the only thing left that says the wire changed.
+    #[test]
+    fn a_catch_all_variant_is_what_drift_looks_like_now() {
+        let found = degraded_values(&vec![
+            Some(Reported::Unreadable("08/10/2026".to_string())),
+            Some(Reported::Parsed(
+                NaiveDate::from_ymd_opt(2026, 10, 8).unwrap(),
+            )),
+        ]);
+        assert_eq!(found, ["Unreadable(\"08/10/2026\")"]);
+    }
+
+    /// Every tolerant family reports, not just the date wrapper: the issue this
+    /// harness missed was a `TransactionDate`, and a zone name or a routing tag
+    /// degrades the same way.
+    #[test]
+    fn every_tolerant_family_reports() {
+        let found = degraded_values(&(
+            TransactionDate::Unrecognized("whenever".to_string()),
+            voip_ms::Routing::Unknown {
+                tag: "zzz".to_string(),
+                value: "1".to_string(),
+            },
+        ));
+        assert_eq!(found.len(), 2, "{found:?}");
+        assert!(found.iter().any(|f| f.starts_with("Unrecognized(")));
+        assert!(found.iter().any(|f| f.starts_with("Unknown {")));
+    }
+
+    /// A response the crate read end to end has nothing to report, so an
+    /// ordinary run stays quiet.
+    #[test]
+    fn a_fully_read_response_reports_nothing() {
+        let clean = vec![Some(Reported::Parsed(
+            NaiveDate::from_ymd_opt(2026, 10, 8).unwrap(),
+        ))];
+        assert!(degraded_values(&clean).is_empty());
+    }
+
+    /// The payload is reported whole. A value carrying the delimiter that
+    /// closes it is exactly the kind of surprise worth reporting accurately,
+    /// and a truncated one is pasted into an override as something VoIP.ms
+    /// never sent.
+    #[test]
+    fn a_payload_holding_its_own_delimiter_is_not_truncated() {
+        let found = degraded_values(&Reported::<NaiveDate>::Unreadable(
+            "2026-08-01 (approx)".to_string(),
+        ));
+        assert_eq!(found, ["Unreadable(\"2026-08-01 (approx)\")"]);
+    }
+
+    /// A variant name inside a string field is field content, not a variant.
+    /// Reporting it would fail a run over a `description` that happens to
+    /// mention one.
+    #[test]
+    fn a_variant_name_inside_a_field_value_is_not_a_finding() {
+        // A tuple rather than a struct: the point is a variant name sitting in
+        // a *string* inside a composite, which is how a `description` or a CNAM
+        // echoing an error would reach the scan.
+        let row = (
+            "description",
+            "carrier reported Unknown(code 3)".to_string(),
+        );
+        let found = degraded_values(&row);
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    /// A legacy zone name is permanent and by design, so it must not make every
+    /// live run exit non-zero -- the operator would have to ignore the exit code
+    /// to keep working, which is the signal this check exists to give.
+    #[test]
+    fn an_expected_degraded_value_is_not_reported() {
+        let found = degraded_values(&voip_ms::TimezoneName::Unrecognized(
+            "US/Pacific-New".to_string(),
+        ));
+        assert!(found.is_empty(), "{found:?}");
+
+        // A zone name that is not on the list still reports: the allowlist is
+        // the known cases, not the whole family.
+        let novel = degraded_values(&voip_ms::TimezoneName::Unrecognized(
+            "Mars/Olympus".to_string(),
+        ));
+        assert_eq!(novel.len(), 1, "{novel:?}");
+    }
 }

@@ -4,6 +4,7 @@
 //! Types here are wired into `src/generated.rs` by `xtask` through the
 //! field-name override table in `xtask/src/field_overrides.rs`.
 
+use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::de::{Deserializer, Error as DeError, Visitor};
 use serde::ser::Serializer;
@@ -628,6 +629,243 @@ impl<'de> Deserialize<'de> for TimezoneName {
     }
 }
 
+/// What VoIP.ms reported for a field: the parsed value, or the text it sent
+/// when that text does not parse.
+///
+/// Response dates wear this. A `*Response` is one value built from one
+/// envelope, so a deserializer that fails on a single field fails the whole
+/// read -- one unreadable date costs every record beside it, and the caller
+/// gets an error instead of the rows that were fine. That is the shape of the
+/// break this crate has now paid for twice, in legacy zone names and in a
+/// transaction-history window.
+///
+/// [`Reported::Unreadable`] keeps the value instead of discarding it, which
+/// answering `None` would do. The difference matters twice over: the caller can
+/// still see and salvage what arrived, and "unreadable" stays distinguishable
+/// from "absent", so the live drift harness can still tell that VoIP.ms sent
+/// something this crate does not model.
+///
+/// Absence is the surrounding [`Option`], not a variant here: a field VoIP.ms
+/// omits is `None`, and so is one carrying a blank or a `0000-00-00`
+/// placeholder.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Reported<T> {
+    /// The value, as this crate reads it.
+    Parsed(T),
+    /// The text VoIP.ms sent, kept because it does not parse.
+    Unreadable(String),
+}
+
+impl<T> Reported<T> {
+    /// The value, or `None` when VoIP.ms sent something unreadable.
+    pub fn value(&self) -> Option<&T> {
+        match self {
+            Reported::Parsed(v) => Some(v),
+            Reported::Unreadable(_) => None,
+        }
+    }
+
+    /// The value, consuming the wrapper.
+    pub fn into_value(self) -> Option<T> {
+        match self {
+            Reported::Parsed(v) => Some(v),
+            Reported::Unreadable(_) => None,
+        }
+    }
+
+    /// The text VoIP.ms sent, when it could not be read.
+    pub fn unreadable(&self) -> Option<&str> {
+        match self {
+            Reported::Parsed(_) => None,
+            Reported::Unreadable(s) => Some(s),
+        }
+    }
+}
+
+impl<T: Copy> Reported<T> {
+    /// The value, copied out of the wrapper. The shorthand for the [`chrono`]
+    /// types these fields hold, which are all [`Copy`].
+    pub fn get(&self) -> Option<T> {
+        self.value().copied()
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Reported<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Reported::Parsed(v) => v.fmt(f),
+            Reported::Unreadable(s) => f.write_str(s),
+        }
+    }
+}
+
+/// The `date` a `getTransactionHistory` row carries: when it posted, or the
+/// window it summarizes.
+///
+/// Most rows name a point in time. The report also ends with a synthesized row
+/// per usage-metered charge, totaling it over the range the call asked for, and
+/// that row puts the range itself in the same field
+/// (`2026-08-01 to 2026-08-31`), which no single [`chrono`] type holds. Such a
+/// row has no transaction to name and reports `uniqueid` as the literal `n/a`.
+/// Parsing never fails: a form no variant covers lands in
+/// [`TransactionDate::Unrecognized`] and round-trips unchanged, so one
+/// unreadable row cannot fail the whole response.
+///
+/// [`Display`](std::fmt::Display) renders every variant in the canonical wire
+/// spelling, which is what VoIP.ms sends but not always the bytes that arrived:
+/// parsing trims, [`chrono`] accepts unpadded components it renders padded, and
+/// a window bounded by timestamps keeps only the days. Only
+/// [`TransactionDate::Unrecognized`] holds the value as received, trimmed.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TransactionDate {
+    /// The instant the row posted (wire: `2016-06-03 00:03:46`).
+    At(NaiveDateTime),
+    /// The day the row posted, with no time of day (wire: `2010-10-29`). Kept
+    /// distinct from [`TransactionDate::At`] rather than read as midnight,
+    /// which would invent a time of day and render it back with one.
+    On(NaiveDate),
+    /// The window an aggregate row summarizes (wire: `<from> to <to>`).
+    Period { from: NaiveDate, to: NaiveDate },
+    /// A form no other variant covers, preserved verbatim.
+    Unrecognized(String),
+}
+
+/// Separates the two dates of a [`TransactionDate::Period`] on the wire.
+const PERIOD_SEPARATOR: &str = " to ";
+
+/// One bound of a [`TransactionDate::Period`]. A bound may arrive as a bare
+/// date or as a timestamp; only the day bounds the window, so a timestamp
+/// contributes its date and the time of day is dropped.
+fn period_bound(s: &str) -> Option<NaiveDate> {
+    let trimmed = s.trim();
+    trimmed.parse::<NaiveDate>().ok().or_else(|| {
+        NaiveDateTime::parse_from_str(trimmed, crate::responses::DATETIME_WIRE_FORMAT)
+            .ok()
+            .map(|at| at.date())
+    })
+}
+
+impl TransactionDate {
+    /// The instant, or `None` unless the row reported one to the second.
+    pub fn at(&self) -> Option<NaiveDateTime> {
+        match self {
+            TransactionDate::At(at) => Some(*at),
+            _ => None,
+        }
+    }
+
+    /// The calendar day the row posted, whether it named a time of day or not.
+    /// `None` for a span, which covers many days, and for an unrecognized
+    /// value.
+    pub fn date(&self) -> Option<NaiveDate> {
+        match self {
+            TransactionDate::At(at) => Some(at.date()),
+            TransactionDate::On(on) => Some(*on),
+            _ => None,
+        }
+    }
+
+    /// The span as `(from, to)`, or `None` when the row names a point in time.
+    pub fn period(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match self {
+            TransactionDate::Period { from, to } => Some((*from, *to)),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for TransactionDate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TransactionDate::At(at) => {
+                write!(f, "{}", at.format(crate::responses::DATETIME_WIRE_FORMAT))
+            }
+            TransactionDate::On(on) => write!(f, "{on}"),
+            TransactionDate::Period { from, to } => write!(f, "{from}{PERIOD_SEPARATOR}{to}"),
+            TransactionDate::Unrecognized(s) => f.write_str(s),
+        }
+    }
+}
+
+impl FromStr for TransactionDate {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Some((from, to)) = s.split_once(PERIOD_SEPARATOR) {
+            return Ok(match (period_bound(from), period_bound(to)) {
+                // A window runs forward. A reversed pair is not one, so it is
+                // left unread rather than handing a caller a negative width
+                // with nothing to signal it.
+                (Some(from), Some(to)) if from <= to => TransactionDate::Period { from, to },
+                _ => TransactionDate::Unrecognized(s.to_string()),
+            });
+        }
+
+        if let Ok(at) = NaiveDateTime::parse_from_str(s, crate::responses::DATETIME_WIRE_FORMAT) {
+            return Ok(TransactionDate::At(at));
+        }
+
+        Ok(match s.parse::<NaiveDate>() {
+            Ok(on) => TransactionDate::On(on),
+            Err(_) => TransactionDate::Unrecognized(s.to_string()),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for TransactionDate {
+    /// Reads the same wire forms the response field does: the text trimmed, and
+    /// a bare number or bool taken as its text rather than rejected.
+    ///
+    /// One difference is inherent and not a disagreement: the field is
+    /// `Option<TransactionDate>`, so absence -- an empty value or a zero-date
+    /// placeholder -- is its `None`. A bare `TransactionDate` has no absent
+    /// form, so it keeps those in [`TransactionDate::Unrecognized`] rather than
+    /// inventing one.
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct DateVisitor;
+
+        impl DateVisitor {
+            fn parse<E: DeError>(text: &str) -> Result<TransactionDate, E> {
+                let Ok(date) = text.trim().parse::<TransactionDate>();
+                Ok(date)
+            }
+        }
+
+        impl<'de> Visitor<'de> for DateVisitor {
+            type Value = TransactionDate;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a transaction date: a timestamp, a date, or `<from> to <to>`")
+            }
+
+            fn visit_str<E: DeError>(self, v: &str) -> Result<TransactionDate, E> {
+                Self::parse(v)
+            }
+
+            fn visit_i64<E: DeError>(self, v: i64) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
+            }
+
+            fn visit_u64<E: DeError>(self, v: u64) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
+            }
+
+            fn visit_f64<E: DeError>(self, v: f64) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
+            }
+
+            fn visit_bool<E: DeError>(self, v: bool) -> Result<TransactionDate, E> {
+                Self::parse(&v.to_string())
+            }
+        }
+
+        deserializer.deserialize_any(DateVisitor)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -938,6 +1176,137 @@ mod tests {
             assert_eq!(back, name.parse::<TimezoneName>().unwrap());
             assert_eq!(back.name(), name);
         }
+    }
+
+    /// Every form has to come back out as VoIP.ms spelled it. That round-trip
+    /// is why `On` exists rather than a midnight `At`: reading a bare date as a
+    /// timestamp would invent a time of day and render it back with one.
+    #[test]
+    fn transaction_date_round_trips_every_form() {
+        for wire in [
+            "2016-06-03 00:03:46",
+            "2010-10-29",
+            "2026-08-01 to 2026-08-31",
+            "2026-08-07 to 2026-08-07",
+            "whenever",
+        ] {
+            let Ok(parsed) = wire.parse::<TransactionDate>();
+            assert_eq!(parsed.to_string(), wire);
+        }
+    }
+
+    #[test]
+    fn transaction_date_separates_a_point_in_time_from_a_span() {
+        let day = NaiveDate::from_ymd_opt(2016, 6, 3).unwrap();
+        let Ok(at) = "2016-06-03 00:03:46".parse::<TransactionDate>();
+        assert_eq!(at.at(), Some(day.and_hms_opt(0, 3, 46).unwrap()));
+        assert_eq!(at.date(), Some(day));
+        assert_eq!(at.period(), None);
+
+        // A date-only row has a day but no instant.
+        let Ok(on) = "2010-10-29".parse::<TransactionDate>();
+        assert_eq!(on.at(), None);
+        assert_eq!(on.date(), NaiveDate::from_ymd_opt(2010, 10, 29));
+        assert_eq!(on.period(), None);
+
+        let Ok(period) = "2026-08-01 to 2026-09-01".parse::<TransactionDate>();
+        assert_eq!(
+            period.period(),
+            Some((
+                NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap()
+            ))
+        );
+        assert_eq!(period.at(), None);
+        assert_eq!(period.date(), None);
+    }
+
+    /// A half-parsed span is unrecognized rather than silently half-read: one
+    /// side alone says nothing about what the row covers. A reversed one is
+    /// not a window at all, so it keeps the value rather than reporting a
+    /// negative width.
+    #[test]
+    fn transaction_date_keeps_a_malformed_span_verbatim() {
+        for wire in [
+            "2026-08-01 to never",
+            "not-a-date to 2026-08-31",
+            "2026-08-31 to 2026-08-01",
+        ] {
+            let Ok(parsed) = wire.parse::<TransactionDate>();
+            assert_eq!(parsed, TransactionDate::Unrecognized(wire.to_string()));
+        }
+    }
+
+    /// Only the day bounds a window, so a bound given to the second still
+    /// reads as one rather than falling to `Unrecognized`, where `period()`
+    /// would answer `None` and a caller aggregating by window would skip the
+    /// row.
+    #[test]
+    fn transaction_date_reads_a_span_bounded_by_timestamps() {
+        let Ok(parsed) = "2026-08-01 00:00:00 to 2026-08-31 23:59:59".parse::<TransactionDate>();
+        assert_eq!(
+            parsed.period(),
+            Some((
+                NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 8, 31).unwrap()
+            ))
+        );
+    }
+
+    /// The type is response-only, so it carries `Deserialize` and no
+    /// `Serialize` -- and a raw envelope has to be readable through it.
+    #[test]
+    fn transaction_date_deserializes_every_form() {
+        for wire in [
+            "2016-06-03 00:03:46",
+            "2010-10-29",
+            "2026-08-01 to 2026-08-31",
+            "whenever",
+        ] {
+            let back: TransactionDate = serde_json::from_str(&format!("\"{wire}\"")).unwrap();
+            assert_eq!(back, wire.parse::<TransactionDate>().unwrap());
+            assert_eq!(back.to_string(), wire);
+        }
+    }
+
+    /// The advertised use is reading one out of a raw envelope, which is
+    /// exactly where the untidy forms show up -- so the impl has to read them
+    /// the way the response field does, not just the canonical four.
+    #[test]
+    fn transaction_date_deserializes_the_untidy_forms_too() {
+        let from = |v: serde_json::Value| serde_json::from_value::<TransactionDate>(v).unwrap();
+        assert_eq!(
+            from(serde_json::json!(" 2010-10-29 ")),
+            TransactionDate::On(NaiveDate::from_ymd_opt(2010, 10, 29).unwrap())
+        );
+        assert_eq!(
+            from(serde_json::json!(0)),
+            TransactionDate::Unrecognized("0".to_string())
+        );
+        assert_eq!(
+            from(serde_json::json!(true)),
+            TransactionDate::Unrecognized("true".to_string())
+        );
+    }
+
+    #[test]
+    fn reported_reads_both_variants_through_every_accessor() {
+        let day = NaiveDate::from_ymd_opt(2026, 10, 8).unwrap();
+        let parsed = Reported::Parsed(day);
+        assert_eq!(parsed.value(), Some(&day));
+        assert_eq!(parsed.get(), Some(day));
+        assert_eq!(parsed.unreadable(), None);
+        assert_eq!(parsed.clone().into_value(), Some(day));
+        assert_eq!(parsed.to_string(), "2026-10-08");
+
+        let unreadable: Reported<NaiveDate> = Reported::Unreadable("08/10/2026".to_string());
+        assert_eq!(unreadable.value(), None);
+        assert_eq!(unreadable.get(), None);
+        assert_eq!(unreadable.unreadable(), Some("08/10/2026"));
+        assert_eq!(unreadable.clone().into_value(), None);
+        // The arm the examples print through: a degraded date still renders as
+        // what VoIP.ms sent rather than as nothing.
+        assert_eq!(unreadable.to_string(), "08/10/2026");
     }
 
     #[test]

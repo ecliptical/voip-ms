@@ -117,7 +117,7 @@ cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
 cargo test --workspace --features unchecked-raw
 cargo check --no-default-features --features native-tls
 RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
-  cargo doc --no-deps
+  cargo doc --no-deps --workspace
 
 # 7. Review the generated diff, update CHANGELOG.md, and commit
 #    tools/*.json + src/generated.rs together.
@@ -176,8 +176,8 @@ refresh needs eyes on the diff, not just a green build:
   contain bare URLs or `[bracketed]` prose that rustdoc rejects. The generator
   sanitizes these (`sanitize_doc_word` in `main.rs`: URLs → `<…>` autolinks,
   `[` / `]` → escaped), but a novel pattern can still slip through — that's
-  why step 5 runs the strict `cargo doc`. Extend `sanitize_doc_word` if it
-  does.
+  why step 5 runs the strict `cargo doc`, which CI now runs too. Extend
+  `sanitize_doc_word` if it does.
 * **Merged parameter rows** — when the source HTML lacks a clean line break
   between two parameters, the param-doc scanner can merge them
   (e.g. a description ending `…Todayclient => [Required] …`). These are

@@ -20,8 +20,8 @@
 //! | `integer`     | `u64`            | `deserialize_opt_u64_from_string_or_number`        |
 //! | `decimal`     | `rust_decimal::Decimal` | `deserialize_opt_decimal_from_string_or_number` |
 //! | `bool_yn` / `bool_01` | `bool`   | `deserialize_opt_bool_from_string_number_or_yn`    |
-//! | `date`        | `chrono::NaiveDate`     | `deserialize_opt_date`                      |
-//! | `datetime`    | `chrono::NaiveDateTime` | `deserialize_opt_datetime`                  |
+//! | `date`        | `voip_ms::Reported<chrono::NaiveDate>`     | `deserialize_opt_reported_date`   |
+//! | `datetime`    | `Reported<chrono::NaiveDateTime>` | `deserialize_opt_reported_datetime` |
 
 use std::collections::BTreeMap;
 
@@ -38,7 +38,7 @@ pub fn emit_response_structs(
     responses: &BTreeMap<String, Shape>,
     resolver: &Resolver,
     enums_used: &mut std::collections::BTreeSet<String>,
-) -> String {
+) -> Result<String, String> {
     let acronyms = acronyms_sorted();
     let mut out = String::new();
     for op in method_names {
@@ -56,10 +56,14 @@ pub fn emit_response_structs(
             crate::camel_to_snake(op, &acronyms),
         ));
 
+        if !emitter.unsupported.is_empty() {
+            return Err(format!("{op}: {}", emitter.unsupported.join("; ")));
+        }
+
         out.push_str(&emitter.into_text());
     }
 
-    out
+    Ok(out)
 }
 
 /// Where one response timestamp lands in the emitted structs, and the path
@@ -220,7 +224,7 @@ fn collect_timestamps(
 /// `PartialEq`/`Eq` let a whole response be compared, deduped, or diffed
 /// without writing it out field by field. No `Default`: a response is
 /// received, never built, and a defaulted one would claim
-/// [`crate::ApiStatus::Success`] over empty fields. The per-field
+/// `voip_ms::ApiStatus::Success` over empty fields. The per-field
 /// `#[serde(default)]` is unaffected -- it defaults the field's own type.
 const RESPONSE_DERIVES: &str = "#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]\n";
 
@@ -233,9 +237,12 @@ struct Emitter<'a> {
     /// emit each declared enum's reader only where one is read.
     enums_used: &'a mut std::collections::BTreeSet<String>,
     /// The method's top-level response struct. Its `status` is the envelope's
-    /// own, typed [`crate::ApiStatus`]; a nested struct's same-named field
+    /// own, typed `voip_ms::ApiStatus`; a nested struct's same-named field
     /// (a fax's, a port's) is unrelated and keeps its inferred type.
     root: String,
+    /// Shapes this emitter would have to guess at, collected rather than
+    /// emitted. See [`Emitter::element_scalar_type`].
+    unsupported: Vec<String>,
 }
 
 impl<'a> Emitter<'a> {
@@ -249,6 +256,7 @@ impl<'a> Emitter<'a> {
             resolver,
             enums_used,
             root,
+            unsupported: Vec::new(),
         }
     }
 
@@ -289,7 +297,7 @@ impl<'a> Emitter<'a> {
                 // reach it or the generated field silently keeps the raw type.
                 let override_ = self.resolver.resolve(name, "value", true);
                 let inner_ty = match override_ {
-                    Some(o) => o.rust_type.clone(),
+                    Some(o) => o.response_type().to_string(),
                     None => self.scalar_rust_type(shape),
                 };
                 self.enums_used.insert(inner_ty.clone());
@@ -363,7 +371,7 @@ impl<'a> Emitter<'a> {
                 .resolver
                 .resolve(name, fname, matches!(sub, Shape::Scalar { .. }));
             let rust_ty = match override_ {
-                Some(o) => o.rust_type.clone(),
+                Some(o) => o.response_type().to_string(),
                 None => self.field_type(name, fname, sub),
             };
             self.enums_used.insert(rust_ty.clone());
@@ -418,7 +426,7 @@ impl<'a> Emitter<'a> {
 
             Shape::List(inner) => {
                 let elem_ty = match &**inner {
-                    Shape::Scalar { .. } => self.scalar_rust_type(inner),
+                    Shape::Scalar { .. } => self.element_scalar_type(parent, fname, inner),
                     Shape::Object(_) => {
                         let child = element_type_name(parent, fname);
                         self.emit_struct(&child, inner);
@@ -449,14 +457,43 @@ impl<'a> Emitter<'a> {
         }
     }
 
+    /// The Rust type for a scalar sitting *inside* a list or a map.
+    ///
+    /// A bare element cannot be a date. The date scalars render as
+    /// `voip_ms::Reported<T>`, whose only job is to hold a value the field
+    /// deserializer could not parse, so it carries no `Deserialize` of its
+    /// own -- and `deserialize_vec_from_single_or_seq` and
+    /// `deserialize_map_from_object` both require the element to have one.
+    /// Emitting it anyway writes a `src/generated.rs` that does not compile,
+    /// which reaches the next person as a build error in a file they are told
+    /// not to hand-edit.
+    ///
+    /// Nothing in the docs returns one today. A refresh that does needs the
+    /// wrapper taught to deserialize, or the element left bare and the
+    /// tolerance given up for it -- a decision, not a default, which is why
+    /// this refuses rather than guesses.
+    fn element_scalar_type(&mut self, parent: &str, fname: &str, shape: &Shape) -> String {
+        let ty = self.scalar_rust_type(shape);
+        if ty.starts_with("crate::Reported<") {
+            self.unsupported.push(format!(
+                "{parent}.{fname} is a collection of dates, whose element would be \
+                 `{ty}` -- a type with no `Deserialize`, so the emitted code would \
+                 not compile. Teach `Reported` to deserialize, or type this field \
+                 by hand in the overrides."
+            ));
+        }
+
+        ty
+    }
+
     fn scalar_rust_type(&self, shape: &Shape) -> String {
         match shape {
             Shape::Scalar { ty, .. } => match ty {
                 ScalarTy::Integer => "u64".into(),
                 ScalarTy::Decimal => "rust_decimal::Decimal".into(),
                 ScalarTy::BoolYn | ScalarTy::Bool01 => "bool".into(),
-                ScalarTy::Date => "chrono::NaiveDate".into(),
-                ScalarTy::DateTime => "chrono::NaiveDateTime".into(),
+                ScalarTy::Date => "crate::Reported<chrono::NaiveDate>".into(),
+                ScalarTy::DateTime => "crate::Reported<chrono::NaiveDateTime>".into(),
                 ScalarTy::String | ScalarTy::Empty => "String".into(),
             },
             _ => "serde_json::Value".into(),
@@ -495,8 +532,8 @@ fn scalar_deserializer(shape: &Shape) -> Option<&'static str> {
         ScalarTy::BoolYn | ScalarTy::Bool01 => {
             Some("crate::responses::deserialize_opt_bool_from_string_number_or_yn")
         }
-        ScalarTy::Date => Some("crate::responses::deserialize_opt_date"),
-        ScalarTy::DateTime => Some("crate::responses::deserialize_opt_datetime"),
+        ScalarTy::Date => Some("crate::responses::deserialize_opt_reported_date"),
+        ScalarTy::DateTime => Some("crate::responses::deserialize_opt_reported_datetime"),
         ScalarTy::String | ScalarTy::Empty => {
             Some("crate::responses::deserialize_opt_string_from_string_number_or_bool")
         }
@@ -740,6 +777,33 @@ mod tests {
             &resolver,
             &mut Default::default(),
         )
+        .expect("the fixtures here emit no unsupported shape")
+    }
+
+    /// A list of dates would emit `Vec<voip_ms::Reported<..>>`, whose element
+    /// has no `Deserialize`. Nothing returns one today, so this is the tripwire
+    /// for the docs refresh that does -- refusing here beats writing a
+    /// `src/generated.rs` that does not compile.
+    #[test]
+    fn a_collection_of_dates_is_refused_rather_than_emitted() {
+        let shape = object(&[("dates", Shape::List(Box::new(datetime())))]);
+        let table = crate::field_overrides::Table::with_builtins();
+        let per_struct = BTreeMap::new();
+        let skip = Default::default();
+        let resolver = Resolver {
+            table: &table,
+            per_struct: &per_struct,
+            skip: &skip,
+        };
+        let responses = BTreeMap::from([("getThing".to_string(), shape)]);
+        let err = emit_response_structs(
+            &["getThing".to_string()],
+            &responses,
+            &resolver,
+            &mut Default::default(),
+        )
+        .unwrap_err();
+        assert!(err.contains("collection of dates"), "{err}");
     }
 
     // The walk naming a field is only half of it: the emitter has to apply the
@@ -755,7 +819,9 @@ mod tests {
         let found = timestamp_fields("getCDR", &shape).unwrap();
         let emitted = emit_with_override(&shape, &found[0].struct_path);
         assert!(
-            emitted.contains("pub date: Option<chrono::DateTime<chrono::FixedOffset>>"),
+            emitted.contains(
+                "pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"
+            ),
             "{emitted}"
         );
         assert!(
@@ -769,7 +835,9 @@ mod tests {
         let found = timestamp_fields("getCDR", &datetime()).unwrap();
         let emitted = emit_with_override(&datetime(), &found[0].struct_path);
         assert!(
-            emitted.contains("pub value: Option<chrono::DateTime<chrono::FixedOffset>>"),
+            emitted.contains(
+                "pub value: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"
+            ),
             "{emitted}"
         );
         assert!(
@@ -791,7 +859,9 @@ mod tests {
             "{emitted}"
         );
         assert!(
-            emitted.contains("pub date: Option<chrono::DateTime<chrono::FixedOffset>>"),
+            emitted.contains(
+                "pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"
+            ),
             "{emitted}"
         );
         assert!(

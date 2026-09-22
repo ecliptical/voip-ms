@@ -35,6 +35,17 @@ pub enum Outcome {
     Unmodeled {
         paths: Vec<String>,
     },
+    /// The tolerance signal: the call deserialized, but a value landed in a
+    /// catch-all variant, so the crate read the envelope without understanding
+    /// one of its values. Carries the rendered variants.
+    ///
+    /// This is the signal [`Outcome::Drift`] used to carry for these values.
+    /// Once a type tolerates what it cannot parse, the typed read stops failing
+    /// -- which is the point, and which would leave the harness passing on the
+    /// exact input that made it necessary.
+    Degraded {
+        values: Vec<String>,
+    },
 }
 
 /// One recorded check: an area, a method/label, and its outcome.
@@ -64,6 +75,19 @@ impl Report {
                 eprintln!("        raw JSON:");
                 for line in raw_json.lines() {
                     eprintln!("          {line}");
+                }
+            }
+            Outcome::Degraded { values } => {
+                eprintln!(
+                    "[DEGRADED] {area}/{name}: {} value(s) the typed shape could not read",
+                    values.len()
+                );
+                eprintln!(
+                    "        the envelope survived, so this is what tolerance caught \
+                     rather than what it hid:"
+                );
+                for value in values {
+                    eprintln!("          {value}");
                 }
             }
             Outcome::Unmodeled { paths } => {
@@ -105,16 +129,38 @@ impl Report {
             ProbeOutcome::Ok {
                 element_count,
                 unmodeled,
+                degraded,
             } => {
                 if let Some(n) = element_count {
                     println!("[info] {area}/{method}: {n} element(s)");
                 }
 
-                if unmodeled.is_empty() {
-                    Outcome::Pass
-                } else {
-                    Outcome::Unmodeled { paths: unmodeled }
+                // Both are reported when both are present, as separate records.
+                // A degrade is often permanent -- a legacy zone name, an
+                // undocumented enum value -- so collapsing the two would
+                // suppress the unmodeled block on every run for that method,
+                // and its paste-ready `additions` entry is the whole point of
+                // that path.
+                if !unmodeled.is_empty() {
+                    self.record(area, method, Outcome::Unmodeled { paths: unmodeled });
                 }
+
+                if !degraded.is_empty() {
+                    self.record(area, method, Outcome::Degraded { values: degraded });
+                    return;
+                }
+
+                // A clean read is one `Pass`, not a second record beside the
+                // unmodeled one it would otherwise inflate the count with.
+                if self.records.last().is_some_and(|r| {
+                    r.area == area
+                        && r.name == method
+                        && matches!(r.outcome, Outcome::Unmodeled { .. })
+                }) {
+                    return;
+                }
+
+                Outcome::Pass
             }
             ProbeOutcome::Drift { error, raw_json } => Outcome::Drift { error, raw_json },
             ProbeOutcome::ApiError(status) => Outcome::Fail(format!("API error: {status}")),
@@ -133,17 +179,19 @@ impl Report {
                 Outcome::Skip(_) => c.skip += 1,
                 Outcome::Drift { .. } => c.drift += 1,
                 Outcome::Unmodeled { .. } => c.unmodeled += 1,
+                Outcome::Degraded { .. } => c.degraded += 1,
             }
         }
 
         c
     }
 
-    /// Non-zero exit is warranted when anything failed, drifted, or came back
-    /// with keys the typed surface drops; skips are not failures.
+    /// Non-zero exit is warranted when anything failed, drifted, came back with
+    /// keys the typed surface drops, or carried a value it could not read;
+    /// skips are not failures.
     pub fn is_failure(&self) -> bool {
         let c = self.counts();
-        c.fail > 0 || c.drift > 0 || c.unmodeled > 0
+        c.fail > 0 || c.drift > 0 || c.unmodeled > 0 || c.degraded > 0
     }
 
     /// One machine-readable JSON line for a future CI wrapper to parse without
@@ -153,6 +201,7 @@ impl Report {
         let mut drifted = String::new();
         let mut failed = String::new();
         let mut unmodeled = String::new();
+        let mut degraded = String::new();
         for r in &self.records {
             match &r.outcome {
                 Outcome::Drift { .. } => {
@@ -160,6 +209,9 @@ impl Report {
                 }
                 Outcome::Fail(_) => {
                     let _ = write!(failed, "{}\"{}/{}\"", sep(&failed), r.area, r.name);
+                }
+                Outcome::Degraded { .. } => {
+                    let _ = write!(degraded, "{}\"{}/{}\"", sep(&degraded), r.area, r.name);
                 }
                 Outcome::Unmodeled { paths } => {
                     for path in paths {
@@ -180,9 +232,10 @@ impl Report {
 
         format!(
             "{{\"summary\":{{\"pass\":{},\"fail\":{},\"skip\":{},\"drift\":{},\
-             \"unmodeled\":{}}},\"drifted\":[{drifted}],\"failed\":[{failed}],\
-             \"unmodeled\":[{unmodeled}]}}",
-            c.pass, c.fail, c.skip, c.drift, c.unmodeled
+             \"unmodeled\":{},\"degraded\":{}}},\"drifted\":[{drifted}],\
+             \"failed\":[{failed}],\"unmodeled\":[{unmodeled}],\
+             \"degraded\":[{degraded}]}}",
+            c.pass, c.fail, c.skip, c.drift, c.unmodeled, c.degraded
         )
     }
 }
@@ -212,4 +265,57 @@ pub struct Counts {
     pub skip: usize,
     pub drift: usize,
     pub unmodeled: usize,
+    pub degraded: usize,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ok(unmodeled: &[&str], degraded: &[&str]) -> ProbeOutcome {
+        ProbeOutcome::Ok {
+            element_count: None,
+            unmodeled: unmodeled.iter().map(|s| (*s).to_string()).collect(),
+            degraded: degraded.iter().map(|s| (*s).to_string()).collect(),
+        }
+    }
+
+    /// A degrade is often permanent, so collapsing the two would hide the
+    /// unmodeled block on every run for that method -- and its paste-ready
+    /// `additions` entry is what caught `getCDR`'s `ip` and `useragent`.
+    #[test]
+    fn a_probe_that_is_both_reports_both() {
+        let mut report = Report::default();
+        report.record_probe(
+            "dids",
+            "getDIDsInfo",
+            ok(&["dids[].novel"], &["Unrecognized(\"x\")"]),
+        );
+
+        let kinds: Vec<&Outcome> = report.records.iter().map(|r| &r.outcome).collect();
+        assert!(matches!(kinds[0], Outcome::Unmodeled { .. }), "{kinds:?}");
+        assert!(matches!(kinds[1], Outcome::Degraded { .. }), "{kinds:?}");
+
+        let c = report.counts();
+        assert_eq!((c.unmodeled, c.degraded, c.pass), (1, 1, 0));
+    }
+
+    /// One finding is one record: an unmodeled key must not also bank a pass.
+    #[test]
+    fn one_finding_does_not_also_count_as_a_pass() {
+        let mut report = Report::default();
+        report.record_probe("dids", "getDIDsInfo", ok(&["dids[].novel"], &[]));
+
+        let c = report.counts();
+        assert_eq!((c.unmodeled, c.degraded, c.pass), (1, 0, 0));
+    }
+
+    #[test]
+    fn a_clean_read_is_one_pass() {
+        let mut report = Report::default();
+        report.record_probe("dids", "getDIDsInfo", ok(&[], &[]));
+
+        let c = report.counts();
+        assert_eq!((c.unmodeled, c.degraded, c.pass), (0, 0, 1));
+    }
 }

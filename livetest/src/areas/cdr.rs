@@ -23,7 +23,7 @@ use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back_zoned;
 use crate::harness::{Outcome, Report};
 use voip_ms::chrono_tz::Tz;
-use voip_ms::{Client, Error, GET_CDR_TIMESTAMPS, GetCDRParams, GetCDRResponse};
+use voip_ms::{Client, Error, GET_CDR_TIMESTAMPS, GetCDRParams, GetCDRResponse, Reported};
 
 pub struct Cdr;
 
@@ -147,7 +147,12 @@ async fn offset_round_trip(
 
     let mut compared = 0;
     for utc_record in &at_utc.cdr {
-        let (Some(id), Some(utc_date)) = (utc_record.uniqueid.as_deref(), utc_record.date) else {
+        // A degraded timestamp has no instant to compare; the probe's own
+        // degraded check is what reports it, so skip it rather than fail here.
+        let (Some(id), Some(utc_date)) = (
+            utc_record.uniqueid.as_deref(),
+            utc_record.date.as_ref().and_then(Reported::get),
+        ) else {
             continue;
         };
 
@@ -155,7 +160,7 @@ async fn offset_round_trip(
             .cdr
             .iter()
             .find(|r| r.uniqueid.as_deref() == Some(id))
-            .and_then(|r| r.date)
+            .and_then(|r| r.date.as_ref().and_then(Reported::get))
         else {
             continue;
         };
@@ -182,7 +187,8 @@ async fn offset_round_trip(
 /// `Client::get_cdr`, with a shape mismatch reported as drift rather than as a
 /// plain failure.
 ///
-/// Every other read in this harness goes through [`ProbeOutcome`] so that
+/// Every other read in this harness goes through
+/// [`ProbeOutcome`](crate::harness::ProbeOutcome) so that
 /// raw-succeeded-typed-failed lands in the DRIFT bucket with the envelope to
 /// paste into an override. The typed method cannot say that on its own:
 /// `Error::InvalidResponse` covers a body that is not JSON and an envelope with

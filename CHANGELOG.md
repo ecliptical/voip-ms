@@ -66,6 +66,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     on a first test.
   - A multipart call carries the credentials as form fields, so for those four
     methods the API password no longer appears in the request URL.
+- **Breaking**: every response date is `Option<Reported<T>>` -- 19 fields across
+  `getDIDsInfo`, `getSubAccounts`, `getFAXMessages`, `getVoicemailMessages`,
+  `getRegistrationStatus`, `getCharges`, `getDeposits`, `getLNPDetails`,
+  `getLNPNotes`, `getBackOrders`, `getVPRIs`, `getMediaMMS`, `getCallRecording`,
+  `getCallRecordings`, `getConferenceRecordings` and `getFAXNumbersInfo`. A
+  strict `chrono` deserializer turns one unexpected date into a lost envelope:
+  the whole response errors and the caller loses every record beside the
+  offending one. `Reported::Unreadable` keeps the text instead, so an unreadable
+  date costs its own field and nothing else.
+  - Keeping the text rather than answering `None` is deliberate. `None` would
+    discard a value the caller could still use and would be indistinguishable
+    from the field being absent, which would also blind the live drift harness
+    to the very class of surprise it exists to catch.
+  - Read one with `.get()` (or `.value()` / `.into_value()`), and reach what
+    could not be read with `.unreadable()`.
+  - Params are unchanged. They are written, never received, so they keep the
+    bare `chrono::NaiveDate` / `NaiveDateTime`.
+  - The six record-listing timestamps are `Option<Reported<DateTime<FixedOffset>>>`
+    as well, and still refuse a value that carries no offset rather than reading
+    it as UTC. The offset is now checked separately from the parse, so only the
+    missing offset -- a broken contract -- fails the envelope, while a malformed
+    qualified timestamp degrades like any other value. These are the API's
+    longest responses, so failing one costs the most rows.
+- **Breaking**: `deserialize_opt_timezone_name` reads a bare number or bool as
+  its text, landing in `TimezoneName::Unrecognized`, where it used to fail the
+  envelope. A list or an object is still rejected: that is a shape, not a
+  spelling. `deserialize_opt_date` and `deserialize_opt_datetime` are gone --
+  every response date routes through the `Reported` pair, and nothing called
+  them.
+- **Breaking**: `GetTransactionHistoryResponseTransaction::date` is
+  `Option<TransactionDate>` instead of `Option<chrono::NaiveDateTime>`. The row
+  that aggregates communication charges over the requested window reports that
+  window -- `2026-08-01 to 2026-08-31` -- in place of a timestamp, and a strict
+  datetime failed the whole envelope on it, so a caller whose range covered any
+  billed calls got an error instead of the transactions beside it.
+  `TransactionDate` reads a timestamp (`At`), a bare date (`On`), or a range
+  (`Period`), and keeps anything else verbatim in `Unrecognized`, so the next
+  surprise in that field cannot cost a response.
+  - The docs' Output block shows only a timestamp, so the extractor had nothing
+    else to infer from. The type is assigned per struct in
+    `TRANSACTION_DATE_RESPONSE_PATHS`, since `date` elsewhere is a point in time
+    and never a range.
+  - `getCharges` and `getDeposits` do *not* get this type; their `date` is a
+    plain `Reported<chrono::NaiveDate>` like every other response date. They are
+    the same ledger kept for a reseller client, but neither takes a date range,
+    so neither has a window to aggregate over and neither can report one.
 - `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,
   where every other 4xx still answers `true`. The method claims the request
   *provably* never reached VoIP.ms, and 408 does not prove that: RFC 9110
@@ -93,6 +139,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `Reported<T>`: what VoIP.ms reported for a response date -- `Parsed(T)`, or
+  `Unreadable(String)` holding the text when it does not parse. `value()`,
+  `into_value()`, `get()` (for the `Copy` types these fields hold) and
+  `unreadable()` read one without a `match`; `Display` renders either side.
+- `TransactionDate`: the type `GetTransactionHistoryResponseTransaction::date`
+  now holds. Four variants -- `At` (a timestamp), `On` (a date with no time of
+  day), `Period { from, to }` (the window an aggregate row totals over) and
+  `Unrecognized` (anything else, verbatim) -- with `at()`, `date()` and
+  `period()` to read one without a `match`, plus `Display` and `FromStr` in the
+  wire spelling and `Deserialize` for reading one out of a raw envelope.
+  Parsing cannot fail, so a value this crate does not understand costs its own
+  field and nothing else.
 - `Client::call_multipart` and `Client::call_multipart_raw`: the multipart-POST
   counterparts of `Client::call` and `Client::call_raw`, for calling a method
   with a file payload that this crate hasn't been regenerated for. Same status
@@ -363,6 +421,9 @@ The rest is mechanical and the compiler finds all of it:
 | `maximum_callers: Some("10".into())` | `maximum_callers: Some(WaitTime::Value(10))` |
 | `report_hold_time_agent: Some("yes".into())` | `report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Yes)` |
 | `client.zip` as `u64` | `client.zip` as `String` (and `password`, `security_code`, `dtmf_digits`, `callerid_prefix`) |
+| `did.next_billing` as `NaiveDate` (and every other response date) | `did.next_billing.as_ref().and_then(Reported::get)` for the same value |
+| `transaction.date` as `NaiveDateTime` | `transaction.date.as_ref().and_then(TransactionDate::at)` for the same value |
+| `sort_by_key(\|t\| t.date)` / `max_by_key` / `t.date > cutoff` | key on `t.date.as_ref().and_then(TransactionDate::date)` -- `at()` reports `None` for a date-only row as well as an aggregate one, so ordering by it silently collects both at one end |
 | `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))`, and `ParamsError` is `#[non_exhaustive]`, so a `match` on it needs a wildcard arm |
 
 ## [0.12.2] - 2026-09-17

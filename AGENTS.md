@@ -109,6 +109,43 @@ arrive as JSON strings from the API; the deserializers in
 `src/responses.rs` (`deserialize_opt_*`) normalize both string and
 native-typed forms and treat `"0000-00-00"` placeholders as `None`.
 
+**A value the crate cannot read costs its own field, not the response.** A
+`*Response` is one value built from one envelope, so a deserializer that errors
+on a single field discards every record beside it -- the caller gets an error
+instead of the rows that were fine. Every response date is therefore
+[`crate::Reported<T>`] (`Parsed(T)` or `Unreadable(String)`), and every
+substituted enum carries `Unknown(String)`. The wrapper keeps the text rather
+than answering `None`, which would discard it: the caller can still salvage what
+arrived, and "unreadable" stays distinguishable from "absent", which is what the
+live harness reads. Params are the other way round -- they are written, never
+received, so they keep the bare `chrono` type, which is why `FieldOverride`
+carries a `response_rust_type` beside `rust_type`.
+
+The rule is that an unexpected **value** degrades and an unexpected **contract**
+does not. `deserialize_opt_datetime_offset` is where the two meet: a
+record-listing timestamp carrying no UTC offset is rejected, because reading it
+as UTC invents the zone decision #8 exists to remove, while one that carries an
+offset and still does not parse degrades like any other value. A JSON list or
+object where a scalar belongs is a shape, and no scalar type can stand in for
+one, so that is rejected too.
+
+**The class is not closed.** Seven readers still fail the whole envelope on a
+well-shaped string they cannot read. Four are scalar helpers in
+`src/responses.rs`: `deserialize_opt_u64_from_string_or_number` (`"1,234"`),
+`deserialize_opt_decimal_from_string_or_number` (`"$1.00"`),
+`deserialize_opt_bool_from_string_number_or_yn` (`"maybe"`) and
+`deserialize_opt_routing`. The other three are the sentinel types in
+`src/types.rs` -- [`crate::Seconds`], [`crate::WaitTime`] and
+[`crate::MaxMembers`] -- which accept a number, a numeric string or their own
+sentinel word and reject everything else, so a `getQueues` row reporting
+`announce_frequency` as `"every 30s"` costs the response. Those reach
+`maximum_wait_time`, `maximum_callers`, `max_members` and the `SECONDS_FIELDS`
+set. That is the whole remaining exposure, and it is not hypothetical: `GetTransactionHistoryResponseTransaction::ammount` is a strict
+`Decimal` on the same row whose `uniqueid` VoIP.ms already reports as the
+literal `n/a`. Extending `Reported<T>` to them is the same change made here for
+dates, and wants the same thing first -- an observation, or a decision recorded
+as one.
+
 The one exception is the envelope's own `status`, which is a required
 [`ApiStatus`] on each top-level `*Response`. `Client::fetch` has already
 required the field to exist and classified it before a typed call returns, so
@@ -349,6 +386,48 @@ in `xtask/src/field_overrides.rs`:
   `DATE_FIELDS`) map to [`chrono::NaiveDate`], whose own `Serialize` emits the
   documented `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is
   a datetime in some responses and a date in others, so no single type fits.
+  `getTransactionHistory` is the case where one field holds a point in time and
+  a range: [`crate::TransactionDate`] (`TRANSACTION_DATE_RESPONSE_PATHS`,
+  assigned per struct for the same reason the timezones are) carries a timestamp
+  (`At`), a bare date (`On`), or a range (`Period`, wire `2026-08-01 to
+  2026-08-31`), with an `Unrecognized(String)` catch-all. The doc sample shows
+  only a timestamp, so the extractor inferred `datetime`, and a live range
+  failed the whole envelope -- the same shape of break as the legacy zone names,
+  found the same way.
+
+  **The range is the requested window, not a billing period.** The report ends
+  with a synthesized row per usage-metered charge -- CNAM queries, communication
+  charges -- totaling that charge over the range the caller asked for, and the
+  row carries the range itself in place of a timestamp. The customer portal
+  shows it directly: a search from 2026-04-01 to 2026-09-22 ends in a
+  `CNAM Queries` row dated `2026-04-01 to 2026-09-22`, the search range
+  verbatim. The row is synthesized rather than recorded, so it has no
+  transaction to name and reports `uniqueid` as the literal `n/a`, which is the
+  cheapest way for a consumer to tell it from a real one. Production logs agree:
+  four distinct range values inside one four-minute session as the caller varied
+  the window, two of them (`2026-08-07 to 2026-08-07`,
+  `2026-08-01 to 2026-08-07`) aligning to no billing period at all.
+
+  That is what keeps the type off `getCharges` and `getDeposits`, which are the
+  same ledger kept for a reseller client. Neither takes a date range -- `client`
+  is their only parameter -- so neither has a window to aggregate over and
+  neither can produce the row; both stay `NaiveDate`.
+
+  The reasoning generalizes: a range in a `date` field is a property of a
+  *report that totals something over a window*, so the methods to suspect are
+  the ones taking `date_from` / `date_to`. Walking that set leaves nothing else
+  to fix. The `OFFSET_OPS` six are zoned (decision #8);
+  `getCallTranscriptions` and `getVoicemailTranscriptions` report `date` as
+  `String` and cannot fail on any value; `getCallRecordings` has no `date`.
+  `getConferenceRecordings` and `getVoicemailMessages` are the two that share
+  the shape and keep `NaiveDateTime`: each lists individual records and totals
+  nothing, so there is no per-charge sum for a window row to carry -- a
+  recording and a voicemail each happened at an instant. Revisit that only if
+  one of them grows a summary row.
+
+  `On` is a separate variant rather than a midnight `At` because folding a bare
+  date into a timestamp would invent a time of day and render it back with one,
+  so `Display` would report a precision the wire never carried.
 * **Numeric ids the WSDL under-types as strings** (`U64_FIELDS`, plus
   `setConference`'s 20 prompt slots in `CONFERENCE_PROMPT_FIELDS`) map to
   `u64`. This is the class where the two inference sources disagreed

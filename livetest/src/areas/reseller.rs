@@ -274,7 +274,7 @@ async fn probe_reseller_zoned<P, T>(
     count: impl Fn(&T) -> Option<usize>,
 ) where
     P: Serialize + Default,
-    T: DeserializeOwned,
+    T: DeserializeOwned + std::fmt::Debug,
 {
     let outcome = probe_zoned_default::<P, T>(ctx.client, method, timestamps, count).await;
     record_reseller(report, method, outcome);
