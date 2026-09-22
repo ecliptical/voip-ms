@@ -187,7 +187,8 @@ async fn offset_round_trip(
 /// `Client::get_cdr`, with a shape mismatch reported as drift rather than as a
 /// plain failure.
 ///
-/// Every other read in this harness goes through [`ProbeOutcome`] so that
+/// Every other read in this harness goes through
+/// [`ProbeOutcome`](crate::harness::ProbeOutcome) so that
 /// raw-succeeded-typed-failed lands in the DRIFT bucket with the envelope to
 /// paste into an override. The typed method cannot say that on its own:
 /// `Error::InvalidResponse` covers a body that is not JSON and an envelope with

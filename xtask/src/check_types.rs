@@ -48,9 +48,9 @@ const DELIBERATE: &[&str] = &[
 ];
 
 /// The type a field carries for comparison, with a response's
-/// `Reported<T>` wrapper removed.
+/// `voip_ms::Reported<T>` wrapper removed.
 ///
-/// Reading `Reported<T>` where the param writes a bare `T` is the crate-wide
+/// Reading `voip_ms::Reported<T>` where the param writes a bare `T` is the crate-wide
 /// rule rather than an exception: a param is written and cannot receive a value
 /// this crate does not understand, a response can. Comparing the wrapper
 /// against the bare type would report every date field that appears on both

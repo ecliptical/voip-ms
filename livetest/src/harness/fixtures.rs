@@ -211,8 +211,8 @@ pub fn owned(field: &Option<String>) -> bool {
 }
 
 /// Fold a teardown `del_*` result so a delete of an already-absent resource
-/// counts as success: an "absent" status ([`ApiStatus::is_empty_collection`], e.g.
-/// `no_conference`, or an `invalid_*` "not a valid <resource> ID" code) means
+/// counts as success: an "absent" status (`voip_ms::ApiStatus::is_empty_collection`,
+/// e.g. `no_conference`, or an `invalid_*` "not a valid `<resource>` ID" code) means
 /// the object the teardown targets is gone, which is the teardown's goal.
 ///
 /// Without this, a fixture whose resource was already reclaimed -- by an earlier

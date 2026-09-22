@@ -20,7 +20,7 @@
 //! | `integer`     | `u64`            | `deserialize_opt_u64_from_string_or_number`        |
 //! | `decimal`     | `rust_decimal::Decimal` | `deserialize_opt_decimal_from_string_or_number` |
 //! | `bool_yn` / `bool_01` | `bool`   | `deserialize_opt_bool_from_string_number_or_yn`    |
-//! | `date`        | `Reported<chrono::NaiveDate>`     | `deserialize_opt_reported_date`   |
+//! | `date`        | `voip_ms::Reported<chrono::NaiveDate>`     | `deserialize_opt_reported_date`   |
 //! | `datetime`    | `Reported<chrono::NaiveDateTime>` | `deserialize_opt_reported_datetime` |
 
 use std::collections::BTreeMap;
@@ -220,7 +220,7 @@ fn collect_timestamps(
 /// `PartialEq`/`Eq` let a whole response be compared, deduped, or diffed
 /// without writing it out field by field. No `Default`: a response is
 /// received, never built, and a defaulted one would claim
-/// [`crate::ApiStatus::Success`] over empty fields. The per-field
+/// `voip_ms::ApiStatus::Success` over empty fields. The per-field
 /// `#[serde(default)]` is unaffected -- it defaults the field's own type.
 const RESPONSE_DERIVES: &str = "#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]\n";
 
@@ -233,7 +233,7 @@ struct Emitter<'a> {
     /// emit each declared enum's reader only where one is read.
     enums_used: &'a mut std::collections::BTreeSet<String>,
     /// The method's top-level response struct. Its `status` is the envelope's
-    /// own, typed [`crate::ApiStatus`]; a nested struct's same-named field
+    /// own, typed `voip_ms::ApiStatus`; a nested struct's same-named field
     /// (a fax's, a port's) is unrelated and keeps its inferred type.
     root: String,
 }

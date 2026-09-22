@@ -780,7 +780,7 @@ fn status_variant_name(code: &str, acronyms: &[&'static str]) -> String {
 
 /// The one status the error-code table does not list, because it is not an
 /// error. It is a variant so a typed response's `status` field names the
-/// ordinary case instead of landing in [`ApiStatus::Unknown`].
+/// ordinary case instead of landing in `voip_ms::ApiStatus::Unknown`.
 const SUCCESS_STATUS: (&str, &str) = ("success", "The request succeeded");
 
 /// Emit the `ApiStatus` enum: a `Success` variant, one PascalCase variant per

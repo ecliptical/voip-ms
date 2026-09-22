@@ -292,8 +292,9 @@ fn clean_cell(raw: &str) -> String {
 
 /// Scan the doc's method-description rows for per-method one-line summaries.
 ///
-/// These use the same two-column `<td …linefull…>NAME</td>
-/// <td …linerightfull…>DESC</td>` rows as the error table, but the left
+/// These use the same two-column rows as the error table -- a `linefull` cell
+/// holding the name and a `linerightfull` cell holding the description -- but
+/// here the left
 /// cell holds a camelCase wire method name. We keep only rows whose name is
 /// a known WSDL operation (so section headers and the error table are
 /// ignored), take the first description seen per method, and preserve the
