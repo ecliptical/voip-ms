@@ -71,7 +71,7 @@ pub use error::{Error, ParamsError, Result, RetryOutlook, TransportFailure};
 pub use generated::*;
 pub use types::{
     MaxMembers, Routing, RoutingParseError, Seconds, TimezoneName, TimezoneOffset,
-    TimezoneOffsetError, WaitTime,
+    TimezoneOffsetError, TransactionDate, WaitTime,
 };
 
 // Dependencies whose types appear in this crate's public API. Re-exported so

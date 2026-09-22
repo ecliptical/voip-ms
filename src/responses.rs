@@ -27,7 +27,7 @@ use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::str::FromStr;
 
-use crate::types::{MaxMembers, Routing, Seconds, TimezoneName, WaitTime};
+use crate::types::{MaxMembers, Routing, Seconds, TimezoneName, TransactionDate, WaitTime};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -326,6 +326,36 @@ where
         }
         Some(other) => Err(D::Error::custom(format!(
             "expected IANA timezone string, got {other}"
+        ))),
+    }
+}
+
+/// Deserialize a `getTransactionHistory` row's `date` into a
+/// [`TransactionDate`]: a timestamp when the row posted at one instant, a pair
+/// of dates when it bills a span, the verbatim string when it is neither, and
+/// `None` for absent / empty / the placeholder.
+pub(crate) fn deserialize_opt_transaction_date<'de, D>(
+    deserializer: D,
+) -> Result<Option<TransactionDate>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) => {
+            let trimmed = s.trim();
+            // The placeholder is recognized by its date, since the field
+            // carries a bare one as readily as a timestamp.
+            if trimmed.is_empty() || trimmed.starts_with("0000-00-00") {
+                return Ok(None);
+            }
+
+            let Ok(date) = trimmed.parse::<TransactionDate>();
+            Ok(Some(date))
+        }
+        Some(other) => Err(D::Error::custom(format!(
+            "expected transaction date string, got {other}"
         ))),
     }
 }
@@ -655,6 +685,38 @@ mod tests {
         );
         // An unqualified wall clock is rejected rather than read as UTC.
         assert!(call(json!("2024-03-15 08:30:00")).is_err());
+        assert!(call(json!(0)).is_err());
+    }
+
+    #[test]
+    fn opt_transaction_date_reads_a_timestamp_a_span_and_anything_else() {
+        let call = deserialize_opt_transaction_date::<serde_json::Value>;
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00")).unwrap(), None);
+        assert_eq!(
+            call(json!("2016-06-03 00:03:46")).unwrap(),
+            Some(TransactionDate::At(
+                NaiveDate::from_ymd_opt(2016, 6, 3)
+                    .unwrap()
+                    .and_hms_opt(0, 3, 46)
+                    .unwrap()
+            ))
+        );
+        assert_eq!(
+            call(json!("2026-08-01 to 2026-08-31")).unwrap(),
+            Some(TransactionDate::Period {
+                from: NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+                to: NaiveDate::from_ymd_opt(2026, 8, 31).unwrap(),
+            })
+        );
+        // Neither form parses, so the value survives instead of failing the
+        // record it belongs to -- and every record beside it.
+        assert_eq!(
+            call(json!("whenever")).unwrap(),
+            Some(TransactionDate::Unrecognized("whenever".to_string()))
+        );
         assert!(call(json!(0)).is_err());
     }
 

@@ -26,6 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     on a first test.
   - A multipart call carries the credentials as form fields, so for those four
     methods the API password no longer appears in the request URL.
+- **Breaking**: `GetTransactionHistoryResponseTransaction::date` is
+  `Option<TransactionDate>` instead of `Option<chrono::NaiveDateTime>`. A row
+  that bills a period reports `2026-08-01 to 2026-08-31` where every other row
+  reports one timestamp, and a strict datetime failed the whole envelope on the
+  first such row -- so a caller whose range covered a plan charge got an error
+  instead of the transactions beside it. `TransactionDate` reads either form
+  (`At` / `Period`) and keeps anything else verbatim in `Unrecognized`, so the
+  next surprise in that field cannot cost a response.
+  - The docs' Output block shows only a timestamp, so the extractor had nothing
+    else to infer from; the type is assigned per struct in
+    `TRANSACTION_DATE_RESPONSE_PATHS`, since `date` elsewhere is one or the
+    other and never both.
 - `TransportFailure::never_reached_upstream()` answers `false` for HTTP 408,
   where every other 4xx still answers `true`. The method claims the request
   *provably* never reached VoIP.ms, and 408 does not prove that: RFC 9110
@@ -323,6 +335,7 @@ The rest is mechanical and the compiler finds all of it:
 | `maximum_callers: Some("10".into())` | `maximum_callers: Some(WaitTime::Value(10))` |
 | `report_hold_time_agent: Some("yes".into())` | `report_hold_time_agent: Some(EstimatedHoldTimeAnnounce::Yes)` |
 | `client.zip` as `u64` | `client.zip` as `String` (and `password`, `security_code`, `dtmf_digits`, `callerid_prefix`) |
+| `transaction.date` as `NaiveDateTime` | `transaction.date.as_ref().and_then(TransactionDate::at)` for the same value |
 | `Error::InvalidParams(e)` | `Error::InvalidParams(ParamsError::Timezone(e))`, and `ParamsError` is `#[non_exhaustive]`, so a `match` on it needs a wildcard arm |
 
 ## [0.12.2] - 2026-09-17

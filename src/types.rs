@@ -4,6 +4,7 @@
 //! Types here are wired into `src/generated.rs` by `xtask` through the
 //! field-name override table in `xtask/src/field_overrides.rs`.
 
+use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::de::{Deserializer, Error as DeError, Visitor};
 use serde::ser::Serializer;
@@ -596,6 +597,85 @@ impl<'de> Deserialize<'de> for TimezoneName {
     }
 }
 
+/// The `date` a `getTransactionHistory` row carries: the instant it posted, or
+/// the span it bills for.
+///
+/// Most rows report one timestamp, but a row covering a period -- a plan or a
+/// usage summary -- puts `<from> to <to>` in the same field
+/// (`2026-08-01 to 2026-08-31`), which no single [`chrono`] type holds. Parsing
+/// never fails: a form neither variant covers lands in
+/// [`TransactionDate::Unrecognized`] and round-trips unchanged, so one
+/// unreadable row cannot fail the whole response.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TransactionDate {
+    /// The instant the transaction posted.
+    At(NaiveDateTime),
+    /// The span it bills for (wire: `<from> to <to>`).
+    Period { from: NaiveDate, to: NaiveDate },
+    /// A form neither variant covers, preserved verbatim.
+    Unrecognized(String),
+}
+
+/// Separates the two dates of a [`TransactionDate::Period`] on the wire.
+const PERIOD_SEPARATOR: &str = " to ";
+
+/// The wire spelling of a [`TransactionDate::At`] timestamp, the same one
+/// `deserialize_opt_datetime` reads for every other VoIP.ms datetime.
+const DATETIME_WIRE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
+impl TransactionDate {
+    /// The instant, or `None` when the row names a span instead.
+    pub fn at(&self) -> Option<NaiveDateTime> {
+        match self {
+            TransactionDate::At(at) => Some(*at),
+            _ => None,
+        }
+    }
+
+    /// The span as `(from, to)`, or `None` when the row names an instant.
+    pub fn period(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match self {
+            TransactionDate::Period { from, to } => Some((*from, *to)),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for TransactionDate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TransactionDate::At(at) => write!(f, "{}", at.format(DATETIME_WIRE_FORMAT)),
+            TransactionDate::Period { from, to } => write!(f, "{from}{PERIOD_SEPARATOR}{to}"),
+            TransactionDate::Unrecognized(s) => f.write_str(s),
+        }
+    }
+}
+
+impl FromStr for TransactionDate {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Some((from, to)) = s.split_once(PERIOD_SEPARATOR) {
+            return Ok(
+                match (
+                    from.trim().parse::<NaiveDate>(),
+                    to.trim().parse::<NaiveDate>(),
+                ) {
+                    (Ok(from), Ok(to)) => TransactionDate::Period { from, to },
+                    _ => TransactionDate::Unrecognized(s.to_string()),
+                },
+            );
+        }
+
+        Ok(
+            match NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT) {
+                Ok(at) => TransactionDate::At(at),
+                Err(_) => TransactionDate::Unrecognized(s.to_string()),
+            },
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -875,6 +955,54 @@ mod tests {
             let back: TimezoneName = serde_json::from_str(&format!("\"{name}\"")).unwrap();
             assert_eq!(back, name.parse::<TimezoneName>().unwrap());
             assert_eq!(back.name(), name);
+        }
+    }
+
+    #[test]
+    fn transaction_date_round_trips_every_form() {
+        for wire in [
+            "2016-06-03 00:03:46",
+            "2026-08-01 to 2026-08-31",
+            "2026-08-07 to 2026-08-07",
+            "whenever",
+        ] {
+            let Ok(parsed) = wire.parse::<TransactionDate>();
+            assert_eq!(parsed.to_string(), wire);
+        }
+    }
+
+    #[test]
+    fn transaction_date_separates_an_instant_from_a_span() {
+        let Ok(at) = "2016-06-03 00:03:46".parse::<TransactionDate>();
+        assert_eq!(
+            at.at(),
+            Some(
+                NaiveDate::from_ymd_opt(2016, 6, 3)
+                    .unwrap()
+                    .and_hms_opt(0, 3, 46)
+                    .unwrap()
+            )
+        );
+        assert_eq!(at.period(), None);
+
+        let Ok(period) = "2026-08-01 to 2026-09-01".parse::<TransactionDate>();
+        assert_eq!(
+            period.period(),
+            Some((
+                NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap()
+            ))
+        );
+        assert_eq!(period.at(), None);
+    }
+
+    /// A half-parsed span is unrecognized rather than silently half-read: one
+    /// side alone says nothing about what the row covers.
+    #[test]
+    fn transaction_date_keeps_a_malformed_span_verbatim() {
+        for wire in ["2026-08-01 to never", "not-a-date to 2026-08-31"] {
+            let Ok(parsed) = wire.parse::<TransactionDate>();
+            assert_eq!(parsed, TransactionDate::Unrecognized(wire.to_string()));
         }
     }
 

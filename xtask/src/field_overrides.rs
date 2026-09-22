@@ -273,6 +273,26 @@ pub(crate) fn tz_response_override() -> FieldOverride {
     }
 }
 
+/// The response fields typed [`crate::TransactionDate`]. A transaction-history
+/// row reports either the instant it posted or the span it bills for
+/// (`2026-08-01 to 2026-08-31`) in the same `date` field, which the doc sample's
+/// lone timestamp does not show and a strict `NaiveDateTime` fails the whole
+/// response on. Assigned per struct, since `date` elsewhere means one or the
+/// other and never both. Keyed `"StructName.field"`.
+pub(crate) const TRANSACTION_DATE_RESPONSE_PATHS: &[&str] =
+    &["GetTransactionHistoryResponseTransaction.date"];
+
+/// The [`FieldOverride`] typing a response field as
+/// [`crate::TransactionDate`], which carries a timestamp, a date span, or an
+/// unrecognized value verbatim.
+pub(crate) fn transaction_date_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "crate::TransactionDate".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_transaction_date".into()),
+        ..Default::default()
+    }
+}
+
 /// Caller-ID / forward phone-number override fields. They are phone-number
 /// identifiers -- not integers -- so a formatted or non-NANP value must
 /// survive, but voip.ms signals "not set" with a `-1` sentinel (or empty),

@@ -349,6 +349,13 @@ in `xtask/src/field_overrides.rs`:
   `DATE_FIELDS`) map to [`chrono::NaiveDate`], whose own `Serialize` emits the
   documented `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is
   a datetime in some responses and a date in others, so no single type fits.
+  `getTransactionHistory` is the case where one response holds both:
+  [`crate::TransactionDate`] (`TRANSACTION_DATE_RESPONSE_PATHS`, assigned per
+  struct for the same reason the timezones are) carries either the instant a
+  row posted or the span it bills for (`2026-08-01 to 2026-08-31`), with an
+  `Unrecognized(String)` catch-all. The doc sample shows only a timestamp, so
+  the extractor inferred `datetime` and a live span failed the whole envelope --
+  the same shape of break as the legacy zone names, found the same way.
 * **Numeric ids the WSDL under-types as strings** (`U64_FIELDS`, plus
   `setConference`'s 20 prompt slots in `CONFERENCE_PROMPT_FIELDS`) map to
   `u64`. This is the class where the two inference sources disagreed

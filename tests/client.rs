@@ -2102,3 +2102,92 @@ async fn the_polymorphic_client_filters_still_take_a_string() {
         .await
         .unwrap();
 }
+
+#[tokio::test]
+async fn a_transaction_history_span_does_not_lose_the_response() {
+    use voip_ms::{GetTransactionHistoryParams, TransactionDate, chrono::NaiveDate};
+
+    // A row that bills a period reports `<from> to <to>` where every other row
+    // reports one timestamp. Read strictly, the first such row failed the
+    // whole envelope and took every transaction beside it.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getTransactionHistory"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "transactions": [
+                {
+                    "date": "2026-09-08 01:19:49",
+                    "uniqueid": "61971626x8ae57cb9",
+                    "type": "DID6474785907",
+                    "description": "DID Monthly Fee: 6474785907",
+                    "ammount": "-0.85",
+                },
+                {
+                    "date": "2026-08-01 to 2026-08-31",
+                    "uniqueid": "61392144x31a363bc",
+                    "type": "PLAN",
+                    "description": "Monthly Plan",
+                    "ammount": "-4.25",
+                },
+                { "date": "", "uniqueid": "3" },
+            ],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_transaction_history(&GetTransactionHistoryParams {
+            date_from: NaiveDate::from_ymd_opt(2026, 8, 1),
+            date_to: NaiveDate::from_ymd_opt(2026, 9, 21),
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(envelope.transactions.len(), 3);
+    assert_eq!(
+        envelope.transactions[0].date,
+        Some(TransactionDate::At(
+            NaiveDate::from_ymd_opt(2026, 9, 8)
+                .unwrap()
+                .and_hms_opt(1, 19, 49)
+                .unwrap()
+        ))
+    );
+    // The migration path the changelog gives: the previous wall clock, and
+    // `None` where the row names a span the old type could not hold.
+    assert_eq!(
+        envelope.transactions[0]
+            .date
+            .as_ref()
+            .and_then(TransactionDate::at),
+        Some(
+            NaiveDate::from_ymd_opt(2026, 9, 8)
+                .unwrap()
+                .and_hms_opt(1, 19, 49)
+                .unwrap()
+        )
+    );
+    assert_eq!(
+        envelope.transactions[1]
+            .date
+            .as_ref()
+            .and_then(TransactionDate::at),
+        None
+    );
+    assert_eq!(
+        envelope.transactions[1].date,
+        Some(TransactionDate::Period {
+            from: NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+            to: NaiveDate::from_ymd_opt(2026, 8, 31).unwrap(),
+        })
+    );
+    assert_eq!(envelope.transactions[2].date, None);
+    assert_eq!(
+        envelope.transactions[1].ammount,
+        Some(Decimal::from_str_exact("-4.25").unwrap())
+    );
+}

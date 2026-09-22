@@ -17908,9 +17908,9 @@ pub struct GetTimezonesResponse {
 pub struct GetTransactionHistoryResponseTransaction {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_transaction_date"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<crate::TransactionDate>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
