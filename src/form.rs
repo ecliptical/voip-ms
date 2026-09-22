@@ -240,7 +240,12 @@ impl<'a> Serializer for FieldsSerializer<'a> {
         serialize_char(v: char);
         serialize_str(v: &str);
         serialize_bytes(v: &[u8]);
-        serialize_unit_struct(name: &'static str);
+    }
+
+    /// A unit struct names no fields, so it is the empty parameter set -- the
+    /// same answer as `None`, and what an empty query string says.
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
+        Ok(())
     }
 
     fn serialize_unit_variant(
@@ -696,10 +701,22 @@ impl Serializer for PartSerializer {
         Err(ser::Error::custom("has no value a wire field can carry"))
     }
 
+    /// A byte string is its UTF-8 text, and an error when it is not UTF-8 --
+    /// a field carries text, and there is no second encoding to fall back on.
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        match std::str::from_utf8(v) {
+            Ok(text) => Ok(Some(text.to_owned())),
+            Err(e) => Err(ser::Error::custom(format!("is not UTF-8: {e}"))),
+        }
+    }
+
+    /// A unit struct carries its own name, which is the only thing it holds.
+    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
+        Ok(Some(name.to_owned()))
+    }
+
     no_scalar_form! {
-        serialize_bytes(v: &[u8]) -> Option<String>;
         serialize_unit() -> Option<String>;
-        serialize_unit_struct(name: &'static str) -> Option<String>;
         serialize_seq(len: Option<usize>) -> Self::SerializeSeq;
         serialize_tuple(len: usize) -> Self::SerializeTuple;
         serialize_map(len: Option<usize>) -> Self::SerializeMap;
@@ -790,6 +807,19 @@ mod tests {
     #[derive(Serialize)]
     struct Wrapped(u32);
 
+    #[derive(Serialize)]
+    struct Unit;
+
+    /// A field that reaches the serializer through `serialize_bytes`, as
+    /// `serde_bytes` and any hand-written impl that calls it do.
+    struct Bytes(&'static [u8]);
+
+    impl Serialize for Bytes {
+        fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+            s.serialize_bytes(self.0)
+        }
+    }
+
     #[test]
     fn scalars_render_as_the_query_string_renders_them() {
         agrees(&one(true));
@@ -856,6 +886,28 @@ mod tests {
         // No parameters at all is an empty field list, not a failure.
         agrees(&());
         assert!(to_fields(&()).unwrap().is_empty());
+    }
+
+    /// The arms a caller's own params type can reach that no generated struct
+    /// does. Each one used to ride the query string before the fields were
+    /// rendered here, so each has to keep riding it.
+    #[test]
+    fn the_arms_only_a_hand_written_params_type_reaches() {
+        // Bytes carry their text; invalid UTF-8 has no field form, and neither
+        // encoder invents one.
+        agrees(&one(Bytes(b"ab cd")));
+        agrees(&one(Bytes(b"\xff\xfe")));
+        assert!(to_fields(&one(Bytes(b"\xff\xfe"))).is_err());
+
+        // A unit struct is its name as a value, and no fields at all as the
+        // parameter set.
+        agrees(&one(Unit));
+        agrees(&Unit);
+        assert_eq!(
+            to_fields(&one(Unit)).unwrap(),
+            vec![("value".to_string(), "Unit".to_string())]
+        );
+        assert!(to_fields(&Unit).unwrap().is_empty());
     }
 
     #[test]

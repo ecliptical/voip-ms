@@ -207,9 +207,9 @@ pub fn owned(field: &Option<String>) -> bool {
 /// The marker-bearing records of `listed`, as `<kind> id=<id>` orphans.
 ///
 /// `name` reads the free-text field carrying the marker and `id` the record's
-/// identifier. Both filters are separate passes on purpose: a record this
-/// harness owns but that reports no id is skipped, where one combined `find`
-/// would give up at it.
+/// identifier. A record this harness owns but that reports no id is skipped:
+/// there is nothing to delete, and a sweep that cannot name it cannot reclaim
+/// it either.
 pub fn owned_orphans<T, N, I>(
     listed: impl IntoIterator<Item = T>,
     kind: &str,
@@ -439,8 +439,8 @@ mod tests {
         let marker = crate::harness::marker::RunToken::new().marker(0);
         let listed = vec![
             record(Some(&marker), Some(1)),
-            // Marked but unidentified: nothing to delete, and it must not stop
-            // the walk at the records behind it.
+            // Marked but unidentified: nothing to delete, so it is dropped
+            // rather than reported as an orphan the sweep then fails to clear.
             record(Some(&marker), None),
             record(Some("a customer's own queue"), Some(2)),
             record(None, Some(3)),

@@ -1918,21 +1918,17 @@ async fn the_unchecked_diagnostic_hatch_has_both_transports() {
 }
 
 #[test]
-fn requires_multipart_answers_for_the_four_and_for_a_name_it_has_never_seen() {
-    for method in ["setRecording", "sendFaxMessage", "sendMMS", "addLNPFile"] {
-        assert!(
-            voip_ms::requires_multipart(method),
-            "{method} carries a base64 file and cannot go on a query string"
-        );
-    }
-
-    // An unknown method is not assumed to need it: a caller reaching for a
-    // brand-new wire name gets the default transport, as `call_raw` documents.
+fn requires_multipart_does_not_claim_a_name_it_has_never_seen() {
+    // A method this crate has not been regenerated for gets the default
+    // transport, which a caller reaching for a brand-new wire name has to know:
+    // `call_raw_by_name` can only answer for the 222 names in the table, so an
+    // ungenerated upload method needs `call_multipart_raw` chosen by hand.
+    //
+    // Which names the predicate *does* match is asserted as a set over the whole
+    // generated surface, in livetest's `completeness` suite -- the only place the
+    // list of all 222 methods exists. Repeating four of them here would be a
+    // second thing to update and no case that check would miss.
     assert!(!voip_ms::requires_multipart("someBrandNewMethod"));
-
-    // That the four are the *only* ones is checked over the whole wire surface
-    // rather than against a handful of names, in livetest's `completeness`
-    // suite, which is where the generated list of all 222 methods lives.
 }
 
 #[tokio::test]

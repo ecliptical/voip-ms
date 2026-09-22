@@ -116,27 +116,41 @@ impl Routing {
     }
 }
 
+/// The one place a [`Routing`]'s `tag:payload` text is written.
+///
+/// It is a separate type rather than [`Routing`]'s own `Display` so that
+/// `Display` can be changed -- made friendlier for a log, say -- without
+/// changing what every routing field sends. Being a `Display` itself is what
+/// lets [`Serialize`] stream it through `collect_str` with no intermediate
+/// `String`.
+struct Wire<'a>(&'a Routing);
+
+impl fmt::Display for Wire<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.0.tag(), self.0.value())
+    }
+}
+
 impl Routing {
     /// The `tag:payload` string VoIP.ms carries, the inverse of
     /// [`Routing::from_str`].
     ///
     /// This is the wire form, stated once and separately from [`Display`]. The
     /// two render the same text today, and the separation is what lets that stop
-    /// being true: a `Display` made friendlier for a log would otherwise change
-    /// what every routing field sends, with nothing in the type system to notice.
+    /// being true without the wire form following along.
     ///
     /// [`Display`]: std::fmt::Display
     /// [`Routing::from_str`]: std::str::FromStr::from_str
     pub fn to_wire(&self) -> String {
-        format!("{}:{}", self.tag(), self.value())
+        Wire(self).to_string()
     }
 }
 
-/// Renders the wire form ([`Routing::to_wire`]) for now, which is what a reader
-/// of a routing field expects to see. Nothing on the wire depends on it.
+/// Renders the wire form ([`Routing::to_wire`]), which is what a reader of a
+/// routing field expects to see. Nothing on the wire depends on this impl.
 impl fmt::Display for Routing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.tag(), self.value())
+        Wire(self).fmt(f)
     }
 }
 
@@ -200,7 +214,7 @@ impl Serialize for Routing {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_wire())
+        serializer.collect_str(&Wire(self))
     }
 }
 
@@ -684,6 +698,9 @@ mod tests {
                 serde_json::to_string(&wire).unwrap(),
                 "serde sends the wire form"
             );
+            // They agree today. Changing `Display` is then a deliberate edit
+            // here, not something a reader of the doc has to take on faith.
+            assert_eq!(r.to_string(), wire, "Display renders the wire form today");
         }
     }
 

@@ -208,6 +208,13 @@ impl Client {
     /// names the cause. The `status` field is classified as in
     /// [`Client::call_raw`].
     ///
+    /// **Only for a method this crate has been regenerated for.**
+    /// [`requires_multipart`](crate::requires_multipart) answers from the
+    /// generated table, so a method VoIP.ms has added since answers `false`
+    /// whatever parameters it takes. If that method carries a file, this sends
+    /// it as a GET and it dies on the request line; call
+    /// [`Client::call_multipart_raw`] directly instead.
+    ///
     /// ```no_run
     /// # async fn example(client: &voip_ms::Client) -> voip_ms::Result<()> {
     /// use voip_ms::serde_json::json;

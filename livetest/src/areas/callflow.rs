@@ -773,9 +773,9 @@ fn wav_duration_secs(bytes: &[u8]) -> Option<f32> {
 /// A RIFF/WAVE header through the `data` chunk's length field, followed by
 /// `data_len` bytes of audio in `format` at `bits_per_sample`.
 ///
-/// One builder for every WAV this module makes, so a generator and the
-/// [`wav_duration_secs`] parser that reads its fields by byte offset cannot
-/// drift apart: the offsets are fixed by the layout written here.
+/// One builder for every WAV this module makes, so the two generators cannot
+/// drift apart in what they declare -- the byte rate [`wav_duration_secs`]
+/// divides by is computed here, once, from the frame size.
 fn wav_header(format: u16, bits_per_sample: u16, data_len: u32) -> Vec<u8> {
     // The `fmt ` chunk's own length, and the header from `WAVE` through the
     // `data` length field -- what the RIFF length counts, excluding its own tag
@@ -983,30 +983,24 @@ mod tests {
     }
 
     #[test]
-    fn the_header_puts_each_field_where_the_parser_looks_for_it() {
-        // The parser reads `nAvgBytesPerSec` and the `data` length by offset, so
-        // the layout is a contract between the two rather than each one's own
-        // business. Both formats are checked: the fields move with the frame
-        // size, and only the header keeps them where they belong.
+    fn the_parser_reads_back_the_duration_the_header_declares() {
+        // Asserted through `wav_duration_secs`, not against byte offsets: the
+        // parser walks the chunk list rather than indexing fixed positions, so
+        // comparing the header to constants would pin the generator against
+        // itself and miss the field the parser actually reads. Three seconds at
+        // each format, whose frame sizes differ by 2x, so a parser taking the
+        // sample rate instead of the byte rate lands on 1.0 for one of them.
         for (format, bits, bytes_per_frame) in [(1u16, 16u16, 2u32), (7, 8, 1)] {
-            let wav = wav_header(format, bits, 4 * bytes_per_frame);
+            let mut wav = wav_header(format, bits, 3 * SAMPLE_RATE * bytes_per_frame);
+            wav.extend(std::iter::repeat_n(
+                0u8,
+                (3 * SAMPLE_RATE * bytes_per_frame) as usize,
+            ));
 
-            assert_eq!(&wav[12..16], b"fmt ");
-            assert_eq!(u16::from_le_bytes(wav[20..22].try_into().unwrap()), format);
             assert_eq!(
-                u32::from_le_bytes(wav[28..32].try_into().unwrap()),
-                SAMPLE_RATE * bytes_per_frame,
-                "the byte rate the duration is divided by"
-            );
-            assert_eq!(&wav[36..40], b"data");
-            assert_eq!(
-                u32::from_le_bytes(wav[40..44].try_into().unwrap()),
-                4 * bytes_per_frame
-            );
-            // The RIFF length counts everything after its own tag and length.
-            assert_eq!(
-                u32::from_le_bytes(wav[4..8].try_into().unwrap()) as usize,
-                wav.len() - 8 + (4 * bytes_per_frame) as usize
+                wav_duration_secs(&wav),
+                Some(3.0),
+                "format {format} at {bits} bits must read back as the 3 s it carries"
             );
         }
     }

@@ -20,8 +20,9 @@ mod response_codegen;
 mod wsdl;
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode};
+use std::process::{Command, ExitCode, Stdio};
 use std::{env, fs, io};
 
 use extract::Shape;
@@ -1618,13 +1619,16 @@ fn emit_enums(
     out
 }
 
-/// Write emitted Rust to `path` and format it, failing the run on output
-/// neither parser accepts rather than leaving it on disk.
+/// Write emitted Rust to `path`, formatted, or write nothing at all.
 ///
-/// Two gates, because an emitter defect that renders broken Rust used to exit
-/// zero: the file is parsed before it is written, and a `rustfmt` that rejects
-/// it afterwards is an error rather than a warning. Only a missing `rustfmt`
-/// stays a warning, so a machine without one can still regenerate.
+/// Both gates run before the write, because an emitter defect that rendered
+/// broken Rust used to exit zero: the text is parsed, then formatted, and only
+/// the result reaches the file. Formatting through a pipe rather than over the
+/// written file is what keeps that true of a `rustfmt` failure as well as of a
+/// parse failure -- a run that formats in place has already replaced one of the
+/// three outputs by the time it can refuse, leaving the tree half-regenerated
+/// and the next `cargo fmt --check` failing on a file nobody edited. A missing
+/// `rustfmt` is still only a warning, so a machine without one can regenerate.
 ///
 /// Neither gate sees inside a macro invocation -- `matches!(method, )` is valid
 /// tokens to both, and is the defect that prompted them. An emitted `matches!`
@@ -1639,26 +1643,57 @@ pub(crate) fn write_rust(path: &Path, rendered: &str) -> Result<(), String> {
             path.display()
         )
     })?;
-    fs::write(path, rendered).map_err(|e| format!("write {}: {e}", path.display()))?;
-    rustfmt_file(path)
+
+    let formatted = rustfmt(rendered)
+        .map_err(|e| format!("{e}; {} was not written", path.display()))?
+        .unwrap_or_else(|| rendered.to_string());
+
+    fs::write(path, formatted).map_err(|e| format!("write {}: {e}", path.display()))
 }
 
-/// Format a file this generator just wrote, so its output is what `cargo fmt
-/// --check` expects and a regen leaves no formatting churn behind.
-fn rustfmt_file(path: &Path) -> Result<(), String> {
-    match Command::new("rustfmt")
-        .args(["--edition", "2024"])
-        .arg(path)
-        .status()
+/// `rendered` as `rustfmt` formats it, so a regen leaves no churn for
+/// `cargo fmt --check`. `None` when no `rustfmt` is installed.
+fn rustfmt(rendered: &str) -> Result<Option<String>, String> {
+    let mut child = match Command::new("rustfmt")
+        .args(["--edition", "2024", "--emit", "stdout"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
     {
-        Ok(s) if s.success() => Ok(()),
-        Ok(s) => Err(format!("rustfmt rejected {} ({s})", path.display())),
+        Ok(child) => child,
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
             eprintln!("warning: rustfmt not found on PATH; run `cargo fmt` manually");
-            Ok(())
+            return Ok(None);
         }
-        Err(e) => Err(format!("rustfmt failed on {} ({e})", path.display())),
+        Err(e) => return Err(format!("rustfmt could not be started ({e})")),
+    };
+
+    // The input runs to a megabyte, past what a pipe buffers, so it is fed from
+    // a thread: writing it here while nothing drains stdout deadlocks the pair.
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| "rustfmt stdin was not piped".to_string())?;
+    let input = rendered.to_string();
+    let feed = std::thread::spawn(move || stdin.write_all(input.as_bytes()));
+
+    let out = child
+        .wait_with_output()
+        .map_err(|e| format!("rustfmt could not be run ({e})"))?;
+    feed.join()
+        .map_err(|_| "the thread feeding rustfmt panicked".to_string())?
+        .map_err(|e| format!("rustfmt stopped reading its input ({e})"))?;
+
+    if !out.status.success() {
+        return Err(format!(
+            "rustfmt rejected the emitted Rust ({})",
+            out.status
+        ));
     }
+
+    String::from_utf8(out.stdout)
+        .map(Some)
+        .map_err(|e| format!("rustfmt returned something that is not UTF-8 ({e})"))
 }
 
 /// The post-override response shapes, for a tool that needs what `gen` renders
@@ -2259,6 +2294,17 @@ mod tests {
         let err = write_rust(&path, "pub fn broken() -> bool { false").unwrap_err();
         assert!(err.contains("does not parse"), "{err}");
         assert!(!path.exists(), "the file must not have been written");
+
+        // The same must hold when `rustfmt` is the one refusing: a run that
+        // formats the file it already wrote leaves the tree half-regenerated.
+        // `syn` accepts this, `rustfmt` does not.
+        // The rustfmt gate refuses too, and it runs before the write rather
+        // than over it -- which is what keeps a formatting failure from leaving
+        // one of `gen`'s three outputs replaced and the other two behind.
+        // Driven directly: anything rustfmt rejects, `syn` rejects first, so
+        // this arm is unreachable through `write_rust` with a literal.
+        let err = rustfmt("fn f() { let _ = |&:| (); }\n").unwrap_err();
+        assert!(err.contains("rustfmt rejected"), "{err}");
 
         write_rust(&path, "pub fn fine() -> bool {\n    false\n}\n")
             .expect("valid Rust is written");
