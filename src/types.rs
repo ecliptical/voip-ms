@@ -163,10 +163,7 @@ impl FromStr for Routing {
     type Err = RoutingParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (tag, value) = match s.find(':') {
-            Some(i) => (&s[..i], &s[i + 1..]),
-            None => return Err(RoutingParseError::MissingColon),
-        };
+        let (tag, value) = s.split_once(':').ok_or(RoutingParseError::MissingColon)?;
 
         Ok(match tag {
             "none" => Routing::None,

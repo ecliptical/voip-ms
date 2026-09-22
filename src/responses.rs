@@ -185,14 +185,19 @@ where
             })
         }
         Some(Value::String(s)) => {
-            let normalized = s.trim().to_ascii_uppercase();
-            if normalized.is_empty() {
+            let word = s.trim();
+            if word.is_empty() {
                 return Ok(None);
             }
-            match normalized.as_str() {
-                "1" | "Y" | "YES" | "TRUE" | "T" => Ok(Some(true)),
-                "0" | "N" | "NO" | "FALSE" | "F" => Ok(Some(false)),
-                _ => Err(D::Error::custom(format!("invalid boolean-like string {s}"))),
+
+            let spelled =
+                |spellings: &[&str]| spellings.iter().any(|w| word.eq_ignore_ascii_case(w));
+            if spelled(&["1", "Y", "YES", "TRUE", "T"]) {
+                Ok(Some(true))
+            } else if spelled(&["0", "N", "NO", "FALSE", "F"]) {
+                Ok(Some(false))
+            } else {
+                Err(D::Error::custom(format!("invalid boolean-like string {s}")))
             }
         }
         Some(other) => Err(D::Error::custom(format!(

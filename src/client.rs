@@ -357,11 +357,11 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (body, empty) = self
+        let (mut body, empty) = self
             .fetch(method, params, Transport::for_method(method))
             .await?;
-        let subtree = match body.pointer(pointer) {
-            Some(v) => v.clone(),
+        let subtree = match body.pointer_mut(pointer).map(Value::take) {
+            Some(v) => v,
             None if empty.is_some() => Value::Null,
             None => {
                 return Err(Error::InvalidResponse(format!(
@@ -451,8 +451,9 @@ impl Client {
 /// assert_eq!(body["cdr"][0]["date"], "2026-09-16 15:14:35-04:00");
 /// ```
 pub fn attach_offset(body: &mut Value, offset: chrono::FixedOffset, timestamps: &[&str]) {
+    let suffix = offset.to_string();
     for path in timestamps {
-        attach_at(body, path.trim_start_matches('/'), &offset.to_string());
+        attach_at(body, path.trim_start_matches('/'), &suffix);
     }
 }
 
