@@ -70,7 +70,7 @@ pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL, attach_offset};
 pub use error::{Error, ParamsError, Result, RetryOutlook, TransportFailure};
 pub use generated::*;
 pub use types::{
-    MaxMembers, Routing, RoutingParseError, Seconds, TimezoneName, TimezoneOffset,
+    MaxMembers, Reported, Routing, RoutingParseError, Seconds, TimezoneName, TimezoneOffset,
     TimezoneOffsetError, TransactionDate, WaitTime,
 };
 

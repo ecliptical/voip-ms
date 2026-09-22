@@ -12961,9 +12961,9 @@ pub struct GetBackOrdersResponseBackOrder {
     pub billing_type: Option<DidBillingType>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub order_date: Option<chrono::NaiveDateTime>,
+    pub order_date: Option<crate::Reported<chrono::NaiveDateTime>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -13348,9 +13348,9 @@ pub struct GetCallRecordingResponse {
     pub callrecording: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub datetime: Option<chrono::NaiveDateTime>,
+    pub datetime: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -13389,9 +13389,9 @@ pub struct GetCallRecordingsResponseRecording {
     pub callrecording: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub datetime: Option<chrono::NaiveDateTime>,
+    pub datetime: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -13675,8 +13675,11 @@ pub struct GetChargesResponseCharge {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub id: Option<u64>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub date: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -14142,9 +14145,9 @@ pub struct GetConferenceRecordingsResponseRecording {
     pub duration: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<crate::Reported<chrono::NaiveDateTime>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -14364,20 +14367,26 @@ pub struct GetDIDsInfoResponseDID {
     pub port_out_pin: Option<u64>,
     #[serde(default, deserialize_with = "deserialize_opt_did_billing_type")]
     pub billing_type: Option<DidBillingType>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub next_billing: Option<chrono::NaiveDate>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
     )]
-    pub order_date: Option<chrono::NaiveDateTime>,
+    pub next_billing: Option<crate::Reported<chrono::NaiveDate>>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
+    )]
+    pub order_date: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub reseller_account: Option<String>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub reseller_next_billing: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub reseller_next_billing: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -14878,8 +14887,11 @@ pub struct GetDepositsResponseDeposit {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub id: Option<u64>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub date: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -15039,9 +15051,9 @@ pub struct GetFAXMessagesResponseFAX {
     pub folder: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -15180,8 +15192,11 @@ pub struct GetFAXNumbersInfoResponseNumber {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub reseller_account: Option<String>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub reseller_next_billing: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub reseller_next_billing: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
@@ -15652,8 +15667,11 @@ pub struct GetLNPDetailsResponseNote {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub note: Option<String>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub date: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -15830,9 +15848,9 @@ pub struct GetLNPDetailsResponse {
     pub post_status_description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
@@ -15906,8 +15924,11 @@ pub struct GetLNPNotesResponseList {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub note: Option<String>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub date: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub date: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -16133,9 +16154,9 @@ pub struct GetMediaMMSResponse {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_map_from_object"
@@ -16888,9 +16909,9 @@ pub struct GetRegistrationStatusResponseRegistration {
     pub register_port: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub register_next: Option<chrono::NaiveDateTime>,
+    pub register_next: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -17679,8 +17700,11 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub reseller_package: Option<u64>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub reseller_nextbilling: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub reseller_nextbilling: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
@@ -17975,8 +17999,11 @@ pub struct GetVPRIsResponseVPRI {
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
     pub monthly_fee: Option<rust_decimal::Decimal>,
-    #[serde(default, deserialize_with = "crate::responses::deserialize_opt_date")]
-    pub next_billing: Option<chrono::NaiveDate>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_reported_date"
+    )]
+    pub next_billing: Option<crate::Reported<chrono::NaiveDate>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
@@ -18115,9 +18142,9 @@ pub struct GetVoicemailMessagesResponseMessage {
     pub message_num: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
     )]
-    pub date: Option<chrono::NaiveDateTime>,
+    pub date: Option<crate::Reported<chrono::NaiveDateTime>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"

@@ -597,6 +597,85 @@ impl<'de> Deserialize<'de> for TimezoneName {
     }
 }
 
+/// What VoIP.ms reported for a field: the parsed value, or the text it sent
+/// when that text does not parse.
+///
+/// Response dates wear this. A `*Response` is one value built from one
+/// envelope, so a deserializer that fails on a single field fails the whole
+/// read -- one unreadable date costs every record beside it, and the caller
+/// gets an error instead of the rows that were fine. That is the shape of the
+/// break this crate has now paid for twice, in legacy zone names and in a
+/// transaction-history window.
+///
+/// [`Reported::Unreadable`] keeps the value instead of discarding it, which
+/// answering `None` would do. The difference matters twice over: the caller can
+/// still see and salvage what arrived, and "unreadable" stays distinguishable
+/// from "absent", so the live drift harness can still tell that VoIP.ms sent
+/// something this crate does not model.
+///
+/// Absence is the surrounding [`Option`], not a variant here: a field VoIP.ms
+/// omits is `None`, and so is one carrying a blank or a `0000-00-00`
+/// placeholder.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Reported<T> {
+    /// The value, as this crate reads it.
+    Parsed(T),
+    /// The text VoIP.ms sent, kept because it does not parse.
+    Unreadable(String),
+}
+
+impl<T> Reported<T> {
+    /// The value, or `None` when VoIP.ms sent something unreadable.
+    pub fn value(&self) -> Option<&T> {
+        match self {
+            Reported::Parsed(v) => Some(v),
+            Reported::Unreadable(_) => None,
+        }
+    }
+
+    /// The value, consuming the wrapper.
+    pub fn into_value(self) -> Option<T> {
+        match self {
+            Reported::Parsed(v) => Some(v),
+            Reported::Unreadable(_) => None,
+        }
+    }
+
+    /// The text VoIP.ms sent, when it could not be read.
+    pub fn unreadable(&self) -> Option<&str> {
+        match self {
+            Reported::Parsed(_) => None,
+            Reported::Unreadable(s) => Some(s),
+        }
+    }
+}
+
+impl<T: Copy> Reported<T> {
+    /// The value, copied out of the wrapper. The shorthand for the [`chrono`]
+    /// types these fields hold, which are all [`Copy`].
+    pub fn get(&self) -> Option<T> {
+        match self {
+            Reported::Parsed(v) => Some(*v),
+            Reported::Unreadable(_) => None,
+        }
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Reported<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Reported::Parsed(v) => v.fmt(f),
+            Reported::Unreadable(s) => f.write_str(s),
+        }
+    }
+}
+
+impl<T> From<T> for Reported<T> {
+    fn from(value: T) -> Self {
+        Reported::Parsed(value)
+    }
+}
+
 /// The `date` a `getTransactionHistory` row carries: when it posted, or the
 /// window it summarizes.
 ///

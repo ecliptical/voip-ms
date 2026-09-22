@@ -1015,7 +1015,7 @@ fn voicemail_message_date_accepts_full_timestamp() {
     .unwrap();
     let messages = vm.messages;
     assert_eq!(
-        messages[0].date,
+        messages[0].date.as_ref().and_then(voip_ms::Reported::get),
         Some(
             chrono::NaiveDate::from_ymd_opt(2023, 6, 26)
                 .unwrap()
@@ -2101,6 +2101,53 @@ async fn the_polymorphic_client_filters_still_take_a_string() {
         })
         .await
         .unwrap();
+}
+
+#[tokio::test]
+async fn an_unreadable_date_costs_its_own_field_and_nothing_else() {
+    use voip_ms::{GetDIDsInfoParams, Reported, chrono::NaiveDate};
+
+    // A response is one value built from one envelope, so a date VoIP.ms
+    // spells in a form this crate does not model reads as `Unreadable` with
+    // the text intact: the records beside it survive, and the value is still
+    // there to salvage.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getDIDsInfo"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "dids": [
+                { "did": "5551234567", "next_billing": "2026-10-08" },
+                { "did": "5557654321", "next_billing": "08/10/2026" },
+                { "did": "5559999999", "next_billing": "0000-00-00" },
+            ],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let envelope = client
+        .get_dids_info(&GetDIDsInfoParams::default())
+        .await
+        .unwrap();
+
+    assert_eq!(envelope.dids.len(), 3);
+    assert_eq!(
+        envelope.dids[0].next_billing,
+        Some(Reported::Parsed(
+            NaiveDate::from_ymd_opt(2026, 10, 8).unwrap()
+        ))
+    );
+    assert_eq!(
+        envelope.dids[1].next_billing,
+        Some(Reported::Unreadable("08/10/2026".to_string()))
+    );
+    // The placeholder is still absence, not an unreadable value.
+    assert_eq!(envelope.dids[2].next_billing, None);
+    // And the row that could not be read still carries the rest of itself.
+    assert_eq!(envelope.dids[1].did.as_deref(), Some("5557654321"));
 }
 
 #[tokio::test]

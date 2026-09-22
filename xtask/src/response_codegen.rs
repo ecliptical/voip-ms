@@ -20,8 +20,8 @@
 //! | `integer`     | `u64`            | `deserialize_opt_u64_from_string_or_number`        |
 //! | `decimal`     | `rust_decimal::Decimal` | `deserialize_opt_decimal_from_string_or_number` |
 //! | `bool_yn` / `bool_01` | `bool`   | `deserialize_opt_bool_from_string_number_or_yn`    |
-//! | `date`        | `chrono::NaiveDate`     | `deserialize_opt_date`                      |
-//! | `datetime`    | `chrono::NaiveDateTime` | `deserialize_opt_datetime`                  |
+//! | `date`        | `Reported<chrono::NaiveDate>`     | `deserialize_opt_reported_date`   |
+//! | `datetime`    | `Reported<chrono::NaiveDateTime>` | `deserialize_opt_reported_datetime` |
 
 use std::collections::BTreeMap;
 
@@ -289,7 +289,7 @@ impl<'a> Emitter<'a> {
                 // reach it or the generated field silently keeps the raw type.
                 let override_ = self.resolver.resolve(name, "value", true);
                 let inner_ty = match override_ {
-                    Some(o) => o.rust_type.clone(),
+                    Some(o) => o.response_type().to_string(),
                     None => self.scalar_rust_type(shape),
                 };
                 self.enums_used.insert(inner_ty.clone());
@@ -363,7 +363,7 @@ impl<'a> Emitter<'a> {
                 .resolver
                 .resolve(name, fname, matches!(sub, Shape::Scalar { .. }));
             let rust_ty = match override_ {
-                Some(o) => o.rust_type.clone(),
+                Some(o) => o.response_type().to_string(),
                 None => self.field_type(name, fname, sub),
             };
             self.enums_used.insert(rust_ty.clone());
@@ -455,8 +455,8 @@ impl<'a> Emitter<'a> {
                 ScalarTy::Integer => "u64".into(),
                 ScalarTy::Decimal => "rust_decimal::Decimal".into(),
                 ScalarTy::BoolYn | ScalarTy::Bool01 => "bool".into(),
-                ScalarTy::Date => "chrono::NaiveDate".into(),
-                ScalarTy::DateTime => "chrono::NaiveDateTime".into(),
+                ScalarTy::Date => "crate::Reported<chrono::NaiveDate>".into(),
+                ScalarTy::DateTime => "crate::Reported<chrono::NaiveDateTime>".into(),
                 ScalarTy::String | ScalarTy::Empty => "String".into(),
             },
             _ => "serde_json::Value".into(),
@@ -495,8 +495,8 @@ fn scalar_deserializer(shape: &Shape) -> Option<&'static str> {
         ScalarTy::BoolYn | ScalarTy::Bool01 => {
             Some("crate::responses::deserialize_opt_bool_from_string_number_or_yn")
         }
-        ScalarTy::Date => Some("crate::responses::deserialize_opt_date"),
-        ScalarTy::DateTime => Some("crate::responses::deserialize_opt_datetime"),
+        ScalarTy::Date => Some("crate::responses::deserialize_opt_reported_date"),
+        ScalarTy::DateTime => Some("crate::responses::deserialize_opt_reported_datetime"),
         ScalarTy::String | ScalarTy::Empty => {
             Some("crate::responses::deserialize_opt_string_from_string_number_or_bool")
         }

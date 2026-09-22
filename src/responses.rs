@@ -28,7 +28,9 @@ use serde_json::Value;
 use std::convert::Infallible;
 use std::str::FromStr;
 
-use crate::types::{MaxMembers, Routing, Seconds, TimezoneName, TransactionDate, WaitTime};
+use crate::types::{
+    MaxMembers, Reported, Routing, Seconds, TimezoneName, TransactionDate, WaitTime,
+};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -217,52 +219,6 @@ fn is_blank_or_zero_date(trimmed: &str) -> bool {
     trimmed.is_empty() || trimmed.starts_with("0000-00-00")
 }
 
-pub(crate) fn deserialize_opt_date<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            if is_blank_or_zero_date(trimmed) {
-                return Ok(None);
-            }
-            NaiveDate::parse_from_str(trimmed, DATE_WIRE_FORMAT)
-                .map(Some)
-                .map_err(|e| D::Error::custom(format!("invalid date {s}: {e}")))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected date string, got {other}"
-        ))),
-    }
-}
-
-pub(crate) fn deserialize_opt_datetime<'de, D>(
-    deserializer: D,
-) -> Result<Option<NaiveDateTime>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => {
-            let trimmed = s.trim();
-            if is_blank_or_zero_date(trimmed) {
-                return Ok(None);
-            }
-            NaiveDateTime::parse_from_str(trimmed, DATETIME_WIRE_FORMAT)
-                .map(Some)
-                .map_err(|e| D::Error::custom(format!("invalid datetime {s}: {e}")))
-        }
-        Some(other) => Err(D::Error::custom(format!(
-            "expected datetime string, got {other}"
-        ))),
-    }
-}
-
 /// Deserialize a timestamp that names its UTC offset.
 ///
 /// The record-listing methods (`getCDR`, `getSMS`, …) report a wall clock in
@@ -317,6 +273,66 @@ where
             "expected routing string, got {other}"
         ))),
     }
+}
+
+/// Deserialize an optional response date, keeping the wire text when it does
+/// not parse.
+///
+/// `parse` is the strict reading; whatever it rejects is kept verbatim in
+/// [`Reported::Unreadable`] rather than failing the deserialization. A `*Response` is one value
+/// built from one envelope, so erroring on a single field discards every record
+/// beside it -- the break this crate has already paid for twice. Keeping the
+/// text rather than answering `None` leaves the value salvageable and leaves
+/// "unreadable" distinguishable from "absent", which is what the live drift
+/// harness reads.
+fn deserialize_opt_reported<'de, T, D>(
+    deserializer: D,
+    parse: fn(&str) -> Option<T>,
+) -> Result<Option<Reported<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let text = match Option::<Value>::deserialize(deserializer)? {
+        None | Some(Value::Null) => return Ok(None),
+        Some(Value::String(s)) => s,
+        Some(other) => other.to_string(),
+    };
+
+    let trimmed = text.trim();
+    if is_blank_or_zero_date(trimmed) {
+        return Ok(None);
+    }
+
+    Ok(Some(match parse(trimmed) {
+        Some(value) => Reported::Parsed(value),
+        None => Reported::Unreadable(trimmed.to_string()),
+    }))
+}
+
+/// Deserialize a response field's calendar date, keeping the wire text when it
+/// does not parse. See [`deserialize_opt_reported`].
+pub(crate) fn deserialize_opt_reported_date<'de, D>(
+    deserializer: D,
+) -> Result<Option<Reported<NaiveDate>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_reported(deserializer, |s| {
+        NaiveDate::parse_from_str(s, DATE_WIRE_FORMAT).ok()
+    })
+}
+
+/// Deserialize a response field's timestamp, keeping the wire text when it does
+/// not parse. See [`deserialize_opt_reported`].
+pub(crate) fn deserialize_opt_reported_datetime<'de, D>(
+    deserializer: D,
+) -> Result<Option<Reported<NaiveDateTime>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_reported(deserializer, |s| {
+        NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT).ok()
+    })
 }
 
 /// Deserialize an optional field into a type that parses infallibly from the
@@ -647,36 +663,54 @@ mod tests {
     }
 
     #[test]
-    fn opt_date_folds_zero_placeholder_and_rejects_bad() {
-        let call = deserialize_opt_date::<serde_json::Value>;
+    fn opt_reported_date_folds_placeholders_and_keeps_what_it_cannot_read() {
+        let call = deserialize_opt_reported_date::<serde_json::Value>;
         assert_eq!(call(json!(null)).unwrap(), None);
         assert_eq!(call(json!("")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00")).unwrap(), None);
         assert_eq!(
             call(json!("2024-03-15")).unwrap(),
-            Some(NaiveDate::from_ymd_opt(2024, 3, 15).unwrap())
+            Some(Reported::Parsed(
+                NaiveDate::from_ymd_opt(2024, 3, 15).unwrap()
+            ))
         );
-        assert!(call(json!("15/03/2024")).is_err());
-        assert!(call(json!(20240315)).is_err());
+        // Unreadable keeps the value instead of erroring, so one odd date
+        // costs its own field and not the records beside it.
+        assert_eq!(
+            call(json!("15/03/2024")).unwrap(),
+            Some(Reported::Unreadable("15/03/2024".to_string()))
+        );
+        assert_eq!(
+            call(json!(20240315)).unwrap(),
+            Some(Reported::Unreadable("20240315".to_string()))
+        );
     }
 
     #[test]
-    fn opt_datetime_folds_zero_placeholder_and_rejects_bad() {
-        let call = deserialize_opt_datetime::<serde_json::Value>;
+    fn opt_reported_datetime_folds_placeholders_and_keeps_what_it_cannot_read() {
+        let call = deserialize_opt_reported_datetime::<serde_json::Value>;
         assert_eq!(call(json!(null)).unwrap(), None);
         assert_eq!(call(json!("")).unwrap(), None);
         assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
         assert_eq!(
             call(json!("2024-03-15 08:30:00")).unwrap(),
-            Some(
+            Some(Reported::Parsed(
                 NaiveDate::from_ymd_opt(2024, 3, 15)
                     .unwrap()
                     .and_hms_opt(8, 30, 0)
                     .unwrap()
-            )
+            ))
         );
-        assert!(call(json!("2024-03-15")).is_err());
-        assert!(call(json!(0)).is_err());
+        // A date where a timestamp was documented is exactly the drift this
+        // wrapper exists for: it is kept, not guessed at and not discarded.
+        assert_eq!(
+            call(json!("2024-03-15")).unwrap(),
+            Some(Reported::Unreadable("2024-03-15".to_string()))
+        );
+        assert_eq!(
+            call(json!(0)).unwrap(),
+            Some(Reported::Unreadable("0".to_string()))
+        );
     }
 
     #[test]
@@ -754,11 +788,11 @@ mod tests {
     /// folds the one its own format cannot parse as well as its own.
     #[test]
     fn every_date_deserializer_folds_both_zero_date_spellings() {
-        let date = deserialize_opt_date::<serde_json::Value>;
+        let date = deserialize_opt_reported_date::<serde_json::Value>;
         assert_eq!(date(json!("0000-00-00")).unwrap(), None);
         assert_eq!(date(json!("0000-00-00 00:00:00")).unwrap(), None);
 
-        let datetime = deserialize_opt_datetime::<serde_json::Value>;
+        let datetime = deserialize_opt_reported_datetime::<serde_json::Value>;
         assert_eq!(datetime(json!("0000-00-00 00:00:00")).unwrap(), None);
         assert_eq!(datetime(json!("0000-00-00")).unwrap(), None);
 

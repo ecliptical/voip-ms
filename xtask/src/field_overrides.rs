@@ -38,6 +38,21 @@ pub struct FieldOverride {
     /// referenced function must accept `Option<T>` and treat empty /
     /// absent inputs as `None`.
     pub response_deserializer: Option<String>,
+    /// Rust type to substitute on the *response* side only, when it differs
+    /// from [`Self::rust_type`]. A param is written and so cannot receive a
+    /// value this crate does not understand; a response can, which is why the
+    /// date fields read as [`crate::Reported<T>`] and write as the bare `T`.
+    pub response_rust_type: Option<String>,
+}
+
+impl FieldOverride {
+    /// The type to emit on the response side: [`Self::response_rust_type`]
+    /// where the two sides differ, otherwise [`Self::rust_type`].
+    pub fn response_type(&self) -> &str {
+        self.response_rust_type
+            .as_deref()
+            .unwrap_or(&self.rust_type)
+    }
 }
 
 /// Runtime table of field-name overrides. Built from both built-in
@@ -285,12 +300,6 @@ pub(crate) fn tz_response_override() -> FieldOverride {
 /// place of a timestamp. `getCharges` and `getDeposits` are the same ledger for
 /// a reseller client and are deliberately absent, because neither takes a date
 /// range and so neither has a window to report.
-///
-/// This is why `getCharges` and `getDeposits` are not in this list even though
-/// they are the same ledger kept for a reseller client. Neither takes a date
-/// range -- `client` is their only parameter -- so neither has a window to
-/// aggregate over, and neither can produce the row. They stay
-/// [`chrono::NaiveDate`].
 pub(crate) const TRANSACTION_DATE_RESPONSE_PATHS: &[&str] =
     &["GetTransactionHistoryResponseTransaction.date"];
 
@@ -377,7 +386,10 @@ pub(crate) const BASE64_FILE_PARAM_PATHS: &[&str] = &[
 /// Calendar-date fields, documented uniformly as `'YYYY-MM-DD'`
 /// (`Example: '2010-11-30'`). Typed [`chrono::NaiveDate`], whose own
 /// `Serialize` emits exactly that wire form, instead of the WSDL's
-/// `xsd:string`. `reseller_nextbilling` is here so `getSubAccounts` and
+/// `xsd:string` -- on the param side, which is the only side that writes. A
+/// response reads the same field as [`crate::Reported<chrono::NaiveDate>`],
+/// like every other response date.
+/// `reseller_nextbilling` is here so `getSubAccounts` and
 /// `setSubAccount` agree on it; the other two are the date-range filters. The
 /// bare `date` field is deliberately excluded -- it is a datetime in some
 /// responses (`getLNPDetails`) and a date in others, so no single type fits.
@@ -562,11 +574,13 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         ..Default::default()
     };
     // NaiveDate's own Serialize emits the `%Y-%m-%d` wire form, so no
-    // param_serializer; the response deserializer also folds the
-    // `0000-00-00` placeholder to None should a response ever carry one.
+    // param_serializer. The response side reads a `Reported`, like every other
+    // response date: the param is written and cannot receive a surprise, the
+    // response can.
     let date = FieldOverride {
         rust_type: "chrono::NaiveDate".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_date".into()),
+        response_rust_type: Some("crate::Reported<chrono::NaiveDate>".into()),
+        response_deserializer: Some("crate::responses::deserialize_opt_reported_date".into()),
         ..Default::default()
     };
     // A phone number stays `String` on both the param and response side. On

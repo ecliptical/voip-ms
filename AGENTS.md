@@ -109,6 +109,24 @@ arrive as JSON strings from the API; the deserializers in
 `src/responses.rs` (`deserialize_opt_*`) normalize both string and
 native-typed forms and treat `"0000-00-00"` placeholders as `None`.
 
+**A value the crate cannot read costs its own field, not the response.** A
+`*Response` is one value built from one envelope, so a deserializer that errors
+on a single field discards every record beside it -- the caller gets an error
+instead of the rows that were fine. Every response date is therefore
+[`crate::Reported<T>`] (`Parsed(T)` or `Unreadable(String)`), and every
+substituted enum carries `Unknown(String)`. The wrapper keeps the text rather
+than answering `None`, which would discard it: the caller can still salvage what
+arrived, and "unreadable" stays distinguishable from "absent", which is what the
+live harness reads. Params are the other way round -- they are written, never
+received, so they keep the bare `chrono` type, which is why `FieldOverride`
+carries a `response_rust_type` beside `rust_type`.
+
+Two deserializers stay strict, and both are strict about the same thing. The
+record-listing `deserialize_opt_datetime_offset` rejects a timestamp with no
+offset rather than reading it as UTC (decision #8), and the remaining
+`deserialize_opt_*` scalar helpers reject a shape, not a spelling. The rule is
+that an unexpected *value* degrades and an unexpected *contract* does not.
+
 The one exception is the envelope's own `status`, which is a required
 [`ApiStatus`] on each top-level `*Response`. `Client::fetch` has already
 required the field to exist and classified it before a typed call returns, so
