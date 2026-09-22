@@ -22,7 +22,7 @@ use std::fmt::Debug;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
-use voip_ms::{Client, Error, TimezoneOffset, attach_offset};
+use voip_ms::{Client, Error, TimezoneOffset, attach_offset, offset_timestamps};
 
 use crate::harness::keydiff;
 use crate::response_fields;
@@ -120,18 +120,28 @@ impl ZonedRequest {
 /// numeric `timezone` the request carries and then report the shifted wall
 /// clock without it, so the request's own offset goes back on before the typed
 /// step -- left alone, every unqualified timestamp would read as drift.
-/// `timestamps` are the paths [`voip_ms::attach_offset`] takes, which the crate
-/// emits per method as `GET_CDR_TIMESTAMPS` and its siblings.
+/// The paths that offset goes onto are [`voip_ms::offset_timestamps`]'s answer
+/// for `method`, so a probe cannot complete one method's envelope with another
+/// method's paths.
+///
+/// A `method` it answers `None` for classifies as `Transport`: that method
+/// takes no offset, so reaching it here is a bug in this harness rather than
+/// drift in the API.
 pub async fn probe_zoned<T>(
     client: &Client,
     method: &str,
     request: &ZonedRequest,
-    timestamps: &[&str],
     count: impl Fn(&T) -> Option<usize>,
 ) -> ProbeOutcome
 where
     T: DeserializeOwned + Debug,
 {
+    let Some(timestamps) = offset_timestamps(method) else {
+        return ProbeOutcome::Transport(format!(
+            "{method} reports no offset-qualified timestamps, so it is not a zoned probe"
+        ));
+    };
+
     let fixed = request.offset.to_fixed_offset();
     probe_qualified(
         client,
@@ -152,7 +162,6 @@ where
 pub async fn probe_zoned_default<P, T>(
     client: &Client,
     method: &str,
-    timestamps: &[&str],
     count: impl Fn(&T) -> Option<usize>,
 ) -> ProbeOutcome
 where
@@ -160,7 +169,7 @@ where
     T: DeserializeOwned + Debug,
 {
     match ZonedRequest::new(&P::default(), TimezoneOffset::UTC) {
-        Ok(request) => probe_zoned(client, method, &request, timestamps, count).await,
+        Ok(request) => probe_zoned(client, method, &request, count).await,
         Err(error) => ProbeOutcome::Transport(error),
     }
 }
@@ -397,7 +406,26 @@ fn pretty(value: &Value) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use voip_ms::{Reported, TransactionDate, chrono::NaiveDate};
+    use voip_ms::{GetBalanceResponse, Reported, TransactionDate, chrono::NaiveDate};
+
+    #[tokio::test]
+    async fn a_zoned_probe_of_a_method_without_an_offset_is_refused() {
+        // Port 9 (discard) is closed locally, so a probe that did reach the
+        // network would still come back `Transport` -- the message is what
+        // tells the refusal from a failed request.
+        let client = Client::builder("user@example.com", "password")
+            .base_url("http://127.0.0.1:9/".parse().unwrap())
+            .build();
+        let request = ZonedRequest::new(&json!({}), TimezoneOffset::UTC).unwrap();
+
+        let outcome =
+            probe_zoned::<GetBalanceResponse>(&client, "getBalance", &request, |_| None).await;
+
+        let ProbeOutcome::Transport(message) = outcome else {
+            panic!("expected the probe to be refused");
+        };
+        assert!(message.contains("not a zoned probe"), "{message}");
+    }
 
     /// The signal this replaces: before tolerance, these values failed the
     /// typed read and the probe reported drift. They now deserialize, so the

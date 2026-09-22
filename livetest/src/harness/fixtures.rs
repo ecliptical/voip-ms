@@ -87,7 +87,6 @@ where
 
 /// [`read_back`] for a record-listing method, whose response reports its
 /// timestamps in the UTC offset the request carried without naming it.
-/// `timestamps` are the paths [`voip_ms::attach_offset`] takes.
 ///
 /// The read-back is at [`TimezoneOffset::UTC`]; a non-zero offset is the
 /// `cdr` area's typed fixture, which goes through `Client::get_cdr` itself.
@@ -97,7 +96,6 @@ pub async fn read_back_zoned<P, T>(
     area: &str,
     label: &str,
     params: &P,
-    timestamps: &[&str],
     count: impl Fn(&T) -> Option<usize>,
 ) -> bool
 where
@@ -107,7 +105,7 @@ where
     let method = label.strip_prefix("fixture:").unwrap_or(label);
     match ZonedRequest::new(params, TimezoneOffset::UTC) {
         Ok(request) => {
-            let outcome = probe_zoned::<T>(client, method, &request, timestamps, count).await;
+            let outcome = probe_zoned::<T>(client, method, &request, count).await;
             record_read_back(
                 client,
                 report,

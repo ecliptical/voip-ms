@@ -84,7 +84,6 @@ impl Area for Reseller {
             ctx,
             report,
             "getResellerMMS",
-            GET_RESELLER_MMS_TIMESTAMPS,
             |r| Some(r.sms.len()),
         )
         .await;
@@ -92,7 +91,6 @@ impl Area for Reseller {
             ctx,
             report,
             "getResellerSMS",
-            GET_RESELLER_SMS_TIMESTAMPS,
             |r| Some(r.sms.len()),
         )
         .await;
@@ -270,13 +268,12 @@ async fn probe_reseller_zoned<P, T>(
     ctx: &AreaCtx<'_>,
     report: &mut Report,
     method: &str,
-    timestamps: &[&str],
     count: impl Fn(&T) -> Option<usize>,
 ) where
     P: Serialize + Default,
     T: DeserializeOwned + std::fmt::Debug,
 {
-    let outcome = probe_zoned_default::<P, T>(ctx.client, method, timestamps, count).await;
+    let outcome = probe_zoned_default::<P, T>(ctx.client, method, count).await;
     record_reseller(report, method, outcome);
 }
 

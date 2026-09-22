@@ -23,7 +23,7 @@ use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back_zoned;
 use crate::harness::{Outcome, Report};
 use voip_ms::chrono_tz::Tz;
-use voip_ms::{Client, Error, GET_CDR_TIMESTAMPS, GetCDRParams, GetCDRResponse, Reported};
+use voip_ms::{Client, Error, GetCDRParams, GetCDRResponse, Reported};
 
 pub struct Cdr;
 
@@ -59,7 +59,6 @@ impl Area for Cdr {
             AREA,
             "getCDR",
             &window_params(),
-            GET_CDR_TIMESTAMPS,
             |r| Some(r.cdr.len()),
         )
         .await;

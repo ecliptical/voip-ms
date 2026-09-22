@@ -31,19 +31,16 @@ macro_rules! probe_list {
     }};
 }
 
-/// Probe a record-listing method: as [`probe_list!`], with `$timestamps` the
-/// crate's `*_TIMESTAMPS` const for the method, naming the response timestamps
-/// that come back in the offset the request carried. UTC, so a reported wall
-/// clock is the instant it names.
+/// Probe a record-listing method: as [`probe_list!`], for a method whose
+/// response timestamps come back in the offset the request carried. UTC, so a
+/// reported wall clock is the instant it names.
 macro_rules! probe_zoned_list {
-    ($ctx:expr, $report:expr, $area:expr, $wire:literal, $params:ty, $resp:ty, $field:ident, $timestamps:expr) => {{
-        let outcome = $crate::harness::probe_zoned_default::<$params, $resp>(
-            $ctx.client,
-            $wire,
-            $timestamps,
-            |r| Some(r.$field.len()),
-        )
-        .await;
+    ($ctx:expr, $report:expr, $area:expr, $wire:literal, $params:ty, $resp:ty, $field:ident) => {{
+        let outcome =
+            $crate::harness::probe_zoned_default::<$params, $resp>($ctx.client, $wire, |r| {
+                Some(r.$field.len())
+            })
+            .await;
         $report.record_probe($area, $wire, outcome);
     }};
 }
