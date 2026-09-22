@@ -20,7 +20,7 @@ use std::path::Path;
 use crate::wsdl;
 
 /// Top-level JSON document written to `tools/api-responses.json`.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Document {
     pub version: u32,
     pub methods: serde_json::Map<String, JsonValue>,
@@ -39,7 +39,7 @@ pub struct Document {
 }
 
 /// Inferred scalar primitive.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ScalarTy {
     #[serde(rename = "integer")]
     Integer,
@@ -96,7 +96,7 @@ pub enum Shape {
 
 /// JSON-equivalent of `Shape` (de)serialized to/from `api-responses.json`.
 /// The on-disk representation is tagged on `kind`.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 enum ShapeRepr {
     Scalar {
@@ -116,7 +116,7 @@ enum ShapeRepr {
     },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ShapeField {
     name: String,
     shape: ShapeRepr,
@@ -145,7 +145,7 @@ impl Shape {
 }
 
 /// Top-level JSON document written to `tools/api-statuses.json`.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct StatusDocument {
     pub version: u32,
     /// Documented `status` values, in source order. Each entry is the
@@ -154,7 +154,7 @@ pub struct StatusDocument {
 }
 
 /// One row of the global "Error Codes" table.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct StatusEntry {
     /// Verbatim wire `status` string (e.g. `invalid_credentials`). VoIP.ms
     /// ships a couple of these capitalized (`Invalid_threshold`), so the
@@ -465,7 +465,6 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
 // ---------------------------------------------------------------------------
 
 /// Which labelled cell a captured `<pre>` block came from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum BlockKind {
     Parameters,
     Output,
@@ -473,7 +472,6 @@ enum BlockKind {
 
 /// A captured `<pre>` block: the method it belongs to, which cell it
 /// came from, and its raw (still HTML-encoded) text.
-#[derive(Debug)]
 struct Block {
     name: String,
     kind: BlockKind,

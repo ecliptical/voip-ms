@@ -162,16 +162,31 @@ Each family carries the one serde direction it uses -- `*Params` derive
 which are independent of serde and let a whole value be compared, deduped, or
 diffed.
 
-The rule for what else a type carries is what the trait costs, not whether
-something uses it today. A serde impl is a wire contract that has to stay
-correct, and a `Default` manufactures a value that may be wrong, so neither is
-emitted without a caller. The purely structural derives (`Hash`,
-`PartialOrd`/`Ord`, `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`) claim nothing
-beyond what the compiler derives and stay on every type that can carry them,
-so a consumer can key a map by `ApiStatus` or sort a `TimezoneOffset` without
-asking. Three places depend on a specific trait being present and will fail
-the build if one is dropped: `check-types`, the `is_copy_ty` table, and the
-probe macros' `Default` bound on a params type.
+**A derive needs a reason.** Every public type derives `Debug`, which the Rust
+API guidelines require. A public type that holds plain data also derives
+`Clone`, `PartialEq` and `Eq` -- what a caller needs to keep a copy of a value
+and to assert on it -- and `Copy` when it is a small value. Nothing else goes
+on without a reason that holds for the type itself:
+
+* A serde impl is a wire contract that has to stay correct, and a `Default`
+  manufactures a value that may be wrong, so neither is emitted without a
+  caller.
+* `Hash` and `PartialOrd`/`Ord` are not free either. They claim the type is a
+  key or has an order, and a derived order on an enum is declaration order, which
+  reads as a domain claim it does not make: a derived `Ord` on
+  `TransactionDate` would sort every `At` before every `On` regardless of date.
+  `TimezoneOffset` is the one ordered type, because it is a number of hours and
+  its derived order is the numeric one.
+* A private type -- including everything in `xtask` and `livetest` -- carries
+  only what the code uses. The compiler is the test: drop the derive and see
+  whether the workspace, tests included, still builds under clippy's
+  `-D warnings`, which also catches a `.clone()` that silently falls back to
+  cloning a reference.
+
+Removing a derive that has shipped is a breaking change, and adding one is not,
+so when in doubt leave it off. Three places depend on a specific trait being
+present and will fail the build if one is dropped: `check-types`, the
+`is_copy_ty` table, and the probe macros' `Default` bound on a params type.
 
 `*Params` derive `Default`, which is what makes the struct-update idiom of
 decision 3 work. `*Response` do not: a response is received, never built, and
@@ -475,9 +490,8 @@ in `xtask/src/field_overrides.rs`:
   `tools/api-response-overrides.json` under the new `enums` (variant
   list with wire strings) and `field_types` (field-name → enum-name)
   sections. The generator emits the enum type (deriving `Debug`, `Clone`,
-  `PartialEq`, `Eq`, `Hash`, `PartialOrd`, `Ord` -- not `Copy`, since the
-  `Unknown(String)` catch-all holds a `String`), `as_wire` / `from_wire`,
-  `Display`, and substitutes the field's
+  `PartialEq`, `Eq` -- not `Copy`, since the `Unknown(String)` catch-all holds
+  a `String`), `as_wire` / `from_wire`, `Display`, and substitutes the field's
   type in every `*Params` and `*Response` struct that has that field.
 
   **Only the serde direction a field reaches it through is emitted**, tracked

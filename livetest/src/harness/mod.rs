@@ -14,7 +14,7 @@ pub use probe::{ProbeOutcome, probe, probe_zoned_default};
 use std::fmt::Write as _;
 
 /// The classification of a single check.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Outcome {
     Pass,
     /// A non-drift failure: network error, real API error, or a fixture step
@@ -49,7 +49,6 @@ pub enum Outcome {
 }
 
 /// One recorded check: an area, a method/label, and its outcome.
-#[derive(Clone, Debug)]
 pub struct Record {
     pub area: String,
     pub name: String,
@@ -258,7 +257,7 @@ fn quote(value: &str) -> String {
 }
 
 /// Tally of outcomes by kind.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Default)]
 pub struct Counts {
     pub pass: usize,
     pub fail: usize,

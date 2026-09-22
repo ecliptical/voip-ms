@@ -14,7 +14,7 @@ use voip_ms::chrono::NaiveDate;
 use voip_ms::rust_decimal::Decimal;
 
 /// How far the harness goes within each selected area.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, ValueEnum)]
 pub enum Depth {
     /// Read-only calls only (every `get*`/reference method), with raw-vs-typed
     /// drift diffing.
@@ -44,7 +44,6 @@ impl Depth {
 /// Optional HTTP Basic auth an API server may require, separate from the VoIP.ms
 /// API credentials. A server that emulates or fronts the VoIP.ms API (e.g. one
 /// hosted on an allow-listed IP) may gate access this way.
-#[derive(Clone)]
 pub struct BasicAuth {
     pub username: String,
     pub password: String,
@@ -372,7 +371,6 @@ pub struct Cli {
 }
 
 /// Validated configuration derived from [`Cli`].
-#[derive(Debug)]
 pub struct Config {
     pub username: String,
     pub password: String,
@@ -399,7 +397,6 @@ pub struct Config {
 }
 
 /// Inputs for the sms/mms `--depth costly` fixtures, required together.
-#[derive(Debug, Clone)]
 pub struct SmsFixtureConfig {
     pub test_did: String,
     pub sms_dst: String,
@@ -409,7 +406,6 @@ pub struct SmsFixtureConfig {
 /// `e911Validate`; provisioning additionally requires `provision`. Each mutator
 /// is fired only when its inputs are complete, so an incomplete address records
 /// skip (no input) rather than failing.
-#[derive(Debug, Clone, Default)]
 pub struct E911Config {
     pub did: Option<String>,
     pub provision: bool,
@@ -426,7 +422,6 @@ pub struct E911Config {
 /// account costly-depth inputs. The money-movers fire only when their amount
 /// (and a client id) is supplied; the input-gated reads fire only with their
 /// required id/date-window.
-#[derive(Debug, Clone, Default)]
 pub struct AccountConfig {
     pub client_id: Option<u64>,
     pub payment_amount: Option<Decimal>,
@@ -438,7 +433,6 @@ pub struct AccountConfig {
 /// porting costly-depth inputs. `getPortability`/`getLNP*` fire with their id
 /// inputs; `addLNPPort` fires only when `submit` is set and the detail fields
 /// are complete.
-#[derive(Debug, Clone, Default)]
 pub struct PortingConfig {
     pub portability_did: Option<String>,
     pub port_id: Option<u64>,
@@ -460,7 +454,6 @@ pub struct PortingConfig {
 /// reseller costly-depth inputs. The input-gated reads fire with a client id;
 /// `signupClient` fires only when `signup` is set and the detail fields are
 /// complete. Secrets are redacted in `Debug`.
-#[derive(Clone, Default)]
 pub struct ResellerConfig {
     pub client_id: Option<u64>,
     pub signup: bool,
@@ -496,7 +489,6 @@ impl std::fmt::Debug for ResellerConfig {
 }
 
 /// Which areas to run, before intersecting with the known-area registry.
-#[derive(Debug)]
 pub enum AreaSelection {
     /// Default: all free areas minus `exclude`.
     DefaultFree { exclude: Vec<String> },

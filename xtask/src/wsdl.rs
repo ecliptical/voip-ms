@@ -5,7 +5,6 @@ use std::collections::BTreeSet;
 
 const XSD_NS: &str = "http://www.w3.org/2001/XMLSchema";
 
-#[derive(Debug)]
 pub struct Wsdl {
     pub operations: Vec<String>,
     pub types: std::collections::HashMap<String, Vec<(String, String)>>,

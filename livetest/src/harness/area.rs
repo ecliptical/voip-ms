@@ -17,7 +17,7 @@ use voip_ms::Client;
 
 /// Whether an area involves money or irreversible state by its nature, and so
 /// is excluded from the default selection until explicitly named.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(PartialEq)]
 pub enum CostClass {
     /// No method in the area costs money or is irreversible at any depth.
     Free,

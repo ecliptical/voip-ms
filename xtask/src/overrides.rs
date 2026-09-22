@@ -35,7 +35,7 @@ use crate::extract::{ScalarTy, Shape};
 /// `dump-fields` emits and the live harness reports.
 const MAP_WILDCARD: &str = "*";
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct OverridesDoc {
     /// Schema version. Currently always `1`; bump and branch on it if
     /// the format ever changes incompatibly.
@@ -89,7 +89,7 @@ pub struct OverridesDoc {
 }
 
 /// A user-defined enum to emit into the generated module.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct EnumDef {
     /// Optional doc comment placed above the emitted enum.
     #[serde(default)]
@@ -98,7 +98,7 @@ pub struct EnumDef {
     pub variants: Vec<EnumVariant>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct EnumVariant {
     /// PascalCase Rust variant name.
     pub name: String,
@@ -122,7 +122,7 @@ impl OverridesDoc {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct MethodOverride {
     /// Full shape replacement. When present, takes precedence over the
     /// extracted shape (and over any `patches` or `additions` on this
@@ -138,7 +138,7 @@ pub struct MethodOverride {
     pub additions: Vec<Addition>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct Patch {
     pub path: String,
     #[serde(rename = "type")]
@@ -151,7 +151,7 @@ pub struct Patch {
 ///
 /// Declaring a field the extracted shape already carries is an error: the
 /// docs have caught up, so the entry is stale and belongs deleted.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct Addition {
     pub path: String,
     #[serde(rename = "type")]

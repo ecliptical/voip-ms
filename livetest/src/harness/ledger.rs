@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 
 /// One tracked resource. `kind` names the resource type (e.g. `"did"`),
 /// `id` is the identifier needed to look it up and delete it.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Serialize, Deserialize)]
 pub struct Entry {
     /// Opaque account key (a non-reversible tag of the API username) so entries
     /// for different accounts sharing a ledger file never cross-reconcile.

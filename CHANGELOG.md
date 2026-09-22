@@ -165,10 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   timestamps come back qualified `+05:30`).
 - Every generated `*Params` and `*Response` struct derives `PartialEq` and
   `Eq`, so a test can compare a whole response and a consumer can dedupe or
-  diff records without writing them out field by field. `ApiStatus`, every
-  generated wire enum, `Routing`, `Reported<T>`, `TransactionDate`, `Seconds`,
-  `WaitTime`, and `MaxMembers` also derive `PartialOrd` and `Ord`, so they can
-  key a `BTreeMap` or be sorted.
+  diff records without writing them out field by field.
 - `NoParams`, the parameters of a method that takes none. Public so a caller
   reaching one of the eight parameterless methods by wire name through
   `Client::call_raw` has something to serialize.
@@ -364,13 +361,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   crate owns, and a failure surfaced as `Error::InvalidResponse`, a variant
   about HTTP bodies. The default URL is parsed once into a `LazyLock`, and
   `Client::new` no longer documents a panic.
-- **Breaking**: a type no longer carries a serde direction or a `Default`
-  that nothing reaches. Both kinds cost something to keep: a serde impl is a
-  wire contract that has to stay correct, and a `Default` manufactures a
-  value. The purely structural derives (`Hash`, `PartialOrd`/`Ord`,
-  `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`) cost nothing and are
-  unchanged, so a consumer can still key a map by `ApiStatus` or sort a
-  `TimezoneOffset`.
+- **Breaking**: a type no longer carries a trait that nothing needs. A serde
+  impl is a wire contract that has to stay correct, a `Default` manufactures
+  a value, and a `Hash` or an ordering is a promise about what the type is
+  for. A public type keeps `Debug`, plus `Clone`, `PartialEq` and `Eq` where
+  it holds plain data, and `Copy` where it is a small value.
+  - `Hash` is gone from `ApiStatus`, every generated wire enum, `Routing`,
+    `Seconds`, `WaitTime`, `MaxMembers`, `TimezoneOffset`, `TimezoneName`,
+    `TransportFailure`, and `RetryOutlook`. Nothing in the crate hashed one,
+    and none is an obvious map key.
+  - `TimezoneOffset` keeps `PartialOrd` and `Ord`: it is a number of hours,
+    and its order is the numeric one.
   - `ApiStatus` no longer
     implements `Serialize`, `TimezoneName` no longer implements `Serialize`
     (nothing writes a zone name; only `getTimezones` and `getVoicemails`

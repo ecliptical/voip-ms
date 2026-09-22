@@ -19,7 +19,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// How a particular field name should be typed.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct FieldOverride {
     /// Fully-qualified Rust type to substitute for `String`.
     pub rust_type: String,
@@ -57,7 +57,7 @@ impl FieldOverride {
 
 /// Runtime table of field-name overrides. Built from both built-in
 /// entries and the overrides JSON.
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Table {
     entries: HashMap<String, FieldOverride>,
 }

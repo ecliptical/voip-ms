@@ -16,7 +16,6 @@ pub const OWNED_USERNAME_PREFIX: &str = "lvt";
 
 /// A per-run token, unique per process invocation, so concurrent runs and
 /// crashed prior runs never collide and each orphan is attributable.
-#[derive(Clone, Debug)]
 pub struct RunToken(String);
 
 impl RunToken {

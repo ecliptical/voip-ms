@@ -502,7 +502,6 @@ pub(crate) fn acronyms_sorted() -> Vec<&'static str> {
 /// canonical (mixed/upper) casing from [`ACRONYMS`] so PascalCase
 /// emission can reuse it verbatim; ordinary words are stored as
 /// lowercase fragments.
-#[derive(Debug, Clone)]
 pub(crate) enum Token {
     Acronym(&'static str),
     Word(String),
@@ -895,7 +894,7 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
          /// assert_eq!(unknown.description(), None);\n\
          /// assert!(!unknown.is_documented());\n\
          /// ```\n\
-         #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]\n\
+         #[derive(Debug, Clone, PartialEq, Eq)]\n\
          pub enum ApiStatus {\n",
     );
     for (variant, code, desc) in &variants {
@@ -1358,7 +1357,7 @@ fn emit_offset_wire(
     out.push_str(&format!(
         "\n/// Wire form of [`{struct_name}`]: `timezone` resolved to the numeric UTC\n\
          /// offset `{op}` expects.\n\
-         #[derive(Debug, Clone, Serialize)]\n\
+         #[derive(Serialize)]\n\
          struct {wire_name} {{\n"
     ));
     for (fname, ftype) in body_fields.iter().copied() {
@@ -1537,7 +1536,7 @@ fn enum_deserializer_path(enum_name: &str) -> String {
 /// and most are both. Emitting the unused direction would ship a wire contract
 /// nothing exercises -- and the reader helper for a param-only enum was dead
 /// code the generator had to `#[allow]` to keep the build quiet.
-#[derive(Debug, Default)]
+#[derive(Default)]
 struct EnumSides {
     serialize: BTreeSet<String>,
     deserialize: BTreeSet<String>,
@@ -1592,7 +1591,7 @@ fn emit_enums(
             ));
         }
 
-        out.push_str("#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]\n");
+        out.push_str("#[derive(Debug, Clone, PartialEq, Eq)]\n");
         out.push_str(&format!("pub enum {name} {{\n"));
         for v in &def.variants {
             if let Some(doc) = &v.doc {

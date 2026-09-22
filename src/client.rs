@@ -19,7 +19,6 @@ static DEFAULT_URL: LazyLock<Url> = LazyLock::new(|| {
 });
 
 /// Where a request carries its parameters.
-#[derive(Clone, Copy)]
 enum Transport {
     /// A GET with the parameters on the query string.
     Get,

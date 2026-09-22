@@ -63,7 +63,7 @@ fn unwrap_reported(rust_type: &str) -> &str {
 }
 
 /// One emitted field: where it sits and what it is typed as.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 struct Field {
     struct_name: String,
     rust_type: String,
