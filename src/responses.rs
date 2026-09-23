@@ -282,17 +282,23 @@ fn parse_offset_datetime(s: &str) -> Option<DateTime<FixedOffset>> {
 /// [`WallClock`], keeping the wire text when it does not parse.
 ///
 /// A bare wall clock is accepted as [`WallClock::Bare`] rather than refused or
-/// read as UTC. A value stays bare when the zone it was rendered in is not
-/// known, or when its wall clock is ambiguous or nonexistent in that zone, so a
-/// bare value is part of the contract rather than a break in it -- and typing
-/// it `Bare` claims no zone, where reading it as UTC would invent one.
+/// read as UTC, with or without the zone name [`crate::attach_zone`] appends to
+/// one it could not resolve. A value stays bare when the zone it was rendered
+/// in is not known, or when its wall clock is ambiguous or nonexistent in that
+/// zone, so a bare value is part of the contract rather than a break in it --
+/// and typing it `Bare` claims no zone, where reading it as UTC would invent
+/// one.
 pub(crate) fn deserialize_opt_reported_wall_clock<'de, D>(
     deserializer: D,
 ) -> Result<Option<Reported<WallClock>>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    deserialize_opt_reported(deserializer, parse_wall_clock)
+    deserialize_opt_reported(deserializer, |s| match split_zone_name(s) {
+        Some((wall, _)) => parse_bare(wall),
+        None if names_offset(s) => parse_offset_datetime(s).map(WallClock::Zoned),
+        None => parse_bare(s),
+    })
 }
 
 /// Deserialize a record-listing timestamp, which [`crate::attach_offset`] must
@@ -301,13 +307,16 @@ where
 /// A value that names an offset is [`WallClock::Zoned`]. A wall clock followed
 /// by [`crate::SERVER_ZONE`]'s name is one `attach_offset` could not resolve
 /// (the hour the zone repeats when clocks fall back), and is
-/// [`WallClock::Bare`]. A value with **neither** is refused: VoIP.ms reports
-/// these wall clocks shifted by the `timezone` sent, so an unqualified one is
+/// [`WallClock::Bare`].
+///
+/// A `YYYY-MM-DD HH:MM:SS` wall clock with **neither** is refused: VoIP.ms
+/// reports these shifted by the `timezone` sent, so an unqualified one is
 /// neither the server's wall clock nor the caller's, and reading it as either
 /// would give a wrong instant with nothing to show it. That is a broken
-/// contract, not an odd value, so it fails the field rather than degrading. A
-/// value that is qualified but does not parse degrades to
-/// [`Reported::Unreadable`].
+/// contract, not an odd value, so it fails the field rather than degrading.
+/// Anything else that does not parse is an odd value, which `attach_offset`
+/// leaves as it arrived, and degrades to [`Reported::Unreadable`] like any
+/// other response date.
 pub(crate) fn deserialize_opt_record_listing_timestamp<'de, D>(
     deserializer: D,
 ) -> Result<Option<Reported<WallClock>>, D::Error>
@@ -322,40 +331,39 @@ where
         return Ok(None);
     }
 
-    if names_offset(&text) {
-        return Ok(Some(match parse_offset_datetime(&text) {
-            Some(at) => Reported::Parsed(WallClock::Zoned(at)),
-            None => Reported::Unreadable(text),
-        }));
-    }
+    let parsed = match split_zone_name(&text) {
+        Some((wall, zone)) if zone == crate::SERVER_ZONE => parse_bare(wall),
+        Some(_) => None,
+        None if names_offset(&text) => parse_offset_datetime(&text).map(WallClock::Zoned),
+        None if parse_bare(&text).is_some() => {
+            return Err(D::Error::custom(format!(
+                "record-listing timestamp {text} names no offset; qualify the envelope with \
+                 attach_offset for the timezone the request carried"
+            )));
+        }
 
-    let Some(wall) = text
-        .strip_suffix(crate::SERVER_ZONE.name())
-        .and_then(|rest| rest.strip_suffix(' '))
-    else {
-        return Err(D::Error::custom(format!(
-            "record-listing timestamp {text} names no offset; qualify the envelope with \
-             attach_offset for the timezone the request carried"
-        )));
+        None => None,
     };
 
-    Ok(Some(
-        match NaiveDateTime::parse_from_str(wall, DATETIME_WIRE_FORMAT) {
-            Ok(at) => Reported::Parsed(WallClock::Bare(at)),
-            Err(_) => Reported::Unreadable(text),
-        },
-    ))
+    Ok(Some(match parsed {
+        Some(at) => Reported::Parsed(at),
+        None => Reported::Unreadable(text),
+    }))
 }
 
-/// A wall clock with or without an offset.
-fn parse_wall_clock(s: &str) -> Option<WallClock> {
-    if names_offset(s) {
-        parse_offset_datetime(s).map(WallClock::Zoned)
-    } else {
-        NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT)
-            .ok()
-            .map(WallClock::Bare)
-    }
+/// A `YYYY-MM-DD HH:MM:SS` wall clock.
+fn parse_bare(s: &str) -> Option<WallClock> {
+    NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT)
+        .ok()
+        .map(WallClock::Bare)
+}
+
+/// A value the qualification helpers wrote for a wall clock with no single
+/// offset -- `<wall clock> <IANA zone name>` -- split into its two parts, or
+/// `None` when the text after the last space is not a zone name.
+fn split_zone_name(s: &str) -> Option<(&str, Tz)> {
+    let (wall, zone) = s.rsplit_once(' ')?;
+    Some((wall, zone.parse::<Tz>().ok()?))
 }
 
 pub(crate) fn deserialize_opt_routing<'de, D>(deserializer: D) -> Result<Option<Routing>, D::Error>
@@ -844,7 +852,6 @@ mod tests {
         // neither the server's clock nor the caller's: refused, not guessed.
         let err = call(json!("2026-09-23 17:28:34")).unwrap_err().to_string();
         assert!(err.contains("attach_offset"), "{err}");
-        assert!(call(json!("2026-11-01 01:30:00 Europe/Berlin")).is_err());
         // Qualified but unreadable text degrades rather than failing.
         assert_eq!(
             call(json!("2026-02-30 00:00:00-04:00")).unwrap(),
@@ -858,6 +865,53 @@ mod tests {
                 "2026-02-30 00:00:00 America/Toronto".to_string()
             ))
         );
+        // Text that is not a wall clock is what `attach_offset` leaves as it
+        // arrived. It is an odd value, not an unqualified one, so it costs its
+        // own field rather than every row beside it.
+        for odd in [
+            "2026-02-30 00:00:00",
+            "2026-09-23",
+            "2026-09-23 17:28",
+            "2026-09-23T17:28:34",
+            "soon",
+        ] {
+            assert_eq!(
+                call(json!(odd)).unwrap(),
+                Some(Reported::Unreadable(odd.to_string())),
+                "{odd}"
+            );
+        }
+
+        // A zone name other than the server's is not one `attach_offset`
+        // writes.
+        assert_eq!(
+            call(json!("2026-11-01 01:30:00 Europe/Berlin")).unwrap(),
+            Some(Reported::Unreadable(
+                "2026-11-01 01:30:00 Europe/Berlin".to_string()
+            ))
+        );
+    }
+
+    /// Both helpers write an unresolvable wall clock one way, and a named-zone
+    /// field reads it as the same `Bare` value as the plain spelling.
+    #[test]
+    fn opt_reported_wall_clock_reads_the_zone_named_form() {
+        let call = deserialize_opt_reported_wall_clock::<serde_json::Value>;
+        let wall = Some(Reported::Parsed(WallClock::Bare(
+            NaiveDate::from_ymd_opt(2026, 11, 1)
+                .unwrap()
+                .and_hms_opt(1, 30, 0)
+                .unwrap(),
+        )));
+        assert_eq!(
+            call(json!("2026-11-01 01:30:00 America/Toronto")).unwrap(),
+            wall
+        );
+        assert_eq!(
+            call(json!("2026-11-01 01:30:00 Pacific/Honolulu")).unwrap(),
+            wall
+        );
+        assert_eq!(call(json!("2026-11-01 01:30:00")).unwrap(), wall);
     }
 
     #[test]

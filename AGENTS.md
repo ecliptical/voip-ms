@@ -357,9 +357,10 @@ in `xtask/src/field_overrides.rs`:
     number with `TimezoneOffset::for_window` at the query start date
     (`date_from` / `from`), or at the end date (`date_to` / `to`) when there is
     no start, and routes both generated method bodies through it. A named zone
-    with neither date, a date string that does not parse (named zone or not),
-    or a number outside the range is `Error::InvalidParams` before any request
-    is sent. The public
+    with neither date (`TimezoneOffsetError::MissingQueryDate`), a date string
+    that does not parse (`ParamsError::InvalidDate`, named zone or not, naming
+    the param), or a number outside the range is `Error::InvalidParams` before
+    any request is sent. The public
     struct still derives `Serialize` -- there `timezone` emits the IANA name
     (what a log should show); only the wire twin carries the number, so a raw
     `call_raw` caller picks the number itself with `for_window`.
@@ -717,10 +718,13 @@ from its neighbors at `timezone=0`.
 
 The zone name is also what keeps the guard. `deserialize_opt_record_listing_timestamp`
 reads a value with an offset as `Zoned` and one ending in the server zone's
-name as `Bare`, and refuses one with neither: that is a shifted wall clock that
-was never qualified, which a raw caller who skipped `attach_offset` would
-otherwise read as if it meant something. It cannot catch `attach_offset` given
-a number other than the one sent.
+name as `Bare`. It refuses a `YYYY-MM-DD HH:MM:SS` wall clock with neither:
+that is a shifted wall clock that was never qualified, which a raw caller who
+skipped `attach_offset` would otherwise read as if it meant something. Any other
+text is an odd value that `attach_offset` left as it arrived, and it degrades to
+`Reported::Unreadable`, so one malformed date costs its own row and not the
+envelope. The guard cannot catch `attach_offset` given a number other than the
+one sent.
 
 Qualifying is a step on the JSON, not a `Deserialize` impl: serde has no access
 to the request, so it cannot know the number sent. `attach_offset` is public
@@ -882,19 +886,21 @@ one to `ZONE_OPS` wants a measurement, not the pattern.
 
 Each row is resolved at its own instant, so rows on either side of a DST change
 get different offsets. A wall clock the zone repeats when clocks fall back is
-ambiguous, and one it skips when they spring forward should not occur. Both stay
-`Bare`, because choosing a side would be a guess. So do a value that already
-names an offset (`names_offset`), a blank, and text that is not a
-`YYYY-MM-DD HH:MM:SS` wall clock. An offset with a seconds part (a zone's
-pre-standard local mean time) also stays `Bare`, because the wire spelling
-stops at minutes and `WallClock`'s `Display` would not round-trip it.
+ambiguous, and one it skips when they spring forward should not occur. Both read
+as `Bare`, because choosing a side would be a guess, and so does one at an
+offset with a seconds part (a zone's pre-standard local mean time), which the
+wire spelling cannot carry since it stops at minutes. A value that already names
+an offset (`names_offset`), a blank, and text that is not a
+`YYYY-MM-DD HH:MM:SS` wall clock are left as they arrived.
 
 `attach_zone` and `attach_offset` share one walk. Each only resolves a value --
 `attach_offset` after moving it back by the shift -- and the walk rewrites it in
-place, trimmed: as the instant with its offset, or, for `attach_offset`'s
-unresolvable hour, as the server-zone wall clock with the zone's name. A value
-`attach_zone` cannot resolve is left exactly as it arrived, since its fields
-accept a bare value.
+place, trimmed: as the instant with its offset, or, for a wall clock with no
+single offset, as that wall clock followed by the zone's name
+(`2026-11-01 01:30:00 America/Toronto`). Both helpers write that one form, so a
+server-zone field and a record-listing field agree on the unresolvable hour, and
+both kinds of field read it as `Bare`. A named-zone field also reads the plain
+spelling, which is what an unqualified call leaves.
 
 `WallClock`'s equality is hand-written. `DateTime<FixedOffset>`'s own `==`
 compares instants and ignores the offset, so a derived one would call
@@ -1055,8 +1061,10 @@ Four variants, no more:
 * `Error::InvalidParams(ParamsError)` -- the parameters could not be
   converted to their wire form, so no request was sent. `ParamsError` names
   which check failed: `Timezone(TimezoneOffsetError)` (see 5a's record-listing
-  offsets) and `Unencodable(String)`, a parameter with no wire-field rendering
-  (decision #7). The inner enum exists so the next parameter
+  offsets), `InvalidDate { param, value }` (a record-listing `from` / `to`
+  that is not a date, checked whether or not a zone is set), and
+  `Unencodable(String)`, a parameter with no wire-field rendering (decision
+  #7). The inner enum exists so the next parameter
   validation is additive: the variant name is general and a specific payload
   would have forced either a second `Error` variant or a breaking change. The
   timezone hop carries `#[from]`, so a generated `TryFrom<&*Params>` returning a

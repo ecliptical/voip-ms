@@ -1693,19 +1693,23 @@ fn emit_offset_wire(
             "        let day = p.{start_ident}.or(p.{end_ident});\n"
         ));
     } else {
+        let (start_wire, end_wire) = (off.start_field, off.end_field);
         out.push_str(&format!(
-            "        let parse = |d: Option<&str>| {{\n            \
+            "        let parse = |param: &'static str, d: Option<&str>| {{\n            \
                  d.map(str::trim)\n                \
                      .filter(|d| !d.is_empty())\n                \
                      .map(|d| {{\n                    \
                          d.parse::<chrono::NaiveDate>()\n                        \
-                             .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)\n                \
+                             .map_err(|_| crate::ParamsError::InvalidDate {{\n                            \
+                                 param,\n                            \
+                                 value: d.to_string(),\n                        \
+                             }})\n                \
                      }})\n                \
                      .transpose()\n        \
              }};\n        \
-             let day = match parse(p.{start_ident}.as_deref())? {{\n            \
+             let day = match parse({start_wire:?}, p.{start_ident}.as_deref())? {{\n            \
                  Some(day) => Some(day),\n            \
-                 None => parse(p.{end_ident}.as_deref())?,\n        \
+                 None => parse({end_wire:?}, p.{end_ident}.as_deref())?,\n        \
              }};\n"
         ));
     }

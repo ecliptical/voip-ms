@@ -7238,18 +7238,21 @@ impl TryFrom<&GetMMSParams> for GetMMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetMMSParams) -> std::result::Result<Self, Self::Error> {
-        let parse = |d: Option<&str>| {
+        let parse = |param: &'static str, d: Option<&str>| {
             d.map(str::trim)
                 .filter(|d| !d.is_empty())
                 .map(|d| {
                     d.parse::<chrono::NaiveDate>()
-                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                        .map_err(|_| crate::ParamsError::InvalidDate {
+                            param,
+                            value: d.to_string(),
+                        })
                 })
                 .transpose()
         };
-        let day = match parse(p.from.as_deref())? {
+        let day = match parse("from", p.from.as_deref())? {
             Some(day) => Some(day),
-            None => parse(p.to.as_deref())?,
+            None => parse("to", p.to.as_deref())?,
         };
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {
@@ -7830,18 +7833,21 @@ impl TryFrom<&GetResellerMMSParams> for GetResellerMMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetResellerMMSParams) -> std::result::Result<Self, Self::Error> {
-        let parse = |d: Option<&str>| {
+        let parse = |param: &'static str, d: Option<&str>| {
             d.map(str::trim)
                 .filter(|d| !d.is_empty())
                 .map(|d| {
                     d.parse::<chrono::NaiveDate>()
-                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                        .map_err(|_| crate::ParamsError::InvalidDate {
+                            param,
+                            value: d.to_string(),
+                        })
                 })
                 .transpose()
         };
-        let day = match parse(p.from.as_deref())? {
+        let day = match parse("from", p.from.as_deref())? {
             Some(day) => Some(day),
-            None => parse(p.to.as_deref())?,
+            None => parse("to", p.to.as_deref())?,
         };
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {
@@ -7945,18 +7951,21 @@ impl TryFrom<&GetResellerSMSParams> for GetResellerSMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetResellerSMSParams) -> std::result::Result<Self, Self::Error> {
-        let parse = |d: Option<&str>| {
+        let parse = |param: &'static str, d: Option<&str>| {
             d.map(str::trim)
                 .filter(|d| !d.is_empty())
                 .map(|d| {
                     d.parse::<chrono::NaiveDate>()
-                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                        .map_err(|_| crate::ParamsError::InvalidDate {
+                            param,
+                            value: d.to_string(),
+                        })
                 })
                 .transpose()
         };
-        let day = match parse(p.from.as_deref())? {
+        let day = match parse("from", p.from.as_deref())? {
             Some(day) => Some(day),
-            None => parse(p.to.as_deref())?,
+            None => parse("to", p.to.as_deref())?,
         };
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {
@@ -8100,18 +8109,21 @@ impl TryFrom<&GetSMSParams> for GetSMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetSMSParams) -> std::result::Result<Self, Self::Error> {
-        let parse = |d: Option<&str>| {
+        let parse = |param: &'static str, d: Option<&str>| {
             d.map(str::trim)
                 .filter(|d| !d.is_empty())
                 .map(|d| {
                     d.parse::<chrono::NaiveDate>()
-                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                        .map_err(|_| crate::ParamsError::InvalidDate {
+                            param,
+                            value: d.to_string(),
+                        })
                 })
                 .transpose()
         };
-        let day = match parse(p.from.as_deref())? {
+        let day = match parse("from", p.from.as_deref())? {
             Some(day) => Some(day),
-            None => parse(p.to.as_deref())?,
+            None => parse("to", p.to.as_deref())?,
         };
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {

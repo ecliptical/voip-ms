@@ -57,6 +57,12 @@ pub enum ParamsError {
     #[error(transparent)]
     Timezone(#[from] crate::types::TimezoneOffsetError),
 
+    /// A record-listing date param (`from` / `to`) that is not a `YYYY-MM-DD`
+    /// date, named by its wire name. It is checked whether or not a `timezone`
+    /// is set, since either date can anchor the window.
+    #[error("{param} {value:?} is not a YYYY-MM-DD date")]
+    InvalidDate { param: &'static str, value: String },
+
     /// Parameters with no wire-field rendering: a nested structure, or a value
     /// `serde` reports as something other than a scalar. Both transports carry
     /// the same flat name/value fields, so neither can send one.

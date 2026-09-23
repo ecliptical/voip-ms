@@ -33,10 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     days.
   - `attach_offset` takes the `TimezoneOffset` that was sent instead of a
     `FixedOffset`. It writes an unresolvable row as its Eastern wall clock
-    followed by the zone name (`2026-11-01 01:30:00 America/Toronto`).
-  - A record-listing envelope that was not qualified with `attach_offset` still
-    fails to deserialize, as in 0.13: an unqualified value is a shifted wall
-    clock that names neither the server's zone nor the caller's.
+    followed by the zone name (`2026-11-01 01:30:00 America/Toronto`), the
+    same form `attach_zone` writes.
+  - A record-listing value that is a `YYYY-MM-DD HH:MM:SS` wall clock with no
+    offset still fails to deserialize, as in 0.13, since it means
+    `attach_offset` was skipped: it is a shifted wall clock that names neither
+    the server's zone nor the caller's. Text that is not a wall clock at all
+    degrades to `Reported::Unreadable`, as any response date does.
   - Measured against the live API with that call (whose recording id embeds its
     Unix time) at `timezone` `-12`, `-5`, `-4`, `0`, `5.5` and `13`. Fractional
     numbers are honored. Two things were not measured: the reseller SMS/MMS
@@ -75,7 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.local()` for the wall clock either way and `.zoned()` for the instant. Two
   values are equal only when they report the same wall clock with the same
   offset. Its `Display` writes the wire spelling, with the offset appended when
-  it has one, and reads back as the same value.
+  it has one, and a named-zone field reads either form back as the same value.
+  A record-listing field does not read a bare one back, since it refuses a wall
+  clock with no offset.
 - `TimezoneOffset::for_window(tz, date)`, the number whose shifted days are
   `tz`'s days at `date`. `TimezoneOffset::at` still returns the zone's plain UTC
   offset.
@@ -99,16 +104,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is a UTC-12 zone (`Etc/GMT+12`), which 0.13 sent as `-12`; `Pacific/Kiritimati`
   (+14), which 0.13 always refused, now works during Eastern DST.
 - **Breaking**: an unparseable `from` / `to` on `getSMS` / `getMMS` and their
-  reseller pair is `Error::InvalidParams` whether or not a zone is named. 0.13
-  sent it anyway when no zone was named.
-- **Breaking**: `TimezoneOffsetError::MissingStartDate` and `InvalidStartDate`
-  are `MissingQueryDate` and `InvalidQueryDate`, since either date can now
-  anchor the window.
+  reseller pair is `Error::InvalidParams` whether or not a zone is named, as
+  the new `ParamsError::InvalidDate { param, value }`, which names the param.
+  0.13 sent it anyway when no zone was named, and reported it as a timezone
+  error when one was.
+- **Breaking**: `TimezoneOffsetError::MissingStartDate` is `MissingQueryDate`,
+  since either date can now anchor the window, and `InvalidStartDate` is gone
+  in favor of `ParamsError::InvalidDate`.
 - **Breaking**: `TimezoneOffset::to_fixed_offset` is removed. Attaching the
   number sent as an offset is the error this release fixes, and a 0.13 raw
   caller doing it by hand now fails to compile instead of being an hour off.
-  `TimezoneOffset`'s `Display` renders the number (`-5`, `5.5`) instead of a
-  `UTC-05:00` label.
+  `TimezoneOffset`'s `Display` renders the number as the wire carries it (`-5`,
+  `4.50`) instead of a `UTC-05:00` label.
 - Three response timestamps stay `NaiveDateTime`, unmeasured:
   `getBackOrders` `order_date` (a back order cannot be canceled through the
   API), `getLNPDetails` `date` (a port request is a real carrier filing) and

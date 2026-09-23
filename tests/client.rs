@@ -1127,7 +1127,10 @@ async fn a_raw_voicemail_messages_call_is_qualified_by_attach_zone() {
     voip_ms::attach_zone(&mut envelope, chrono_tz::America::Toronto, timestamps);
     assert_eq!(envelope["messages"][0]["date"], "2026-03-08 01:30:00-05:00");
     assert_eq!(envelope["messages"][1]["date"], "2026-03-08 03:30:00-04:00");
-    assert_eq!(envelope["messages"][2]["date"], "2026-11-01 01:30:00");
+    assert_eq!(
+        envelope["messages"][2]["date"],
+        "2026-11-01 01:30:00 America/Toronto"
+    );
     assert_eq!(envelope["messages"][3]["date"], "");
 
     let typed: voip_ms::GetVoicemailMessagesResponse = serde_json::from_value(envelope).unwrap();
@@ -1848,6 +1851,45 @@ async fn record_listing_timestamps_qualify_a_single_bare_record() {
 }
 
 #[tokio::test]
+async fn record_listing_odd_timestamp_costs_only_its_own_row() {
+    // Text that is not a wall clock is left as it arrived by `attach_offset`
+    // and degrades to `Unreadable`; it is not the unqualified value the guard
+    // refuses, so the rows beside it still read.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCDR"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "cdr": [
+                { "date": "2026-02-30 00:00:00", "uniqueid": "1" },
+                { "date": "2026-09-23T17:28:34", "uniqueid": "2" },
+                { "date": "2026-09-23 17:28:34", "uniqueid": "3" },
+            ],
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetCDRParams {
+        // A January start sends `0`, which moves every row back five hours.
+        date_from: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 1, 15),
+        ..Default::default()
+    };
+    let envelope = client.get_cdr(&params).await.unwrap();
+    assert_eq!(
+        envelope.cdr[0].date,
+        Some(voip_ms::Reported::Unreadable("2026-02-30 00:00:00".into()))
+    );
+    assert_eq!(
+        envelope.cdr[1].date,
+        Some(voip_ms::Reported::Unreadable("2026-09-23T17:28:34".into()))
+    );
+    assert_eq!(envelope.cdr[2].date, zoned("2026-09-23T12:28:34-04:00"));
+}
+
+#[tokio::test]
 async fn record_listing_blank_timestamp_does_not_lose_the_response() {
     // A blank `date` is one record's missing value, not a broken envelope: it
     // folds to `None` and every other record still deserializes.
@@ -1959,8 +2001,9 @@ async fn record_listing_window_falls_back_to_the_end_date() {
 #[tokio::test]
 async fn record_listing_unparseable_date_errors_without_a_zone_too() {
     // An unparseable date fails the same way whether or not a zone is named,
-    // rather than falling back to a number chosen for no day.
-    use voip_ms::{GetSMSParams, TimezoneOffsetError};
+    // rather than falling back to a number chosen for no day. The error names
+    // the date param, not the timezone the caller may never have set.
+    use voip_ms::GetSMSParams;
 
     let (server, client) = fixture().await;
 
@@ -1978,13 +2021,77 @@ async fn record_listing_unparseable_date_errors_without_a_zone_too() {
             ..Default::default()
         };
         let err = client.get_sms_raw(&params).await.unwrap_err();
-        assert!(
-            matches!(
-                err,
-                Error::InvalidParams(ParamsError::Timezone(TimezoneOffsetError::InvalidQueryDate))
-            ),
-            "{timezone:?}: {err:?}"
+        assert_eq!(
+            err.to_string(),
+            Error::InvalidParams(ParamsError::InvalidDate {
+                param: "from",
+                value: "15/07/2026".into(),
+            })
+            .to_string(),
+            "{timezone:?}"
         );
+    }
+
+    // With no `from`, a bad `to` is the one named.
+    let params = GetSMSParams {
+        to: Some("July".into()),
+        ..Default::default()
+    };
+    let err = client.get_sms_raw(&params).await.unwrap_err();
+    assert!(
+        matches!(
+            &err,
+            Error::InvalidParams(ParamsError::InvalidDate { param: "to", value }) if value == "July"
+        ),
+        "{err:?}"
+    );
+}
+
+#[tokio::test]
+async fn record_listing_blank_start_date_falls_through_to_the_end_date() {
+    // A blank `from` counts as absent, so `to` anchors the window.
+    use voip_ms::GetSMSParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSMS"))
+        .and(query_param("timezone", "-1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetSMSParams {
+        from: Some("  ".into()),
+        to: Some("2026-07-15".into()),
+        ..Default::default()
+    };
+    client.get_sms_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn cdr_window_falls_back_to_date_to() {
+    // The typed-date variant anchors on `date_to` when `date_from` is absent:
+    // UTC in July, during Eastern DST, is -1; in January, 0.
+    let (server, client) = fixture().await;
+
+    for (date_to, number) in [((2026, 7, 15), "-1"), ((2026, 1, 15), "0")] {
+        let _guard = Mock::given(method("GET"))
+            .and(path("/api/v1/rest.php"))
+            .and(query_param("method", "getCDR"))
+            .and(query_param("timezone", number))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+            .expect(1)
+            .mount_as_scoped(&server)
+            .await;
+
+        let params = GetCDRParams {
+            date_to: voip_ms::chrono::NaiveDate::from_ymd_opt(date_to.0, date_to.1, date_to.2),
+            ..Default::default()
+        };
+        client.get_cdr_raw(&params).await.unwrap();
     }
 }
 

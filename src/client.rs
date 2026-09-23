@@ -470,7 +470,7 @@ pub fn attach_offset(body: &mut Value, timezone: crate::TimezoneOffset, timestam
         let local = parse_wall(wall)?.checked_sub_signed(shift)?;
         Some(match resolve_in(crate::SERVER_ZONE, local) {
             Some(at) => Qualified::At(at),
-            None => Qualified::InServerZone(local),
+            None => Qualified::InZone(local, crate::SERVER_ZONE),
         })
     });
 }
@@ -490,12 +490,14 @@ pub fn attach_offset(body: &mut Value, timezone: crate::TimezoneOffset, timestam
 /// paths from its wire name.
 ///
 /// Each value is resolved on its own, so rows on either side of a DST change
-/// get different offsets. A value is left alone when it is blank, when it
-/// already names an offset, when it is not a `YYYY-MM-DD HH:MM:SS` wall clock,
-/// and when the wall clock is ambiguous in `zone` (the repeated hour when
-/// clocks fall back) or does not exist in it (the hour skipped when they spring
-/// forward). Choosing either side of an ambiguous hour would be a guess, and a
-/// value left bare still deserializes, as [`WallClock::Bare`](crate::WallClock::Bare).
+/// get different offsets. A wall clock that is ambiguous in `zone` (the
+/// repeated hour when clocks fall back) or does not exist in it (the hour
+/// skipped when they spring forward) has no single offset, and choosing one
+/// would be a guess. It is written followed by the zone's name, the same form
+/// [`attach_offset`] writes, and reads as
+/// [`WallClock::Bare`](crate::WallClock::Bare). A value is left exactly as it
+/// arrived when it is blank, when it already names an offset, and when it is
+/// not a `YYYY-MM-DD HH:MM:SS` wall clock.
 ///
 /// ```
 /// use voip_ms::{attach_zone, chrono_tz::America::Toronto, serde_json::json};
@@ -506,12 +508,16 @@ pub fn attach_offset(body: &mut Value, timezone: crate::TimezoneOffset, timestam
 /// ] });
 /// attach_zone(&mut body, Toronto, &["/messages/*/date"]);
 /// assert_eq!(body["messages"][0]["date"], "2026-09-22 18:47:40-04:00");
-/// // 01:30 happens twice in Toronto that night, so it stays bare.
-/// assert_eq!(body["messages"][1]["date"], "2026-11-01 01:30:00");
+/// // 01:30 happens twice in Toronto that night.
+/// assert_eq!(body["messages"][1]["date"], "2026-11-01 01:30:00 America/Toronto");
 /// ```
 pub fn attach_zone(body: &mut Value, zone: chrono_tz::Tz, timestamps: &[&str]) {
     qualify_timestamps(body, timestamps, |wall| {
-        resolve_in(zone, parse_wall(wall)?).map(Qualified::At)
+        let local = parse_wall(wall)?;
+        Some(match resolve_in(zone, local) {
+            Some(at) => Qualified::At(at),
+            None => Qualified::InZone(local, zone),
+        })
     });
 }
 
@@ -519,9 +525,9 @@ pub fn attach_zone(body: &mut Value, zone: chrono_tz::Tz, timestamps: &[&str]) {
 enum Qualified {
     /// An instant, written with its offset.
     At(chrono::DateTime<chrono::FixedOffset>),
-    /// A [`SERVER_ZONE`](crate::SERVER_ZONE) wall clock with no single offset
-    /// there, written with the zone's name.
-    InServerZone(chrono::NaiveDateTime),
+    /// A wall clock with no single offset in the zone, written followed by the
+    /// zone's name.
+    InZone(chrono::NaiveDateTime, chrono_tz::Tz),
 }
 
 /// A trimmed `YYYY-MM-DD HH:MM:SS` wall clock.
@@ -585,11 +591,11 @@ where
                     "{}",
                     at.format(crate::responses::OFFSET_DATETIME_WIRE_FORMAT)
                 ),
-                Qualified::InServerZone(local) => write!(
+                Qualified::InZone(local, zone) => write!(
                     s,
                     "{} {}",
                     local.format(crate::responses::DATETIME_WIRE_FORMAT),
-                    crate::SERVER_ZONE.name()
+                    zone.name()
                 ),
             };
         }
@@ -968,11 +974,27 @@ mod tests {
     }
 
     #[test]
-    fn attach_zone_leaves_a_repeated_or_skipped_wall_clock_bare() {
+    fn attach_zone_names_the_zone_for_a_repeated_or_skipped_wall_clock() {
         // 01:30 happens twice when clocks fall back; either offset is a guess.
-        assert_eq!(in_toronto("2026-11-01 01:30:00"), "2026-11-01 01:30:00");
+        assert_eq!(
+            in_toronto("2026-11-01 01:30:00"),
+            "2026-11-01 01:30:00 America/Toronto"
+        );
         // 02:30 never happens when they spring forward.
-        assert_eq!(in_toronto("2026-03-08 02:30:00"), "2026-03-08 02:30:00");
+        assert_eq!(
+            in_toronto("2026-03-08 02:30:00"),
+            "2026-03-08 02:30:00 America/Toronto"
+        );
+    }
+
+    /// The unresolvable hour comes out in one form whichever helper met it, so
+    /// a server-zone field and a record-listing field agree on it.
+    #[test]
+    fn both_helpers_write_the_unresolvable_hour_the_same_way() {
+        assert_eq!(
+            in_toronto("2026-11-01 01:30:00"),
+            read_with("0", "2026-11-01 06:30:00")
+        );
     }
 
     #[test]
@@ -988,14 +1010,18 @@ mod tests {
     }
 
     /// Both helpers rewrite a value they qualify in full, so padding goes, and
-    /// leave one they do not qualify exactly as it arrived.
+    /// leave one that is not a wall clock exactly as it arrived.
     #[test]
     fn both_helpers_trim_what_they_qualify_and_nothing_else() {
         assert_eq!(
             in_toronto(" 2026-09-22 18:47:40 "),
             "2026-09-22 18:47:40-04:00"
         );
-        assert_eq!(in_toronto(" 2026-11-01 01:30:00 "), " 2026-11-01 01:30:00 ");
+        assert_eq!(
+            in_toronto(" 2026-11-01 01:30:00 "),
+            "2026-11-01 01:30:00 America/Toronto"
+        );
+        assert_eq!(in_toronto(" 2026-09-22 "), " 2026-09-22 ");
         assert_eq!(
             read_with("-5", " 2026-09-16 15:14:35 "),
             "2026-09-16 15:14:35-04:00"
@@ -1020,6 +1046,9 @@ mod tests {
     fn attach_zone_leaves_a_local_mean_time_offset_bare() {
         // Toronto's local mean time before 1895 is -05:17:32, which the wire
         // spelling cannot carry to the second.
-        assert_eq!(in_toronto("1880-01-01 12:00:00"), "1880-01-01 12:00:00");
+        assert_eq!(
+            in_toronto("1880-01-01 12:00:00"),
+            "1880-01-01 12:00:00 America/Toronto"
+        );
     }
 }

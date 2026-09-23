@@ -547,10 +547,10 @@ pub struct ZoneTimestamps {
 }
 
 impl fmt::Display for TimezoneOffset {
-    /// Renders the number as sent (`-5`, `5.5`). It is not labeled as a UTC
-    /// offset, since during DST it is not one.
+    /// Renders the number as the wire carries it (`-5`, `4.50`). It is not
+    /// labeled as a UTC offset, since during DST it is not one.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.normalize().fmt(f)
+        self.0.fmt(f)
     }
 }
 
@@ -570,9 +570,6 @@ pub enum TimezoneOffsetError {
     /// at: neither the start date (`date_from` / `from`) nor the end date
     /// (`date_to` / `to`).
     MissingQueryDate,
-    /// A query date string (`from` / `to`) did not parse as a `YYYY-MM-DD`
-    /// date.
-    InvalidQueryDate,
 }
 
 impl fmt::Display for TimezoneOffsetError {
@@ -590,9 +587,6 @@ impl fmt::Display for TimezoneOffsetError {
                 "timezone requires a query date (date_from / from or date_to / to) to resolve \
                  its window",
             ),
-            TimezoneOffsetError::InvalidQueryDate => {
-                f.write_str("query date is not a YYYY-MM-DD date")
-            }
         }
     }
 }
@@ -1207,14 +1201,18 @@ mod tests {
         assert_eq!(TimezoneOffset::new(-5).unwrap().to_string(), "-5");
         assert_eq!(TimezoneOffset::new(13).unwrap().to_string(), "13");
         assert_eq!(TimezoneOffset::UTC.to_string(), "0");
-        // `for_window` computes Kolkata in July as 5.5 + 4 - 5 = 4.50; the
-        // trailing zero is scale, not a different number.
+        // `for_window` computes Kolkata in July as 5.5 + 4 - 5 = 4.50, and a
+        // log line should show what went out, not a tidier spelling of it.
         let kolkata = TimezoneOffset::for_window(
             chrono_tz::Asia::Kolkata,
             chrono::NaiveDate::from_ymd_opt(2026, 7, 15).unwrap(),
         )
         .unwrap();
-        assert_eq!(kolkata.to_string(), "4.5");
+        assert_eq!(kolkata.to_string(), "4.50");
+        assert_eq!(
+            serde_json::to_value(kolkata).unwrap(),
+            serde_json::json!(kolkata.to_string())
+        );
     }
 
     #[test]
