@@ -384,11 +384,10 @@ impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 /// made during DST, and a read made in winter could apply a different base.
 ///
 /// Callers hold a [`chrono_tz::Tz`] on those methods' `timezone` field, and the
-/// crate sends [`TimezoneOffset::for_window`] of it at the query's start date
-/// (or its end date when there is no start), the number whose shifted days are
-/// that zone's days. The reported timestamps are qualified by undoing the shift
-/// and resolving each one in [`SERVER_ZONE`], so they name their instant
-/// whatever was sent.
+/// crate sends [`TimezoneOffset::for_query`] of it and the query's dates, the
+/// number whose shifted days are that zone's days. The reported timestamps are
+/// qualified by undoing the shift and resolving each one in [`SERVER_ZONE`], so
+/// they name their instant whatever was sent.
 ///
 /// Wraps a [`Decimal`] constrained to `-12..=13`. [`TimezoneOffset::new`]
 /// rejects out-of-range values so a nonsensical number never reaches the wire.
@@ -461,6 +460,25 @@ impl TimezoneOffset {
         let hours =
             Decimal::from(caller - server) / Decimal::from(3600) - Decimal::from(Self::SHIFT_BASE);
         Self::new(hours)
+    }
+
+    /// The number a record-listing request sends for `zone`'s days:
+    /// [`TimezoneOffset::for_window`] of `zone`, or of UTC when `zone` is
+    /// `None`, at `from`, or at `to` when there is no `from`.
+    ///
+    /// With neither date there is no window to match. A named `zone` is then
+    /// [`TimezoneOffsetError::MissingQueryDate`], since the zone would be
+    /// silently ignored, and no zone is [`TimezoneOffset::UTC`].
+    pub fn for_query(
+        zone: Option<chrono_tz::Tz>,
+        from: Option<chrono::NaiveDate>,
+        to: Option<chrono::NaiveDate>,
+    ) -> Result<Self, TimezoneOffsetError> {
+        match (zone, from.or(to)) {
+            (zone, Some(day)) => Self::for_window(zone.unwrap_or(chrono_tz::UTC), day),
+            (Some(_), None) => Err(TimezoneOffsetError::MissingQueryDate),
+            (None, None) => Ok(Self::UTC),
+        }
     }
 
     /// Local noon on `date` in `tz`.
@@ -560,8 +578,9 @@ pub enum TimezoneOffsetError {
     /// The number fell outside the `-12..=13` range VoIP.ms accepts. Returned
     /// by [`TimezoneOffset::new`], by [`TimezoneOffset::at`] for a zone whose
     /// offset exceeds that range (e.g. `Pacific/Kiritimati`, +14), and by
-    /// [`TimezoneOffset::for_window`] for a zone whose window needs a number
-    /// outside it (e.g. a UTC-12 zone during Eastern DST).
+    /// [`TimezoneOffset::for_window`] and [`TimezoneOffset::for_query`] for a
+    /// zone whose window needs a number outside it (e.g. a UTC-12 zone during
+    /// Eastern DST).
     OutOfRange(Decimal),
     /// The chosen instant does not exist in the zone (a DST spring-forward
     /// gap), so no offset could be resolved.
@@ -1508,6 +1527,47 @@ mod tests {
             Err(TimezoneOffsetError::OutOfRange(Decimal::from(-13)))
         );
         assert_eq!(n(chrono_tz::Etc::GMTPlus12, jan), hours("-12"));
+    }
+
+    #[test]
+    fn timezone_offset_for_query_resolves_at_the_start_date_then_the_end_date() {
+        use chrono::NaiveDate;
+
+        let jan = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
+        let jul = NaiveDate::from_ymd_opt(2026, 7, 15).unwrap();
+        let vancouver = Some(chrono_tz::America::Vancouver);
+        let window = TimezoneOffset::for_window;
+
+        assert_eq!(
+            TimezoneOffset::for_query(vancouver, Some(jan), Some(jul)),
+            window(chrono_tz::America::Vancouver, jan)
+        );
+        assert_eq!(
+            TimezoneOffset::for_query(vancouver, None, Some(jul)),
+            window(chrono_tz::America::Vancouver, jul)
+        );
+        // No zone means UTC days, which during Eastern DST is not `UTC`.
+        assert_eq!(
+            TimezoneOffset::for_query(None, Some(jul), None),
+            window(chrono_tz::UTC, jul)
+        );
+        assert_ne!(
+            TimezoneOffset::for_query(None, Some(jul), None),
+            Ok(TimezoneOffset::UTC)
+        );
+        assert_eq!(
+            TimezoneOffset::for_query(None, None, None),
+            Ok(TimezoneOffset::UTC)
+        );
+        assert_eq!(
+            TimezoneOffset::for_query(vancouver, None, None),
+            Err(TimezoneOffsetError::MissingQueryDate)
+        );
+        // A window out of range is refused, not replaced by the end date's.
+        assert_eq!(
+            TimezoneOffset::for_query(Some(chrono_tz::Pacific::Kiritimati), Some(jan), Some(jul)),
+            Err(TimezoneOffsetError::OutOfRange(Decimal::from(14)))
+        );
     }
 
     #[test]

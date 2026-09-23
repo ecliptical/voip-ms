@@ -236,12 +236,14 @@ impl Client {
     ///     offset_timestamps, serde_json::json, zone_timestamps,
     /// };
     ///
-    /// let day = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
-    /// let timezone = TimezoneOffset::for_window(Tz::America__Vancouver, day)?;
+    /// let from = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+    /// let to = NaiveDate::from_ymd_opt(2026, 9, 16).unwrap();
+    /// let timezone =
+    ///     TimezoneOffset::for_query(Some(Tz::America__Vancouver), Some(from), Some(to))?;
     /// let mut envelope = client
     ///     .call_raw(
     ///         method,
-    ///         &json!({ "date_from": day, "date_to": "2026-09-16", "timezone": timezone }),
+    ///         &json!({ "date_from": from, "date_to": to, "timezone": timezone }),
     ///     )
     ///     .await?;
     /// if let Some(timestamps) = offset_timestamps(method) {

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `TimezoneOffset::for_query(zone, from, to)`, the `timezone` number the six
+  record-listing methods send: `for_window` of `zone` (UTC when `None`) at
+  `from`, or at `to` when there is no `from`; `UTC` when there is neither zone
+  nor date; `MissingQueryDate` for a zone with no date. The typed methods call
+  it, so a `call_raw` caller that uses it sends the same number.
+
+### Fixed
+
+- `get_sms`, `get_mms`, `get_reseller_sms` and `get_reseller_mms` sent an
+  unparseable `to` to VoIP.ms when `from` was a valid date. Both are now parsed
+  before either is used, so a bad `to` is `ParamsError::InvalidDate` whatever
+  `from` is.
+
 ## [0.14.0] - 2026-09-23
 
 ### Fixed

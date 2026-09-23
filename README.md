@@ -231,8 +231,9 @@ does the same step:
 * The record-listing methods (`getCDR`, `getSMS`, …) report VoIP.ms's Eastern
   wall clocks shifted by `timezone + 5` hours, which is not UTC+`timezone`
   during DST. Send an explicit `timezone`
-  ([`TimezoneOffset::for_window`](https://docs.rs/voip-ms/latest/voip_ms/struct.TimezoneOffset.html#method.for_window)
-  picks the one whose days are a given zone's), then pass the same number to
+  ([`TimezoneOffset::for_query`](https://docs.rs/voip-ms/latest/voip_ms/struct.TimezoneOffset.html#method.for_query)
+  picks the one the typed methods would send for a zone and the query's
+  dates), then pass the same number to
   [`attach_offset`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_offset.html)
   over the paths
   [`offset_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.offset_timestamps.html)

@@ -113,7 +113,7 @@ pub(crate) fn field_ident(struct_name: &str, fname: &str, acronyms: &[&'static s
 /// For each of these, the generator emits a private `*ParamsWire` twin struct
 /// (identical fields, `timezone` as a `crate::TimezoneOffset`) plus a
 /// `TryFrom<&*Params>` that picks the number with
-/// `TimezoneOffset::for_window` at the query start date, and routes the
+/// `TimezoneOffset::for_query` from the zone and the two dates, and routes the
 /// `Client` method bodies through it. The public struct still derives
 /// `Serialize` -- there `timezone` emits the IANA name, which is what a log or
 /// JSON dump should show; only the wire twin carries the number.
@@ -1397,8 +1397,8 @@ fn emit(
                  ///\n    \
                  /// `timezone` chooses whose days the date range means, and defaults to\n    \
                  /// UTC: the number sent is\n    \
-                 /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of\n    \
-                 /// it at the query start date, and a zone that cannot be resolved is\n    \
+                 /// [`TimezoneOffset::for_query`](crate::TimezoneOffset::for_query) of\n    \
+                 /// it and the two dates, and a zone that cannot be resolved is\n    \
                  /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported\n    \
                  /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the\n    \
                  /// offset in force then, whatever was sent; one the zone repeats when\n    \
@@ -1681,16 +1681,15 @@ fn emit_offset_wire(
              type Error = crate::ParamsError;\n\n    \
              fn try_from(p: &{struct_name}) -> std::result::Result<Self, Self::Error> {{\n"
     ));
-    // The number is chosen for the window at the start date, or at the end
-    // date when there is no start, in the named zone or in UTC when none is
-    // named. A named zone needs one of the two to resolve at; with no zone and
-    // neither date there is no window to match, and the reported timestamps
-    // are qualified for whatever number is sent. A date string that does not
-    // parse is an error whether or not a zone is named.
+    // `TimezoneOffset::for_query` holds the rules for choosing the number, so
+    // a raw caller can apply the same ones. A date string that does not parse
+    // is an error whether or not a zone is named, and whether or not the other
+    // date is valid, so both are parsed before `for_query` chooses one.
     let end_ident = field_ident(struct_name, off.end_field, acronyms);
     if off.start_is_date {
         out.push_str(&format!(
-            "        let day = p.{start_ident}.or(p.{end_ident});\n"
+            "        let timezone =\n            \
+                 crate::TimezoneOffset::for_query(p.timezone, p.{start_ident}, p.{end_ident})?;\n"
         ));
     } else {
         let (start_wire, end_wire) = (off.start_field, off.end_field);
@@ -1707,24 +1706,11 @@ fn emit_offset_wire(
                      }})\n                \
                      .transpose()\n        \
              }};\n        \
-             let day = match parse({start_wire:?}, p.{start_ident}.as_deref())? {{\n            \
-                 Some(day) => Some(day),\n            \
-                 None => parse({end_wire:?}, p.{end_ident}.as_deref())?,\n        \
-             }};\n"
+             let {start_ident} = parse({start_wire:?}, p.{start_ident}.as_deref())?;\n        \
+             let {end_ident} = parse({end_wire:?}, p.{end_ident}.as_deref())?;\n        \
+             let timezone = crate::TimezoneOffset::for_query(p.timezone, {start_ident}, {end_ident})?;\n"
         ));
     }
-
-    out.push_str(
-        "        let timezone = match (p.timezone, day) {\n            \
-             (tz, Some(day)) => {\n                \
-                 crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?\n            \
-             }\n            \
-             (Some(_), None) => {\n                \
-                 return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());\n            \
-             }\n            \
-             (None, None) => crate::TimezoneOffset::UTC,\n        \
-         };\n",
-    );
 
     out.push_str("        Ok(Self {\n");
     for (fname, ftype) in body_fields.iter().copied() {
