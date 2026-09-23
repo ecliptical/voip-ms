@@ -17,10 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `get_sms`, `get_mms`, `get_reseller_sms` and `get_reseller_mms` sent an
-  unparseable `to` to VoIP.ms when `from` was a valid date. Both are now parsed
-  before either is used, so a bad `to` is `ParamsError::InvalidDate` whatever
-  `from` is.
+- An unparseable `to` on `get_sms`, `get_mms`, `get_reseller_sms` and
+  `get_reseller_mms` is `Error::InvalidParams` when `from` is a valid date too.
+  0.14.0 checked `to` only when `from` was absent, and sent it to VoIP.ms
+  otherwise.
 
 ## [0.14.0] - 2026-09-23
 
