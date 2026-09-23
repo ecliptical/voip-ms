@@ -18,7 +18,7 @@ use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
 use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
 use crate::harness::probe::probe_in_zone;
 use crate::harness::scope::Scope;
-use crate::harness::{Outcome, Report, probe};
+use crate::harness::{Outcome, ProbeOutcome, Report, probe};
 use voip_ms::*;
 
 pub struct Voicemail;
@@ -117,11 +117,14 @@ impl Area for Voicemail {
 /// Probe `getVoicemailMessages` against a mailbox already on the account,
 /// qualifying its dates in the mailbox's own zone.
 ///
-/// The mailbox is the one reporting the most new messages, skipping boxes this
-/// harness created, since those hold no messages and an empty list leaves the
-/// key diff nothing to compare. VoIP.ms renders the dates in the mailbox's
-/// current `timezone`, so that zone is what qualifies them; a legacy name the
-/// IANA database lacks leaves them bare, which the typed shape still reads.
+/// An empty list leaves the key diff nothing to compare, so mailboxes are tried
+/// in turn until one returns a message, and the method is skipped when none
+/// does. Boxes this harness created hold no messages and are not tried. The
+/// rest go most new messages first, but `new` counts only unheard ones, so a
+/// mailbox whose messages were all heard is still tried. VoIP.ms renders the
+/// dates in the mailbox's current `timezone`, so that zone is what qualifies
+/// them; a legacy name the IANA database lacks leaves them bare, which the
+/// typed shape still reads.
 async fn probe_voicemail_messages(ctx: &AreaCtx<'_>, report: &mut Report) {
     const METHOD: &str = "getVoicemailMessages";
 
@@ -143,32 +146,48 @@ async fn probe_voicemail_messages(ctx: &AreaCtx<'_>, report: &mut Report) {
         }
     };
 
-    let Some((mailbox, zone)) = listed
+    let mut candidates: Vec<_> = listed
         .voicemails
         .iter()
         .filter(|v| !owned(&v.name))
         .filter_map(|v| {
-            v.mailbox
-                .map(|m| (m, v.new.unwrap_or(0), v.timezone.clone()))
+            v.mailbox.map(|m| {
+                let zone = v.timezone.as_ref().and_then(TimezoneName::tz);
+                (m, v.new.unwrap_or(0), zone)
+            })
         })
-        .max_by_key(|(_, new, _)| *new)
-        .map(|(mailbox, _, zone)| (mailbox, zone.and_then(|z| z.tz())))
-    else {
-        report.record(
-            AREA,
-            METHOD,
-            Outcome::Skip("the account has no mailbox to read".to_string()),
-        );
-        return;
-    };
+        .collect();
+    candidates.sort_by_key(|(_, new, _)| std::cmp::Reverse(*new));
 
-    let params = GetVoicemailMessagesParams::new(mailbox);
     let count = |r: &GetVoicemailMessagesResponse| Some(r.messages.len());
-    let outcome = match zone {
-        Some(zone) => probe_in_zone(ctx.client, METHOD, &params, zone, count).await,
-        None => probe(ctx.client, METHOD, &params, count).await,
-    };
-    report.record_probe(AREA, METHOD, outcome);
+    for (mailbox, _, zone) in candidates {
+        let params = GetVoicemailMessagesParams::new(mailbox);
+        let outcome = match zone {
+            Some(zone) => probe_in_zone(ctx.client, METHOD, &params, zone, count).await,
+            None => probe(ctx.client, METHOD, &params, count).await,
+        };
+        if matches!(
+            outcome,
+            ProbeOutcome::Ok {
+                element_count: Some(0),
+                ..
+            }
+        ) {
+            continue;
+        }
+
+        report.record_probe(AREA, METHOD, outcome);
+        return;
+    }
+
+    report.record(
+        AREA,
+        METHOD,
+        Outcome::Skip(
+            "no mailbox on the account holds a message, so the key diff has nothing to compare"
+                .to_string(),
+        ),
+    );
 }
 
 /// Create -> read-back -> (deferred) delete a voicemail box. The mailbox number

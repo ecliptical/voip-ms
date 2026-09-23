@@ -435,8 +435,8 @@ in `xtask/src/field_overrides.rs`:
   `getCallTranscriptions` and `getVoicemailTranscriptions` report `date` as
   `String` and cannot fail on any value; `getCallRecordings` has no `date`.
   `getConferenceRecordings` and `getVoicemailMessages` are the two that share
-  the shape and type `date` as a point in time (`NaiveDateTime` and
-  [`crate::WallClock`], decision #8): each lists individual records and totals
+  the shape and type `date` as a point in time (`NaiveDateTime`, and
+  `WallClock` per decision #8a): each lists individual records and totals
   nothing, so there is no per-charge sum for a window row to carry -- a
   recording and a voicemail each happened at an instant. Revisit that only if
   one of them grows a summary row.
@@ -801,9 +801,11 @@ the test account and `examples/call_raw.rs`:
 * `date_from` / `date_to` are **not** matched in the mailbox's zone. Under
   Toronto, message 14 (01:25 UTC on 2026-08-25) matched `2026-08-24` and not
   `2026-08-25`, so the window is not UTC. Under Berlin the same message read
-  `2026-08-25 03:25:11` and still matched `2026-08-24` only. The window is
-  Eastern time. Whether that is the account's configured zone or a fixed server
-  zone was not measured. The finding is written on both params through
+  `2026-08-25 03:25:11` and still matched `2026-08-24` only. On this account
+  the window was Eastern time, but the account itself is in Eastern time, so
+  the run cannot tell the account's configured zone from a fixed server zone.
+  Measuring that takes an account configured in another zone. The finding is
+  written on both params, in those terms, through
   `ZoneOp::param_notes`, and the run fails if an entry names a param the WSDL
   does not declare.
 
@@ -818,6 +820,17 @@ seconds part (a zone's pre-standard local mean time) also stays `Bare`, because
 the wire spelling stops at minutes and `WallClock`'s `Display` would not
 round-trip it.
 
+`attach_zone` and `attach_offset` share one walk. Each only picks the offset
+for a value, and the walk writes it: it trims the value and appends the offset
+in place, and leaves a value it gets no offset for exactly as it arrived. The
+trim is needed on both sides, because an offset after a blank does not parse
+and the value would degrade to `Reported::Unreadable`.
+
+`WallClock`'s equality is hand-written. `DateTime<FixedOffset>`'s own `==`
+compares instants and ignores the offset, so a derived one would call
+`18:47:40-04:00` and `22:47:40+00:00` equal while they report different wall
+clocks, and a test could not catch `attach_zone` choosing the wrong offset.
+
 The deserializer accepts a bare value, which is why this is a separate type and
 not decision #8's `DateTime<FixedOffset>`. A bare value here comes from a call
 that supplied no zone or from a row left unresolved, so it is part of the
@@ -831,11 +844,12 @@ caller can fetch the mailbox once for many reads.
 
 **How to apply**: A new method whose timestamps are rendered in a named zone the
 caller can learn goes in `ZONE_OPS`, with the zone's source as its `zone` doc
-fragment. `cargo xtask gen` fails when a zone op is also an offset op, when its
+fragment. `cargo xtask gen` fails when a zone op is also an offset op, when it
+takes no parameters (no `*_in_zone` method could be emitted for it), when its
 response has no timestamp, or when a `param_notes` entry names an undeclared
 param. The livetest `voicemail` area probes `getVoicemailMessages` against the
-mailbox `getVoicemails` reports with the most new messages, qualified in that
-mailbox's zone, so the key diff covers the method.
+mailboxes `getVoicemails` reports, qualified in each mailbox's zone, until one
+returns a message, so the key diff has rows to compare or the method is skipped.
 
 ## Code Patterns
 

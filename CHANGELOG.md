@@ -34,10 +34,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   writes the wire spelling, with the offset appended when it has one, and reads
   back as the same value.
 - `GetVoicemailMessagesParams::date_from` / `date_to` document how VoIP.ms
-  matches the window. Measured against the live API: the window is Eastern time
-  (`America/Toronto`), not the mailbox's zone and not UTC, so with a mailbox set
-  to `Europe/Berlin` a message reported as `2026-08-25 03:25:11` matches
-  `2026-08-24`.
+  matches the window. Measured against the live API, it is not the mailbox's
+  zone: with a mailbox set to `Europe/Berlin`, a message reported as
+  `2026-08-25 03:25:11` matches `2026-08-24`. On the account measured the
+  window was Eastern time (`America/Toronto`), not UTC. That account is itself
+  in Eastern time, so whether the window follows the account's configured zone
+  is not known.
+- `WallClock` values are equal only when they report the same wall clock with
+  the same offset. `DateTime<FixedOffset>` alone compares instants.
+
+### Fixed
+
+- `attach_offset` trims a padded value before appending the offset.
+  `" 2026-09-16 15:14:35 "` became `" 2026-09-16 15:14:35 -04:00"`, which does
+  not parse, so the typed field read it as `Reported::Unreadable`.
 
 ### Changed
 

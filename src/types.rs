@@ -676,30 +676,43 @@ impl<T: fmt::Display> fmt::Display for Reported<T> {
     }
 }
 
-/// A wall clock VoIP.ms reported without an offset, qualified with one when the
-/// zone it was rendered in is known.
+/// A wall clock reported without an offset, rendered in a named zone the
+/// response does not name.
 ///
-/// `getVoicemailMessages` renders each message's `date` in the mailbox's
-/// current `timezone` setting and does not say which zone that is. A caller
-/// holding the zone passes it to
-/// [`Client::get_voicemail_messages_in_zone`](crate::Client::get_voicemail_messages_in_zone)
-/// or [`attach_zone`](crate::attach_zone), and each value becomes
-/// [`WallClock::Zoned`]. A value stays [`WallClock::Bare`] when no zone was
-/// supplied, and also when the wall clock is ambiguous in the zone (the
-/// repeated hour when clocks fall back) or does not exist in it (the hour
-/// skipped when they spring forward).
+/// [`WallClock::Zoned`] when that zone is known: the instant, carrying the
+/// offset the zone was at then. [`WallClock::Bare`] when it is not, and also
+/// when the wall clock is ambiguous in the zone (the repeated hour when clocks
+/// fall back) or does not exist in it (the hour skipped when they spring
+/// forward), since either offset would be a guess.
+///
+/// Two values are equal only when they report the same wall clock with the same
+/// offset. `DateTime`'s own equality compares instants alone, so
+/// `18:47:40-04:00` and `22:47:40+00:00` would otherwise compare equal while
+/// reporting different wall clocks.
 ///
 /// [`Display`](std::fmt::Display) renders the wire spelling, with the offset
 /// appended for a zoned value (`2026-09-22 18:47:40-04:00`), which the response
 /// field reads back as the same value. The offset is written to the minute,
 /// which is all the wire carries.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 pub enum WallClock {
     /// The instant, with the UTC offset in force in the zone at that moment.
     Zoned(DateTime<FixedOffset>),
     /// The wall clock as reported, with no offset.
     Bare(NaiveDateTime),
 }
+
+impl PartialEq for WallClock {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (WallClock::Zoned(a), WallClock::Zoned(b)) => a == b && a.offset() == b.offset(),
+            (WallClock::Bare(a), WallClock::Bare(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for WallClock {}
 
 impl WallClock {
     /// The wall clock as VoIP.ms reported it, whether or not it was qualified.
@@ -1352,6 +1365,29 @@ mod tests {
             let row: Row = serde_json::from_value(serde_json::json!({ "date": rendered })).unwrap();
             assert_eq!(row.date, Some(Reported::Parsed(value)));
         }
+    }
+
+    #[test]
+    fn zoned_wall_clocks_are_equal_only_with_the_same_offset() {
+        let at = |s: &str| WallClock::Zoned(DateTime::parse_from_rfc3339(s).unwrap());
+        // The same instant, reported as two different wall clocks.
+        assert_ne!(
+            at("2026-09-22T18:47:40-04:00"),
+            at("2026-09-22T22:47:40+00:00")
+        );
+        assert_eq!(
+            at("2026-09-22T18:47:40-04:00"),
+            at("2026-09-22T18:47:40-04:00")
+        );
+        assert_ne!(
+            at("2026-09-22T18:47:40-04:00"),
+            WallClock::Bare(
+                NaiveDate::from_ymd_opt(2026, 9, 22)
+                    .unwrap()
+                    .and_hms_opt(18, 47, 40)
+                    .unwrap()
+            )
+        );
     }
 
     #[test]

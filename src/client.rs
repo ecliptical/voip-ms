@@ -434,7 +434,8 @@ impl Client {
 ///
 /// A blank value and one that already names a zone are both left alone -- the
 /// first has no wall clock to qualify and stays the empty placeholder the
-/// deserializers fold to `None`.
+/// deserializers fold to `None`. A padded value is trimmed before the offset
+/// goes on, since an offset after a blank does not parse.
 ///
 /// ```
 /// use voip_ms::{attach_offset, chrono::FixedOffset, serde_json::json};
@@ -444,8 +445,7 @@ impl Client {
 /// assert_eq!(body["cdr"][0]["date"], "2026-09-16 15:14:35-04:00");
 /// ```
 pub fn attach_offset(body: &mut Value, offset: chrono::FixedOffset, timestamps: &[&str]) {
-    let suffix = offset.to_string();
-    qualify_timestamps(body, timestamps, |s| s.push_str(&suffix));
+    qualify_timestamps(body, timestamps, |_| Some(offset));
 }
 
 /// Qualify the bare wall clocks `timestamps` reaches in `body` with the UTC
@@ -485,49 +485,58 @@ pub fn attach_offset(body: &mut Value, offset: chrono::FixedOffset, timestamps: 
 pub fn attach_zone(body: &mut Value, zone: chrono_tz::Tz, timestamps: &[&str]) {
     use chrono::{Offset, TimeZone};
 
-    qualify_timestamps(body, timestamps, |s| {
-        let wall = s.trim();
-        let Ok(local) =
+    qualify_timestamps(body, timestamps, |wall| {
+        let local =
             chrono::NaiveDateTime::parse_from_str(wall, crate::responses::DATETIME_WIRE_FORMAT)
-        else {
-            return;
-        };
-
+                .ok()?;
         // `single` is `None` for a wall clock the zone repeats or skips.
-        let Some(at) = zone.from_local_datetime(&local).single() else {
-            return;
-        };
-
+        let offset = zone.from_local_datetime(&local).single()?.offset().fix();
         // An offset with a seconds part only occurs in a zone's pre-standard
         // local mean time, and the wire spelling stops at minutes.
-        let offset = at.offset().fix();
-        if offset.local_minus_utc() % 60 != 0 {
-            return;
-        }
-
-        *s = format!("{wall}{offset}");
+        (offset.local_minus_utc() % 60 == 0).then_some(offset)
     });
 }
 
-/// Apply `qualify` to every string `timestamps` reaches in `body` that holds a
-/// wall clock with no offset, skipping blanks and values that already name one.
-fn qualify_timestamps(body: &mut Value, timestamps: &[&str], mut qualify: impl FnMut(&mut String)) {
+/// Append the offset `offset_for` picks to every string `timestamps` reaches in
+/// `body` that holds a wall clock with no offset, skipping blanks and values
+/// that already name one.
+///
+/// `offset_for` is handed the trimmed value, and a value it answers `None` for
+/// is left exactly as it arrived. One it answers for is trimmed before the
+/// offset goes on, since an offset after a blank does not parse.
+fn qualify_timestamps(
+    body: &mut Value,
+    timestamps: &[&str],
+    mut offset_for: impl FnMut(&str) -> Option<chrono::FixedOffset>,
+) {
     for path in timestamps {
-        qualify_at(body, path.trim_start_matches('/'), &mut qualify);
+        qualify_at(body, path.trim_start_matches('/'), &mut offset_for);
     }
 }
 
-/// Walk one [`attach_offset`] path, applying `qualify` to the string it lands on.
-fn qualify_at<F>(value: &mut Value, path: &str, qualify: &mut F)
+/// Walk one [`attach_offset`] path, qualifying the string it lands on.
+fn qualify_at<F>(value: &mut Value, path: &str, offset_for: &mut F)
 where
-    F: FnMut(&mut String),
+    F: FnMut(&str) -> Option<chrono::FixedOffset>,
 {
+    use std::fmt::Write as _;
+
     let Some((segment, rest)) = path.split_once('/') else {
-        if let Some(Value::String(s)) = value.get_mut(path)
-            && !s.trim().is_empty()
-            && !crate::responses::names_offset(s)
-        {
-            qualify(s);
+        if let Some(Value::String(s)) = value.get_mut(path) {
+            let wall = s.trim();
+            if wall.is_empty() || crate::responses::names_offset(wall) {
+                return;
+            }
+
+            let Some(offset) = offset_for(wall) else {
+                return;
+            };
+
+            let lead = s.len() - s.trim_start().len();
+            s.truncate(s.trim_end().len());
+            s.drain(..lead);
+            // Writing to a `String` cannot fail.
+            let _ = write!(s, "{offset}");
         }
 
         return;
@@ -535,7 +544,7 @@ where
 
     if segment != "*" {
         if let Some(child) = value.get_mut(segment) {
-            qualify_at(child, rest, qualify);
+            qualify_at(child, rest, offset_for);
         }
 
         return;
@@ -544,13 +553,13 @@ where
     match value {
         Value::Array(items) => {
             for item in items {
-                qualify_at(item, rest, qualify);
+                qualify_at(item, rest, offset_for);
             }
         }
 
         // VoIP.ms returns a one-element list as a bare object, which
         // `deserialize_vec_from_single_or_seq` accepts on the way in.
-        other => qualify_at(other, rest, qualify),
+        other => qualify_at(other, rest, offset_for),
     }
 }
 
@@ -873,13 +882,19 @@ mod tests {
         assert_eq!(in_toronto("2026-09-22"), "2026-09-22");
     }
 
+    /// An offset after a blank does not parse, so both helpers drop the
+    /// padding from a value they qualify -- and only from one they qualify.
     #[test]
-    fn attach_zone_trims_what_it_qualifies() {
-        // A suffix after trailing blanks would not parse, so the padding goes.
+    fn both_helpers_trim_what_they_qualify_and_nothing_else() {
         assert_eq!(
             in_toronto(" 2026-09-22 18:47:40 "),
             "2026-09-22 18:47:40-04:00"
         );
+        assert_eq!(in_toronto(" 2026-11-01 01:30:00 "), " 2026-11-01 01:30:00 ");
+
+        let mut body = serde_json::json!({ "cdr": [{ "date": " 2026-09-16 15:14:35 " }] });
+        attach_offset(&mut body, west4(), &["/cdr/*/date"]);
+        assert_eq!(body["cdr"][0]["date"], "2026-09-16 15:14:35-04:00");
     }
 
     #[test]

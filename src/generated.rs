@@ -8286,16 +8286,18 @@ pub struct GetVoicemailMessagesParams {
     pub folder: Option<VoicemailFolder>,
     /// Start Date for Filtering Voicemail Messages (Example: '2016-01-30')
     ///
-    /// Matched against each message's date in Eastern time (`America/Toronto`),
-    /// not in the mailbox's zone and not in UTC, so a message can match a day
-    /// other than the one its reported `date` shows.
+    /// Not matched in the mailbox's zone, so a message can match a day other
+    /// than the one its reported `date` shows. On the account measured the
+    /// window was Eastern time (`America/Toronto`), not UTC; whether it follows
+    /// the account's configured zone is not known.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<chrono::NaiveDate>,
     /// End Date for Filtering Voicemail Messages (Example: '2016-01-30')
     ///
-    /// Matched against each message's date in Eastern time (`America/Toronto`),
-    /// not in the mailbox's zone and not in UTC, so a message can match a day
-    /// other than the one its reported `date` shows.
+    /// Not matched in the mailbox's zone, so a message can match a day other
+    /// than the one its reported `date` shows. On the account measured the
+    /// window was Eastern time (`America/Toronto`), not UTC; whether it follows
+    /// the account's configured zone is not known.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<chrono::NaiveDate>,
 }
@@ -19188,10 +19190,11 @@ pub fn offset_timestamps(method: &str) -> Option<&'static [&'static str]> {
 /// response timestamps, or `None` for a method whose response reports none
 /// in a named zone the caller supplies.
 ///
-/// `Some` for `getVoicemailMessages`, whose timestamps are rendered in the
-/// mailbox's current `timezone` setting. A raw envelope, such as
-/// [`Client::call_raw`] returns, reports them as bare wall clocks; pass the
-/// mailbox's zone and these paths to `attach_zone` before deserializing.
+/// `Some` for exactly the methods whose response timestamps are rendered in
+/// a named zone the request cannot choose. Each such method's typed
+/// `*_in_zone` sibling says where that zone comes from. A raw envelope,
+/// such as [`Client::call_raw`] returns, reports them as bare wall clocks;
+/// pass the zone and these paths to `attach_zone` before deserializing.
 ///
 /// Like [`requires_multipart`], it answers only for the methods this crate
 /// was generated from: a method VoIP.ms has added since answers `None`.
@@ -21760,6 +21763,18 @@ impl Client {
         self.call("getVoicemailMessages", params).await
     }
 
+    /// Call the `getVoicemailMessages` API method and return the raw JSON envelope.
+    ///
+    /// The envelope reports its timestamps as bare wall clocks:
+    /// [`attach_zone`](crate::attach_zone) qualifies them, over the paths
+    /// [`zone_timestamps`](crate::zone_timestamps) answers for `getVoicemailMessages`.
+    pub async fn get_voicemail_messages_raw(
+        &self,
+        params: &GetVoicemailMessagesParams,
+    ) -> Result<Value> {
+        self.call_raw("getVoicemailMessages", params).await
+    }
+
     /// Call the `getVoicemailMessages` API method and deserialize into [`GetVoicemailMessagesResponse`],
     /// qualifying each reported timestamp with its offset in `zone`.
     ///
@@ -21783,18 +21798,6 @@ impl Client {
             GET_VOICEMAIL_MESSAGES_TIMESTAMPS,
         )
         .await
-    }
-
-    /// Call the `getVoicemailMessages` API method and return the raw JSON envelope.
-    ///
-    /// The envelope reports its timestamps as bare wall clocks:
-    /// [`attach_zone`](crate::attach_zone) qualifies them, over the paths
-    /// [`zone_timestamps`](crate::zone_timestamps) answers for `getVoicemailMessages`.
-    pub async fn get_voicemail_messages_raw(
-        &self,
-        params: &GetVoicemailMessagesParams,
-    ) -> Result<Value> {
-        self.call_raw("getVoicemailMessages", params).await
     }
 
     /// \- Retrieves a list of Voicemail Setup Options if no additional parameter

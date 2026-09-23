@@ -320,10 +320,10 @@ fn parse_offset_datetime(s: &str) -> Option<DateTime<FixedOffset>> {
 /// Deserialize a timestamp that may or may not name its UTC offset into a
 /// [`WallClock`], keeping the wire text when it does not parse.
 ///
-/// Unlike [`deserialize_opt_datetime_offset`], a bare wall clock is accepted:
-/// [`crate::attach_zone`] leaves one bare when no zone was supplied or when the
-/// wall clock is ambiguous or nonexistent in the zone, so a bare value is part
-/// of this field's contract rather than a break in it.
+/// Unlike [`deserialize_opt_datetime_offset`], a bare wall clock is accepted
+/// as [`WallClock::Bare`]. A value in a named zone stays bare when the zone is
+/// not known, or when the wall clock is ambiguous or nonexistent in it, so a
+/// bare value is part of this field's contract rather than a break in it.
 pub(crate) fn deserialize_opt_reported_wall_clock<'de, D>(
     deserializer: D,
 ) -> Result<Option<Reported<WallClock>>, D::Error>
