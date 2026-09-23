@@ -239,13 +239,13 @@ fn is_zero_date(trimmed: &str) -> bool {
 
 /// Whether a timestamp already names a UTC offset (`Z`, `-04:00`, `+0530`).
 ///
-/// Both sides of the record-listing contract ask this question, and they have
-/// to agree: [`crate::attach_offset`] skips a value that already names one, and
-/// the deserializer rejects one that does not. Two predicates would disagree at
-/// the edges -- a value one skips and the other refuses costs the whole
-/// envelope, and a value one suffixes and the other accepts is corrupted and
-/// then reported as unreadable -- so this is the single answer, called from
-/// both.
+/// Both sides of the timestamp contract ask this question, and they have to
+/// agree: [`crate::attach_offset`] and [`crate::attach_zone`] skip a value that
+/// already names one, and the deserializer reads one that does as
+/// [`WallClock::Zoned`] and one that does not as [`WallClock::Bare`]. Two
+/// predicates would disagree at the edges -- a value the helpers rewrite and
+/// the deserializer then reads as bare is corrupted and reported as
+/// unreadable -- so this is the single answer, called from both.
 ///
 /// The offset is looked for after the last `T` or space, so the date's own
 /// hyphens cannot be mistaken for its sign. The digit count is deliberately
@@ -270,45 +270,6 @@ pub(crate) fn names_offset(s: &str) -> bool {
     })
 }
 
-/// Deserialize a timestamp that names its UTC offset.
-///
-/// The record-listing methods (`getCDR`, `getSMS`, …) report a wall clock in
-/// the offset the request asked for but leave the offset off the value;
-/// [`crate::attach_offset`] puts it back before this parses it.
-///
-/// A value with **no offset** is rejected rather than read as UTC: an
-/// unqualified timestamp silently taken for an absolute one is the whole
-/// failure this typing exists to prevent, and that is a broken contract rather
-/// than an odd value. A value that *has* an offset but does not parse is an odd
-/// value, so it degrades into [`Reported::Unreadable`] and costs its own field
-/// -- these are the highest-row-count methods in the API, so failing the
-/// envelope there costs the most.
-pub(crate) fn deserialize_opt_datetime_offset<'de, D>(
-    deserializer: D,
-) -> Result<Option<Reported<DateTime<FixedOffset>>>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let Some(text) = opt_wire_text(deserializer)? else {
-        return Ok(None);
-    };
-
-    if is_blank_or_zero_date(&text) {
-        return Ok(None);
-    }
-
-    if !names_offset(&text) {
-        return Err(D::Error::custom(format!(
-            "record-listing timestamp {text} names no UTC offset"
-        )));
-    }
-
-    Ok(Some(match parse_offset_datetime(&text) {
-        Some(at) => Reported::Parsed(at),
-        None => Reported::Unreadable(text),
-    }))
-}
-
 /// A timestamp that names its offset, in the wire spelling with the offset
 /// appended or as RFC 3339.
 fn parse_offset_datetime(s: &str) -> Option<DateTime<FixedOffset>> {
@@ -320,10 +281,11 @@ fn parse_offset_datetime(s: &str) -> Option<DateTime<FixedOffset>> {
 /// Deserialize a timestamp that may or may not name its UTC offset into a
 /// [`WallClock`], keeping the wire text when it does not parse.
 ///
-/// Unlike [`deserialize_opt_datetime_offset`], a bare wall clock is accepted
-/// as [`WallClock::Bare`]. A value in a named zone stays bare when the zone is
-/// not known, or when the wall clock is ambiguous or nonexistent in it, so a
-/// bare value is part of this field's contract rather than a break in it.
+/// A bare wall clock is accepted as [`WallClock::Bare`] rather than refused or
+/// read as UTC. A value stays bare when the zone it was rendered in is not
+/// known, or when its wall clock is ambiguous or nonexistent in that zone, so a
+/// bare value is part of the contract rather than a break in it -- and typing
+/// it `Bare` claims no zone, where reading it as UTC would invent one.
 pub(crate) fn deserialize_opt_reported_wall_clock<'de, D>(
     deserializer: D,
 ) -> Result<Option<Reported<WallClock>>, D::Error>
@@ -802,50 +764,6 @@ mod tests {
     }
 
     #[test]
-    fn opt_datetime_offset_requires_a_zone() {
-        let call = deserialize_opt_datetime_offset::<serde_json::Value>;
-        assert_eq!(call(json!(null)).unwrap(), None);
-        assert_eq!(call(json!("")).unwrap(), None);
-        // The placeholder is recognized by its date: the offset is attached to
-        // it like any other value.
-        assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
-        assert_eq!(call(json!("0000-00-00 00:00:00-04:00")).unwrap(), None);
-        assert_eq!(
-            call(json!("2024-03-15 08:30:00-04:00")).unwrap(),
-            Some(Reported::Parsed(
-                DateTime::parse_from_rfc3339("2024-03-15T08:30:00-04:00").unwrap()
-            ))
-        );
-        assert_eq!(
-            call(json!("2024-03-15T08:30:00Z")).unwrap(),
-            Some(Reported::Parsed(
-                DateTime::parse_from_rfc3339("2024-03-15T08:30:00+00:00").unwrap()
-            ))
-        );
-        // An unqualified wall clock is rejected rather than read as UTC: the
-        // offset is the contract these methods are typed around, and inventing
-        // one is the failure that typing exists to prevent.
-        assert!(call(json!("2024-03-15 08:30:00")).is_err());
-        assert!(call(json!("2024-03-15")).is_err());
-        // A bare number reaches the same judgment as any other text rather than
-        // being rejected for its JSON type: it names no offset, so it fails the
-        // contract like an unqualified string, not because it was not a string.
-        assert!(call(json!(0)).is_err());
-        // A shape is still rejected: no timestamp can stand in for one.
-        assert!(call(json!({"a": 1})).is_err());
-        assert!(call(json!([1])).is_err());
-        // A value that *carries* an offset but does not parse is an odd value,
-        // not a broken contract, so it costs its own field instead of every
-        // row in what are the API's longest responses.
-        assert_eq!(
-            call(json!("2026-02-30 00:00:00-04:00")).unwrap(),
-            Some(Reported::Unreadable(
-                "2026-02-30 00:00:00-04:00".to_string()
-            ))
-        );
-    }
-
-    #[test]
     fn opt_reported_wall_clock_reads_a_bare_and_a_qualified_value() {
         let call = deserialize_opt_reported_wall_clock::<serde_json::Value>;
         let wall = NaiveDate::from_ymd_opt(2026, 9, 22)
@@ -972,9 +890,13 @@ mod tests {
         assert_eq!(datetime(json!("0000-00-00 00:00:00")).unwrap(), None);
         assert_eq!(datetime(json!("0000-00-00")).unwrap(), None);
 
-        let offset = deserialize_opt_datetime_offset::<serde_json::Value>;
-        assert_eq!(offset(json!("0000-00-00")).unwrap(), None);
-        assert_eq!(offset(json!("0000-00-00 00:00:00-04:00")).unwrap(), None);
+        let wall_clock = deserialize_opt_reported_wall_clock::<serde_json::Value>;
+        assert_eq!(wall_clock(json!("0000-00-00")).unwrap(), None);
+        assert_eq!(wall_clock(json!("0000-00-00 00:00:00")).unwrap(), None);
+        assert_eq!(
+            wall_clock(json!("0000-00-00 00:00:00-04:00")).unwrap(),
+            None
+        );
     }
 
     /// The zone reader tolerates a scalar spelling and rejects a shape, which

@@ -762,7 +762,7 @@ mod tests {
         let table = crate::field_overrides::Table::with_builtins();
         let per_struct = BTreeMap::from([(
             path.to_string(),
-            crate::field_overrides::zoned_timestamp_override(),
+            crate::field_overrides::wall_clock_override(),
         )]);
         let skip = Default::default();
         let resolver = Resolver {
@@ -819,13 +819,11 @@ mod tests {
         let found = timestamp_fields("getCDR", &shape).unwrap();
         let emitted = emit_with_override(&shape, &found[0].struct_path);
         assert!(
-            emitted.contains(
-                "pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"
-            ),
+            emitted.contains("pub date: Option<crate::Reported<crate::WallClock>>"),
             "{emitted}"
         );
         assert!(
-            emitted.contains("deserialize_opt_datetime_offset"),
+            emitted.contains("deserialize_opt_reported_wall_clock"),
             "{emitted}"
         );
     }
@@ -835,13 +833,11 @@ mod tests {
         let found = timestamp_fields("getCDR", &datetime()).unwrap();
         let emitted = emit_with_override(&datetime(), &found[0].struct_path);
         assert!(
-            emitted.contains(
-                "pub value: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"
-            ),
+            emitted.contains("pub value: Option<crate::Reported<crate::WallClock>>"),
             "{emitted}"
         );
         assert!(
-            emitted.contains("deserialize_opt_datetime_offset"),
+            emitted.contains("deserialize_opt_reported_wall_clock"),
             "{emitted}"
         );
     }
@@ -859,13 +855,11 @@ mod tests {
             "{emitted}"
         );
         assert!(
-            emitted.contains(
-                "pub date: Option<crate::Reported<chrono::DateTime<chrono::FixedOffset>>>"
-            ),
+            emitted.contains("pub date: Option<crate::Reported<crate::WallClock>>"),
             "{emitted}"
         );
         assert!(
-            emitted.contains("deserialize_opt_datetime_offset"),
+            emitted.contains("deserialize_opt_reported_wall_clock"),
             "{emitted}"
         );
     }

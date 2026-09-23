@@ -78,8 +78,9 @@ pub use client::{Client, ClientBuilder, DEFAULT_BASE_URL, attach_offset, attach_
 pub use error::{Error, ParamsError, Result, RetryOutlook, TransportFailure};
 pub use generated::*;
 pub use types::{
-    MaxMembers, Reported, Routing, RoutingParseError, Seconds, TimezoneName, TimezoneOffset,
-    TimezoneOffsetError, TransactionDate, WaitTime, WallClock,
+    MaxMembers, Reported, Routing, RoutingParseError, SERVER_ZONE, Seconds, TimestampZone,
+    TimezoneName, TimezoneOffset, TimezoneOffsetError, TransactionDate, WaitTime, WallClock,
+    ZoneTimestamps,
 };
 
 // Dependencies whose types appear in this crate's public API. Re-exported so

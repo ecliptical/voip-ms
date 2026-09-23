@@ -222,20 +222,32 @@ every other method as a GET. A method the crate has never seen is not in that
 table, so if it takes a base64 file -- a payload larger than the request line,
 which reaches the API no other way -- call
 [`Client::call_multipart_raw`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.call_multipart_raw)
-for it instead. `call_raw` returns what VoIP.ms sent, so the record-listing
-methods' timestamps come back without their offset: send those methods an
-explicit `timezone`, and complete the envelope with
-[`attach_offset`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_offset.html)
-over the paths
-[`offset_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.offset_timestamps.html)
-answers for the method. `getVoicemailMessages` reports its dates in the
-mailbox's own `timezone` setting, which the request cannot choose: read that
-zone from `getVoicemails` and qualify the envelope with
-[`attach_zone`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_zone.html)
-over the paths
-[`zone_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.zone_timestamps.html)
-answers, or call
-[`Client::get_voicemail_messages_in_zone`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.get_voicemail_messages_in_zone).
+for it instead.
+
+`call_raw` returns what VoIP.ms sent, so its timestamps are wall clocks with no
+offset, and the typed methods qualify them before deserializing. A raw caller
+does the same step:
+
+* The record-listing methods (`getCDR`, `getSMS`, …) report VoIP.ms's Eastern
+  wall clocks shifted by `timezone + 5` hours, which is not UTC+`timezone`
+  during DST. Send an explicit `timezone`
+  ([`TimezoneOffset::for_window`](https://docs.rs/voip-ms/latest/voip_ms/struct.TimezoneOffset.html#method.for_window)
+  picks the one whose days are a given zone's), then pass the same number to
+  [`attach_offset`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_offset.html)
+  over the paths
+  [`offset_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.offset_timestamps.html)
+  answers for the method.
+* A method whose timestamps are in a named zone has an answer from
+  [`zone_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.zone_timestamps.html):
+  the server zone
+  ([`SERVER_ZONE`](https://docs.rs/voip-ms/latest/voip_ms/constant.SERVER_ZONE.html))
+  for `getDIDsInfo`, `getRegistrationStatus`, the call-recording and fax
+  listings and `getMediaMMS`, or a zone the caller supplies for
+  `getVoicemailMessages`, which reports its dates in the mailbox's own
+  `timezone` (read it from `getVoicemails`). Pass that zone and the paths to
+  [`attach_zone`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_zone.html),
+  or call
+  [`Client::get_voicemail_messages_in_zone`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.get_voicemail_messages_in_zone).
 
 ## Error model
 

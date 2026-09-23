@@ -248,21 +248,38 @@ mod completeness {
         );
     }
 
-    /// `zone_timestamps` answers for `getVoicemailMessages` and no other method,
-    /// which is what lets the voicemail probe be the only zone probe.
+    /// `zone_timestamps` answers `Supplied` for `getVoicemailMessages` alone,
+    /// which is what lets the voicemail probe be the only one that supplies a
+    /// zone. Every other method it answers for is `Server`, which `probe`
+    /// qualifies on its own.
     #[test]
-    fn zone_timestamps_names_exactly_the_voicemail_message_list() {
-        let zoned: BTreeSet<&str> = WIRE_METHODS
-            .iter()
-            .copied()
-            .filter(|m| voip_ms::zone_timestamps(m).is_some())
-            .collect();
+    fn zone_timestamps_names_one_supplied_zone_and_the_server_zone_methods() {
+        let by_zone = |zone: voip_ms::TimestampZone| -> BTreeSet<&str> {
+            WIRE_METHODS
+                .iter()
+                .copied()
+                .filter(|m| voip_ms::zone_timestamps(m).is_some_and(|z| z.zone == zone))
+                .collect()
+        };
 
         assert_eq!(
-            zoned,
+            by_zone(voip_ms::TimestampZone::Supplied),
             BTreeSet::from(["getVoicemailMessages"]),
             "the set of methods whose timestamps need a caller-supplied zone \
              changed; give the new method a probe that supplies its zone"
+        );
+        assert_eq!(
+            by_zone(voip_ms::TimestampZone::Server),
+            BTreeSet::from([
+                "getCallRecording",
+                "getCallRecordings",
+                "getDIDsInfo",
+                "getFaxMessages",
+                "getMediaMMS",
+                "getRegistrationStatus",
+            ]),
+            "the set of methods whose timestamps are in the server zone changed; \
+             confirm the new method was measured against an independent instant"
         );
     }
 }

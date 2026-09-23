@@ -240,7 +240,7 @@ const SECONDS_FIELDS: &[&str] = &[
 /// stored on a mailbox or selecting a `getTimezones` catalog entry. Typed
 /// `chrono_tz::Tz` per struct rather than by field name, because the same
 /// field name on the CDR / SMS / MMS record-listing methods is a different
-/// contract entirely -- a numeric UTC offset -- handled by the `OFFSET_OPS`
+/// contract entirely -- a number of hours -- handled by the `OFFSET_OPS`
 /// wire transform in `main.rs`. Keyed `"StructName.field"`.
 pub(crate) const NAMED_ZONE_TZ_PARAM_PATHS: &[&str] = &[
     "CreateVoicemailParams.timezone",
@@ -268,19 +268,9 @@ pub(crate) fn tz_param_override() -> FieldOverride {
     }
 }
 
-/// The [`FieldOverride`] for a record-listing response timestamp: the wall
-/// clock voip.ms reports, qualified by the UTC offset the request carried.
-pub(crate) fn zoned_timestamp_override() -> FieldOverride {
-    FieldOverride {
-        rust_type: "crate::Reported<chrono::DateTime<chrono::FixedOffset>>".into(),
-        response_deserializer: Some("crate::responses::deserialize_opt_datetime_offset".into()),
-        ..Default::default()
-    }
-}
-
-/// The [`FieldOverride`] for a response timestamp rendered in a named zone the
-/// caller supplies: a `voip_ms::WallClock`, zoned once `attach_zone` has
-/// qualified it and bare otherwise.
+/// The [`FieldOverride`] for a response timestamp whose zone is known only
+/// outside the response: a `voip_ms::WallClock`, zoned once `attach_zone` or
+/// `attach_offset` has qualified it and bare otherwise.
 pub(crate) fn wall_clock_override() -> FieldOverride {
     FieldOverride {
         rust_type: "crate::Reported<crate::WallClock>".into(),

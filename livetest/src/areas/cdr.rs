@@ -121,10 +121,10 @@ fn window_params() -> GetCDRParams {
 /// names the same instant it does in `at_utc`.
 ///
 /// The records are the same calls, so the instant cannot move with the zone the
-/// caller asked for. It moves if voip.ms applies an offset other than the one
-/// sent, which is what the typed `DateTime<FixedOffset>` would then be
-/// asserting wrongly -- the case a fractional zone raises, since nothing else
-/// confirms the server keeps a half hour.
+/// caller asked for. It moves if the shift voip.ms applies for the number sent
+/// is not `timezone + 5` hours, which is what `attach_offset` undoes -- the
+/// case a fractional zone raises, since the number sent for one has a half
+/// hour in it.
 ///
 /// Exercising it through the typed method rather than a call-by-name is the
 /// point: this is the only live path through the generated `*ParamsWire`
@@ -167,7 +167,7 @@ async fn offset_round_trip(
         if zone_date != utc_date {
             return Outcome::Fail(format!(
                 "call {id} reads {utc_date} at UTC but {zone_date} at {tz}; voip.ms did not \
-                 apply the offset the request carried, so the reported zone is wrong"
+                 shift by `timezone + 5` hours, so the qualification undid the wrong shift"
             ));
         }
 
