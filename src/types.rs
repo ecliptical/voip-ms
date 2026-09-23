@@ -1536,24 +1536,22 @@ mod tests {
         let jan = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let jul = NaiveDate::from_ymd_opt(2026, 7, 15).unwrap();
         let vancouver = Some(chrono_tz::America::Vancouver);
-        let window = TimezoneOffset::for_window;
+        let hours = |n: i64| TimezoneOffset::new(Decimal::from(n));
 
+        // No zone means UTC days, whose number is `0` in January and `-1` in
+        // July, so the two orders show which date is used.
         assert_eq!(
-            TimezoneOffset::for_query(vancouver, Some(jan), Some(jul)),
-            window(chrono_tz::America::Vancouver, jan)
-        );
-        assert_eq!(
-            TimezoneOffset::for_query(vancouver, None, Some(jul)),
-            window(chrono_tz::America::Vancouver, jul)
-        );
-        // No zone means UTC days, which during Eastern DST is not `UTC`.
-        assert_eq!(
-            TimezoneOffset::for_query(None, Some(jul), None),
-            window(chrono_tz::UTC, jul)
-        );
-        assert_ne!(
-            TimezoneOffset::for_query(None, Some(jul), None),
+            TimezoneOffset::for_query(None, Some(jan), Some(jul)),
             Ok(TimezoneOffset::UTC)
+        );
+        assert_eq!(
+            TimezoneOffset::for_query(None, Some(jul), Some(jan)),
+            hours(-1)
+        );
+        assert_eq!(TimezoneOffset::for_query(None, None, Some(jul)), hours(-1));
+        assert_eq!(
+            TimezoneOffset::for_query(vancouver, Some(jul), None),
+            hours(-8)
         );
         assert_eq!(
             TimezoneOffset::for_query(None, None, None),
@@ -1563,7 +1561,8 @@ mod tests {
             TimezoneOffset::for_query(vancouver, None, None),
             Err(TimezoneOffsetError::MissingQueryDate)
         );
-        // A window out of range is refused, not replaced by the end date's.
+        // January needs 14 and is refused; July's 13 would fit, so this also
+        // shows `to` is not tried.
         assert_eq!(
             TimezoneOffset::for_query(Some(chrono_tz::Pacific::Kiritimati), Some(jan), Some(jul)),
             Err(TimezoneOffsetError::OutOfRange(Decimal::from(14)))
