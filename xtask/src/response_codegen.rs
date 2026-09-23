@@ -762,7 +762,7 @@ mod tests {
         let table = crate::field_overrides::Table::with_builtins();
         let per_struct = BTreeMap::from([(
             path.to_string(),
-            crate::field_overrides::wall_clock_override(),
+            crate::field_overrides::record_listing_timestamp_override(),
         )]);
         let skip = Default::default();
         let resolver = Resolver {
@@ -823,7 +823,7 @@ mod tests {
             "{emitted}"
         );
         assert!(
-            emitted.contains("deserialize_opt_reported_wall_clock"),
+            emitted.contains("deserialize_opt_record_listing_timestamp"),
             "{emitted}"
         );
     }
@@ -837,7 +837,7 @@ mod tests {
             "{emitted}"
         );
         assert!(
-            emitted.contains("deserialize_opt_reported_wall_clock"),
+            emitted.contains("deserialize_opt_record_listing_timestamp"),
             "{emitted}"
         );
     }
@@ -859,7 +859,7 @@ mod tests {
             "{emitted}"
         );
         assert!(
-            emitted.contains("deserialize_opt_reported_wall_clock"),
+            emitted.contains("deserialize_opt_record_listing_timestamp"),
             "{emitted}"
         );
     }

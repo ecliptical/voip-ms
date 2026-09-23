@@ -5994,10 +5994,11 @@ pub struct GetCDRParams {
     )]
     pub failed: Option<bool>,
     /// IANA time zone whose days the date range means (Example:
-    /// 'America/New_York'); resolved at the query start date to the number
-    /// VoIP.ms needs for that window, since it shifts its Eastern wall clocks
-    /// as if Eastern were always UTC-5. Omit for UTC days. The reported
-    /// timestamps are qualified in the server zone whatever is sent.
+    /// 'America/New_York'); resolved at the query start date, or the end date
+    /// when there is no start, to the number VoIP.ms needs for that window,
+    /// since it shifts its Eastern wall clocks as if Eastern were always UTC-5.
+    /// Omit for UTC days. The reported timestamps are qualified in the server
+    /// zone whatever is sent.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -6072,12 +6073,13 @@ impl TryFrom<&GetCDRParams> for GetCDRParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetCDRParams) -> std::result::Result<Self, Self::Error> {
-        let timezone = match (p.timezone, p.date_from) {
-            (tz, Some(start)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?
+        let day = p.date_from.or(p.date_to);
+        let timezone = match (p.timezone, day) {
+            (tz, Some(day)) => {
+                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
             }
             (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());
+                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
             }
             (None, None) => crate::TimezoneOffset::UTC,
         };
@@ -7193,10 +7195,11 @@ pub struct GetMMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
     /// IANA time zone whose days the date range means (Example:
-    /// 'America/New_York'); resolved at the query start date to the number
-    /// VoIP.ms needs for that window, since it shifts its Eastern wall clocks
-    /// as if Eastern were always UTC-5. Omit for UTC days. The reported
-    /// timestamps are qualified in the server zone whatever is sent.
+    /// 'America/New_York'); resolved at the query start date, or the end date
+    /// when there is no start, to the number VoIP.ms needs for that window,
+    /// since it shifts its Eastern wall clocks as if Eastern were always UTC-5.
+    /// Omit for UTC days. The reported timestamps are qualified in the server
+    /// zone whatever is sent.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -7235,21 +7238,27 @@ impl TryFrom<&GetMMSParams> for GetMMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetMMSParams) -> std::result::Result<Self, Self::Error> {
-        let start = p
-            .from
-            .as_deref()
-            .map(|s| s.trim().parse::<chrono::NaiveDate>());
-        let timezone = match (p.timezone, start) {
-            (tz, Some(Ok(start))) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?
-            }
-            (Some(_), Some(Err(_))) => {
-                return Err(crate::types::TimezoneOffsetError::InvalidStartDate.into());
+        let parse = |d: Option<&str>| {
+            d.map(str::trim)
+                .filter(|d| !d.is_empty())
+                .map(|d| {
+                    d.parse::<chrono::NaiveDate>()
+                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                })
+                .transpose()
+        };
+        let day = match parse(p.from.as_deref())? {
+            Some(day) => Some(day),
+            None => parse(p.to.as_deref())?,
+        };
+        let timezone = match (p.timezone, day) {
+            (tz, Some(day)) => {
+                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
             }
             (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());
+                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
             }
-            (None, _) => crate::TimezoneOffset::UTC,
+            (None, None) => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             mms: p.mms,
@@ -7636,10 +7645,11 @@ pub struct GetResellerCDRParams {
     )]
     pub failed: Option<bool>,
     /// IANA time zone whose days the date range means (Example:
-    /// 'America/New_York'); resolved at the query start date to the number
-    /// VoIP.ms needs for that window, since it shifts its Eastern wall clocks
-    /// as if Eastern were always UTC-5. Omit for UTC days. The reported
-    /// timestamps are qualified in the server zone whatever is sent.
+    /// 'America/New_York'); resolved at the query start date, or the end date
+    /// when there is no start, to the number VoIP.ms needs for that window,
+    /// since it shifts its Eastern wall clocks as if Eastern were always UTC-5.
+    /// Omit for UTC days. The reported timestamps are qualified in the server
+    /// zone whatever is sent.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -7717,12 +7727,13 @@ impl TryFrom<&GetResellerCDRParams> for GetResellerCDRParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetResellerCDRParams) -> std::result::Result<Self, Self::Error> {
-        let timezone = match (p.timezone, p.date_from) {
-            (tz, Some(start)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?
+        let day = p.date_from.or(p.date_to);
+        let timezone = match (p.timezone, day) {
+            (tz, Some(day)) => {
+                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
             }
             (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());
+                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
             }
             (None, None) => crate::TimezoneOffset::UTC,
         };
@@ -7774,10 +7785,11 @@ pub struct GetResellerMMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
     /// IANA time zone whose days the date range means (Example:
-    /// 'America/New_York'); resolved at the query start date to the number
-    /// VoIP.ms needs for that window, since it shifts its Eastern wall clocks
-    /// as if Eastern were always UTC-5. Omit for UTC days. The reported
-    /// timestamps are qualified in the server zone whatever is sent.
+    /// 'America/New_York'); resolved at the query start date, or the end date
+    /// when there is no start, to the number VoIP.ms needs for that window,
+    /// since it shifts its Eastern wall clocks as if Eastern were always UTC-5.
+    /// Omit for UTC days. The reported timestamps are qualified in the server
+    /// zone whatever is sent.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -7818,21 +7830,27 @@ impl TryFrom<&GetResellerMMSParams> for GetResellerMMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetResellerMMSParams) -> std::result::Result<Self, Self::Error> {
-        let start = p
-            .from
-            .as_deref()
-            .map(|s| s.trim().parse::<chrono::NaiveDate>());
-        let timezone = match (p.timezone, start) {
-            (tz, Some(Ok(start))) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?
-            }
-            (Some(_), Some(Err(_))) => {
-                return Err(crate::types::TimezoneOffsetError::InvalidStartDate.into());
+        let parse = |d: Option<&str>| {
+            d.map(str::trim)
+                .filter(|d| !d.is_empty())
+                .map(|d| {
+                    d.parse::<chrono::NaiveDate>()
+                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                })
+                .transpose()
+        };
+        let day = match parse(p.from.as_deref())? {
+            Some(day) => Some(day),
+            None => parse(p.to.as_deref())?,
+        };
+        let timezone = match (p.timezone, day) {
+            (tz, Some(day)) => {
+                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
             }
             (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());
+                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
             }
-            (None, _) => crate::TimezoneOffset::UTC,
+            (None, None) => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             mms: p.mms,
@@ -7882,10 +7900,11 @@ pub struct GetResellerSMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
     /// IANA time zone whose days the date range means (Example:
-    /// 'America/New_York'); resolved at the query start date to the number
-    /// VoIP.ms needs for that window, since it shifts its Eastern wall clocks
-    /// as if Eastern were always UTC-5. Omit for UTC days. The reported
-    /// timestamps are qualified in the server zone whatever is sent.
+    /// 'America/New_York'); resolved at the query start date, or the end date
+    /// when there is no start, to the number VoIP.ms needs for that window,
+    /// since it shifts its Eastern wall clocks as if Eastern were always UTC-5.
+    /// Omit for UTC days. The reported timestamps are qualified in the server
+    /// zone whatever is sent.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -7926,21 +7945,27 @@ impl TryFrom<&GetResellerSMSParams> for GetResellerSMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetResellerSMSParams) -> std::result::Result<Self, Self::Error> {
-        let start = p
-            .from
-            .as_deref()
-            .map(|s| s.trim().parse::<chrono::NaiveDate>());
-        let timezone = match (p.timezone, start) {
-            (tz, Some(Ok(start))) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?
-            }
-            (Some(_), Some(Err(_))) => {
-                return Err(crate::types::TimezoneOffsetError::InvalidStartDate.into());
+        let parse = |d: Option<&str>| {
+            d.map(str::trim)
+                .filter(|d| !d.is_empty())
+                .map(|d| {
+                    d.parse::<chrono::NaiveDate>()
+                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                })
+                .transpose()
+        };
+        let day = match parse(p.from.as_deref())? {
+            Some(day) => Some(day),
+            None => parse(p.to.as_deref())?,
+        };
+        let timezone = match (p.timezone, day) {
+            (tz, Some(day)) => {
+                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
             }
             (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());
+                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
             }
-            (None, _) => crate::TimezoneOffset::UTC,
+            (None, None) => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             sms: p.sms,
@@ -8032,10 +8057,11 @@ pub struct GetSMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
     /// IANA time zone whose days the date range means (Example:
-    /// 'America/New_York'); resolved at the query start date to the number
-    /// VoIP.ms needs for that window, since it shifts its Eastern wall clocks
-    /// as if Eastern were always UTC-5. Omit for UTC days. The reported
-    /// timestamps are qualified in the server zone whatever is sent.
+    /// 'America/New_York'); resolved at the query start date, or the end date
+    /// when there is no start, to the number VoIP.ms needs for that window,
+    /// since it shifts its Eastern wall clocks as if Eastern were always UTC-5.
+    /// Omit for UTC days. The reported timestamps are qualified in the server
+    /// zone whatever is sent.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_tz"
@@ -8074,21 +8100,27 @@ impl TryFrom<&GetSMSParams> for GetSMSParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetSMSParams) -> std::result::Result<Self, Self::Error> {
-        let start = p
-            .from
-            .as_deref()
-            .map(|s| s.trim().parse::<chrono::NaiveDate>());
-        let timezone = match (p.timezone, start) {
-            (tz, Some(Ok(start))) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?
-            }
-            (Some(_), Some(Err(_))) => {
-                return Err(crate::types::TimezoneOffsetError::InvalidStartDate.into());
+        let parse = |d: Option<&str>| {
+            d.map(str::trim)
+                .filter(|d| !d.is_empty())
+                .map(|d| {
+                    d.parse::<chrono::NaiveDate>()
+                        .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)
+                })
+                .transpose()
+        };
+        let day = match parse(p.from.as_deref())? {
+            Some(day) => Some(day),
+            None => parse(p.to.as_deref())?,
+        };
+        let timezone = match (p.timezone, day) {
+            (tz, Some(day)) => {
+                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
             }
             (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());
+                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
             }
-            (None, _) => crate::TimezoneOffset::UTC,
+            (None, None) => crate::TimezoneOffset::UTC,
         };
         Ok(Self {
             sms: p.sms,
@@ -12844,7 +12876,7 @@ pub struct GetBalanceManagementResponse {
 pub struct GetCDRResponseCDR {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+        deserialize_with = "crate::responses::deserialize_opt_record_listing_timestamp"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
     #[serde(
@@ -15859,7 +15891,7 @@ pub struct GetMMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+        deserialize_with = "crate::responses::deserialize_opt_record_listing_timestamp"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
     #[serde(
@@ -16830,7 +16862,7 @@ pub struct GetResellerBalanceResponse {
 pub struct GetResellerCDRResponseCDR {
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+        deserialize_with = "crate::responses::deserialize_opt_record_listing_timestamp"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
     #[serde(
@@ -16913,7 +16945,7 @@ pub struct GetResellerMMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+        deserialize_with = "crate::responses::deserialize_opt_record_listing_timestamp"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
     #[serde(
@@ -16962,7 +16994,7 @@ pub struct GetResellerSMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+        deserialize_with = "crate::responses::deserialize_opt_record_listing_timestamp"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
     #[serde(
@@ -17165,7 +17197,7 @@ pub struct GetSMSResponseSMS {
     pub id: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+        deserialize_with = "crate::responses::deserialize_opt_record_listing_timestamp"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
     #[serde(

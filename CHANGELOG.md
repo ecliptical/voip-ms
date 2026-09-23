@@ -23,19 +23,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The field type is `Option<Reported<WallClock>>`, not
     `Option<Reported<DateTime<FixedOffset>>>`. A row in the hour Eastern repeats
     when clocks fall back cannot be resolved, and comes back `WallClock::Bare`
-    instead of being guessed at.
+    holding its Eastern wall clock instead of being guessed at.
   - A zoned value carries the Eastern offset (`-04:00` / `-05:00`), not the
     offset of the zone requested. Convert with `with_timezone` for display.
   - `timezone` now chooses whose days `date_from` / `date_to` mean, and still
     defaults to UTC. The number sent is `TimezoneOffset::for_window` of the
-    zone at the start date: during Eastern DST, UTC days are sent as `-1`,
-    since `0` would match UTC+01:00 days.
+    zone at the start date, or the end date when there is no start: during
+    Eastern DST, UTC days are sent as `-1`, since `0` would match UTC+01:00
+    days.
   - `attach_offset` takes the `TimezoneOffset` that was sent instead of a
-    `FixedOffset`, and qualifies the envelope the same way.
+    `FixedOffset`. It writes an unresolvable row as its Eastern wall clock
+    followed by the zone name (`2026-11-01 01:30:00 America/Toronto`).
+  - A record-listing envelope that was not qualified with `attach_offset` still
+    fails to deserialize, as in 0.13: an unqualified value is a shifted wall
+    clock that names neither the server's zone nor the caller's.
   - Measured against the live API with that call (whose recording id embeds its
     Unix time) at `timezone` `-12`, `-5`, `-4`, `0`, `5.5` and `13`. Fractional
-    numbers are honored. The reseller SMS/MMS pair was not measured, as the
-    test account has no reseller client.
+    numbers are honored. Two things were not measured: the reseller SMS/MMS
+    pair, as the test account has no reseller client, and the winter behavior,
+    as every record and read was made during DST. That `timezone=0` reports UTC
+    outside DST is inferred from the same fixed shift.
 - `attach_offset` trims a padded value before qualifying it. A value such as
   `" 2026-09-16 15:14:35 "` could come out as `" 2026-09-16 15:14:35 -04:00"`,
   which does not parse.
@@ -51,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `date` and `getMediaMMS` `date`. Each was measured against, respectively, a
   SIP registration, a call and its recording, a DID order, a fax and an MMS,
   each made for the purpose and undone where it could be (the DID and the fax
-  number were cancelled).
+  number were canceled).
 - `Client::get_voicemail_messages_in_zone(params, zone)` qualifies each
   message's `date` with the UTC offset `zone` was at when the message arrived.
   VoIP.ms renders `date` in the mailbox's current `timezone` setting and names
@@ -84,10 +91,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   included, are `Option<Reported<WallClock>>` instead of
   `Option<Reported<NaiveDateTime>>`. A bare wall clock reads as
   `WallClock::Bare` and a qualified one as `WallClock::Zoned`, so an
-  unqualified raw envelope still deserializes. Text that parses as neither is
-  still `Reported::Unreadable`.
+  unqualified raw envelope of these methods still deserializes. Text that
+  parses as neither is still `Reported::Unreadable`.
+- **Breaking**: a record-listing request whose `timezone` zone needs a number
+  outside `-12..=13` for its days is `Error::InvalidParams` before anything is
+  sent, instead of going out with a window an hour off. During Eastern DST that
+  is a UTC-12 zone (`Etc/GMT+12`), which 0.13 sent as `-12`; `Pacific/Kiritimati`
+  (+14), which 0.13 always refused, now works during Eastern DST.
+- **Breaking**: an unparseable `from` / `to` on `getSMS` / `getMMS` and their
+  reseller pair is `Error::InvalidParams` whether or not a zone is named. 0.13
+  sent it anyway when no zone was named.
+- **Breaking**: `TimezoneOffsetError::MissingStartDate` and `InvalidStartDate`
+  are `MissingQueryDate` and `InvalidQueryDate`, since either date can now
+  anchor the window.
+- **Breaking**: `TimezoneOffset::to_fixed_offset` is removed. Attaching the
+  number sent as an offset is the error this release fixes, and a 0.13 raw
+  caller doing it by hand now fails to compile instead of being an hour off.
+  `TimezoneOffset`'s `Display` renders the number (`-5`, `5.5`) instead of a
+  `UTC-05:00` label.
 - Three response timestamps stay `NaiveDateTime`, unmeasured:
-  `getBackOrders` `order_date` (a back order cannot be cancelled through the
+  `getBackOrders` `order_date` (a back order cannot be canceled through the
   API), `getLNPDetails` `date` (a port request is a real carrier filing) and
   `getConferenceRecordings` `date` (conference recording cannot be enabled
   through the API).
@@ -100,13 +123,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Code reading a record-listing or server-zone timestamp gets a `WallClock` from
 `.get()`. Call `.zoned()` for the instant (`None` only for the repeated hour),
-or `.local()` for the wall clock as it was reported. Record-listing instants
-now carry the Eastern offset, so code that relied on them being in the
-requested zone should convert with `with_timezone`. A raw caller of a
-record-listing method passes the `TimezoneOffset` it sent to `attach_offset`
-instead of `to_fixed_offset()` of it. Code reading a voicemail message's `date`
-calls `get_voicemail_messages_in_zone` with the mailbox's zone to get an
-instant.
+or `.local()` for the wall clock in the zone it was resolved in (Eastern, for a
+record-listing or server-zone value). Record-listing instants now carry the
+Eastern offset, so code that relied on them being in the requested zone should
+convert with `with_timezone`. A raw caller of a record-listing method passes the
+`TimezoneOffset` it sent to `attach_offset`; `to_fixed_offset()` no longer
+exists. Code reading a voicemail message's `date` calls
+`get_voicemail_messages_in_zone` with the mailbox's zone to get an instant.
 
 ## [0.13.0] - 2026-09-22
 

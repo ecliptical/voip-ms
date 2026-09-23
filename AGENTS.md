@@ -122,11 +122,14 @@ received, so they keep the bare `chrono` type, which is why `FieldOverride`
 carries a `response_rust_type` beside `rust_type`.
 
 The rule is that an unexpected **value** degrades and an unexpected **contract**
-does not. A timestamp carrying no UTC offset is neither: it reads as
+does not. The timestamp readers are where the two meet. In a named-zone field a
+value with no offset is part of the contract, and reads as
 [`crate::WallClock::Bare`], which claims no zone, rather than as UTC, which
-would invent the zone decisions #8 and #8a exist to remove. A JSON list or
-object where a scalar belongs is a shape, and no scalar type can stand in for
-one, so that is rejected.
+would invent one. In a record-listing field it is a broken contract, since
+there it is a wall clock shifted by the `timezone` sent that `attach_offset`
+never qualified, so `deserialize_opt_record_listing_timestamp` refuses it
+(decision #8). A JSON list or object where a scalar belongs is a shape, and no
+scalar type can stand in for one, so that is rejected too.
 
 **The class is not closed.** Seven readers still fail the whole envelope on a
 well-shaped string they cannot read. Four are scalar helpers in
@@ -352,9 +355,11 @@ in `xtask/src/field_overrides.rs`:
     the SMS/MMS four). The public field is still `Option<Tz>`; the generator
     emits a private `*ParamsWire` twin plus a `TryFrom<&*Params>` that picks the
     number with `TimezoneOffset::for_window` at the query start date
-    (`date_from` / `from`), and routes both generated method bodies through it.
-    A named zone with no start date or an unparseable one, or a number outside
-    the range, is `Error::InvalidParams` before any request is sent. The public
+    (`date_from` / `from`), or at the end date (`date_to` / `to`) when there is
+    no start, and routes both generated method bodies through it. A named zone
+    with neither date, a date string that does not parse (named zone or not),
+    or a number outside the range is `Error::InvalidParams` before any request
+    is sent. The public
     struct still derives `Serialize` -- there `timezone` emits the IANA name
     (what a log should show); only the wire twin carries the number, so a raw
     `call_raw` caller picks the number itself with `for_window`.
@@ -367,10 +372,22 @@ in `xtask/src/field_overrides.rs`:
     recording id embeds that Unix time: `timezone` `-12`, `-5`, `-4`, `0`,
     `5.5` and `13` reported `05:28:34`, `12:28:34`, `13:28:34`, `17:28:34`,
     `22:58:34` and `06:28:34` (the next day), and at `13` the call was listed
-    under 2026-09-24. So outside DST `n` reports UTC+`n`, and during DST it
-    reports UTC+`n+1`. `for_window` sends the caller's offset minus the server
-    zone's, less five, so the window is the caller's days at the start date.
-    A caller who names no zone gets UTC days.
+    under 2026-09-24. So during DST `n` reports UTC+`n+1`. `for_window` sends
+    the caller's offset minus the server zone's, less five, so the window is the
+    caller's days at the start date. A caller who names no zone gets UTC days.
+
+    That outside DST the same fixed base gives UTC+`n` is **inferred, not
+    measured**: every record on the test account was made during DST, and every
+    read was made during it. If the shift were different for a winter record or
+    a winter read, every winter row would be qualified wrong. The unit tests
+    that assert winter values assert this model. Settling it takes reads made
+    after 2026-11-01 of a record with a known instant, one made before the
+    change (such as the call above) and one made after it.
+
+    A number outside `-12..=13` is refused rather than clamped, so a zone's
+    window is either right or an error. During Eastern DST a UTC-12 zone needs
+    `-13`, which 0.13 sent as `-12` (and matched an hour off); outside DST
+    `Pacific/Kiritimati` (+14) needs `14`.
 
     Omitting the parameter is not a fallback to some account zone; there is no
     such setting. The portal's account and contact pages have no zone field.
@@ -690,10 +707,20 @@ including a fractional one (`5.5` reports `22:58:34` for that call). What
 remains is the server-zone wall clock, and resolving it per row gives each row
 the offset in force at its own instant, so a range that crosses a DST change
 comes back right on both sides. The one wall clock that cannot be resolved is
-the hour the server zone repeats when clocks fall back, and that value is left
-as it arrived and reads as `WallClock::Bare` -- which is why the type is
-`WallClock` rather than `DateTime<FixedOffset>`: a record-listing envelope can
-now legitimately hold a value with no offset.
+the hour the server zone repeats when clocks fall back. `attach_offset` writes
+that value as its moved-back server-zone wall clock followed by the zone's name
+(`2026-11-01 01:30:00 America/Toronto`), and it reads as `WallClock::Bare` --
+which is why the type is `WallClock` rather than `DateTime<FixedOffset>`. It is
+written on the server clock rather than left shifted so that every row's
+`.local()` is on the same clock; left shifted, it would sort five hours away
+from its neighbors at `timezone=0`.
+
+The zone name is also what keeps the guard. `deserialize_opt_record_listing_timestamp`
+reads a value with an offset as `Zoned` and one ending in the server zone's
+name as `Bare`, and refuses one with neither: that is a shifted wall clock that
+was never qualified, which a raw caller who skipped `attach_offset` would
+otherwise read as if it meant something. It cannot catch `attach_offset` given
+a number other than the one sent.
 
 Qualifying is a step on the JSON, not a `Deserialize` impl: serde has no access
 to the request, so it cannot know the number sent. `attach_offset` is public
@@ -812,14 +839,14 @@ reported the Eastern wall clock at UTC-04:00:
 | `getMediaMMS` | MMS sent between 17:20:47 and 17:21:40 UTC | `date` `13:21:39` |
 
 A fixed UTC-5 would have read an hour earlier in every row. The probe DID and
-fax number were cancelled afterwards, and the DID the call went to had
+fax number were canceled afterwards, and the DID the call went to had
 `record_calls` switched on for the call and back off.
 
 Three fields stay `NaiveDateTime`, unmeasured, because no reference could be
 created without an effect the API cannot undo:
 
 * `GetBackOrdersResponseBackOrder::order_date` -- a back order cannot be
-  cancelled through the API and may later buy a number.
+  canceled through the API and may later buy a number.
 * `GetLNPDetailsResponse::date` -- a port request is a real filing with the
   losing carrier.
 * `GetConferenceRecordingsResponseRecording::date` -- no API call turns on
@@ -862,21 +889,24 @@ names an offset (`names_offset`), a blank, and text that is not a
 pre-standard local mean time) also stays `Bare`, because the wire spelling
 stops at minutes and `WallClock`'s `Display` would not round-trip it.
 
-`attach_zone` and `attach_offset` share one walk. Each only resolves a value to
-an instant -- `attach_offset` after moving it back by the shift -- and the walk
-rewrites the value in place as that instant with its offset, trimmed. A value
-it gets no instant for is left exactly as it arrived.
+`attach_zone` and `attach_offset` share one walk. Each only resolves a value --
+`attach_offset` after moving it back by the shift -- and the walk rewrites it in
+place, trimmed: as the instant with its offset, or, for `attach_offset`'s
+unresolvable hour, as the server-zone wall clock with the zone's name. A value
+`attach_zone` cannot resolve is left exactly as it arrived, since its fields
+accept a bare value.
 
 `WallClock`'s equality is hand-written. `DateTime<FixedOffset>`'s own `==`
 compares instants and ignores the offset, so a derived one would call
 `18:47:40-04:00` and `22:47:40+00:00` equal while they report different wall
 clocks, and a test could not catch `attach_zone` choosing the wrong offset.
 
-The deserializer accepts a bare value rather than refusing it. A bare value
-comes from a call that supplied no zone or from a row left unresolved, so it is
-part of the field's contract rather than a break in it, and `Bare` claims no
-zone where reading it as UTC would invent one. Unreadable text still degrades to
-`Reported::Unreadable`.
+A named-zone field accepts a bare value rather than refusing it, unlike a
+record-listing field. A bare value there comes from a call that supplied no zone
+or from a row left unresolved, and is the wall clock in the zone it was
+rendered in, so it is part of the field's contract rather than a break in it.
+`Bare` claims no zone where reading it as UTC would invent one. Unreadable text
+still degrades to `Reported::Unreadable`.
 
 The crate still makes one request per method call. Looking the mailbox zone up
 with `getVoicemails` inside `get_voicemail_messages_in_zone` would double the

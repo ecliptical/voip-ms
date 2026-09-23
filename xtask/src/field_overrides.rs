@@ -268,9 +268,22 @@ pub(crate) fn tz_param_override() -> FieldOverride {
     }
 }
 
-/// The [`FieldOverride`] for a response timestamp whose zone is known only
-/// outside the response: a `voip_ms::WallClock`, zoned once `attach_zone` or
-/// `attach_offset` has qualified it and bare otherwise.
+/// The [`FieldOverride`] for a record-listing response timestamp: a
+/// `voip_ms::WallClock` read through a deserializer that refuses a value
+/// `attach_offset` never qualified.
+pub(crate) fn record_listing_timestamp_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "crate::Reported<crate::WallClock>".into(),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_record_listing_timestamp".into(),
+        ),
+        ..Default::default()
+    }
+}
+
+/// The [`FieldOverride`] for a response timestamp in a named zone: a
+/// `voip_ms::WallClock`, zoned once `attach_zone` has qualified it and bare
+/// otherwise.
 pub(crate) fn wall_clock_override() -> FieldOverride {
     FieldOverride {
         rust_type: "crate::Reported<crate::WallClock>".into(),

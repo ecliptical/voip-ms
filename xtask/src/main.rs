@@ -128,8 +128,10 @@ struct OffsetOp {
     wire: &'static str,
     /// The sibling start-date param that anchors the DST resolution.
     start_field: &'static str,
-    /// Whether `start_field` is a `chrono::NaiveDate` (the CDR methods) rather
-    /// than a `'YYYY-MM-DD'` string (the SMS/MMS methods).
+    /// The end-date param, which anchors it when there is no start date.
+    end_field: &'static str,
+    /// Whether the date params are `chrono::NaiveDate` (the CDR methods) rather
+    /// than `'YYYY-MM-DD'` strings (the SMS/MMS methods).
     start_is_date: bool,
 }
 
@@ -137,31 +139,37 @@ const OFFSET_OPS: &[OffsetOp] = &[
     OffsetOp {
         wire: "getCDR",
         start_field: "date_from",
+        end_field: "date_to",
         start_is_date: true,
     },
     OffsetOp {
         wire: "getResellerCDR",
         start_field: "date_from",
+        end_field: "date_to",
         start_is_date: true,
     },
     OffsetOp {
         wire: "getSMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
     OffsetOp {
         wire: "getMMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
     OffsetOp {
         wire: "getResellerSMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
     OffsetOp {
         wire: "getResellerMMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
 ];
@@ -226,7 +234,7 @@ const VOICEMAIL_WINDOW_NOTE: &str = "Not matched in the mailbox's zone, so a mes
 ///   `date` `13:21:39`.
 ///
 /// `getBackOrders`, `getLNPDetails` and `getConferenceRecordings` are absent
-/// because they were not measured: a back order cannot be cancelled through
+/// because they were not measured: a back order cannot be canceled through
 /// the API, a port request is a real carrier filing, and a conference
 /// recording cannot be enabled through the API.
 const ZONE_OPS: &[ZoneOp] = &[
@@ -622,10 +630,10 @@ fn emit_params_constructor(
 /// mined upstream text, which describes the numeric wire form ("Numeric: -12
 /// to 13") the public `Tz` field is not.
 const OFFSET_TIMEZONE_DOC: &str = "IANA time zone whose days the date range means \
-     (Example: 'America/New_York'); resolved at the query start date to the number VoIP.ms \
-     needs for that window, since it shifts its Eastern wall clocks as if Eastern were always \
-     UTC-5. Omit for UTC days. The reported timestamps are qualified in the server zone \
-     whatever is sent.";
+     (Example: 'America/New_York'); resolved at the query start date, or the end date when \
+     there is no start, to the number VoIP.ms needs for that window, since it shifts its \
+     Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported \
+     timestamps are qualified in the server zone whatever is sent.";
 
 /// Rust type for a WSDL param type. Integers map to `u64`, matching the
 /// response side: every VoIP.ms integer param is a non-negative id or count
@@ -1673,42 +1681,46 @@ fn emit_offset_wire(
              type Error = crate::ParamsError;\n\n    \
              fn try_from(p: &{struct_name}) -> std::result::Result<Self, Self::Error> {{\n"
     ));
-    // The number is chosen for the window at the start date, in the named zone
-    // or in UTC when none is named. A named zone needs a start date to
-    // resolve at; with no zone and no start date there is no window to match,
-    // and the reported timestamps are qualified for whatever number is sent.
+    // The number is chosen for the window at the start date, or at the end
+    // date when there is no start, in the named zone or in UTC when none is
+    // named. A named zone needs one of the two to resolve at; with no zone and
+    // neither date there is no window to match, and the reported timestamps
+    // are qualified for whatever number is sent. A date string that does not
+    // parse is an error whether or not a zone is named.
+    let end_ident = field_ident(struct_name, off.end_field, acronyms);
     if off.start_is_date {
         out.push_str(&format!(
-            "        let timezone = match (p.timezone, p.{start_ident}) {{\n            \
-                 (tz, Some(start)) => {{\n                \
-                     crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?\n            \
-                 }}\n            \
-                 (Some(_), None) => {{\n                \
-                     return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());\n            \
-                 }}\n            \
-                 (None, None) => crate::TimezoneOffset::UTC,\n        \
-             }};\n"
+            "        let day = p.{start_ident}.or(p.{end_ident});\n"
         ));
     } else {
         out.push_str(&format!(
-            "        let start = p\n            \
-                 .{start_ident}\n            \
-                 .as_deref()\n            \
-                 .map(|s| s.trim().parse::<chrono::NaiveDate>());\n        \
-             let timezone = match (p.timezone, start) {{\n            \
-                 (tz, Some(Ok(start))) => {{\n                \
-                     crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), start)?\n            \
-                 }}\n            \
-                 (Some(_), Some(Err(_))) => {{\n                \
-                     return Err(crate::types::TimezoneOffsetError::InvalidStartDate.into());\n            \
-                 }}\n            \
-                 (Some(_), None) => {{\n                \
-                     return Err(crate::types::TimezoneOffsetError::MissingStartDate.into());\n            \
-                 }}\n            \
-                 (None, _) => crate::TimezoneOffset::UTC,\n        \
+            "        let parse = |d: Option<&str>| {{\n            \
+                 d.map(str::trim)\n                \
+                     .filter(|d| !d.is_empty())\n                \
+                     .map(|d| {{\n                    \
+                         d.parse::<chrono::NaiveDate>()\n                        \
+                             .map_err(|_| crate::types::TimezoneOffsetError::InvalidQueryDate)\n                \
+                     }})\n                \
+                     .transpose()\n        \
+             }};\n        \
+             let day = match parse(p.{start_ident}.as_deref())? {{\n            \
+                 Some(day) => Some(day),\n            \
+                 None => parse(p.{end_ident}.as_deref())?,\n        \
              }};\n"
         ));
     }
+
+    out.push_str(
+        "        let timezone = match (p.timezone, day) {\n            \
+             (tz, Some(day)) => {\n                \
+                 crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?\n            \
+             }\n            \
+             (Some(_), None) => {\n                \
+                 return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());\n            \
+             }\n            \
+             (None, None) => crate::TimezoneOffset::UTC,\n        \
+         };\n",
+    );
 
     out.push_str("        Ok(Self {\n");
     for (fname, ftype) in body_fields.iter().copied() {
@@ -2272,7 +2284,7 @@ fn cmd_gen() -> Result<(), String> {
             assign_field_type(
                 &mut field_type_override,
                 f.struct_path.clone(),
-                field_overrides::wall_clock_override(),
+                field_overrides::record_listing_timestamp_override(),
             )?;
         }
 

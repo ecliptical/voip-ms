@@ -1788,7 +1788,8 @@ async fn record_listing_timestamps_name_the_instant_whatever_was_sent() {
 #[tokio::test]
 async fn record_listing_leaves_the_repeated_hour_bare() {
     // 06:30 at `timezone=0` on 2026-11-01 is 01:30 Eastern, which that night
-    // happens twice; either offset would be a guess.
+    // happens twice; either offset would be a guess. It comes back bare on the
+    // Eastern clock its resolved neighbor uses, not the shifted one.
     let (server, client) = fixture().await;
 
     Mock::given(method("GET"))
@@ -1814,7 +1815,7 @@ async fn record_listing_leaves_the_repeated_hour_bare() {
         Some(voip_ms::Reported::Parsed(voip_ms::WallClock::Bare(
             voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 11, 1)
                 .unwrap()
-                .and_hms_opt(6, 30, 0)
+                .and_hms_opt(1, 30, 0)
                 .unwrap()
         )))
     );
@@ -1904,9 +1905,9 @@ async fn record_listing_half_hour_zone_round_trips_its_fraction() {
 }
 
 #[tokio::test]
-async fn record_listing_timezone_without_start_date_errors() {
-    // A zone with no start date has no instant to resolve DST at; the call
-    // fails before any request is sent.
+async fn record_listing_timezone_without_a_query_date_errors() {
+    // A zone with neither a start nor an end date has no day to resolve its
+    // window at; the call fails before any request is sent.
     use voip_ms::{GetSMSParams, TimezoneOffsetError};
 
     let (server, client) = fixture().await;
@@ -1925,7 +1926,93 @@ async fn record_listing_timezone_without_start_date_errors() {
     let err = client.get_sms_raw(&params).await.unwrap_err();
     assert!(matches!(
         err,
-        Error::InvalidParams(ParamsError::Timezone(TimezoneOffsetError::MissingStartDate))
+        Error::InvalidParams(ParamsError::Timezone(TimezoneOffsetError::MissingQueryDate))
+    ));
+}
+
+#[tokio::test]
+async fn record_listing_window_falls_back_to_the_end_date() {
+    // With only `to`, the window's day is still resolved -- here UTC in July,
+    // during Eastern DST, is -1 -- rather than sending `0`, which would match
+    // UTC+01:00 days.
+    use voip_ms::GetSMSParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSMS"))
+        .and(query_param("to", "2026-07-15"))
+        .and(query_param("timezone", "-1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = GetSMSParams {
+        to: Some("2026-07-15".into()),
+        ..Default::default()
+    };
+    client.get_sms_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
+async fn record_listing_unparseable_date_errors_without_a_zone_too() {
+    // An unparseable date fails the same way whether or not a zone is named,
+    // rather than falling back to a number chosen for no day.
+    use voip_ms::{GetSMSParams, TimezoneOffsetError};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    for timezone in [None, Some(voip_ms::chrono_tz::America::New_York)] {
+        let params = GetSMSParams {
+            from: Some("15/07/2026".into()),
+            timezone,
+            ..Default::default()
+        };
+        let err = client.get_sms_raw(&params).await.unwrap_err();
+        assert!(
+            matches!(
+                err,
+                Error::InvalidParams(ParamsError::Timezone(TimezoneOffsetError::InvalidQueryDate))
+            ),
+            "{timezone:?}: {err:?}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn record_listing_utc_minus_12_is_refused_during_eastern_dst() {
+    // A UTC-12 zone's days need -13 during Eastern DST, which VoIP.ms does not
+    // accept. The call fails before any request is sent rather than matching a
+    // window an hour off.
+    use voip_ms::TimezoneOffsetError;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let params = GetCDRParams {
+        date_from: voip_ms::chrono::NaiveDate::from_ymd_opt(2026, 7, 15),
+        timezone: Some(voip_ms::chrono_tz::Etc::GMTPlus12),
+        ..Default::default()
+    };
+    let err = client.get_cdr(&params).await.unwrap_err();
+    assert!(matches!(
+        err,
+        Error::InvalidParams(ParamsError::Timezone(TimezoneOffsetError::OutOfRange(_)))
     ));
 }
 
@@ -2287,9 +2374,9 @@ fn offset_timestamps_answers_each_record_listing_method_with_its_paths() {
 #[tokio::test]
 async fn a_raw_record_listing_call_returns_the_shifted_wall_clock() {
     // The raw contract is what VoIP.ms sent: a wall clock shifted by the number
-    // sent, with no offset. Read unqualified it is a `Bare` shifted wall clock,
-    // claiming no zone; `attach_offset` with the same number turns it into the
-    // instant.
+    // sent, with no offset. That is neither the server's clock nor the
+    // caller's, so the typed shape refuses it until `attach_offset`, given the
+    // same number, turns it into the instant.
     let (server, client) = fixture().await;
 
     Mock::given(method("GET"))
@@ -2313,11 +2400,13 @@ async fn a_raw_record_listing_call_returns_the_shifted_wall_clock() {
         .await
         .unwrap();
     assert_eq!(envelope["cdr"][0]["date"], "2026-09-16 16:14:35");
-    let unqualified: voip_ms::GetCDRResponse = serde_json::from_value(envelope.clone()).unwrap();
-    assert!(matches!(
-        unqualified.cdr[0].date,
-        Some(voip_ms::Reported::Parsed(voip_ms::WallClock::Bare(_)))
-    ));
+    let unqualified = serde_json::from_value::<voip_ms::GetCDRResponse>(envelope.clone());
+    assert!(
+        unqualified
+            .unwrap_err()
+            .to_string()
+            .contains("qualify the envelope with attach_offset")
+    );
 
     let timestamps = voip_ms::offset_timestamps("getCDR").unwrap();
     voip_ms::attach_offset(&mut envelope, timezone, timestamps);

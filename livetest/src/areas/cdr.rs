@@ -11,9 +11,10 @@
 //!
 //! At `Depth::Costly` the area then reads the same window through
 //! `Client::get_cdr` itself at two named zones, which is the only live exercise
-//! of the generated wire twin, of `TimezoneOffset::at`, and of the offset the
-//! typed response claims. `getResellerCDR` is left skipped: it additionally
-//! needs a reseller client id the harness has no fixture for.
+//! of the generated wire twin, of `TimezoneOffset::for_window`, and of the
+//! qualification the typed response relies on. `getResellerCDR` is left
+//! skipped: it additionally needs a reseller client id the harness has no
+//! fixture for.
 
 use async_trait::async_trait;
 
@@ -146,11 +147,16 @@ async fn offset_round_trip(
 
     let mut compared = 0;
     for utc_record in &at_utc.cdr {
-        // A degraded timestamp has no instant to compare; the probe's own
-        // degraded check is what reports it, so skip it rather than fail here.
+        // Only an instant can be compared across two reads. A degraded value
+        // has none, and the probe's own degraded check reports it; a `Bare`
+        // one is the hour the server zone repeats, which has none either.
         let (Some(id), Some(utc_date)) = (
             utc_record.uniqueid.as_deref(),
-            utc_record.date.as_ref().and_then(Reported::get),
+            utc_record
+                .date
+                .as_ref()
+                .and_then(Reported::get)
+                .and_then(|d| d.zoned()),
         ) else {
             continue;
         };
@@ -160,6 +166,7 @@ async fn offset_round_trip(
             .iter()
             .find(|r| r.uniqueid.as_deref() == Some(id))
             .and_then(|r| r.date.as_ref().and_then(Reported::get))
+            .and_then(|d| d.zoned())
         else {
             continue;
         };
