@@ -6073,16 +6073,7 @@ impl TryFrom<&GetCDRParams> for GetCDRParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetCDRParams) -> std::result::Result<Self, Self::Error> {
-        let day = p.date_from.or(p.date_to);
-        let timezone = match (p.timezone, day) {
-            (tz, Some(day)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
-            }
-            (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
-            }
-            (None, None) => crate::TimezoneOffset::UTC,
-        };
+        let timezone = crate::TimezoneOffset::for_query(p.timezone, p.date_from, p.date_to)?;
         Ok(Self {
             date_from: p.date_from,
             date_to: p.date_to,
@@ -7252,16 +7243,7 @@ impl TryFrom<&GetMMSParams> for GetMMSParamsWire {
         };
         let from = parse("from", p.from.as_deref())?;
         let to = parse("to", p.to.as_deref())?;
-        let day = from.or(to);
-        let timezone = match (p.timezone, day) {
-            (tz, Some(day)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
-            }
-            (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
-            }
-            (None, None) => crate::TimezoneOffset::UTC,
-        };
+        let timezone = crate::TimezoneOffset::for_query(p.timezone, from, to)?;
         Ok(Self {
             mms: p.mms,
             from: p.from.clone(),
@@ -7729,16 +7711,7 @@ impl TryFrom<&GetResellerCDRParams> for GetResellerCDRParamsWire {
     type Error = crate::ParamsError;
 
     fn try_from(p: &GetResellerCDRParams) -> std::result::Result<Self, Self::Error> {
-        let day = p.date_from.or(p.date_to);
-        let timezone = match (p.timezone, day) {
-            (tz, Some(day)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
-            }
-            (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
-            }
-            (None, None) => crate::TimezoneOffset::UTC,
-        };
+        let timezone = crate::TimezoneOffset::for_query(p.timezone, p.date_from, p.date_to)?;
         Ok(Self {
             date_from: p.date_from,
             date_to: p.date_to,
@@ -7846,16 +7819,7 @@ impl TryFrom<&GetResellerMMSParams> for GetResellerMMSParamsWire {
         };
         let from = parse("from", p.from.as_deref())?;
         let to = parse("to", p.to.as_deref())?;
-        let day = from.or(to);
-        let timezone = match (p.timezone, day) {
-            (tz, Some(day)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
-            }
-            (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
-            }
-            (None, None) => crate::TimezoneOffset::UTC,
-        };
+        let timezone = crate::TimezoneOffset::for_query(p.timezone, from, to)?;
         Ok(Self {
             mms: p.mms,
             client: p.client,
@@ -7963,16 +7927,7 @@ impl TryFrom<&GetResellerSMSParams> for GetResellerSMSParamsWire {
         };
         let from = parse("from", p.from.as_deref())?;
         let to = parse("to", p.to.as_deref())?;
-        let day = from.or(to);
-        let timezone = match (p.timezone, day) {
-            (tz, Some(day)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
-            }
-            (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
-            }
-            (None, None) => crate::TimezoneOffset::UTC,
-        };
+        let timezone = crate::TimezoneOffset::for_query(p.timezone, from, to)?;
         Ok(Self {
             sms: p.sms,
             client: p.client,
@@ -8120,16 +8075,7 @@ impl TryFrom<&GetSMSParams> for GetSMSParamsWire {
         };
         let from = parse("from", p.from.as_deref())?;
         let to = parse("to", p.to.as_deref())?;
-        let day = from.or(to);
-        let timezone = match (p.timezone, day) {
-            (tz, Some(day)) => {
-                crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
-            }
-            (Some(_), None) => {
-                return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());
-            }
-            (None, None) => crate::TimezoneOffset::UTC,
-        };
+        let timezone = crate::TimezoneOffset::for_query(p.timezone, from, to)?;
         Ok(Self {
             sms: p.sms,
             from: p.from.clone(),
@@ -20129,8 +20075,8 @@ impl Client {
     ///
     /// `timezone` chooses whose days the date range means, and defaults to
     /// UTC: the number sent is
-    /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of
-    /// it at the query start date, and a zone that cannot be resolved is
+    /// [`TimezoneOffset::for_query`](crate::TimezoneOffset::for_query) of
+    /// it and the two dates, and a zone that cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported
     /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the
     /// offset in force then, whatever was sent; one the zone repeats when
@@ -21159,8 +21105,8 @@ impl Client {
     ///
     /// `timezone` chooses whose days the date range means, and defaults to
     /// UTC: the number sent is
-    /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of
-    /// it at the query start date, and a zone that cannot be resolved is
+    /// [`TimezoneOffset::for_query`](crate::TimezoneOffset::for_query) of
+    /// it and the two dates, and a zone that cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported
     /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the
     /// offset in force then, whatever was sent; one the zone repeats when
@@ -21534,8 +21480,8 @@ impl Client {
     ///
     /// `timezone` chooses whose days the date range means, and defaults to
     /// UTC: the number sent is
-    /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of
-    /// it at the query start date, and a zone that cannot be resolved is
+    /// [`TimezoneOffset::for_query`](crate::TimezoneOffset::for_query) of
+    /// it and the two dates, and a zone that cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported
     /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the
     /// offset in force then, whatever was sent; one the zone repeats when
@@ -21576,8 +21522,8 @@ impl Client {
     ///
     /// `timezone` chooses whose days the date range means, and defaults to
     /// UTC: the number sent is
-    /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of
-    /// it at the query start date, and a zone that cannot be resolved is
+    /// [`TimezoneOffset::for_query`](crate::TimezoneOffset::for_query) of
+    /// it and the two dates, and a zone that cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported
     /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the
     /// offset in force then, whatever was sent; one the zone repeats when
@@ -21618,8 +21564,8 @@ impl Client {
     ///
     /// `timezone` chooses whose days the date range means, and defaults to
     /// UTC: the number sent is
-    /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of
-    /// it at the query start date, and a zone that cannot be resolved is
+    /// [`TimezoneOffset::for_query`](crate::TimezoneOffset::for_query) of
+    /// it and the two dates, and a zone that cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported
     /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the
     /// offset in force then, whatever was sent; one the zone repeats when
@@ -21722,8 +21668,8 @@ impl Client {
     ///
     /// `timezone` chooses whose days the date range means, and defaults to
     /// UTC: the number sent is
-    /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of
-    /// it at the query start date, and a zone that cannot be resolved is
+    /// [`TimezoneOffset::for_query`](crate::TimezoneOffset::for_query) of
+    /// it and the two dates, and a zone that cannot be resolved is
     /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported
     /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the
     /// offset in force then, whatever was sent; one the zone repeats when

@@ -354,16 +354,19 @@ in `xtask/src/field_overrides.rs`:
     under-types inconsistently (`xsd:decimal` on the CDR pair, `xsd:string` on
     the SMS/MMS four). The public field is still `Option<Tz>`; the generator
     emits a private `*ParamsWire` twin plus a `TryFrom<&*Params>` that picks the
-    number with `TimezoneOffset::for_window` at the query start date
-    (`date_from` / `from`), or at the end date (`date_to` / `to`) when there is
-    no start, and routes both generated method bodies through it. A named zone
-    with neither date (`TimezoneOffsetError::MissingQueryDate`), a date string
-    that does not parse (`ParamsError::InvalidDate`, named zone or not, naming
-    the param), or a number outside the range is `Error::InvalidParams` before
-    any request is sent. The public
+    number with `TimezoneOffset::for_query`, and routes both generated method
+    bodies through it. `for_query` takes `for_window` of the zone (UTC when
+    none is named) at the query start date (`date_from` / `from`), or at the end
+    date (`date_to` / `to`) when there is no start. A named zone with neither
+    date (`TimezoneOffsetError::MissingQueryDate`), a date string that does not
+    parse (`ParamsError::InvalidDate`, named zone or not, naming the param,
+    whether or not the other date is valid), or a number outside the range is
+    `Error::InvalidParams` before any request is sent. The public
     struct still derives `Serialize` -- there `timezone` emits the IANA name
     (what a log should show); only the wire twin carries the number, so a raw
-    `call_raw` caller picks the number itself with `for_window`.
+    `call_raw` caller picks the number itself with `for_query`. The rules live
+    in `for_query` rather than in the generated body so that a raw caller and
+    the typed method cannot choose differently.
 
     **The number is not a UTC offset during DST.** VoIP.ms records timestamps
     as [`crate::SERVER_ZONE`] wall clocks (US/Canada Eastern, observing DST)
@@ -689,7 +692,7 @@ in `xtask/src/main.rs`:
 
 **Decision**: The six methods that take a `timezone` number (decision #5a's
 `OFFSET_OPS`) type their response timestamp as `Reported<WallClock>`. The typed
-method sends the number `TimezoneOffset::for_window` picks, then, before
+method sends the number `TimezoneOffset::for_query` picks, then, before
 deserializing, moves each reported wall clock back by `timezone + 5` hours and
 resolves it in [`crate::SERVER_ZONE`], via `Client::call_zoned` and the public
 `attach_offset`. A value comes back `WallClock::Zoned` with the offset the
