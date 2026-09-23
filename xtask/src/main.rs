@@ -107,29 +107,31 @@ pub(crate) fn field_ident(struct_name: &str, fname: &str, acronyms: &[&'static s
         .unwrap_or_else(|| rust_field_ident(fname, acronyms))
 }
 
-/// A record-listing method whose `timezone` param is a numeric UTC offset
-/// (`-12..=13`) on the wire but a named `chrono_tz::Tz` in the public params.
+/// A record-listing method whose `timezone` param is a number (`-12..=13`) on
+/// the wire but a named `chrono_tz::Tz` in the public params.
 ///
 /// For each of these, the generator emits a private `*ParamsWire` twin struct
-/// (identical fields, `timezone` as the resolved `crate::TimezoneOffset`
-/// number) plus a `TryFrom<&*Params>` that resolves the zone's UTC offset at
-/// the query start date, and routes the `Client` method bodies through it.
-/// The public struct still derives `Serialize` -- there `timezone` emits the
-/// IANA name, which is what a log or JSON dump should show; only the wire twin
-/// carries the number VoIP.ms expects.
+/// (identical fields, `timezone` as a `crate::TimezoneOffset`) plus a
+/// `TryFrom<&*Params>` that picks the number with
+/// `TimezoneOffset::for_window` at the query start date, and routes the
+/// `Client` method bodies through it. The public struct still derives
+/// `Serialize` -- there `timezone` emits the IANA name, which is what a log or
+/// JSON dump should show; only the wire twin carries the number.
 ///
-/// The offset is unconditional -- no zone resolves to UTC -- so the response's
-/// timestamps always have a known one. They are typed with it: every `datetime`
-/// scalar in these methods' response shapes becomes a
-/// `chrono::DateTime<chrono::FixedOffset>`, and the typed method routes through
-/// `Client::call_zoned` to attach the offset the wall clocks are reported in.
+/// VoIP.ms reports each timestamp as its server-zone wall clock shifted by
+/// `timezone + 5` hours. Every `datetime` scalar in these methods' response
+/// shapes becomes a `crate::Reported<crate::WallClock>`, and the typed method
+/// routes through `Client::call_zoned`, which undoes the shift for the number
+/// sent and resolves each row in `crate::SERVER_ZONE`.
 struct OffsetOp {
     /// The wire method (e.g. `getCDR`).
     wire: &'static str,
     /// The sibling start-date param that anchors the DST resolution.
     start_field: &'static str,
-    /// Whether `start_field` is a `chrono::NaiveDate` (the CDR methods) rather
-    /// than a `'YYYY-MM-DD'` string (the SMS/MMS methods).
+    /// The end-date param, which anchors it when there is no start date.
+    end_field: &'static str,
+    /// Whether the date params are `chrono::NaiveDate` (the CDR methods) rather
+    /// than `'YYYY-MM-DD'` strings (the SMS/MMS methods).
     start_is_date: bool,
 }
 
@@ -137,37 +139,150 @@ const OFFSET_OPS: &[OffsetOp] = &[
     OffsetOp {
         wire: "getCDR",
         start_field: "date_from",
+        end_field: "date_to",
         start_is_date: true,
     },
     OffsetOp {
         wire: "getResellerCDR",
         start_field: "date_from",
+        end_field: "date_to",
         start_is_date: true,
     },
     OffsetOp {
         wire: "getSMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
     OffsetOp {
         wire: "getMMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
     OffsetOp {
         wire: "getResellerSMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
     OffsetOp {
         wire: "getResellerMMS",
         start_field: "from",
+        end_field: "to",
         start_is_date: false,
     },
 ];
 
 fn offset_op(wire: &str) -> Option<&'static OffsetOp> {
     OFFSET_OPS.iter().find(|o| o.wire == wire)
+}
+
+/// A method whose response timestamps are wall clocks rendered in a named zone
+/// that the request cannot choose and the response does not report.
+///
+/// Every `datetime` scalar in its response shape becomes a
+/// `crate::Reported<crate::WallClock>`, which reads a bare wall clock as well
+/// as a qualified one, and a `zone_timestamps` arm names the paths and the zone
+/// source for a raw caller's `attach_zone`.
+struct ZoneOp {
+    /// The wire method (e.g. `getVoicemailMessages`).
+    wire: &'static str,
+    source: ZoneSource,
+    /// A measured fact about how a param relates to the zone, appended to the
+    /// param's mined doc as `(param, note)`.
+    param_notes: &'static [(&'static str, &'static str)],
+}
+
+/// Where a [`ZoneOp`]'s zone comes from, which decides the methods emitted.
+enum ZoneSource {
+    /// `crate::SERVER_ZONE`. The plain typed method qualifies the timestamps
+    /// itself, through `Client::call_in_zone`.
+    Server,
+    /// A zone the caller supplies, described by a doc fragment completing
+    /// "VoIP.ms renders the timestamps in". The plain typed method leaves the
+    /// timestamps bare, and an `*_in_zone` sibling takes the zone.
+    Supplied(&'static str),
+}
+
+/// How `getVoicemailMessages` matches its date window, measured against the
+/// live API: with the mailbox set to `America/Toronto` a message at
+/// `2026-08-24 21:25:11` (01:25 UTC the next day) matched `2026-08-24` and not
+/// `2026-08-25`, so the window is not UTC; with the mailbox moved to
+/// `Europe/Berlin` the same message read `2026-08-25 03:25:11` and still
+/// matched `2026-08-24` only, so the window is not the mailbox's zone either.
+/// Both readings fit Eastern days, and no message on the account fell in the
+/// hour that would tell DST-observing Eastern from a fixed UTC-5.
+const VOICEMAIL_WINDOW_NOTE: &str = "Not matched in the mailbox's zone, so a message can \
+     match a day other than the one its reported `date` shows. The window was measured \
+     to be Eastern days, not UTC ones; whether those days observe DST, as \
+     `SERVER_ZONE` does, was not measured.";
+
+/// Each [`ZoneSource::Server`] entry was measured against the live API during
+/// DST with an independent reference instant, and each reported the
+/// `SERVER_ZONE` wall clock (UTC-04:00), not a fixed UTC-05:00:
+///
+/// * `getRegistrationStatus`: a SIP registration with a 600 s interval made at
+///   14:40:30 UTC reported `register_next` `10:50:30`.
+/// * `getCallRecordings` / `getCallRecording`: a call at 16:28:34 UTC reported
+///   `datetime` `12:28:34`, and the recording's id embeds that Unix time.
+/// * `getDIDsInfo`: a DID ordered between 17:19:00 and 17:19:32 UTC reported
+///   `order_date` `13:19:31`.
+/// * `getFaxMessages`: a fax sent between 17:24:15 and 17:24:33 UTC reported
+///   `date` `13:24:33`.
+/// * `getMediaMMS`: an MMS sent between 17:20:47 and 17:21:40 UTC reported
+///   `date` `13:21:39`.
+///
+/// `getBackOrders`, `getLNPDetails` and `getConferenceRecordings` are absent
+/// because they were not measured: a back order cannot be canceled through
+/// the API, a port request is a real carrier filing, and a conference
+/// recording cannot be enabled through the API.
+const ZONE_OPS: &[ZoneOp] = &[
+    ZoneOp {
+        wire: "getCallRecording",
+        source: ZoneSource::Server,
+        param_notes: &[],
+    },
+    ZoneOp {
+        wire: "getCallRecordings",
+        source: ZoneSource::Server,
+        param_notes: &[],
+    },
+    ZoneOp {
+        wire: "getDIDsInfo",
+        source: ZoneSource::Server,
+        param_notes: &[],
+    },
+    ZoneOp {
+        wire: "getFaxMessages",
+        source: ZoneSource::Server,
+        param_notes: &[],
+    },
+    ZoneOp {
+        wire: "getMediaMMS",
+        source: ZoneSource::Server,
+        param_notes: &[],
+    },
+    ZoneOp {
+        wire: "getRegistrationStatus",
+        source: ZoneSource::Server,
+        param_notes: &[],
+    },
+    ZoneOp {
+        wire: "getVoicemailMessages",
+        source: ZoneSource::Supplied(
+            "the mailbox's current `timezone` setting (`getVoicemails`' `timezone`), \
+             at the time they are read",
+        ),
+        param_notes: &[
+            ("date_from", VOICEMAIL_WINDOW_NOTE),
+            ("date_to", VOICEMAIL_WINDOW_NOTE),
+        ],
+    },
+];
+
+fn zone_op(wire: &str) -> Option<&'static ZoneOp> {
+    ZONE_OPS.iter().find(|o| o.wire == wire)
 }
 
 /// The const naming an offset op's response timestamp paths
@@ -179,15 +294,18 @@ fn timestamps_const_name(wire: &str, acronyms: &[&'static str]) -> String {
     )
 }
 
-/// Emit the per-op `*_TIMESTAMPS` consts. The typed methods pass them to
-/// `Client::call_zoned`. They are private: [`emit_offset_timestamps`] is the
+/// Emit the per-op `*_TIMESTAMPS` consts, each documented as the path form of
+/// `attach`, the public helper that qualifies them. The typed methods pass them
+/// to `Client::call_zoned` or `Client::call_in_zone`. They are private: the
+/// lookups [`emit_offset_timestamps`] and [`emit_zone_timestamps`] write are the
 /// one public route to the same paths.
 fn emit_timestamp_consts(
-    zoned_timestamps: &BTreeMap<String, Vec<String>>,
+    timestamps: &BTreeMap<String, Vec<String>>,
+    attach: &str,
     acronyms: &[&'static str],
 ) -> String {
     let mut out = String::new();
-    for (op, paths) in zoned_timestamps {
+    for (op, paths) in timestamps {
         let rendered = paths
             .iter()
             .map(|p| format!("\"{p}\""))
@@ -195,7 +313,7 @@ fn emit_timestamp_consts(
             .join(", ");
         out.push_str(&format!(
             "\n/// Paths to the timestamps in a `{op}` response, in the form\n\
-             /// [`attach_offset`](crate::attach_offset) takes.\n\
+             /// [`{attach}`](crate::{attach}) takes.\n\
              const {}: &[&str] = &[{rendered}];\n",
             timestamps_const_name(op, acronyms),
         ));
@@ -210,44 +328,88 @@ fn emit_offset_timestamps(
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
     acronyms: &[&'static str],
 ) -> String {
-    let doc = "\n/// The paths [`attach_offset`](crate::attach_offset) needs to complete\n\
+    let doc = "\n/// The paths [`attach_offset`](crate::attach_offset) needs to qualify\n\
                /// `method`'s response timestamps, or `None` for a method whose response\n\
-               /// reports none in an offset the request chose.\n\
+               /// reports none shifted by the `timezone` the request carried.\n\
                ///\n\
                /// `Some` for exactly the record-listing methods. A generated method\n\
-               /// attaches the offset on its own; a raw envelope, such as\n\
-               /// [`Client::call_raw`] returns, reports the wall clocks without it.\n\
+               /// qualifies them on its own; a raw envelope, such as\n\
+               /// [`Client::call_raw`] returns, reports them as shifted wall clocks.\n\
                ///\n\
                /// **A method this answers `Some` for must be sent an explicit\n\
-               /// `timezone`.** The offset to attach is the one the request carried.\n\
-               /// Omitting `timezone` selects the account's configured zone, which no API\n\
-               /// call reports, so there is no offset to attach; the generated methods\n\
-               /// send [`TimezoneOffset::UTC`](crate::TimezoneOffset::UTC) when the caller\n\
-               /// names no zone.\n\
+               /// `timezone`**, and `attach_offset` must be given the same number:\n\
+               /// the shift it undoes is the one that number caused. `getCDR` and\n\
+               /// `getResellerCDR` reject a request that omits it, and `getSMS` /\n\
+               /// `getMMS` treat an omitted one as `-5`.\n\
                ///\n\
                /// Like [`requires_multipart`], it answers only for the methods this crate\n\
                /// was generated from: a method VoIP.ms has added since answers `None`.\n";
-    if zoned_timestamps.is_empty() {
+    let arms = zoned_timestamps
+        .keys()
+        .map(|op| (op.as_str(), timestamps_const_name(op, acronyms)))
+        .collect::<Vec<_>>();
+    emit_timestamp_lookup("offset_timestamps", doc, "&'static [&'static str]", &arms)
+}
+
+/// Emit the public `zone_timestamps` lookup, answering each zone op's wire name
+/// with its zone source and the const [`emit_timestamp_consts`] writes for it.
+fn emit_zone_timestamps(
+    zone_timestamps: &BTreeMap<String, Vec<String>>,
+    acronyms: &[&'static str],
+) -> String {
+    let doc = "\n/// Where `method`'s response timestamps get their zone and the paths\n\
+               /// [`attach_zone`](crate::attach_zone) needs to qualify them, or `None` for a\n\
+               /// method whose response reports none in a named zone.\n\
+               ///\n\
+               /// `Some` for exactly the methods whose response timestamps are wall clocks\n\
+               /// in a named zone the request cannot choose and the response does not\n\
+               /// name. A raw envelope, such as [`Client::call_raw`] returns, reports them\n\
+               /// bare: pass the zone ([`TimestampZone::zone`](crate::TimestampZone::zone),\n\
+               /// or the one the caller holds for\n\
+               /// [`TimestampZone::Supplied`](crate::TimestampZone::Supplied)) and these\n\
+               /// paths to `attach_zone` before deserializing.\n\
+               ///\n\
+               /// Like [`requires_multipart`], it answers only for the methods this crate\n\
+               /// was generated from: a method VoIP.ms has added since answers `None`.\n";
+    let arms = zone_timestamps
+        .keys()
+        .map(|op| {
+            let zone = match zone_op(op).map(|z| &z.source) {
+                Some(ZoneSource::Server) => "Server",
+                Some(ZoneSource::Supplied(_)) => "Supplied",
+                None => unreachable!("{op} has zone timestamps but is not a zone op"),
+            };
+            (
+                op.as_str(),
+                format!(
+                    "crate::ZoneTimestamps {{ zone: crate::TimestampZone::{zone}, paths: {} }}",
+                    timestamps_const_name(op, acronyms)
+                ),
+            )
+        })
+        .collect::<Vec<_>>();
+    emit_timestamp_lookup("zone_timestamps", doc, "crate::ZoneTimestamps", &arms)
+}
+
+/// Emit a public `name(method) -> Option<ty>` lookup answering each wire name in
+/// `arms` with its expression, under `doc`.
+fn emit_timestamp_lookup(name: &str, doc: &str, ty: &str, arms: &[(&str, String)]) -> String {
+    if arms.is_empty() {
         // A `match` holding only the wildcard arm trips clippy's
         // `match_single_binding` in a consumer's build.
         return format!(
-            "{doc}pub fn offset_timestamps(_method: &str) -> Option<&'static [&'static str]> {{\n    \
+            "{doc}pub fn {name}(_method: &str) -> Option<{ty}> {{\n    \
                  None\n\
              }}\n"
         );
     }
 
-    let arms = zoned_timestamps
-        .keys()
-        .map(|op| {
-            format!(
-                "        {op:?} => Some({}),\n",
-                timestamps_const_name(op, acronyms)
-            )
-        })
+    let arms = arms
+        .iter()
+        .map(|(op, expr)| format!("        {op:?} => Some({expr}),\n"))
         .collect::<String>();
     format!(
-        "{doc}pub fn offset_timestamps(method: &str) -> Option<&'static [&'static str]> {{\n    \
+        "{doc}pub fn {name}(method: &str) -> Option<{ty}> {{\n    \
              match method {{\n\
              {arms}        \
                  _ => None,\n    \
@@ -467,10 +629,11 @@ fn emit_params_constructor(
 /// Doc emitted on the offset ops' public `timezone` field in place of the
 /// mined upstream text, which describes the numeric wire form ("Numeric: -12
 /// to 13") the public `Tz` field is not.
-const OFFSET_TIMEZONE_DOC: &str = "IANA time zone for the reported timestamps (Example: \
-     'America/New_York'); resolved to the numeric UTC offset VoIP.ms expects, at the query \
-     start date (DST-aware). Omit for UTC -- the request always carries an offset, and the \
-     reported timestamps carry it back.";
+const OFFSET_TIMEZONE_DOC: &str = "IANA time zone whose days the date range means \
+     (Example: 'America/New_York'); resolved at the query start date, or the end date when \
+     there is no start, to the number VoIP.ms needs for that window, since it shifts its \
+     Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported \
+     timestamps are qualified in the server zone whatever is sent.";
 
 /// Rust type for a WSDL param type. Integers map to `u64`, matching the
 /// response side: every VoIP.ms integer param is a non-negative id or count
@@ -1018,6 +1181,7 @@ fn emit(
     statuses: &[(String, String)],
     empty_statuses: &BTreeSet<String>,
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
+    zone_timestamps: &BTreeMap<String, Vec<String>>,
     base64_file_params: &BTreeMap<String, Vec<String>>,
 ) -> Result<String, String> {
     let acronyms = acronyms_sorted();
@@ -1097,6 +1261,16 @@ fn emit(
                 render_doc(&mut body, "    ", desc);
             }
 
+            if let Some((_, note)) =
+                zone_op(op).and_then(|z| z.param_notes.iter().find(|(f, _)| *f == fname))
+            {
+                if mined.is_some() {
+                    body.push_str("    ///\n");
+                }
+
+                render_doc(&mut body, "    ", note);
+            }
+
             // A `param_skip_if` override emits the field unwrapped (plain `T`,
             // skipped at its default); otherwise it's `Option<T>` skipped when
             // `None`. A `param_serializer` supplies the wire form for a type
@@ -1155,12 +1329,22 @@ fn emit(
     // only the serde direction some field reaches them through.
     out.push_str(&emit_enums(enums, &enum_sides));
     out.push_str(&emit_statuses(statuses, empty_statuses));
-    out.push_str(&emit_timestamp_consts(zoned_timestamps, &acronyms));
+    out.push_str(&emit_timestamp_consts(
+        zoned_timestamps,
+        "attach_offset",
+        &acronyms,
+    ));
+    out.push_str(&emit_timestamp_consts(
+        zone_timestamps,
+        "attach_zone",
+        &acronyms,
+    ));
     out.push_str(&body);
     out.push_str(&responses_text);
 
     out.push_str(&emit_requires_multipart(base64_file_params));
     out.push_str(&emit_offset_timestamps(zoned_timestamps, &acronyms));
+    out.push_str(&emit_zone_timestamps(zone_timestamps, &acronyms));
     out.push_str("\nimpl Client {\n");
     for op in &wsdl.operations {
         let method = camel_to_snake(op, &acronyms);
@@ -1197,8 +1381,8 @@ fn emit(
 
         if offset_op(op).is_some() {
             // Route through the wire twin, resolving `timezone` (a `Tz`) to the
-            // numeric UTC offset at the query start date, then put that offset
-            // back onto the wall clocks the response reports in it.
+            // window number at the query start date, then undo the shift that
+            // number caused on the wall clocks the response reports.
             // Only the const's name is emitted, but the entry is looked up
             // anyway: a method whose const `emit_timestamp_consts` never wrote
             // would otherwise surface as an unresolved name inside a 20k-line
@@ -1211,24 +1395,24 @@ fn emit(
             out.push_str(&format!(
                 "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
                  ///\n    \
-                 /// A `timezone` zone is resolved to the numeric UTC offset the wire\n    \
-                 /// expects, at the query start date, and defaults to UTC; a zone that\n    \
-                 /// cannot be resolved is\n    \
-                 /// [`Error::InvalidParams`](crate::Error::InvalidParams). The reported\n    \
-                 /// timestamps carry that offset.\n    \
+                 /// `timezone` chooses whose days the date range means, and defaults to\n    \
+                 /// UTC: the number sent is\n    \
+                 /// [`TimezoneOffset::for_window`](crate::TimezoneOffset::for_window) of\n    \
+                 /// it at the query start date, and a zone that cannot be resolved is\n    \
+                 /// [`Error::InvalidParams`](crate::Error::InvalidParams). Each reported\n    \
+                 /// timestamp is qualified in [`SERVER_ZONE`](crate::SERVER_ZONE) with the\n    \
+                 /// offset in force then, whatever was sent; one the zone repeats when\n    \
+                 /// clocks fall back stays [`WallClock::Bare`](crate::WallClock::Bare).\n    \
                  pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
                      let wire = {struct_name}Wire::try_from(params)?;\n        \
-                     let offset = wire.timezone.to_fixed_offset();\n        \
-                     self.call_zoned(\"{op}\", &wire, offset, {paths}).await\n    \
+                     self.call_zoned(\"{op}\", &wire, wire.timezone, {paths}).await\n    \
                  }}\n\n\
                  /// Call the `{op}` API method and return the raw JSON envelope.\n    \
                  ///\n    \
-                 /// A `timezone` zone is resolved to the numeric UTC offset the wire\n    \
-                 /// expects, at the query start date, and defaults to UTC; a zone that\n    \
-                 /// cannot be resolved is\n    \
-                 /// [`Error::InvalidParams`](crate::Error::InvalidParams). The envelope\n    \
-                 /// reports its timestamps in that offset without naming it:\n    \
-                 /// [`attach_offset`](crate::attach_offset) puts it back, over the paths\n    \
+                 /// The `timezone` sent is chosen as for the typed method. The envelope\n    \
+                 /// reports its timestamps shifted by it, without an offset:\n    \
+                 /// [`attach_offset`](crate::attach_offset) given the same number\n    \
+                 /// qualifies them, over the paths\n    \
                  /// [`offset_timestamps`](crate::offset_timestamps) answers for `{op}`.\n    \
                  pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                      self.call_raw(\"{op}\", &{struct_name}Wire::try_from(params)?).await\n    \
@@ -1243,22 +1427,129 @@ fn emit(
             .get(op)
             .map(|fields| multipart_doc_sentence(fields))
             .unwrap_or_default();
+        let zop = zone_op(op);
+        if zop.is_some() {
+            // Same assertion as the offset ops, for the same reason.
+            assert!(
+                zone_timestamps.contains_key(op),
+                "{op} is a zone op with no collected response timestamps"
+            );
+        }
+
+        let raw_zone = match zop {
+            Some(_) => format!(
+                "///\n    \
+                 /// The envelope reports its timestamps as bare wall clocks:\n    \
+                 /// [`attach_zone`](crate::attach_zone) qualifies them, over the paths\n    \
+                 /// [`zone_timestamps`](crate::zone_timestamps) answers for `{op}`.\n    "
+            ),
+            None => String::new(),
+        };
+        let (typed_zone, typed_body) = match zop.map(|z| &z.source) {
+            Some(ZoneSource::Server) => (
+                "///\n    \
+                 /// Each reported timestamp is qualified in\n    \
+                 /// [`SERVER_ZONE`](crate::SERVER_ZONE), the zone VoIP.ms records it in,\n    \
+                 /// with the offset in force then. One the zone repeats when clocks fall\n    \
+                 /// back stays [`WallClock::Bare`](crate::WallClock::Bare).\n    "
+                    .to_string(),
+                format!(
+                    "self.call_in_zone(\"{op}\", params, crate::SERVER_ZONE, {})",
+                    timestamps_const_name(op, &acronyms)
+                ),
+            ),
+            Some(ZoneSource::Supplied(_)) => (
+                format!(
+                    "///\n    \
+                     /// The reported timestamps name no offset, so each reads as\n    \
+                     /// [`WallClock::Bare`](crate::WallClock::Bare).\n    \
+                     /// [`Client::{method}_in_zone`] qualifies them.\n    "
+                ),
+                format!("self.call(\"{op}\", params)"),
+            ),
+            None => (String::new(), format!("self.call(\"{op}\", params)")),
+        };
         out.push_str(&format!(
             "    /// Call the `{op}` API method and deserialize into [`{response_name}`].\n    \
-             {sentence}\
+             {sentence}{typed_zone}\
              pub async fn {method}(&self, params: &{struct_name}) -> Result<{response_name}> {{\n        \
-                 self.call(\"{op}\", params).await\n    \
+                 {typed_body}.await\n    \
              }}\n\n\
              /// Call the `{op}` API method and return the raw JSON envelope.\n    \
-             {sentence}\
+             {sentence}{raw_zone}\
              pub async fn {method}_raw(&self, params: &{struct_name}) -> Result<Value> {{\n        \
                  self.call_raw(\"{op}\", params).await\n    \
              }}\n\n"
         ));
+
+        if let Some(
+            zop @ ZoneOp {
+                source: ZoneSource::Supplied(zone),
+                ..
+            },
+        ) = zop
+        {
+            out.push_str(&emit_in_zone_method(
+                zop.wire,
+                zone,
+                &method,
+                &struct_name,
+                &response_name,
+                &sentence,
+                &acronyms,
+            ));
+        }
     }
 
     out.push_str("}\n");
     Ok(out)
+}
+
+/// Emit the `*_in_zone` method of `op`, a [`ZoneSource::Supplied`] op whose
+/// zone `source` describes: the typed call, with each reported timestamp
+/// qualified in a zone the caller passes. `sentence` is the multipart note the
+/// plain and raw methods carry, empty for a GET.
+fn emit_in_zone_method(
+    op: &str,
+    source: &str,
+    method: &str,
+    struct_name: &str,
+    response_name: &str,
+    sentence: &str,
+    acronyms: &[&'static str],
+) -> String {
+    let paths = timestamps_const_name(op, acronyms);
+    // Wrapped here rather than in the template, since the fragment's length is
+    // the table's. It carries no links for `render_doc` to escape.
+    let mut zone = String::new();
+    render_doc(
+        &mut zone,
+        "    ",
+        &format!(
+            "VoIP.ms renders the timestamps in {source}, and names neither the zone nor \
+             an offset."
+        ),
+    );
+
+    format!(
+        "    /// Call the `{op}` API method and deserialize into [`{response_name}`],\n    \
+         /// qualifying each reported timestamp with its offset in `zone`.\n    \
+         {sentence}\
+         ///\n\
+         {zone}    \
+         /// Pass that zone: each timestamp becomes\n    \
+         /// [`WallClock::Zoned`](crate::WallClock::Zoned) with the offset in force\n    \
+         /// at that instant, and one the zone repeats or skips at a DST change\n    \
+         /// stays [`WallClock::Bare`](crate::WallClock::Bare). This is still one\n    \
+         /// request; the zone is not looked up.\n    \
+         pub async fn {method}_in_zone(\n        \
+             &self,\n        \
+             params: &{struct_name},\n        \
+             zone: chrono_tz::Tz,\n    \
+         ) -> Result<{response_name}> {{\n        \
+             self.call_in_zone(\"{op}\", params, zone, {paths}).await\n    \
+         }}\n\n"
+    )
 }
 
 /// The `///` lines naming why a method posts, agreeing in number with however
@@ -1336,8 +1627,8 @@ fn emit_offset_wire(
     let mut out = String::new();
 
     out.push_str(&format!(
-        "\n/// Wire form of [`{struct_name}`]: `timezone` resolved to the numeric UTC\n\
-         /// offset `{op}` expects.\n\
+        "\n/// Wire form of [`{struct_name}`]: `timezone` resolved to the number\n\
+         /// `{op}` expects.\n\
          #[derive(Serialize)]\n\
          struct {wire_name} {{\n"
     ));
@@ -1390,36 +1681,50 @@ fn emit_offset_wire(
              type Error = crate::ParamsError;\n\n    \
              fn try_from(p: &{struct_name}) -> std::result::Result<Self, Self::Error> {{\n"
     ));
-    // A named zone resolves at the start date; no zone means UTC, so the
-    // request carries an offset either way and the reported timestamps are
-    // never left unqualified.
+    // The number is chosen for the window at the start date, or at the end
+    // date when there is no start, in the named zone or in UTC when none is
+    // named. A named zone needs one of the two to resolve at; with no zone and
+    // neither date there is no window to match, and the reported timestamps
+    // are qualified for whatever number is sent. A date string that does not
+    // parse is an error whether or not a zone is named.
+    let end_ident = field_ident(struct_name, off.end_field, acronyms);
     if off.start_is_date {
         out.push_str(&format!(
-            "        let timezone = match p.timezone {{\n            \
-                 Some(tz) => {{\n                \
-                     let start = p.{start_ident}\n                    \
-                         .ok_or(crate::types::TimezoneOffsetError::MissingStartDate)?;\n                \
-                     crate::TimezoneOffset::at(tz, start)?\n            \
-                 }}\n            \
-                 None => crate::TimezoneOffset::UTC,\n        \
-             }};\n"
+            "        let day = p.{start_ident}.or(p.{end_ident});\n"
         ));
     } else {
+        let (start_wire, end_wire) = (off.start_field, off.end_field);
         out.push_str(&format!(
-            "        let timezone = match p.timezone {{\n            \
-                 Some(tz) => {{\n                \
-                     let start = p.{start_ident}\n                    \
-                         .as_deref()\n                    \
-                         .ok_or(crate::types::TimezoneOffsetError::MissingStartDate)?\n                    \
-                         .trim()\n                    \
-                         .parse::<chrono::NaiveDate>()\n                    \
-                         .map_err(|_| crate::types::TimezoneOffsetError::InvalidStartDate)?;\n                \
-                     crate::TimezoneOffset::at(tz, start)?\n            \
-                 }}\n            \
-                 None => crate::TimezoneOffset::UTC,\n        \
+            "        let parse = |param: &'static str, d: Option<&str>| {{\n            \
+                 d.map(str::trim)\n                \
+                     .filter(|d| !d.is_empty())\n                \
+                     .map(|d| {{\n                    \
+                         d.parse::<chrono::NaiveDate>()\n                        \
+                             .map_err(|_| crate::ParamsError::InvalidDate {{\n                            \
+                                 param,\n                            \
+                                 value: d.to_string(),\n                        \
+                             }})\n                \
+                     }})\n                \
+                     .transpose()\n        \
+             }};\n        \
+             let day = match parse({start_wire:?}, p.{start_ident}.as_deref())? {{\n            \
+                 Some(day) => Some(day),\n            \
+                 None => parse({end_wire:?}, p.{end_ident}.as_deref())?,\n        \
              }};\n"
         ));
     }
+
+    out.push_str(
+        "        let timezone = match (p.timezone, day) {\n            \
+             (tz, Some(day)) => {\n                \
+                 crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?\n            \
+             }\n            \
+             (Some(_), None) => {\n                \
+                 return Err(crate::types::TimezoneOffsetError::MissingQueryDate.into());\n            \
+             }\n            \
+             (None, None) => crate::TimezoneOffset::UTC,\n        \
+         };\n",
+    );
 
     out.push_str("        Ok(Self {\n");
     for (fname, ftype) in body_fields.iter().copied() {
@@ -1983,11 +2288,82 @@ fn cmd_gen() -> Result<(), String> {
             assign_field_type(
                 &mut field_type_override,
                 f.struct_path.clone(),
-                field_overrides::zoned_timestamp_override(),
+                field_overrides::record_listing_timestamp_override(),
             )?;
         }
 
         zoned_timestamps.insert(
+            op.wire.to_string(),
+            fields.into_iter().map(|f| f.json_path).collect(),
+        );
+    }
+
+    // Each zone op's response reports its timestamps in a named zone the caller
+    // supplies, so they are typed to hold a bare or a qualified wall clock, and
+    // the `*_in_zone` method is handed the paths that reach them.
+    let mut zone_timestamps: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for op in ZONE_OPS {
+        // An offset op's timestamps already carry the offset the request sent;
+        // qualifying them a second time in a zone would contradict it.
+        if offset_op(op.wire).is_some() {
+            return Err(format!(
+                "{} is in both OFFSET_OPS and ZONE_OPS; its timestamps can be \
+                 qualified one way, not both",
+                op.wire
+            ));
+        }
+
+        // A note on a param the WSDL does not declare would never render, and
+        // the measured fact it records would vanish on a run that succeeded.
+        let declared = wsdl.types.get(&format!("{}Input", op.wire));
+        // A method with no params of its own is emitted through a separate
+        // template that calls `call` with no `*Params` struct, so it would get
+        // neither the server-zone qualification nor an `*_in_zone` sibling.
+        if !declared.is_some_and(|fields| {
+            fields
+                .iter()
+                .any(|(n, _)| !CLIENT_FIELDS.contains(&n.as_str()))
+        }) {
+            return Err(format!(
+                "{} is a zone op but takes no parameters, so its typed method \
+                 could not qualify its timestamps",
+                op.wire
+            ));
+        }
+
+        for (param, _) in op.param_notes {
+            if !declared.is_some_and(|fields| fields.iter().any(|(n, _)| n == param)) {
+                return Err(format!(
+                    "ZONE_OPS notes `{}.{param}`, which the WSDL does not declare",
+                    op.wire
+                ));
+            }
+        }
+
+        let shape = responses.get(op.wire).ok_or_else(|| {
+            format!(
+                "{} is a zone op but has no response shape to qualify",
+                op.wire
+            )
+        })?;
+        let fields = response_codegen::timestamp_fields(op.wire, shape)?;
+        if fields.is_empty() {
+            return Err(format!(
+                "{}'s response declares no timestamp field, so a zone would qualify \
+                 nothing; correct ZONE_OPS or the response shape",
+                op.wire
+            ));
+        }
+
+        for f in &fields {
+            assign_field_type(
+                &mut field_type_override,
+                f.struct_path.clone(),
+                field_overrides::wall_clock_override(),
+            )?;
+        }
+
+        zone_timestamps.insert(
             op.wire.to_string(),
             fields.into_iter().map(|f| f.json_path).collect(),
         );
@@ -2033,6 +2409,7 @@ fn cmd_gen() -> Result<(), String> {
         &statuses,
         &empty_statuses,
         &zoned_timestamps,
+        &zone_timestamps,
         &base64_file_params.by_op,
     )?;
     write_rust(&out_path, &rendered)?;
@@ -2388,6 +2765,80 @@ mod tests {
     }
 
     #[test]
+    fn zone_timestamps_answers_each_op_with_its_source_and_const() {
+        let table: BTreeMap<String, Vec<String>> = [
+            (
+                "getVoicemailMessages".to_string(),
+                vec!["/messages/*/date".to_string()],
+            ),
+            (
+                "getDIDsInfo".to_string(),
+                vec!["/dids/*/order_date".to_string()],
+            ),
+        ]
+        .into_iter()
+        .collect();
+        let rendered = emit_zone_timestamps(&table, &acronyms_sorted());
+        let item: syn::ItemFn = syn::parse_str(&rendered)
+            .unwrap_or_else(|e| panic!("emitted lookup does not parse ({e}): {rendered}"));
+
+        assert_eq!(item.sig.ident, "zone_timestamps");
+        // Each arm names the op's source from `ZONE_OPS` and its const, so the
+        // paths are spelled once.
+        assert!(
+            rendered.contains(
+                "\"getVoicemailMessages\" => Some(crate::ZoneTimestamps { zone: \
+                 crate::TimestampZone::Supplied, paths: GET_VOICEMAIL_MESSAGES_TIMESTAMPS }),"
+            ),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains(
+                "\"getDIDsInfo\" => Some(crate::ZoneTimestamps { zone: \
+                 crate::TimestampZone::Server, paths: GET_DIDS_INFO_TIMESTAMPS }),"
+            ),
+            "{rendered}"
+        );
+        assert!(!rendered.contains("/messages/*/date"), "{rendered}");
+    }
+
+    #[test]
+    fn a_timestamp_const_names_the_helper_that_takes_it() {
+        let table: BTreeMap<String, Vec<String>> = [(
+            "getVoicemailMessages".to_string(),
+            vec!["/messages/*/date".to_string()],
+        )]
+        .into_iter()
+        .collect();
+        let rendered = emit_timestamp_consts(&table, "attach_zone", &acronyms_sorted());
+
+        assert!(
+            rendered.contains("[`attach_zone`](crate::attach_zone) takes."),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains(
+                r#"const GET_VOICEMAIL_MESSAGES_TIMESTAMPS: &[&str] = &["/messages/*/date"];"#
+            ),
+            "{rendered}"
+        );
+    }
+
+    /// A method whose timestamps are qualified in a zone must not also be one
+    /// whose request carries an offset; `cmd_gen` refuses the overlap, and this
+    /// keeps the committed tables from reaching it.
+    #[test]
+    fn no_op_is_both_an_offset_op_and_a_zone_op() {
+        for op in ZONE_OPS {
+            assert!(
+                offset_op(op.wire).is_none(),
+                "{} is in both tables",
+                op.wire
+            );
+        }
+    }
+
+    #[test]
     fn offset_timestamps_over_an_empty_table_still_parses() {
         let (rendered, item) = parsed_offset_lookup(&BTreeMap::new());
 
@@ -2476,7 +2927,7 @@ mod tests {
         let err = assign_field_type(
             &mut assignments,
             path.clone(),
-            field_overrides::zoned_timestamp_override(),
+            field_overrides::wall_clock_override(),
         )
         .unwrap_err();
         assert!(err.contains("assigned two different overrides"), "{err}");

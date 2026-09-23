@@ -22,7 +22,11 @@ use std::fmt::Debug;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
-use voip_ms::{Client, Error, TimezoneOffset, attach_offset, offset_timestamps};
+use voip_ms::chrono_tz::Tz;
+use voip_ms::{
+    Client, Error, SERVER_ZONE, TimestampZone, TimezoneOffset, ZoneTimestamps, attach_offset,
+    attach_zone, offset_timestamps, zone_timestamps,
+};
 
 use crate::harness::keydiff;
 use crate::response_fields;
@@ -52,6 +56,9 @@ pub enum ProbeOutcome {
 /// requires; the typed shape `T` is then deserialized from a clone of that
 /// value. `count` extracts an optional element count from the deserialized
 /// value for logging (return `None` for non-list responses).
+///
+/// A method whose timestamps [`voip_ms::zone_timestamps`] places in the server
+/// zone is qualified in it first, as its typed method would be.
 pub async fn probe<P, T>(
     client: &Client,
     method: &str,
@@ -62,7 +69,13 @@ where
     P: Serialize + Sync,
     T: DeserializeOwned + Debug,
 {
-    probe_qualified(client, method, params, |_| {}, count).await
+    let server = zone_timestamps(method).filter(|z| z.zone == TimestampZone::Server);
+    let qualify = |body: &mut Value| {
+        if let Some(z) = server {
+            attach_zone(body, SERVER_ZONE, z.paths);
+        }
+    };
+    probe_qualified(client, method, params, qualify, count).await
 }
 
 /// A record-listing request: the params as they go on the wire, and the offset
@@ -117,12 +130,11 @@ impl ZonedRequest {
 /// Probe a record-listing method.
 ///
 /// `getCDR` and the `getSMS` / `getMMS` family shift their timestamps by the
-/// numeric `timezone` the request carries and then report the shifted wall
-/// clock without it, so the request's own offset goes back on before the typed
-/// step -- left alone, every unqualified timestamp would read as drift.
-/// The paths that offset goes onto are [`voip_ms::offset_timestamps`]'s answer
-/// for `method`, so a probe cannot complete one method's envelope with another
-/// method's paths.
+/// numeric `timezone` the request carries and report the shifted wall clock
+/// without an offset, so [`attach_offset`] undoes the shift for the number sent
+/// before the typed step. The paths it reaches are
+/// [`voip_ms::offset_timestamps`]'s answer for `method`, so a probe cannot
+/// qualify one method's envelope with another method's paths.
 ///
 /// A `method` it answers `None` for classifies as `Transport`: that method
 /// takes no offset, so reaching it here is a bug in this harness rather than
@@ -142,12 +154,11 @@ where
         ));
     };
 
-    let fixed = request.offset.to_fixed_offset();
     probe_qualified(
         client,
         method,
         &request.params,
-        |body| attach_offset(body, fixed, timestamps),
+        |body| attach_offset(body, request.offset, timestamps),
         count,
     )
     .await
@@ -172,6 +183,43 @@ where
         Ok(request) => probe_zoned(client, method, &request, count).await,
         Err(error) => ProbeOutcome::Transport(error),
     }
+}
+
+/// Probe a method whose timestamps are rendered in a named zone the caller
+/// supplies, qualifying them in `zone` before the typed step.
+///
+/// The paths are [`voip_ms::zone_timestamps`]'s answer for `method`. A method it
+/// answers `None` for classifies as `Transport`, as in [`probe_zoned`]: reaching
+/// it here is a bug in this harness rather than drift in the API.
+pub async fn probe_in_zone<P, T>(
+    client: &Client,
+    method: &str,
+    params: &P,
+    zone: Tz,
+    count: impl Fn(&T) -> Option<usize>,
+) -> ProbeOutcome
+where
+    P: Serialize + Sync,
+    T: DeserializeOwned + Debug,
+{
+    let Some(ZoneTimestamps {
+        zone: TimestampZone::Supplied,
+        paths,
+    }) = zone_timestamps(method)
+    else {
+        return ProbeOutcome::Transport(format!(
+            "{method} reports no timestamps in a caller-supplied zone, so it is not a zone probe"
+        ));
+    };
+
+    probe_qualified(
+        client,
+        method,
+        params,
+        |body| attach_zone(body, zone, paths),
+        count,
+    )
+    .await
 }
 
 /// The shared probe body, reached by every probe here: fetch the raw envelope,

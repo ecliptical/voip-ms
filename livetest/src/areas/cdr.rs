@@ -11,9 +11,10 @@
 //!
 //! At `Depth::Costly` the area then reads the same window through
 //! `Client::get_cdr` itself at two named zones, which is the only live exercise
-//! of the generated wire twin, of `TimezoneOffset::at`, and of the offset the
-//! typed response claims. `getResellerCDR` is left skipped: it additionally
-//! needs a reseller client id the harness has no fixture for.
+//! of the generated wire twin, of `TimezoneOffset::for_window`, and of the
+//! qualification the typed response relies on. `getResellerCDR` is left
+//! skipped: it additionally needs a reseller client id the harness has no
+//! fixture for.
 
 use async_trait::async_trait;
 
@@ -121,10 +122,10 @@ fn window_params() -> GetCDRParams {
 /// names the same instant it does in `at_utc`.
 ///
 /// The records are the same calls, so the instant cannot move with the zone the
-/// caller asked for. It moves if voip.ms applies an offset other than the one
-/// sent, which is what the typed `DateTime<FixedOffset>` would then be
-/// asserting wrongly -- the case a fractional zone raises, since nothing else
-/// confirms the server keeps a half hour.
+/// caller asked for. It moves if the shift voip.ms applies for the number sent
+/// is not `timezone + 5` hours, which is what `attach_offset` undoes -- the
+/// case a fractional zone raises, since the number sent for one has a half
+/// hour in it.
 ///
 /// Exercising it through the typed method rather than a call-by-name is the
 /// point: this is the only live path through the generated `*ParamsWire`
@@ -146,11 +147,16 @@ async fn offset_round_trip(
 
     let mut compared = 0;
     for utc_record in &at_utc.cdr {
-        // A degraded timestamp has no instant to compare; the probe's own
-        // degraded check is what reports it, so skip it rather than fail here.
+        // Only an instant can be compared across two reads. A degraded value
+        // has none, and the probe's own degraded check reports it; a `Bare`
+        // one is the hour the server zone repeats, which has none either.
         let (Some(id), Some(utc_date)) = (
             utc_record.uniqueid.as_deref(),
-            utc_record.date.as_ref().and_then(Reported::get),
+            utc_record
+                .date
+                .as_ref()
+                .and_then(Reported::get)
+                .and_then(|d| d.zoned()),
         ) else {
             continue;
         };
@@ -160,6 +166,7 @@ async fn offset_round_trip(
             .iter()
             .find(|r| r.uniqueid.as_deref() == Some(id))
             .and_then(|r| r.date.as_ref().and_then(Reported::get))
+            .and_then(|d| d.zoned())
         else {
             continue;
         };
@@ -167,7 +174,7 @@ async fn offset_round_trip(
         if zone_date != utc_date {
             return Outcome::Fail(format!(
                 "call {id} reads {utc_date} at UTC but {zone_date} at {tz}; voip.ms did not \
-                 apply the offset the request carried, so the reported zone is wrong"
+                 shift by `timezone + 5` hours, so the qualification undid the wrong shift"
             ));
         }
 

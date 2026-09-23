@@ -122,12 +122,14 @@ received, so they keep the bare `chrono` type, which is why `FieldOverride`
 carries a `response_rust_type` beside `rust_type`.
 
 The rule is that an unexpected **value** degrades and an unexpected **contract**
-does not. `deserialize_opt_datetime_offset` is where the two meet: a
-record-listing timestamp carrying no UTC offset is rejected, because reading it
-as UTC invents the zone decision #8 exists to remove, while one that carries an
-offset and still does not parse degrades like any other value. A JSON list or
-object where a scalar belongs is a shape, and no scalar type can stand in for
-one, so that is rejected too.
+does not. The timestamp readers are where the two meet. In a named-zone field a
+value with no offset is part of the contract, and reads as
+[`crate::WallClock::Bare`], which claims no zone, rather than as UTC, which
+would invent one. In a record-listing field it is a broken contract, since
+there it is a wall clock shifted by the `timezone` sent that `attach_offset`
+never qualified, so `deserialize_opt_record_listing_timestamp` refuses it
+(decision #8). A JSON list or object where a scalar belongs is a shape, and no
+scalar type can stand in for one, so that is rejected too.
 
 **The class is not closed.** Seven readers still fail the whole envelope on a
 well-shaped string they cannot read. Four are scalar helpers in
@@ -346,28 +348,54 @@ in `xtask/src/field_overrides.rs`:
     `Canada/East-Saskatchewan`), and a strict `Tz` failed the whole response on
     the first one -- confirmed by `cargo run -p livetest`, not by the wiremock
     suite (whose fixtures never included a legacy name).
-  - *Record-listing offset* params (`getCDR` / `getResellerCDR` / `getSMS` /
-    `getMMS` / `getResellerSMS` / `getResellerMMS` -- the `OFFSET_OPS` table in
-    `main.rs`) want a numeric UTC offset (`-12..=13`), which the WSDL
+  - *Record-listing* `timezone` params (`getCDR` / `getResellerCDR` / `getSMS`
+    / `getMMS` / `getResellerSMS` / `getResellerMMS` -- the `OFFSET_OPS` table
+    in `main.rs`) want a number of hours (`-12..=13`), which the WSDL
     under-types inconsistently (`xsd:decimal` on the CDR pair, `xsd:string` on
     the SMS/MMS four). The public field is still `Option<Tz>`; the generator
-    emits a private `*ParamsWire` twin plus a `TryFrom<&*Params>` that resolves
-    the zone's offset at the query start date (`date_from` / `from`) into
-    [`crate::TimezoneOffset`] (the validated numeric wire form, hand-written in
-    `src/types.rs`), and routes both generated method bodies through it. No
-    start date, an unparseable one, or an out-of-range zone (`+14`) is
-    `Error::InvalidParams` before any request is sent. The public struct still
-    derives `Serialize` -- there `timezone` emits the IANA name (what a log
-    should show); only the wire twin carries the number, so raw `call_raw`
-    users must do their own offset conversion.
+    emits a private `*ParamsWire` twin plus a `TryFrom<&*Params>` that picks the
+    number with `TimezoneOffset::for_window` at the query start date
+    (`date_from` / `from`), or at the end date (`date_to` / `to`) when there is
+    no start, and routes both generated method bodies through it. A named zone
+    with neither date (`TimezoneOffsetError::MissingQueryDate`), a date string
+    that does not parse (`ParamsError::InvalidDate`, named zone or not, naming
+    the param), or a number outside the range is `Error::InvalidParams` before
+    any request is sent. The public
+    struct still derives `Serialize` -- there `timezone` emits the IANA name
+    (what a log should show); only the wire twin carries the number, so a raw
+    `call_raw` caller picks the number itself with `for_window`.
 
-    The wire `timezone` is **not** optional: a caller who names no zone gets
-    `TimezoneOffset::UTC`. That is what makes the response side typeable (see
-    decision #8) -- the account's own configured zone, which omitting the
-    parameter selects, is reported by nothing in the API, so a timestamp
-    returned in it can only be guessed at. Confirmed against the live API:
-    `timezone=0` is accepted, and the same range read at `0` and at `-4` comes
-    back shifted by exactly four hours.
+    **The number is not a UTC offset during DST.** VoIP.ms records timestamps
+    as [`crate::SERVER_ZONE`] wall clocks (US/Canada Eastern, observing DST)
+    and reports each shifted by `timezone + 5` hours, as if that zone were
+    always UTC-5; the `date_from` / `date_to` days are matched on the shifted
+    value. Measured on 2026-09-23 against a call placed at 16:28:34 UTC, whose
+    recording id embeds that Unix time: `timezone` `-12`, `-5`, `-4`, `0`,
+    `5.5` and `13` reported `05:28:34`, `12:28:34`, `13:28:34`, `17:28:34`,
+    `22:58:34` and `06:28:34` (the next day), and at `13` the call was listed
+    under 2026-09-24. So during DST `n` reports UTC+`n+1`. `for_window` sends
+    the caller's offset minus the server zone's, less five, so the window is the
+    caller's days at the start date. A caller who names no zone gets UTC days.
+
+    That outside DST the same fixed base gives UTC+`n` is **inferred, not
+    measured**: every record on the test account was made during DST, and every
+    read was made during it. If the shift were different for a winter record or
+    a winter read, every winter row would be qualified wrong. The unit tests
+    that assert winter values assert this model. Settling it takes reads made
+    after 2026-11-01 of a record with a known instant, one made before the
+    change (such as the call above) and one made after it.
+
+    A number outside `-12..=13` is refused rather than clamped, so a zone's
+    window is either right or an error. During Eastern DST a UTC-12 zone needs
+    `-13`, which 0.13 sent as `-12` (and matched an hour off); outside DST
+    `Pacific/Kiritimati` (+14) needs `14`.
+
+    Omitting the parameter is not a fallback to some account zone; there is no
+    such setting. The portal's account and contact pages have no zone field.
+    `getCDR` and `getResellerCDR` answer `invalid_timezone` when it is omitted,
+    and `getSMS` / `getMMS` treat an omitted one as `-5`. The reseller SMS/MMS
+    pair was not measured: the account has no reseller client to query. The
+    crate always sends one because the window is then the caller's.
 * **Boolean flags** map to `bool`, registered in the `FLAG_01_FIELDS` /
   `FLAG_YES_NO_FIELDS` consts of `xtask/src/field_overrides.rs`. Many
   parameters VoIP.ms documents as `1 = true, 0 = false` (or `yes`/`no`) are
@@ -435,7 +463,8 @@ in `xtask/src/field_overrides.rs`:
   `getCallTranscriptions` and `getVoicemailTranscriptions` report `date` as
   `String` and cannot fail on any value; `getCallRecordings` has no `date`.
   `getConferenceRecordings` and `getVoicemailMessages` are the two that share
-  the shape and keep `NaiveDateTime`: each lists individual records and totals
+  the shape and type `date` as a point in time (`NaiveDateTime`, and
+  `WallClock` per decision #8a): each lists individual records and totals
   nothing, so there is no per-charge sum for a window row to carry -- a
   recording and a voicemail each happened at an instant. Revisit that only if
   one of them grows a summary row.
@@ -656,69 +685,78 @@ in `xtask/src/main.rs`:
   it warns rather than fails because the reading comes from mined HTML and
   needs a human to confirm the parameter really carries a file.
 
-### 8. Record-listing timestamps are typed with their offset
+### 8. Record-listing timestamps are qualified by undoing the server's shift
 
-**Decision**: The six methods that take a `timezone` offset (decision #5a's
-`OFFSET_OPS`) type their response timestamp as
-`chrono::DateTime<chrono::FixedOffset>`, not `chrono::NaiveDateTime`. The typed
-method sends an explicit offset on every call, then attaches it to the wall
-clocks the response reports before deserializing, via `Client::call_zoned` and
-the public `attach_offset`.
+**Decision**: The six methods that take a `timezone` number (decision #5a's
+`OFFSET_OPS`) type their response timestamp as `Reported<WallClock>`. The typed
+method sends the number `TimezoneOffset::for_window` picks, then, before
+deserializing, moves each reported wall clock back by `timezone + 5` hours and
+resolves it in [`crate::SERVER_ZONE`], via `Client::call_zoned` and the public
+`attach_offset`. A value comes back `WallClock::Zoned` with the offset the
+server zone was at then (`-04:00` or `-05:00`).
 
-**Rationale**: The crate computes the exact offset VoIP.ms will apply and then
-used to discard it, handing back a wall clock a consumer had no way to qualify.
-One downstream consumer read an unqualified `2026-09-18T14:44:11` as UTC and
-reported a registration time that had already passed. The zone is known at the
-call site, so the type can carry it.
+**Rationale**: VoIP.ms reports these timestamps as server-zone wall clocks
+shifted by a fixed `timezone + 5` hours (decision #5a), so the number sent is
+not the offset they are in. 0.13 attached the number sent as the offset, which
+is an hour wrong for every row recorded during DST: the call at 16:28:34 UTC
+read back at `timezone=0` as `17:28:34+00:00`. One downstream consumer had
+already read an unqualified `2026-09-18T14:44:11` as UTC and reported a
+registration time that had passed, which is what the typing exists to prevent.
 
-It has to be a fixed offset rather than a zone. `TimezoneOffset::at` pins the
-offset at local noon on the start date and VoIP.ms applies that single number
-across the whole range, so a range straddling a DST transition comes back at the
-pre-transition offset on both sides. Rebuilding a `DateTime<Tz>` would apply the
-post-transition offset to values the server never shifted; the fixed offset that
-was sent is the honest type. A single legal range reaches the fold in practice --
-`getCDR` caps a query at 92 days, and 2026-02-01 to 2026-04-30 straddles the
-March change.
+The shift is fixed arithmetic, so it can be undone exactly for any number sent,
+including a fractional one (`5.5` reports `22:58:34` for that call). What
+remains is the server-zone wall clock, and resolving it per row gives each row
+the offset in force at its own instant, so a range that crosses a DST change
+comes back right on both sides. The one wall clock that cannot be resolved is
+the hour the server zone repeats when clocks fall back. `attach_offset` writes
+that value as its moved-back server-zone wall clock followed by the zone's name
+(`2026-11-01 01:30:00 America/Toronto`), and it reads as `WallClock::Bare` --
+which is why the type is `WallClock` rather than `DateTime<FixedOffset>`. It is
+written on the server clock rather than left shifted so that every row's
+`.local()` is on the same clock; left shifted, it would sort five hours away
+from its neighbors at `timezone=0`.
 
-Attaching the offset is a step on the JSON, not a `Deserialize` impl that
-assumes one: serde has no access to the request, and a deserializer that read a
-bare wall clock as UTC would reintroduce exactly the invented zone this typing
-removes. So `deserialize_opt_datetime_offset` rejects a value with no offset,
-and `attach_offset` is public because a `call_raw` caller needs the same step
-(`livetest`'s `probe_zoned` is one). Each method's paths reach a caller through
-`offset_timestamps(method)`, emitted by the same codegen pass that retypes the
-fields -- a raw caller reading them out of a generated method body would be
-copying something that moves with the response shape. It is the one public
-route: the per-method `*_TIMESTAMPS` consts the typed methods pass to
-`call_zoned` are private, so there is no second spelling of the same paths to
-keep in step. It is a lookup and not a step inside `call_raw`: the raw calls
-return exactly what VoIP.ms sent, and a raw envelope with offsets attached would
-no longer be that.
+The zone name is also what keeps the guard. `deserialize_opt_record_listing_timestamp`
+reads a value with an offset as `Zoned` and one ending in the server zone's
+name as `Bare`. It refuses a `YYYY-MM-DD HH:MM:SS` wall clock with neither:
+that is a shifted wall clock that was never qualified, which a raw caller who
+skipped `attach_offset` would otherwise read as if it meant something. Any other
+text is an odd value that `attach_offset` left as it arrived, and it degrades to
+`Reported::Unreadable`, so one malformed date costs its own row and not the
+envelope. The guard cannot catch `attach_offset` given a number other than the
+one sent.
 
-`attach_offset` skips a blank value. A blank is one record's missing timestamp,
-which the deserializers fold to `None`; suffixing it produces a string that
-parses as nothing, and since one unparseable value fails the whole envelope,
-that would turn a single missing timestamp into the loss of every record beside
-it.
+Qualifying is a step on the JSON, not a `Deserialize` impl: serde has no access
+to the request, so it cannot know the number sent. `attach_offset` is public
+because a `call_raw` caller needs the same step (`livetest`'s `probe_zoned` is
+one), and it takes the `TimezoneOffset` sent rather than an offset to attach.
+Each method's paths reach a caller through `offset_timestamps(method)`, emitted
+by the same codegen pass that retypes the fields -- a raw caller reading them
+out of a generated method body would be copying something that moves with the
+response shape. It is the one public route: the per-method `*_TIMESTAMPS`
+consts the typed methods pass to `call_zoned` are private, so there is no
+second spelling of the same paths to keep in step. It is a lookup and not a
+step inside `call_raw`: the raw calls return exactly what VoIP.ms sent, and a
+qualified envelope would no longer be that.
 
-**Half-hour zones round-trip as themselves.** A zone off the hour resolves to a
-fractional `TimezoneOffset` (`Asia/Kolkata` -> `5.50`, `Asia/Kathmandu` ->
-`5.75`), that fraction goes on the wire, and `to_fixed_offset` qualifies the
-response with the same one, so the two cannot disagree by construction. What no
-local test can show is whether voip.ms honors the fraction or truncates it: the
-live confirmation recorded above covers `0` and `-4` only, and a server that
-read `5.50` as `5` would return records half an hour off the offset the type
-claims. The `cdr` area's `fixture:getCDR:<zone>` reads one window at UTC and at a
-named zone through `Client::get_cdr` and fails if a record's instant moves,
-which is the check that settles it on a live run; it covers a whole-hour and a
-half-hour zone for that reason.
+`attach_offset` leaves a blank value alone. A blank is one record's missing
+timestamp, which the deserializers fold to `None`; rewriting it would produce a
+string that parses as nothing, and since one unparseable value fails the whole
+envelope, that would turn a single missing timestamp into the loss of every
+record beside it.
 
-The other 11 `NaiveDateTime` response fields cannot be typed this way. They
-belong to methods with no `timezone` parameter (`getRegistrationStatus`,
-`getDIDsInfo`, `getFAXMessages`, …); their zone is the account's configured one,
-which nothing in the API reports -- the only zone on any response is
-`GetVoicemailsResponseVoicemail::timezone`, a voicemail box's own setting. Typing
-those would mean the crate inventing a zone.
+**The live check is instant equality across numbers.** The `cdr` area's
+`fixture:getCDR:<zone>` reads one window at UTC and at a named zone (a
+whole-hour and a half-hour one) through `Client::get_cdr` and fails if a
+record's instant moves. It passed on 2026-09-23. It cannot catch a shift that is
+wrong by the same amount for every number -- 0.13's error was exactly that --
+so the absolute reference is the recorded call: typed `get_cdr` reports it as
+`12:28:34-04:00`.
+
+The other `NaiveDateTime` response fields are typed through decision #8a
+where they were measured. Six are recorded in the server zone and typed as
+`WallClock`, and three stay `NaiveDateTime` because nothing independent of the
+API could date them.
 
 **How to apply**: `cargo xtask gen` derives the fields from the response shapes:
 every `datetime` scalar under an `OFFSET_OPS` method is retyped and its path
@@ -769,6 +807,133 @@ case agree with the field case. Nothing returns one -- `src/generated.rs` has no
 refresh that produced one would need both the emitter and the walk taught about
 it together.
 
+### 8a. Timestamps in a named zone are qualified in that zone
+
+**Decision**: A response timestamp that is a wall clock in a known named zone
+is `Option<Reported<WallClock>>`, where [`crate::WallClock`] is
+`Zoned(DateTime<FixedOffset>)` or `Bare(NaiveDateTime)`. The `ZONE_OPS` table in
+`xtask/src/main.rs` names each method and where its zone comes from
+(`ZoneSource`):
+
+* **`Server`** -- [`crate::SERVER_ZONE`]. The plain typed method qualifies
+  each value itself through `Client::call_in_zone`: `getRegistrationStatus`
+  (`register_next`), `getCallRecordings` / `getCallRecording` (`datetime`),
+  `getDIDsInfo` (`order_date`), `getFaxMessages` (`date`) and `getMediaMMS`
+  (`date`).
+* **`Supplied`** -- a zone the caller holds. `getVoicemailMessages`' `date` is
+  in the mailbox's own `timezone`. The plain `get_voicemail_messages` leaves
+  every value bare, and `get_voicemail_messages_in_zone(params, tz)` qualifies
+  them.
+
+A raw caller does the same with the public `attach_zone` over the paths
+`zone_timestamps(method)` answers, which also names the source
+([`crate::ZoneTimestamps`], [`crate::TimestampZone`]). Both are emitted from
+`ZONE_OPS`, the same way `offset_timestamps` is emitted from `OFFSET_OPS`.
+
+**Rationale (server zone)**: each `Server` method was measured on 2026-09-23,
+during DST, against an instant taken independently of the API, and each
+reported the Eastern wall clock at UTC-04:00:
+
+| Method | Reference | Reported |
+|---|---|---|
+| `getRegistrationStatus` | baresip registered at 14:40:30 UTC with a 600 s interval | `register_next` `10:50:30` |
+| `getCallRecordings`, `getCallRecording` | call at 16:28:34 UTC; the recording id embeds Unix time `1790180914` | `datetime` `12:28:34` |
+| `getDIDsInfo` | DID ordered between 17:19:00 and 17:19:32 UTC | `order_date` `13:19:31` |
+| `getFaxMessages` | fax sent between 17:24:15 and 17:24:33 UTC | `date` `13:24:33` |
+| `getMediaMMS` | MMS sent between 17:20:47 and 17:21:40 UTC | `date` `13:21:39` |
+
+A fixed UTC-5 would have read an hour earlier in every row. The probe DID and
+fax number were canceled afterwards, and the DID the call went to had
+`record_calls` switched on for the call and back off.
+
+Three fields stay `NaiveDateTime`, unmeasured, because no reference could be
+created without an effect the API cannot undo:
+
+* `GetBackOrdersResponseBackOrder::order_date` -- a back order cannot be
+  canceled through the API and may later buy a number.
+* `GetLNPDetailsResponse::date` -- a port request is a real filing with the
+  losing carrier.
+* `GetConferenceRecordingsResponseRecording::date` -- no API call turns on
+  conference recording, and no documented routing value dials into a
+  conference.
+
+Every measured table agreed, so these are likely `SERVER_ZONE` as well; adding
+one to `ZONE_OPS` wants a measurement, not the pattern.
+
+**Rationale (mailbox zone)**: Measured against the live API on 2026-09-22 and
+2026-09-23 with the test account and `examples/call_raw.rs`:
+
+* The response names no zone. Every message carries exactly `callerid`, `date`,
+  `duration`, `folder`, `listened`, `mailbox`, `message_num` and `urgent`, and
+  the request takes only `mailbox`, `folder`, `date_from` and `date_to`, so it
+  cannot choose one either.
+* `date` is the stored instant, rendered in the mailbox's *current* `timezone`
+  setting at the time it is read. Mailbox 101's message 17 read `12:47:40`
+  while the mailbox was set to `Pacific/Honolulu` and `18:47:40` after it went
+  back to `America/Toronto`. Message 14 read `2026-08-24 21:25:11` under
+  Toronto and `2026-08-25 03:25:11` under `Europe/Berlin`. So a caller holding
+  the mailbox's current zone resolves every row correctly, including rows
+  recorded under an earlier setting.
+* `date_from` / `date_to` are **not** matched in the mailbox's zone. Under
+  Toronto, message 14 (01:25 UTC on 2026-08-25) matched `2026-08-24` and not
+  `2026-08-25`, so the window is not UTC. Under Berlin the same message read
+  `2026-08-25 03:25:11` and still matched `2026-08-24` only. So the window is
+  Eastern days. No message on the account fell between 04:00 and 05:00 UTC
+  during DST, the one hour that separates `SERVER_ZONE` days from fixed UTC-5
+  ones, so which of the two it is was not measured. The finding is written on
+  both params through `ZoneOp::param_notes`, and the run fails if an entry
+  names a param the WSDL does not declare.
+
+Each row is resolved at its own instant, so rows on either side of a DST change
+get different offsets. A wall clock the zone repeats when clocks fall back is
+ambiguous, and one it skips when they spring forward should not occur. Both read
+as `Bare`, because choosing a side would be a guess, and so does one at an
+offset with a seconds part (a zone's pre-standard local mean time), which the
+wire spelling cannot carry since it stops at minutes. A value that already names
+an offset (`names_offset`), a blank, and text that is not a
+`YYYY-MM-DD HH:MM:SS` wall clock are left as they arrived.
+
+`attach_zone` and `attach_offset` share one walk. Each only resolves a value --
+`attach_offset` after moving it back by the shift -- and the walk rewrites it in
+place, trimmed: as the instant with its offset, or, for a wall clock with no
+single offset, as that wall clock followed by the zone's name
+(`2026-11-01 01:30:00 America/Toronto`). Both helpers write that one form, so a
+server-zone field and a record-listing field agree on the unresolvable hour.
+Both kinds of field resolve the value in the named zone again, so it reads as
+`Bare` -- and a zone name that does fix the instant (`... 01:30:00 UTC`) reads
+as `Zoned` rather than being dropped. A record-listing field accepts only the
+server zone's name. A named-zone field also reads the plain spelling, which is
+what an unqualified call leaves.
+
+`WallClock`'s equality is hand-written. `DateTime<FixedOffset>`'s own `==`
+compares instants and ignores the offset, so a derived one would call
+`18:47:40-04:00` and `22:47:40+00:00` equal while they report different wall
+clocks, and a test could not catch `attach_zone` choosing the wrong offset.
+
+A named-zone field accepts a bare value rather than refusing it, unlike a
+record-listing field. A bare value there comes from a call that supplied no zone
+or from a row left unresolved, and is the wall clock in the zone it was
+rendered in, so it is part of the field's contract rather than a break in it.
+`Bare` claims no zone where reading it as UTC would invent one. Unreadable text
+still degrades to `Reported::Unreadable`.
+
+The crate still makes one request per method call. Looking the mailbox zone up
+with `getVoicemails` inside `get_voicemail_messages_in_zone` would double the
+requests, and a failed `getVoicemails` would then fail a message read. The
+caller can fetch the mailbox once for many reads.
+
+**How to apply**: A new method whose timestamps are wall clocks in a named zone
+goes in `ZONE_OPS` with its `ZoneSource`: `Server` only once an independent
+reference instant has been compared against it during DST, `Supplied` with a
+doc fragment naming where the caller reads the zone. `cargo xtask gen` fails
+when a zone op is also an offset op, when it takes no parameters (the template
+for those qualifies nothing), when its response has no timestamp, or when a
+`param_notes` entry names an undeclared param. livetest's `probe` qualifies a
+`Server` method on its own, and the `voicemail` area probes
+`getVoicemailMessages` against the mailboxes `getVoicemails` reports, qualified
+in each mailbox's zone, until one returns a message, so the key diff has rows to
+compare or the method is skipped.
+
 ## Code Patterns
 
 ### Calling the wire API
@@ -784,8 +949,9 @@ are the single explicit escape hatch, for an upload method this crate has not
 been regenerated for, which `requires_multipart` answers `false` for. A caller
 dispatching by wire name calls `call_raw` like a generated method does;
 `requires_multipart(method)` answers the transport question without making the
-call, and `offset_timestamps(method)` names the timestamps the caller then
-completes with `attach_offset` (decision #8). Every generated method is a thin
+call, `offset_timestamps(method)` names the timestamps the caller then
+completes with `attach_offset` (decision #8), and `zone_timestamps(method)` the
+ones it qualifies with `attach_zone` (decision #8a). Every generated method is a thin
 wrapper over `call` or `call_raw`, whatever its transport:
 
 ```rust
@@ -898,8 +1064,10 @@ Four variants, no more:
 * `Error::InvalidParams(ParamsError)` -- the parameters could not be
   converted to their wire form, so no request was sent. `ParamsError` names
   which check failed: `Timezone(TimezoneOffsetError)` (see 5a's record-listing
-  offsets) and `Unencodable(String)`, a parameter with no wire-field rendering
-  (decision #7). The inner enum exists so the next parameter
+  offsets), `InvalidDate { param, value }` (a record-listing `from` / `to`
+  that is not a date, checked whether or not a zone is set), and
+  `Unencodable(String)`, a parameter with no wire-field rendering (decision
+  #7). The inner enum exists so the next parameter
   validation is additive: the variant name is general and a specific payload
   would have forced either a second `Error` variant or a breaking change. The
   timezone hop carries `#[from]`, so a generated `TryFrom<&*Params>` returning a
@@ -1007,9 +1175,11 @@ Deps whose types appear in the public API (`chrono`, `reqwest`, `rust_decimal`,
 so callers name the exact compatible version without a separate dependency.
 
 * **chrono 0.4** (`serde`): `NaiveDate`/`NaiveDateTime` in typed response
-  fields and date-range params, and `DateTime<FixedOffset>` for the
-  record-listing timestamps (decision #8); the `serde` feature supplies the
-  params' `YYYY-MM-DD` `Serialize`.
+  fields and date-range params, and `DateTime<FixedOffset>` inside a zoned
+  `WallClock` (decisions #8 and #8a); the `serde` feature supplies the params'
+  `YYYY-MM-DD` `Serialize`.
+* **chrono-tz 0.10**: `Tz` on the zone params, [`crate::TimezoneName`] and
+  [`crate::SERVER_ZONE`].
 * **reqwest 0.13.5** (`json`, `multipart`, `query`, no default features): HTTP
   client + JSON deserialization. `multipart` carries the file-parameter methods
   (decision #7). TLS backend is feature-gated. Two things force the patch

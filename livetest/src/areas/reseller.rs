@@ -260,10 +260,9 @@ fn skip_no_input(report: &mut Report, label: &str) {
 }
 
 /// Probe a reseller *record-listing* method, whose response timestamps come
-/// back in the UTC offset the request carried. `getResellerSMS` and
-/// `getResellerMMS` are two of the six methods that take that offset, so
-/// probing them like a plain list would ask for the account's own zone and then
-/// read every unqualified timestamp as drift.
+/// back shifted by the `timezone` the request carried. `getResellerSMS` and
+/// `getResellerMMS` are two of the six methods that take that number, so the
+/// probe sends one and qualifies the timestamps for it.
 async fn probe_reseller_zoned<P, T>(
     ctx: &AreaCtx<'_>,
     report: &mut Report,

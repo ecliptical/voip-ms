@@ -7,6 +7,137 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - YYYY-MM-DD
+
+### Fixed
+
+- **Breaking**: the six record-listing methods (`get_cdr`, `get_reseller_cdr`,
+  `get_sms`, `get_mms`, `get_reseller_sms`, `get_reseller_mms`) reported every
+  timestamp recorded during DST an hour late. VoIP.ms records its timestamps
+  as Eastern wall clocks (observing DST) and reports each one shifted by
+  `timezone + 5` hours, as if Eastern were always UTC-5, so the number sent is
+  a UTC offset only in winter. 0.13 attached it as one: a call placed at
+  16:28:34 UTC on 2026-09-23 came back as `17:28:34+00:00`. The typed methods
+  now undo the shift for the number sent and resolve each row in `SERVER_ZONE`,
+  so the same call reads `12:28:34-04:00`, whatever `timezone` was asked for.
+  - The field type is `Option<Reported<WallClock>>`, not
+    `Option<Reported<DateTime<FixedOffset>>>`. A row in the hour Eastern repeats
+    when clocks fall back cannot be resolved, and comes back `WallClock::Bare`
+    holding its Eastern wall clock instead of being guessed at.
+  - A zoned value carries the Eastern offset (`-04:00` / `-05:00`), not the
+    offset of the zone requested. Convert with `with_timezone` for display.
+  - `timezone` now chooses whose days `date_from` / `date_to` mean, and still
+    defaults to UTC. The number sent is `TimezoneOffset::for_window` of the
+    zone at the start date, or the end date when there is no start: during
+    Eastern DST, UTC days are sent as `-1`, since `0` would match UTC+01:00
+    days.
+  - `attach_offset` takes the `TimezoneOffset` that was sent instead of a
+    `FixedOffset`. It writes an unresolvable row as its Eastern wall clock
+    followed by the zone name (`2026-11-01 01:30:00 America/Toronto`), the
+    same form `attach_zone` writes.
+  - A record-listing value that is a `YYYY-MM-DD HH:MM:SS` wall clock with no
+    offset still fails to deserialize, as in 0.13, since it means
+    `attach_offset` was skipped: it is a shifted wall clock that names neither
+    the server's zone nor the caller's. Text that is not a wall clock at all
+    degrades to `Reported::Unreadable`, as any response date does.
+  - Measured against the live API with that call (whose recording id embeds its
+    Unix time) at `timezone` `-12`, `-5`, `-4`, `0`, `5.5` and `13`. Fractional
+    numbers are honored. Two things were not measured: the reseller SMS/MMS
+    pair, as the test account has no reseller client, and the winter behavior,
+    as every record and read was made during DST. That `timezone=0` reports UTC
+    outside DST is inferred from the same fixed shift.
+- `attach_offset` trims a padded value before qualifying it. A value such as
+  `" 2026-09-16 15:14:35 "` could come out as `" 2026-09-16 15:14:35 -04:00"`,
+  which does not parse.
+
+### Added
+
+- `SERVER_ZONE` (`America/Toronto`), the zone VoIP.ms records timestamps in.
+  Measured with an independent reference instant during DST for each method
+  below: every one reported the Eastern wall clock at UTC-04:00.
+- Six more response timestamps are qualified in `SERVER_ZONE` by their typed
+  methods: `getRegistrationStatus` `register_next`, `getCallRecordings` and
+  `getCallRecording` `datetime`, `getDIDsInfo` `order_date`, `getFaxMessages`
+  `date` and `getMediaMMS` `date`. Each was measured against, respectively, a
+  SIP registration, a call and its recording, a DID order, a fax and an MMS,
+  each made for the purpose and undone where it could be (the DID and the fax
+  number were canceled).
+- `Client::get_voicemail_messages_in_zone(params, zone)` qualifies each
+  message's `date` with the UTC offset `zone` was at when the message arrived.
+  VoIP.ms renders `date` in the mailbox's current `timezone` setting and names
+  neither the zone nor an offset. Pass the mailbox's zone (`getVoicemails`'
+  `timezone`) and every row resolves, including rows that arrived under an
+  earlier setting, because VoIP.ms renders the stored instant afresh on each
+  read. The call is still one request; the crate does not look the zone up.
+- `attach_zone` and `zone_timestamps`, the raw-envelope equivalent for a named
+  zone. `zone_timestamps(method)` returns a `ZoneTimestamps` naming the paths
+  and a `TimestampZone`: `Server` (`.zone()` is `SERVER_ZONE`) or `Supplied`
+  (the mailbox's zone, which the caller holds). It is emitted by the codegen,
+  like `offset_timestamps`.
+- `WallClock`: `Zoned(DateTime<FixedOffset>)` or `Bare(NaiveDateTime)`, with
+  `.local()` for the wall clock either way and `.zoned()` for the instant. Two
+  values are equal only when they report the same wall clock with the same
+  offset. Its `Display` writes the wire spelling, with the offset appended when
+  it has one, and a named-zone field reads either form back as the same value.
+  A record-listing field does not read a bare one back, since it refuses a wall
+  clock with no offset.
+- `TimezoneOffset::for_window(tz, date)`, the number whose shifted days are
+  `tz`'s days at `date`. `TimezoneOffset::at` still returns the zone's plain UTC
+  offset.
+- `GetVoicemailMessagesParams::date_from` / `date_to` document how VoIP.ms
+  matches the window. Measured against the live API, it is not the mailbox's
+  zone: with a mailbox set to `Europe/Berlin`, a message reported as
+  `2026-08-25 03:25:11` matches `2026-08-24`. It is Eastern days; whether they
+  observe DST was not measured.
+
+### Changed
+
+- **Breaking**: the response timestamps above, `getVoicemailMessages`' `date`
+  included, are `Option<Reported<WallClock>>` instead of
+  `Option<Reported<NaiveDateTime>>`. A bare wall clock reads as
+  `WallClock::Bare` and a qualified one as `WallClock::Zoned`, so an
+  unqualified raw envelope of these methods still deserializes. Text that
+  parses as neither is still `Reported::Unreadable`.
+- **Breaking**: a record-listing request whose `timezone` zone needs a number
+  outside `-12..=13` for its days is `Error::InvalidParams` before anything is
+  sent, instead of going out with a window an hour off. During Eastern DST that
+  is a UTC-12 zone (`Etc/GMT+12`), which 0.13 sent as `-12`; `Pacific/Kiritimati`
+  (+14), which 0.13 always refused, now works during Eastern DST.
+- **Breaking**: an unparseable `from` / `to` on `getSMS` / `getMMS` and their
+  reseller pair is `Error::InvalidParams` whether or not a zone is named, as
+  the new `ParamsError::InvalidDate { param, value }`, which names the param.
+  0.13 sent it anyway when no zone was named, and reported it as a timezone
+  error when one was.
+- **Breaking**: `TimezoneOffsetError::MissingStartDate` is `MissingQueryDate`,
+  since either date can now anchor the window, and `InvalidStartDate` is gone
+  in favor of `ParamsError::InvalidDate`.
+- **Breaking**: `TimezoneOffset::to_fixed_offset` is removed. Attaching the
+  number sent as an offset is the error this release fixes, and a 0.13 raw
+  caller doing it by hand now fails to compile instead of being an hour off.
+  `TimezoneOffset`'s `Display` renders the number as the wire carries it (`-5`,
+  `4.50`) instead of a `UTC-05:00` label.
+- Three response timestamps stay `NaiveDateTime`, unmeasured:
+  `getBackOrders` `order_date` (a back order cannot be canceled through the
+  API), `getLNPDetails` `date` (a port request is a real carrier filing) and
+  `getConferenceRecordings` `date` (conference recording cannot be enabled
+  through the API).
+- The docs no longer describe an "account's configured zone". There is no such
+  setting: the portal's account pages have no zone field, `getCDR` answers
+  `invalid_timezone` when `timezone` is omitted, and `getSMS` / `getMMS` treat
+  an omitted one as `-5`.
+
+### Upgrading
+
+Code reading a record-listing or server-zone timestamp gets a `WallClock` from
+`.get()`. Call `.zoned()` for the instant (`None` only for the repeated hour),
+or `.local()` for the wall clock in the zone it was resolved in (Eastern, for a
+record-listing or server-zone value). Record-listing instants now carry the
+Eastern offset, so code that relied on them being in the requested zone should
+convert with `with_timezone`. A raw caller of a record-listing method passes the
+`TimezoneOffset` it sent to `attach_offset`; `to_fixed_offset()` no longer
+exists. Code reading a voicemail message's `date` calls
+`get_voicemail_messages_in_zone` with the mailbox's zone to get an instant.
+
 ## [0.13.0] - 2026-09-22
 
 ### Fixed
@@ -1085,7 +1216,8 @@ a real failed request and asserts nothing it exposes carries the password.
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[0.13.0]: https://github.com/ecliptical/voip-ms/compare/v0.12.2...HEAD
+[0.14.0]: https://github.com/ecliptical/voip-ms/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.13.0
 [0.12.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.2
 [0.12.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.1
 [0.12.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.0

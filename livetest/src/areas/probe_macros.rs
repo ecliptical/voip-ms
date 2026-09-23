@@ -32,8 +32,8 @@ macro_rules! probe_list {
 }
 
 /// Probe a record-listing method: as [`probe_list!`], for a method whose
-/// response timestamps come back in the offset the request carried. UTC, so a
-/// reported wall clock is the instant it names.
+/// response timestamps come back shifted by the `timezone` the request
+/// carried, which is `0` here.
 macro_rules! probe_zoned_list {
     ($ctx:expr, $report:expr, $area:expr, $wire:literal, $params:ty, $resp:ty, $field:ident) => {{
         let outcome =

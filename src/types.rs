@@ -4,7 +4,7 @@
 //! Types here are wired into `src/generated.rs` by `xtask` through the
 //! field-name override table in `xtask/src/field_overrides.rs`.
 
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::de::{Deserializer, Error as DeError, Visitor};
 use serde::ser::Serializer;
@@ -364,26 +364,34 @@ impl_seconds!(Seconds, "none", "a number of seconds or `none`");
 impl_seconds!(WaitTime, "unlimited", "a number of seconds or `unlimited`");
 impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 
-/// A UTC offset in hours, the wire form of the record-listing `timezone` knob.
+/// The number of hours the record-listing `timezone` parameter carries.
 ///
 /// The `getCDR`, `getResellerCDR`, `getSMS`, `getMMS`, `getResellerSMS`, and
 /// `getResellerMMS` methods take a `timezone` parameter that VoIP.ms documents
 /// as "adjust the times of the records according to Timezone (Numeric: -12 to
-/// 13)". It is a whole- or fractional-hour offset from UTC, not an IANA zone
-/// name -- distinct from the `getTimezones` / voicemail `timezone`, which is a
-/// named zone (`America/New_York`). Passing `-5` returns timestamps in
-/// UTC-05:00; omitting it leaves them in the account's configured timezone,
-/// which no response reports.
+/// 13)". It is distinct from the `getTimezones` / voicemail `timezone`, which is
+/// a named zone (`America/New_York`).
 ///
-/// Callers hold a [`chrono_tz::Tz`] on those methods' `timezone` field; the
-/// crate resolves it to this offset at the query's start date via
-/// [`TimezoneOffset::at`] before sending, and sends [`TimezoneOffset::UTC`] when
-/// the caller names no zone -- so every request carries an offset and every
-/// timestamp those methods report has a known one. Construct one directly only
-/// to bypass zone resolution and pin a fixed numeric offset.
+/// **It is not a UTC offset during daylight saving time.** VoIP.ms records its
+/// timestamps as wall clocks in [`SERVER_ZONE`], and a request carrying `n`
+/// reports each one shifted by `n + 5` hours, as if that zone were always
+/// UTC-05:00; the `date_from` / `date_to` days are matched on the shifted
+/// value. During DST that is the wall clock at UTC+`n+1`. Measured against the
+/// live API on 2026-09-23 with `n` of `-12`, `-5`, `-4`, `0`, `5.5` and `13`.
+///
+/// Outside DST the same fixed shift gives UTC+`n`. That is inferred from the
+/// September readings, not measured: every record on the account measured was
+/// made during DST, and a read made in winter could apply a different base.
+///
+/// Callers hold a [`chrono_tz::Tz`] on those methods' `timezone` field, and the
+/// crate sends [`TimezoneOffset::for_window`] of it at the query's start date
+/// (or its end date when there is no start), the number whose shifted days are
+/// that zone's days. The reported timestamps are qualified by undoing the shift
+/// and resolving each one in [`SERVER_ZONE`], so they name their instant
+/// whatever was sent.
 ///
 /// Wraps a [`Decimal`] constrained to `-12..=13`. [`TimezoneOffset::new`]
-/// rejects out-of-range values so a nonsensical offset never reaches the wire.
+/// rejects out-of-range values so a nonsensical number never reaches the wire.
 ///
 /// # Wire format
 ///
@@ -392,13 +400,16 @@ impl_seconds!(MaxMembers, "Unlimited", "a member count or `Unlimited`");
 pub struct TimezoneOffset(Decimal);
 
 impl TimezoneOffset {
-    /// The inclusive range VoIP.ms accepts, in hours from UTC.
+    /// The inclusive range of numbers VoIP.ms accepts, in hours.
     const MIN: i64 = -12;
     const MAX: i64 = 13;
 
-    /// Zero hours from UTC, sent as `0`. A record-listing request that names no
-    /// zone carries this offset.
+    /// Zero, sent as `0`. Outside DST it reports UTC wall clocks; during DST,
+    /// UTC+01:00 ones.
     pub const UTC: Self = Self(Decimal::ZERO);
+
+    /// The fixed offset VoIP.ms's shift assumes for [`SERVER_ZONE`], in hours.
+    const SHIFT_BASE: i64 = 5;
 
     /// Construct an offset, rejecting a value outside `-12..=13` hours.
     pub fn new(hours: impl Into<Decimal>) -> Result<Self, TimezoneOffsetError> {
@@ -410,102 +421,172 @@ impl TimezoneOffset {
         Ok(Self(hours))
     }
 
-    /// The UTC offset of `tz` on `date`, the value VoIP.ms wants for a query
-    /// starting that day.
+    /// The UTC offset of `tz` at local noon on `date`, in hours.
     ///
-    /// VoIP.ms takes a single numeric offset for a whole date range, but a
-    /// zone's offset shifts across DST boundaries, so the offset is fixed at
-    /// one instant -- local noon on `date`, chosen to sit clear of the
-    /// midnight DST fold. A zone whose offset exceeds `-12..=13` (e.g.
-    /// `Pacific/Kiritimati`, +14) has no VoIP.ms representation and returns
-    /// [`TimezoneOffsetError::OutOfRange`].
+    /// Noon sits clear of the midnight DST fold. A zone whose offset exceeds
+    /// `-12..=13` (e.g. `Pacific/Kiritimati`, +14) returns
+    /// [`TimezoneOffsetError::OutOfRange`]. This is the zone's offset, not the
+    /// number to send; see [`TimezoneOffset::for_window`].
     pub fn at(tz: chrono_tz::Tz, date: chrono::NaiveDate) -> Result<Self, TimezoneOffsetError> {
-        use chrono::{Offset, TimeZone};
+        Self::new(Self::offset_at_noon(tz, date)?)
+    }
+
+    /// The number to send so that a query starting on `date` reports `tz`'s
+    /// days: `tz`'s UTC offset minus [`SERVER_ZONE`]'s, less five hours, both
+    /// taken at local noon in `tz`.
+    ///
+    /// VoIP.ms applies one number to the whole range, so a range that crosses a
+    /// DST change in either zone is out by an hour from that change on.
+    ///
+    /// The result must fall in `-12..=13`, or this returns
+    /// [`TimezoneOffsetError::OutOfRange`] rather than a window an hour off.
+    /// During Eastern DST a UTC-12 zone (`Etc/GMT+12`) needs `-13` and is
+    /// refused, where `Pacific/Kiritimati` (+14) needs `13` and fits; outside
+    /// DST it is the other way round.
+    pub fn for_window(
+        tz: chrono_tz::Tz,
+        date: chrono::NaiveDate,
+    ) -> Result<Self, TimezoneOffsetError> {
+        use chrono::Offset;
+
+        let noon = Self::noon_in(tz, date)?;
+        let server = noon
+            .with_timezone(&SERVER_ZONE)
+            .offset()
+            .fix()
+            .local_minus_utc();
+        let caller = noon.offset().fix().local_minus_utc();
+        // A request carrying `n` reports `UTC + server + n + 5`; `n` is chosen
+        // so that equals `UTC + caller`.
+        let hours =
+            Decimal::from(caller - server) / Decimal::from(3600) - Decimal::from(Self::SHIFT_BASE);
+        Self::new(hours)
+    }
+
+    /// Local noon on `date` in `tz`.
+    fn noon_in(
+        tz: chrono_tz::Tz,
+        date: chrono::NaiveDate,
+    ) -> Result<chrono::DateTime<chrono_tz::Tz>, TimezoneOffsetError> {
+        use chrono::TimeZone;
 
         let noon = date
             .and_hms_opt(12, 0, 0)
             .expect("12:00:00 is a valid time");
-        let seconds = tz
-            .from_local_datetime(&noon)
+        tz.from_local_datetime(&noon)
             .earliest()
-            .or_else(|| tz.from_local_datetime(&noon).latest())
-            .map(|dt| dt.offset().fix().local_minus_utc())
-            .ok_or(TimezoneOffsetError::UnresolvableInstant)?;
-        // Whole hours where the offset is on the hour (the common case);
-        // fractional zones (e.g. India +5:30) keep the remainder.
-        let hours = Decimal::from(seconds) / Decimal::from(3600);
-        Self::new(hours)
+            .ok_or(TimezoneOffsetError::UnresolvableInstant)
     }
 
-    /// The offset in hours from UTC.
+    /// `tz`'s UTC offset at local noon on `date`, in hours. Whole where the
+    /// offset is on the hour; a fractional zone (India, +5:30) keeps the
+    /// remainder.
+    fn offset_at_noon(
+        tz: chrono_tz::Tz,
+        date: chrono::NaiveDate,
+    ) -> Result<Decimal, TimezoneOffsetError> {
+        use chrono::Offset;
+
+        let seconds = Self::noon_in(tz, date)?.offset().fix().local_minus_utc();
+        Ok(Decimal::from(seconds) / Decimal::from(3600))
+    }
+
+    /// How far VoIP.ms moves a [`SERVER_ZONE`] wall clock for a request
+    /// carrying this number: `n + 5` hours, in seconds.
+    pub(crate) fn shift_seconds(&self) -> i64 {
+        use rust_decimal::prelude::ToPrimitive;
+
+        ((self.0 + Decimal::from(Self::SHIFT_BASE)) * Decimal::from(3600))
+            .round()
+            .to_i64()
+            .expect("a number within -12..=13 hours shifts by a whole number of seconds")
+    }
+
+    /// The number, in hours.
     pub fn hours(&self) -> Decimal {
         self.0
     }
+}
 
-    /// The same offset as a [`chrono::FixedOffset`], the form that qualifies a
-    /// timestamp reported in it.
-    ///
-    /// Rounded to whole seconds; the `-12..=13` hour bound keeps the result
-    /// inside `FixedOffset`'s own range.
-    pub fn to_fixed_offset(&self) -> chrono::FixedOffset {
-        use rust_decimal::prelude::ToPrimitive;
+/// The zone VoIP.ms records its timestamps in: US/Canada Eastern, observing DST.
+///
+/// Measured against the live API with an independent reference instant for
+/// each: an SMS, a call, a call recording (whose id embeds a Unix timestamp), a
+/// DID order, a fax, an MMS and a SIP registration. Every one reported the
+/// Eastern wall clock at UTC-04:00 in September. VoIP.ms documents its servers
+/// as Eastern time following the US and Canadian DST rules.
+pub const SERVER_ZONE: chrono_tz::Tz = chrono_tz::America::Toronto;
 
-        let seconds = (self.0 * Decimal::from(3600))
-            .round()
-            .to_i32()
-            .expect("an offset within -12..=13 hours is a whole number of seconds");
-        chrono::FixedOffset::east_opt(seconds)
-            .expect("an offset within -12..=13 hours is within FixedOffset's range")
+/// Where a method's response timestamps get the named zone they are rendered
+/// in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TimestampZone {
+    /// [`SERVER_ZONE`].
+    Server,
+    /// A zone the response does not name and the caller must supply, such as a
+    /// voicemail box's own `timezone`.
+    Supplied,
+}
+
+impl TimestampZone {
+    /// The zone, or `None` when the caller has to supply it.
+    pub fn zone(&self) -> Option<chrono_tz::Tz> {
+        match self {
+            TimestampZone::Server => Some(SERVER_ZONE),
+            TimestampZone::Supplied => None,
+        }
     }
 }
 
+/// A method's response timestamps rendered in a named zone, and the paths that
+/// reach them in the form [`attach_zone`](crate::attach_zone) takes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ZoneTimestamps {
+    pub zone: TimestampZone,
+    pub paths: &'static [&'static str],
+}
+
 impl fmt::Display for TimezoneOffset {
-    /// Renders the offset as a signed `UTC±HH:MM` label (`UTC-05:00`).
+    /// Renders the number as the wire carries it (`-5`, `4.50`). It is not
+    /// labeled as a UTC offset, since during DST it is not one.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let sign = if self.0.is_sign_negative() { '-' } else { '+' };
-        let abs = self.0.abs();
-        let whole = abs.trunc();
-        let minutes = ((abs - whole) * Decimal::from(60)).round();
-        write!(f, "UTC{sign}{whole:02}:{minutes:02}")
+        self.0.fmt(f)
     }
 }
 
 /// Error from constructing a [`TimezoneOffset`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TimezoneOffsetError {
-    /// The value fell outside the `-12..=13` hour range VoIP.ms accepts. Also
-    /// returned by [`TimezoneOffset::at`] for a zone whose offset exceeds that
-    /// range (e.g. `Pacific/Kiritimati`, +14).
+    /// The number fell outside the `-12..=13` range VoIP.ms accepts. Returned
+    /// by [`TimezoneOffset::new`], by [`TimezoneOffset::at`] for a zone whose
+    /// offset exceeds that range (e.g. `Pacific/Kiritimati`, +14), and by
+    /// [`TimezoneOffset::for_window`] for a zone whose window needs a number
+    /// outside it (e.g. a UTC-12 zone during Eastern DST).
     OutOfRange(Decimal),
     /// The chosen instant does not exist in the zone (a DST spring-forward
     /// gap), so no offset could be resolved.
     UnresolvableInstant,
-    /// A `timezone` zone was given without the query start date that anchors
-    /// its DST resolution (`date_from` / `from`), so there is no instant to
-    /// resolve the offset at.
-    MissingStartDate,
-    /// The query start date string did not parse as a `YYYY-MM-DD` date, so
-    /// the zone's offset could not be resolved at it.
-    InvalidStartDate,
+    /// A `timezone` zone was given without a query date to resolve its window
+    /// at: neither the start date (`date_from` / `from`) nor the end date
+    /// (`date_to` / `to`).
+    MissingQueryDate,
 }
 
 impl fmt::Display for TimezoneOffsetError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TimezoneOffsetError::OutOfRange(v) => {
-                write!(f, "timezone offset {v} is outside the range -12 to 13")
+                write!(f, "timezone {v} is outside the range -12 to 13")
             }
 
             TimezoneOffsetError::UnresolvableInstant => {
                 f.write_str("timezone offset could not be resolved at the given date")
             }
 
-            TimezoneOffsetError::MissingStartDate => f.write_str(
-                "timezone requires the query start date (date_from / from) to resolve its offset",
+            TimezoneOffsetError::MissingQueryDate => f.write_str(
+                "timezone requires a query date (date_from / from or date_to / to) to resolve \
+                 its window",
             ),
-            TimezoneOffsetError::InvalidStartDate => {
-                f.write_str("query start date is not a YYYY-MM-DD date")
-            }
         }
     }
 }
@@ -672,6 +753,80 @@ impl<T: fmt::Display> fmt::Display for Reported<T> {
         match self {
             Reported::Parsed(v) => v.fmt(f),
             Reported::Unreadable(s) => f.write_str(s),
+        }
+    }
+}
+
+/// A wall clock reported without an offset, rendered in a named zone the
+/// response does not name.
+///
+/// [`WallClock::Zoned`] when that zone is known: the instant, carrying the
+/// offset the zone was at then. [`WallClock::Bare`] when it is not, and also
+/// when the wall clock is ambiguous in the zone (the repeated hour when clocks
+/// fall back) or does not exist in it (the hour skipped when they spring
+/// forward), since either offset would be a guess.
+///
+/// Two values are equal only when they report the same wall clock with the same
+/// offset. `DateTime`'s own equality compares instants alone, so
+/// `18:47:40-04:00` and `22:47:40+00:00` would otherwise compare equal while
+/// reporting different wall clocks.
+///
+/// [`Display`](std::fmt::Display) renders the wire spelling, with the offset
+/// appended for a zoned value (`2026-09-22 18:47:40-04:00`). A named-zone field
+/// reads either form back as the same value. The offset is written to the
+/// minute, which is all the wire carries.
+#[derive(Debug, Clone, Copy)]
+pub enum WallClock {
+    /// The instant, with the UTC offset in force in the zone at that moment.
+    Zoned(DateTime<FixedOffset>),
+    /// The wall clock in the zone it was rendered in, with no offset.
+    Bare(NaiveDateTime),
+}
+
+impl PartialEq for WallClock {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (WallClock::Zoned(a), WallClock::Zoned(b)) => a == b && a.offset() == b.offset(),
+            (WallClock::Bare(a), WallClock::Bare(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for WallClock {}
+
+impl WallClock {
+    /// The wall clock in the value's zone: the zone a zoned value was resolved
+    /// in, or the one a bare value was rendered in. For a record-listing
+    /// timestamp that is [`SERVER_ZONE`] either way, not the shifted wall clock
+    /// VoIP.ms reported.
+    pub fn local(&self) -> NaiveDateTime {
+        match self {
+            WallClock::Zoned(at) => at.naive_local(),
+            WallClock::Bare(at) => *at,
+        }
+    }
+
+    /// The instant, or `None` for a wall clock no offset was attached to.
+    pub fn zoned(&self) -> Option<DateTime<FixedOffset>> {
+        match self {
+            WallClock::Zoned(at) => Some(*at),
+            WallClock::Bare(_) => None,
+        }
+    }
+}
+
+impl fmt::Display for WallClock {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WallClock::Zoned(at) => write!(
+                f,
+                "{}",
+                at.format(crate::responses::OFFSET_DATETIME_WIRE_FORMAT)
+            ),
+            WallClock::Bare(at) => {
+                write!(f, "{}", at.format(crate::responses::DATETIME_WIRE_FORMAT))
+            }
         }
     }
 }
@@ -1039,38 +1194,24 @@ mod tests {
         );
     }
 
+    /// `Display` is the number, not a `UTC±HH:MM` label, which during DST would
+    /// name a zone the timestamps are not in.
     #[test]
-    fn timezone_offset_displays_utc_label() {
-        assert_eq!(TimezoneOffset::new(-5).unwrap().to_string(), "UTC-05:00");
-        assert_eq!(TimezoneOffset::new(13).unwrap().to_string(), "UTC+13:00");
+    fn timezone_offset_displays_the_number() {
+        assert_eq!(TimezoneOffset::new(-5).unwrap().to_string(), "-5");
+        assert_eq!(TimezoneOffset::new(13).unwrap().to_string(), "13");
+        assert_eq!(TimezoneOffset::UTC.to_string(), "0");
+        // `for_window` computes Kolkata in July as 5.5 + 4 - 5 = 4.50, and a
+        // log line should show what went out, not a tidier spelling of it.
+        let kolkata = TimezoneOffset::for_window(
+            chrono_tz::Asia::Kolkata,
+            chrono::NaiveDate::from_ymd_opt(2026, 7, 15).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(kolkata.to_string(), "4.50");
         assert_eq!(
-            TimezoneOffset::new(Decimal::from_str_exact("5.5").unwrap())
-                .unwrap()
-                .to_string(),
-            "UTC+05:30"
-        );
-    }
-
-    #[test]
-    fn timezone_offset_converts_to_a_fixed_offset() {
-        assert_eq!(
-            TimezoneOffset::UTC.to_fixed_offset(),
-            chrono::FixedOffset::east_opt(0).unwrap()
-        );
-        assert_eq!(
-            TimezoneOffset::new(-5).unwrap().to_fixed_offset(),
-            chrono::FixedOffset::west_opt(5 * 3600).unwrap()
-        );
-        // A fractional zone (India, +5:30) keeps its half hour.
-        assert_eq!(
-            TimezoneOffset::new(Decimal::from_str_exact("5.5").unwrap())
-                .unwrap()
-                .to_fixed_offset(),
-            chrono::FixedOffset::east_opt(5 * 3600 + 1800).unwrap()
-        );
-        assert_eq!(
-            TimezoneOffset::new(13).unwrap().to_fixed_offset(),
-            chrono::FixedOffset::east_opt(13 * 3600).unwrap()
+            serde_json::to_value(kolkata).unwrap(),
+            serde_json::json!(kolkata.to_string())
         );
     }
 
@@ -1256,6 +1397,129 @@ mod tests {
         // The arm the examples print through: a degraded date still renders as
         // what VoIP.ms sent rather than as nothing.
         assert_eq!(unreadable.to_string(), "08/10/2026");
+    }
+
+    /// `Display` has to write what the response field reads back as the same
+    /// value, in both forms.
+    #[test]
+    fn wall_clock_display_round_trips_through_the_field() {
+        #[derive(Deserialize)]
+        struct Row {
+            #[serde(
+                default,
+                deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+            )]
+            date: Option<Reported<WallClock>>,
+        }
+
+        let wall = NaiveDate::from_ymd_opt(2026, 9, 22)
+            .unwrap()
+            .and_hms_opt(18, 47, 40)
+            .unwrap();
+        for (value, rendered) in [
+            (WallClock::Bare(wall), "2026-09-22 18:47:40"),
+            (
+                WallClock::Zoned(
+                    DateTime::parse_from_rfc3339("2026-09-22T18:47:40-04:00").unwrap(),
+                ),
+                "2026-09-22 18:47:40-04:00",
+            ),
+            (
+                WallClock::Zoned(
+                    DateTime::parse_from_rfc3339("2026-09-22T18:47:40+05:30").unwrap(),
+                ),
+                "2026-09-22 18:47:40+05:30",
+            ),
+        ] {
+            assert_eq!(value.to_string(), rendered);
+            let row: Row = serde_json::from_value(serde_json::json!({ "date": rendered })).unwrap();
+            assert_eq!(row.date, Some(Reported::Parsed(value)));
+        }
+    }
+
+    #[test]
+    fn zoned_wall_clocks_are_equal_only_with_the_same_offset() {
+        let at = |s: &str| WallClock::Zoned(DateTime::parse_from_rfc3339(s).unwrap());
+        // The same instant, reported as two different wall clocks.
+        assert_ne!(
+            at("2026-09-22T18:47:40-04:00"),
+            at("2026-09-22T22:47:40+00:00")
+        );
+        assert_eq!(
+            at("2026-09-22T18:47:40-04:00"),
+            at("2026-09-22T18:47:40-04:00")
+        );
+        assert_ne!(
+            at("2026-09-22T18:47:40-04:00"),
+            WallClock::Bare(
+                NaiveDate::from_ymd_opt(2026, 9, 22)
+                    .unwrap()
+                    .and_hms_opt(18, 47, 40)
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn wall_clock_reports_its_local_time_either_way() {
+        let wall = NaiveDate::from_ymd_opt(2026, 9, 22)
+            .unwrap()
+            .and_hms_opt(18, 47, 40)
+            .unwrap();
+        let at = DateTime::parse_from_rfc3339("2026-09-22T18:47:40-04:00").unwrap();
+
+        assert_eq!(WallClock::Zoned(at).local(), wall);
+        assert_eq!(WallClock::Zoned(at).zoned(), Some(at));
+        assert_eq!(WallClock::Bare(wall).local(), wall);
+        assert_eq!(WallClock::Bare(wall).zoned(), None);
+    }
+
+    /// The number is the zone's offset minus Eastern's, less five, so it
+    /// matches the zone's UTC offset outside Eastern DST and is one less during
+    /// it.
+    #[test]
+    fn timezone_offset_for_window_compensates_for_eastern_dst() {
+        use chrono::NaiveDate;
+
+        let jan = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
+        let jul = NaiveDate::from_ymd_opt(2026, 7, 15).unwrap();
+        let n = |tz, date| TimezoneOffset::for_window(tz, date).map(|o| o.hours());
+        let hours = |s: &str| Ok(Decimal::from_str_exact(s).unwrap());
+
+        assert_eq!(n(chrono_tz::UTC, jan), hours("0"));
+        assert_eq!(n(chrono_tz::UTC, jul), hours("-1"));
+        // Eastern itself shifts by nothing all year.
+        assert_eq!(n(SERVER_ZONE, jan), hours("-5"));
+        assert_eq!(n(SERVER_ZONE, jul), hours("-5"));
+        assert_eq!(n(chrono_tz::America::Vancouver, jul), hours("-8"));
+        // A zone with no DST of its own moves by one when Eastern does.
+        assert_eq!(n(chrono_tz::Asia::Kolkata, jan), hours("5.5"));
+        assert_eq!(n(chrono_tz::Asia::Kolkata, jul), hours("4.5"));
+        // +14 fits only while Eastern is on DST.
+        assert_eq!(n(chrono_tz::Pacific::Kiritimati, jul), hours("13"));
+        assert_eq!(
+            n(chrono_tz::Pacific::Kiritimati, jan),
+            Err(TimezoneOffsetError::OutOfRange(Decimal::from(14)))
+        );
+        // UTC-12 is refused during Eastern DST, where its days need -13, rather
+        // than sent as -12 and matched an hour off; outside DST it fits.
+        assert_eq!(
+            n(chrono_tz::Etc::GMTPlus12, jul),
+            Err(TimezoneOffsetError::OutOfRange(Decimal::from(-13)))
+        );
+        assert_eq!(n(chrono_tz::Etc::GMTPlus12, jan), hours("-12"));
+    }
+
+    #[test]
+    fn timezone_offset_shift_is_the_number_plus_five_hours() {
+        assert_eq!(TimezoneOffset::UTC.shift_seconds(), 5 * 3600);
+        assert_eq!(TimezoneOffset::new(-5).unwrap().shift_seconds(), 0);
+        assert_eq!(
+            TimezoneOffset::new(Decimal::from_str_exact("5.5").unwrap())
+                .unwrap()
+                .shift_seconds(),
+            10 * 3600 + 1800
+        );
     }
 
     #[test]

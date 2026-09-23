@@ -86,7 +86,7 @@ where
 }
 
 /// [`read_back`] for a record-listing method, whose response reports its
-/// timestamps in the UTC offset the request carried without naming it.
+/// timestamps shifted by the `timezone` the request carried, with no offset.
 ///
 /// The read-back is at [`TimezoneOffset::UTC`]; a non-zero offset is the
 /// `cdr` area's typed fixture, which goes through `Client::get_cdr` itself.

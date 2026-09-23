@@ -220,26 +220,38 @@ impl Client {
     /// # }
     /// ```
     ///
-    /// The envelope is what VoIP.ms sent, so for the record-listing methods
-    /// (`getCDR`, `getSMS`, …) its timestamps are wall clocks with no offset,
-    /// and the typed response deserializers refuse them. Send those methods an
-    /// explicit `timezone`, then complete the envelope with
+    /// The envelope is what VoIP.ms sent, so its timestamps are wall clocks with
+    /// no offset. For the record-listing methods (`getCDR`, `getSMS`, …) send an
+    /// explicit `timezone`, then qualify the envelope with
     /// [`attach_offset`](crate::attach_offset) over the paths
-    /// [`offset_timestamps`](crate::offset_timestamps) answers for the method:
+    /// [`offset_timestamps`](crate::offset_timestamps) answers for the method.
+    /// For a method whose timestamps are in a named zone, use
+    /// [`attach_zone`](crate::attach_zone) over the paths
+    /// [`zone_timestamps`](crate::zone_timestamps) answers:
     ///
     /// ```no_run
     /// # async fn example(client: &voip_ms::Client, method: &str) -> Result<(), Box<dyn std::error::Error>> {
-    /// use voip_ms::{TimezoneOffset, attach_offset, offset_timestamps, serde_json::json};
+    /// use voip_ms::{
+    ///     TimezoneOffset, attach_offset, attach_zone, chrono::NaiveDate, chrono_tz::Tz,
+    ///     offset_timestamps, serde_json::json, zone_timestamps,
+    /// };
     ///
-    /// let offset = TimezoneOffset::new(-4)?;
+    /// let day = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+    /// let timezone = TimezoneOffset::for_window(Tz::America__Vancouver, day)?;
     /// let mut envelope = client
     ///     .call_raw(
     ///         method,
-    ///         &json!({ "date_from": "2026-09-01", "date_to": "2026-09-16", "timezone": offset }),
+    ///         &json!({ "date_from": day, "date_to": "2026-09-16", "timezone": timezone }),
     ///     )
     ///     .await?;
     /// if let Some(timestamps) = offset_timestamps(method) {
-    ///     attach_offset(&mut envelope, offset.to_fixed_offset(), timestamps);
+    ///     attach_offset(&mut envelope, timezone, timestamps);
+    /// } else if let Some(zoned) = zone_timestamps(method) {
+    ///     // `None` for a mailbox's zone, which the caller reads from
+    ///     // `getVoicemails`.
+    ///     if let Some(zone) = zoned.zone.zone() {
+    ///         attach_zone(&mut envelope, zone, zoned.paths);
+    ///     }
     /// }
     /// # Ok(())
     /// # }
@@ -326,29 +338,16 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (body, _empty) = self
-            .fetch(method, params, Transport::for_method(method))
-            .await?;
-        serde_json::from_value(body)
-            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
+        self.call_qualified(method, params, |_| {}).await
     }
 
-    /// Issue a request and deserialize the response, first attaching `offset`
-    /// to the timestamps `timestamps` reaches.
-    ///
-    /// The record-listing methods shift their timestamps by the UTC offset the
-    /// request carried and then report the shifted wall clock without it, so a
-    /// value only names an instant once the offset is put back. Each entry is a
-    /// path in the form [`attach_offset`] takes.
-    ///
-    /// Empty-collection statuses fold into an empty response, as in
-    /// [`Client::call`].
-    pub(crate) async fn call_zoned<P, T>(
+    /// [`Client::call`], letting `qualify` complete the envelope before it is
+    /// deserialized.
+    async fn call_qualified<P, T>(
         &self,
         method: &str,
         params: &P,
-        offset: chrono::FixedOffset,
-        timestamps: &[&str],
+        qualify: impl FnOnce(&mut Value),
     ) -> Result<T>
     where
         P: Serialize + ?Sized,
@@ -357,9 +356,59 @@ impl Client {
         let (mut body, _empty) = self
             .fetch(method, params, Transport::for_method(method))
             .await?;
-        attach_offset(&mut body, offset, timestamps);
+        qualify(&mut body);
         serde_json::from_value(body)
             .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
+    }
+
+    /// Issue a request and deserialize the response, first qualifying the
+    /// timestamps `timestamps` reaches with [`attach_offset`] for the
+    /// `timezone` the request carried.
+    ///
+    /// Empty-collection statuses fold into an empty response, as in
+    /// [`Client::call`].
+    pub(crate) async fn call_zoned<P, T>(
+        &self,
+        method: &str,
+        params: &P,
+        timezone: crate::TimezoneOffset,
+        timestamps: &[&str],
+    ) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        self.call_qualified(method, params, |body| {
+            attach_offset(body, timezone, timestamps);
+        })
+        .await
+    }
+
+    /// Issue a request and deserialize the response, first qualifying the wall
+    /// clocks `timestamps` reaches in `zone`.
+    ///
+    /// For a method whose timestamps are rendered in a named zone the request
+    /// cannot choose and the response does not report, such as a mailbox's own
+    /// `timezone`. Each entry is a path in the form [`attach_zone`] takes, and
+    /// the call is still one request: the zone comes from the caller.
+    ///
+    /// Empty-collection statuses fold into an empty response, as in
+    /// [`Client::call`].
+    pub(crate) async fn call_in_zone<P, T>(
+        &self,
+        method: &str,
+        params: &P,
+        zone: chrono_tz::Tz,
+        timestamps: &[&str],
+    ) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        self.call_qualified(method, params, |body| {
+            attach_zone(body, zone, timestamps);
+        })
+        .await
     }
 
     /// The base URL this client posts to.
@@ -373,14 +422,15 @@ impl Client {
     }
 }
 
-/// Attach `offset` to the bare wall-clock timestamps `timestamps` reaches in
-/// `body`, so each parses as the instant it names.
+/// Qualify the timestamps `timestamps` reaches in a record-listing envelope
+/// that was requested with `timezone`, so each parses as the instant it names.
 ///
-/// The record-listing methods (`getCDR`, `getSMS`, …) report their timestamps
-/// in the UTC offset the request asked for but leave the offset off the value.
-/// The typed methods attach it before deserializing; a [`Client::call_raw`]
-/// caller on one of those methods needs the same step, which is why this is
-/// public.
+/// The record-listing methods (`getCDR`, `getSMS`, …) report each timestamp
+/// as its [`SERVER_ZONE`](crate::SERVER_ZONE) wall clock moved by
+/// `timezone + 5` hours, with no offset. That equals the wall clock at
+/// UTC+`timezone` only outside DST, so the number sent is not an offset to
+/// attach. This moves each value back, resolves it in `SERVER_ZONE`, and
+/// writes it with the offset that zone was at then (`-04:00` or `-05:00`).
 ///
 /// Each entry is a `/`-separated path into `body` in which a `*` segment stands
 /// for every element of a list -- `/cdr/*/date` reaches the `date` of every
@@ -391,32 +441,151 @@ impl Client {
 /// method's paths from its wire name, so a raw caller names the method rather
 /// than spelling the paths out.
 ///
-/// A blank value and one that already names a zone are both left alone -- the
-/// first has no wall clock to qualify and stays the empty placeholder the
-/// deserializers fold to `None`.
+/// A moved-back wall clock that has no single offset in `SERVER_ZONE` -- the
+/// hour it repeats when clocks fall back -- is written as that wall clock
+/// followed by the zone's name (`2026-11-01 01:30:00 America/Toronto`) and
+/// reads as [`WallClock::Bare`](crate::WallClock::Bare) holding it, so every
+/// row of a response is on the same clock. A record-listing field refuses a
+/// value that carries neither an offset nor that name, which is what one read
+/// without this step looks like. A value is left exactly as it arrived when it
+/// is blank, when it already names an offset, and when it is not a
+/// `YYYY-MM-DD HH:MM:SS` wall clock.
 ///
 /// ```
-/// use voip_ms::{attach_offset, chrono::FixedOffset, serde_json::json};
+/// use voip_ms::{TimezoneOffset, attach_offset, serde_json::json};
 ///
-/// let mut body = json!({ "cdr": [{ "date": "2026-09-16 15:14:35" }] });
-/// attach_offset(&mut body, FixedOffset::west_opt(4 * 3600).unwrap(), &["/cdr/*/date"]);
-/// assert_eq!(body["cdr"][0]["date"], "2026-09-16 15:14:35-04:00");
+/// // A call at 16:28:34 UTC, read with `timezone=0` in September.
+/// let mut body = json!({ "cdr": [
+///     { "date": "2026-09-23 17:28:34" },
+///     { "date": "2026-11-01 06:30:00" },
+/// ] });
+/// attach_offset(&mut body, TimezoneOffset::UTC, &["/cdr/*/date"]);
+/// assert_eq!(body["cdr"][0]["date"], "2026-09-23 12:28:34-04:00");
+/// // 01:30 Eastern happens twice that night.
+/// assert_eq!(body["cdr"][1]["date"], "2026-11-01 01:30:00 America/Toronto");
 /// ```
-pub fn attach_offset(body: &mut Value, offset: chrono::FixedOffset, timestamps: &[&str]) {
-    let suffix = offset.to_string();
+pub fn attach_offset(body: &mut Value, timezone: crate::TimezoneOffset, timestamps: &[&str]) {
+    let shift = chrono::TimeDelta::seconds(timezone.shift_seconds());
+    qualify_timestamps(body, timestamps, |wall| {
+        let local = parse_wall(wall)?.checked_sub_signed(shift)?;
+        Some(
+            match crate::responses::resolve_in(crate::SERVER_ZONE, local) {
+                Some(at) => Qualified::At(at),
+                None => Qualified::InZone(local, crate::SERVER_ZONE),
+            },
+        )
+    });
+}
+
+/// Qualify the bare wall clocks `timestamps` reaches in `body` with the UTC
+/// offset `zone` was at when each one happened, so each parses as the instant
+/// it names.
+///
+/// `getVoicemailMessages` renders a message's `date` in the mailbox's current
+/// `timezone` setting (`getVoicemails`' `timezone`) at the time it is read, and
+/// names neither the zone nor an offset. Given that zone, every value resolves,
+/// including one recorded while the mailbox had a different setting, since
+/// VoIP.ms renders the stored instant afresh on each read.
+///
+/// Paths take the form [`attach_offset`] documents, and
+/// [`zone_timestamps`](crate::zone_timestamps) answers each such method's
+/// paths from its wire name.
+///
+/// Each value is resolved on its own, so rows on either side of a DST change
+/// get different offsets. A wall clock that is ambiguous in `zone` (the
+/// repeated hour when clocks fall back) or does not exist in it (the hour
+/// skipped when they spring forward) has no single offset, and choosing one
+/// would be a guess. It is written followed by the zone's name, the same form
+/// [`attach_offset`] writes, and reads as
+/// [`WallClock::Bare`](crate::WallClock::Bare). A value is left exactly as it
+/// arrived when it is blank, when it already names an offset, and when it is
+/// not a `YYYY-MM-DD HH:MM:SS` wall clock.
+///
+/// ```
+/// use voip_ms::{attach_zone, chrono_tz::America::Toronto, serde_json::json};
+///
+/// let mut body = json!({ "messages": [
+///     { "date": "2026-09-22 18:47:40" },
+///     { "date": "2026-11-01 01:30:00" },
+/// ] });
+/// attach_zone(&mut body, Toronto, &["/messages/*/date"]);
+/// assert_eq!(body["messages"][0]["date"], "2026-09-22 18:47:40-04:00");
+/// // 01:30 happens twice in Toronto that night.
+/// assert_eq!(body["messages"][1]["date"], "2026-11-01 01:30:00 America/Toronto");
+/// ```
+pub fn attach_zone(body: &mut Value, zone: chrono_tz::Tz, timestamps: &[&str]) {
+    qualify_timestamps(body, timestamps, |wall| {
+        let local = parse_wall(wall)?;
+        Some(match crate::responses::resolve_in(zone, local) {
+            Some(at) => Qualified::At(at),
+            None => Qualified::InZone(local, zone),
+        })
+    });
+}
+
+/// What the qualification walk writes in place of a bare wall clock.
+enum Qualified {
+    /// An instant, written with its offset.
+    At(chrono::DateTime<chrono::FixedOffset>),
+    /// A wall clock with no single offset in the zone, written followed by the
+    /// zone's name.
+    InZone(chrono::NaiveDateTime, chrono_tz::Tz),
+}
+
+/// A trimmed `YYYY-MM-DD HH:MM:SS` wall clock.
+fn parse_wall(wall: &str) -> Option<chrono::NaiveDateTime> {
+    chrono::NaiveDateTime::parse_from_str(wall, crate::responses::DATETIME_WIRE_FORMAT).ok()
+}
+
+/// Rewrite every string `timestamps` reaches in `body` that holds a wall clock
+/// with no offset as what `qualify` gives for it, skipping blanks and values
+/// that already name an offset.
+///
+/// `qualify` is handed the trimmed value, and a value it answers `None` for is
+/// left exactly as it arrived.
+fn qualify_timestamps(
+    body: &mut Value,
+    timestamps: &[&str],
+    mut qualify: impl FnMut(&str) -> Option<Qualified>,
+) {
     for path in timestamps {
-        attach_at(body, path.trim_start_matches('/'), &suffix);
+        qualify_at(body, path.trim_start_matches('/'), &mut qualify);
     }
 }
 
-/// Walk one [`attach_offset`] path, appending `suffix` to the string it lands on.
-fn attach_at(value: &mut Value, path: &str, suffix: &str) {
+/// Walk one [`attach_offset`] path, qualifying the string it lands on.
+fn qualify_at<F>(value: &mut Value, path: &str, qualify: &mut F)
+where
+    F: FnMut(&str) -> Option<Qualified>,
+{
+    use std::fmt::Write as _;
+
     let Some((segment, rest)) = path.split_once('/') else {
-        if let Some(Value::String(s)) = value.get_mut(path)
-            && !s.trim().is_empty()
-            && !crate::responses::names_offset(s)
-        {
-            s.push_str(suffix);
+        if let Some(Value::String(s)) = value.get_mut(path) {
+            let wall = s.trim();
+            if wall.is_empty() || crate::responses::names_offset(wall) {
+                return;
+            }
+
+            let Some(qualified) = qualify(wall) else {
+                return;
+            };
+
+            s.clear();
+            // Writing to a `String` cannot fail.
+            let _ = match qualified {
+                Qualified::At(at) => write!(
+                    s,
+                    "{}",
+                    at.format(crate::responses::OFFSET_DATETIME_WIRE_FORMAT)
+                ),
+                Qualified::InZone(local, zone) => write!(
+                    s,
+                    "{} {}",
+                    local.format(crate::responses::DATETIME_WIRE_FORMAT),
+                    zone.name()
+                ),
+            };
         }
 
         return;
@@ -424,7 +593,7 @@ fn attach_at(value: &mut Value, path: &str, suffix: &str) {
 
     if segment != "*" {
         if let Some(child) = value.get_mut(segment) {
-            attach_at(child, rest, suffix);
+            qualify_at(child, rest, qualify);
         }
 
         return;
@@ -433,13 +602,13 @@ fn attach_at(value: &mut Value, path: &str, suffix: &str) {
     match value {
         Value::Array(items) => {
             for item in items {
-                attach_at(item, rest, suffix);
+                qualify_at(item, rest, qualify);
             }
         }
 
         // VoIP.ms returns a one-element list as a bare object, which
         // `deserialize_vec_from_single_or_seq` accepts on the way in.
-        other => attach_at(other, rest, suffix),
+        other => qualify_at(other, rest, qualify),
     }
 }
 
@@ -643,9 +812,70 @@ mod tests {
         ));
     }
 
-    /// UTC-04:00, the offset `America/New_York` resolves to in September.
-    fn west4() -> chrono::FixedOffset {
-        chrono::FixedOffset::west_opt(4 * 3600).expect("4 hours is a valid offset")
+    const CDR_DATES: &[&str] = &["/cdr/*/date"];
+
+    fn number(hours: &str) -> crate::TimezoneOffset {
+        crate::TimezoneOffset::new(rust_decimal::Decimal::from_str_exact(hours).unwrap()).unwrap()
+    }
+
+    /// Qualify one record-listing wall clock read with `timezone` and return
+    /// what it became.
+    fn read_with(timezone: &str, wall: &str) -> Value {
+        let mut body = serde_json::json!({ "cdr": [{ "date": wall }] });
+        attach_offset(&mut body, number(timezone), CDR_DATES);
+        body["cdr"][0]["date"].clone()
+    }
+
+    /// One call, placed at 16:28:34 UTC on 2026-09-23 and read back live with
+    /// six different `timezone` values, is one instant whatever was sent.
+    #[test]
+    fn attach_offset_undoes_the_measured_shift() {
+        for (timezone, reported) in [
+            ("0", "2026-09-23 17:28:34"),
+            ("-4", "2026-09-23 13:28:34"),
+            ("-5", "2026-09-23 12:28:34"),
+            ("5.5", "2026-09-23 22:58:34"),
+            ("13", "2026-09-24 06:28:34"),
+            ("-12", "2026-09-23 05:28:34"),
+        ] {
+            assert_eq!(
+                read_with(timezone, reported),
+                "2026-09-23 12:28:34-04:00",
+                "timezone={timezone}"
+            );
+        }
+    }
+
+    #[test]
+    fn attach_offset_resolves_each_row_in_the_server_zone() {
+        // Outside DST the fixed shift makes `timezone=0` report UTC. That is
+        // inferred from DST-season readings: this asserts the model, not a
+        // winter measurement.
+        assert_eq!(
+            read_with("0", "2026-01-15 17:00:00"),
+            "2026-01-15 12:00:00-05:00"
+        );
+        // Rows either side of the spring-forward change get their own offset.
+        assert_eq!(
+            read_with("-5", "2026-03-08 01:59:59"),
+            "2026-03-08 01:59:59-05:00"
+        );
+        assert_eq!(
+            read_with("-5", "2026-03-08 03:00:00"),
+            "2026-03-08 03:00:00-04:00"
+        );
+    }
+
+    #[test]
+    fn attach_offset_writes_the_repeated_hour_on_the_server_clock() {
+        // 06:30 at `timezone=0` moves back to 01:30 Eastern on the night clocks
+        // fall back, which happens twice. It keeps the Eastern wall clock, as
+        // its resolved neighbors do, and names the zone so a record-listing
+        // field can tell it from a value that was never qualified.
+        assert_eq!(
+            read_with("0", "2026-11-01 06:30:00"),
+            "2026-11-01 01:30:00 America/Toronto"
+        );
     }
 
     #[test]
@@ -653,13 +883,13 @@ mod tests {
         let mut body = serde_json::json!({
             "status": "success",
             "cdr": [
-                { "date": "2026-09-16 15:14:35" },
-                { "date": "2026-09-16 16:02:00" },
+                { "date": "2026-09-16 19:14:35" },
+                { "date": "2026-09-16 20:02:00" },
             ],
         });
-        attach_offset(&mut body, west4(), &["/cdr/*/date"]);
-        assert_eq!(body["cdr"][0]["date"], "2026-09-16 15:14:35-04:00");
-        assert_eq!(body["cdr"][1]["date"], "2026-09-16 16:02:00-04:00");
+        attach_offset(&mut body, number("0"), CDR_DATES);
+        assert_eq!(body["cdr"][0]["date"], "2026-09-16 14:14:35-04:00");
+        assert_eq!(body["cdr"][1]["date"], "2026-09-16 15:02:00-04:00");
         assert_eq!(body["status"], "success");
     }
 
@@ -667,7 +897,7 @@ mod tests {
     fn attach_offset_reaches_a_bare_record() {
         // A one-row list arrives as the object itself.
         let mut body = serde_json::json!({ "sms": { "date": "2026-03-30 10:24:16" } });
-        attach_offset(&mut body, west4(), &["/sms/*/date"]);
+        attach_offset(&mut body, number("-5"), &["/sms/*/date"]);
         assert_eq!(body["sms"]["date"], "2026-03-30 10:24:16-04:00");
     }
 
@@ -676,37 +906,137 @@ mod tests {
         let mut body = serde_json::json!({
             "cdr": [{ "seconds": "11" }, { "date": null }, { "date": 0 }],
         });
-        attach_offset(&mut body, west4(), &["/cdr/*/date", "/missing/*/date"]);
+        attach_offset(&mut body, number("0"), &["/cdr/*/date", "/missing/*/date"]);
         assert_eq!(body["cdr"][0].get("date"), None);
         assert_eq!(body["cdr"][1]["date"], serde_json::Value::Null);
         assert_eq!(body["cdr"][2]["date"], 0);
     }
 
     #[test]
-    fn attach_offset_leaves_a_blank_value_alone() {
-        // A blank has no wall clock to qualify. Suffixing it would produce
-        // `-04:00`, which parses as nothing -- and since one bad value fails
-        // the whole response, that would lose every other record too.
-        let mut body = serde_json::json!({
-            "cdr": [{ "date": "" }, { "date": "   " }],
-        });
-        attach_offset(&mut body, west4(), &["/cdr/*/date"]);
-        assert_eq!(body["cdr"][0]["date"], "");
-        assert_eq!(body["cdr"][1]["date"], "   ");
+    fn attach_offset_leaves_blank_qualified_and_unreadable_values_alone() {
+        // A blank has no wall clock to qualify, and one bad value fails the
+        // whole response, so rewriting it would lose every other record too.
+        for wall in [
+            "",
+            "   ",
+            "2026-09-16 15:14:35-05:00",
+            "2026-09-16T15:14:35Z",
+            "2026-09-16 15:14:35+0530",
+            "0000-00-00 00:00:00",
+            "2026-09-16",
+        ] {
+            assert_eq!(read_with("0", wall), wall);
+        }
+    }
+
+    const MESSAGE_DATES: &[&str] = &["/messages/*/date"];
+
+    /// Qualify one wall clock in `America/Toronto` and return what it became.
+    fn in_toronto(wall: &str) -> Value {
+        let mut body = serde_json::json!({ "messages": [{ "date": wall }] });
+        attach_zone(&mut body, chrono_tz::America::Toronto, MESSAGE_DATES);
+        body["messages"][0]["date"].clone()
     }
 
     #[test]
-    fn attach_offset_leaves_a_value_that_already_names_a_zone() {
-        let mut body = serde_json::json!({
-            "cdr": [
-                { "date": "2026-09-16 15:14:35-05:00" },
-                { "date": "2026-09-16T15:14:35Z" },
-                { "date": "2026-09-16 15:14:35+0530" },
-            ],
-        });
-        attach_offset(&mut body, west4(), &["/cdr/*/date"]);
-        assert_eq!(body["cdr"][0]["date"], "2026-09-16 15:14:35-05:00");
-        assert_eq!(body["cdr"][1]["date"], "2026-09-16T15:14:35Z");
-        assert_eq!(body["cdr"][2]["date"], "2026-09-16 15:14:35+0530");
+    fn attach_zone_resolves_each_row_at_its_own_instant() {
+        // Toronto springs forward at 02:00 on 2026-03-08 and falls back at 02:00
+        // on 2026-11-01, so rows either side of each change get different
+        // offsets from the same zone.
+        assert_eq!(
+            in_toronto("2026-03-08 01:59:59"),
+            "2026-03-08 01:59:59-05:00"
+        );
+        assert_eq!(
+            in_toronto("2026-03-08 03:00:00"),
+            "2026-03-08 03:00:00-04:00"
+        );
+        assert_eq!(
+            in_toronto("2026-11-01 00:59:59"),
+            "2026-11-01 00:59:59-04:00"
+        );
+        assert_eq!(
+            in_toronto("2026-11-01 02:00:00"),
+            "2026-11-01 02:00:00-05:00"
+        );
+    }
+
+    #[test]
+    fn attach_zone_names_the_zone_for_a_repeated_or_skipped_wall_clock() {
+        // 01:30 happens twice when clocks fall back; either offset is a guess.
+        assert_eq!(
+            in_toronto("2026-11-01 01:30:00"),
+            "2026-11-01 01:30:00 America/Toronto"
+        );
+        // 02:30 never happens when they spring forward.
+        assert_eq!(
+            in_toronto("2026-03-08 02:30:00"),
+            "2026-03-08 02:30:00 America/Toronto"
+        );
+    }
+
+    /// The unresolvable hour comes out in one form whichever helper met it, so
+    /// a server-zone field and a record-listing field agree on it.
+    #[test]
+    fn both_helpers_write_the_unresolvable_hour_the_same_way() {
+        assert_eq!(
+            in_toronto("2026-11-01 01:30:00"),
+            read_with("0", "2026-11-01 06:30:00")
+        );
+    }
+
+    #[test]
+    fn attach_zone_leaves_blank_qualified_and_unreadable_values_alone() {
+        assert_eq!(in_toronto(""), "");
+        assert_eq!(in_toronto("   "), "   ");
+        assert_eq!(
+            in_toronto("2026-09-22 18:47:40+02:00"),
+            "2026-09-22 18:47:40+02:00"
+        );
+        assert_eq!(in_toronto("0000-00-00 00:00:00"), "0000-00-00 00:00:00");
+        assert_eq!(in_toronto("2026-09-22"), "2026-09-22");
+    }
+
+    /// Both helpers rewrite a value they qualify in full, so padding goes, and
+    /// leave one that is not a wall clock exactly as it arrived.
+    #[test]
+    fn both_helpers_trim_what_they_qualify_and_nothing_else() {
+        assert_eq!(
+            in_toronto(" 2026-09-22 18:47:40 "),
+            "2026-09-22 18:47:40-04:00"
+        );
+        assert_eq!(
+            in_toronto(" 2026-11-01 01:30:00 "),
+            "2026-11-01 01:30:00 America/Toronto"
+        );
+        assert_eq!(in_toronto(" 2026-09-22 "), " 2026-09-22 ");
+        assert_eq!(
+            read_with("-5", " 2026-09-16 15:14:35 "),
+            "2026-09-16 15:14:35-04:00"
+        );
+    }
+
+    #[test]
+    fn attach_zone_reaches_a_bare_record() {
+        let mut body = serde_json::json!({ "messages": { "date": "2026-09-22 18:47:40" } });
+        attach_zone(&mut body, chrono_tz::Pacific::Honolulu, MESSAGE_DATES);
+        assert_eq!(body["messages"]["date"], "2026-09-22 18:47:40-10:00");
+    }
+
+    #[test]
+    fn attach_zone_writes_utc_as_a_zero_offset() {
+        let mut body = serde_json::json!({ "messages": [{ "date": "2026-09-22 22:47:40" }] });
+        attach_zone(&mut body, chrono_tz::UTC, MESSAGE_DATES);
+        assert_eq!(body["messages"][0]["date"], "2026-09-22 22:47:40+00:00");
+    }
+
+    #[test]
+    fn attach_zone_names_the_zone_for_a_local_mean_time_offset() {
+        // Toronto's local mean time before 1895 is -05:17:32, which the wire
+        // spelling cannot carry to the second.
+        assert_eq!(
+            in_toronto("1880-01-01 12:00:00"),
+            "1880-01-01 12:00:00 America/Toronto"
+        );
     }
 }
