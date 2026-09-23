@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.14.0] - YYYY-MM-DD
+## [0.14.0] - 2026-09-23
 
 ### Fixed
 
@@ -1216,7 +1216,7 @@ a real failed request and asserts nothing it exposes carries the password.
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[0.14.0]: https://github.com/ecliptical/voip-ms/compare/v0.13.0...HEAD
+[0.14.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.14.0
 [0.13.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.13.0
 [0.12.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.2
 [0.12.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.1
