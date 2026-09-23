@@ -2032,19 +2032,22 @@ async fn record_listing_unparseable_date_errors_without_a_zone_too() {
         );
     }
 
-    // With no `from`, a bad `to` is the one named.
-    let params = GetSMSParams {
-        to: Some("July".into()),
-        ..Default::default()
-    };
-    let err = client.get_sms_raw(&params).await.unwrap_err();
-    assert!(
-        matches!(
-            &err,
-            Error::InvalidParams(ParamsError::InvalidDate { param: "to", value }) if value == "July"
-        ),
-        "{err:?}"
-    );
+    // A bad `to` fails whether `from` is absent or a valid date.
+    for from in [None, Some("2026-07-15")] {
+        let params = GetSMSParams {
+            from: from.map(Into::into),
+            to: Some("July".into()),
+            ..Default::default()
+        };
+        let err = client.get_sms_raw(&params).await.unwrap_err();
+        assert!(
+            matches!(
+                &err,
+                Error::InvalidParams(ParamsError::InvalidDate { param: "to", value }) if value == "July"
+            ),
+            "{from:?}: {err:?}"
+        );
+    }
 }
 
 #[tokio::test]
