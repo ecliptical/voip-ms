@@ -7250,10 +7250,9 @@ impl TryFrom<&GetMMSParams> for GetMMSParamsWire {
                 })
                 .transpose()
         };
-        let day = match parse("from", p.from.as_deref())? {
-            Some(day) => Some(day),
-            None => parse("to", p.to.as_deref())?,
-        };
+        let from = parse("from", p.from.as_deref())?;
+        let to = parse("to", p.to.as_deref())?;
+        let day = from.or(to);
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {
                 crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
@@ -7845,10 +7844,9 @@ impl TryFrom<&GetResellerMMSParams> for GetResellerMMSParamsWire {
                 })
                 .transpose()
         };
-        let day = match parse("from", p.from.as_deref())? {
-            Some(day) => Some(day),
-            None => parse("to", p.to.as_deref())?,
-        };
+        let from = parse("from", p.from.as_deref())?;
+        let to = parse("to", p.to.as_deref())?;
+        let day = from.or(to);
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {
                 crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
@@ -7963,10 +7961,9 @@ impl TryFrom<&GetResellerSMSParams> for GetResellerSMSParamsWire {
                 })
                 .transpose()
         };
-        let day = match parse("from", p.from.as_deref())? {
-            Some(day) => Some(day),
-            None => parse("to", p.to.as_deref())?,
-        };
+        let from = parse("from", p.from.as_deref())?;
+        let to = parse("to", p.to.as_deref())?;
+        let day = from.or(to);
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {
                 crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?
@@ -8121,10 +8118,9 @@ impl TryFrom<&GetSMSParams> for GetSMSParamsWire {
                 })
                 .transpose()
         };
-        let day = match parse("from", p.from.as_deref())? {
-            Some(day) => Some(day),
-            None => parse("to", p.to.as_deref())?,
-        };
+        let from = parse("from", p.from.as_deref())?;
+        let to = parse("to", p.to.as_deref())?;
+        let day = from.or(to);
         let timezone = match (p.timezone, day) {
             (tz, Some(day)) => {
                 crate::TimezoneOffset::for_window(tz.unwrap_or(chrono_tz::UTC), day)?

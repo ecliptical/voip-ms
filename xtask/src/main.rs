@@ -1686,7 +1686,8 @@ fn emit_offset_wire(
     // named. A named zone needs one of the two to resolve at; with no zone and
     // neither date there is no window to match, and the reported timestamps
     // are qualified for whatever number is sent. A date string that does not
-    // parse is an error whether or not a zone is named.
+    // parse is an error whether or not a zone is named, and whether or not the
+    // other date is valid, so both are parsed before one is chosen.
     let end_ident = field_ident(struct_name, off.end_field, acronyms);
     if off.start_is_date {
         out.push_str(&format!(
@@ -1707,10 +1708,9 @@ fn emit_offset_wire(
                      }})\n                \
                      .transpose()\n        \
              }};\n        \
-             let day = match parse({start_wire:?}, p.{start_ident}.as_deref())? {{\n            \
-                 Some(day) => Some(day),\n            \
-                 None => parse({end_wire:?}, p.{end_ident}.as_deref())?,\n        \
-             }};\n"
+             let {start_ident} = parse({start_wire:?}, p.{start_ident}.as_deref())?;\n        \
+             let {end_ident} = parse({end_wire:?}, p.{end_ident}.as_deref())?;\n        \
+             let day = {start_ident}.or({end_ident});\n"
         ));
     }
 
