@@ -28,7 +28,7 @@ picks the transport per method, so nothing about the call site changes.
 
 ```toml
 [dependencies]
-voip-ms = "0.13"
+voip-ms = "0.14"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -36,7 +36,7 @@ By default the crate enables `rustls` verifying against the OS trust store. To
 use the platform's native TLS stack instead:
 
 ```toml
-voip-ms = { version = "0.13", default-features = false, features = ["native-tls"] }
+voip-ms = { version = "0.14", default-features = false, features = ["native-tls"] }
 ```
 
 `chrono`, `chrono_tz`, `reqwest`, `rust_decimal`, `serde`, and `serde_json`
@@ -228,7 +228,14 @@ explicit `timezone`, and complete the envelope with
 [`attach_offset`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_offset.html)
 over the paths
 [`offset_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.offset_timestamps.html)
-answers for the method.
+answers for the method. `getVoicemailMessages` reports its dates in the
+mailbox's own `timezone` setting, which the request cannot choose: read that
+zone from `getVoicemails` and qualify the envelope with
+[`attach_zone`](https://docs.rs/voip-ms/latest/voip_ms/fn.attach_zone.html)
+over the paths
+[`zone_timestamps`](https://docs.rs/voip-ms/latest/voip_ms/fn.zone_timestamps.html)
+answers, or call
+[`Client::get_voicemail_messages_in_zone`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.get_voicemail_messages_in_zone).
 
 ## Error model
 

@@ -1,7 +1,8 @@
 //! The `voicemail` area: voicemail boxes and their setups, messages, and
-//! transcriptions. The box and setup lists probe cleanly; the message,
-//! message-file, and transcription reads need a mailbox (and folder/message
-//! number, or a date window), so they are skipped at probe depth.
+//! transcriptions. The box and setup lists probe cleanly, and the message list
+//! probes against a mailbox `getVoicemails` reports. The message-file and
+//! transcription reads need a folder and message number, or an account, so
+//! they are skipped at probe depth.
 //!
 //! At `Lifecycle` depth the area runs a create -> read -> delete fixture over a
 //! voicemail box, marker in its `name`. The read-back is the point: a populated
@@ -15,8 +16,9 @@ use async_trait::async_trait;
 use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::harness::area::{Area, AreaCtx, CostClass, SweepResult};
 use crate::harness::fixtures::{Orphan, owned, read_back, sweep_orphans, tolerate_absent};
+use crate::harness::probe::probe_in_zone;
 use crate::harness::scope::Scope;
-use crate::harness::{Outcome, Report};
+use crate::harness::{Outcome, Report, probe};
 use voip_ms::*;
 
 pub struct Voicemail;
@@ -59,7 +61,7 @@ impl Area for Voicemail {
             "getVoicemailMessageFile",
             "requires a mailbox, folder, and message number"
         );
-        skip_needs_input!(report, AREA, "getVoicemailMessages", "requires a mailbox");
+        probe_voicemail_messages(ctx, report).await;
         probe_list!(
             ctx,
             report,
@@ -110,6 +112,63 @@ impl Area for Voicemail {
             );
         }
     }
+}
+
+/// Probe `getVoicemailMessages` against a mailbox already on the account,
+/// qualifying its dates in the mailbox's own zone.
+///
+/// The mailbox is the one reporting the most new messages, skipping boxes this
+/// harness created, since those hold no messages and an empty list leaves the
+/// key diff nothing to compare. VoIP.ms renders the dates in the mailbox's
+/// current `timezone`, so that zone is what qualifies them; a legacy name the
+/// IANA database lacks leaves them bare, which the typed shape still reads.
+async fn probe_voicemail_messages(ctx: &AreaCtx<'_>, report: &mut Report) {
+    const METHOD: &str = "getVoicemailMessages";
+
+    let listed = match ctx
+        .client
+        .get_voicemails(&GetVoicemailsParams::default())
+        .await
+    {
+        Ok(listed) => listed,
+        Err(error) => {
+            report.record(
+                AREA,
+                METHOD,
+                Outcome::Skip(format!(
+                    "getVoicemails failed, so no mailbox to read: {error}"
+                )),
+            );
+            return;
+        }
+    };
+
+    let Some((mailbox, zone)) = listed
+        .voicemails
+        .iter()
+        .filter(|v| !owned(&v.name))
+        .filter_map(|v| {
+            v.mailbox
+                .map(|m| (m, v.new.unwrap_or(0), v.timezone.clone()))
+        })
+        .max_by_key(|(_, new, _)| *new)
+        .map(|(mailbox, _, zone)| (mailbox, zone.and_then(|z| z.tz())))
+    else {
+        report.record(
+            AREA,
+            METHOD,
+            Outcome::Skip("the account has no mailbox to read".to_string()),
+        );
+        return;
+    };
+
+    let params = GetVoicemailMessagesParams::new(mailbox);
+    let count = |r: &GetVoicemailMessagesResponse| Some(r.messages.len());
+    let outcome = match zone {
+        Some(zone) => probe_in_zone(ctx.client, METHOD, &params, zone, count).await,
+        None => probe(ctx.client, METHOD, &params, count).await,
+    };
+    report.record_probe(AREA, METHOD, outcome);
 }
 
 /// Create -> read-back -> (deferred) delete a voicemail box. The mailbox number

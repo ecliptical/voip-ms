@@ -278,6 +278,17 @@ pub(crate) fn zoned_timestamp_override() -> FieldOverride {
     }
 }
 
+/// The [`FieldOverride`] for a response timestamp rendered in a named zone the
+/// caller supplies: a `voip_ms::WallClock`, zoned once `attach_zone` has
+/// qualified it and bare otherwise.
+pub(crate) fn wall_clock_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "crate::Reported<crate::WallClock>".into(),
+        response_deserializer: Some("crate::responses::deserialize_opt_reported_wall_clock".into()),
+        ..Default::default()
+    }
+}
+
 /// The [`FieldOverride`] typing a response field as `voip_ms::TimezoneName`,
 /// which preserves names the IANA database doesn't recognize.
 pub(crate) fn tz_response_override() -> FieldOverride {

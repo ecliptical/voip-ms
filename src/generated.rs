@@ -3970,6 +3970,10 @@ const GET_RESELLER_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
 /// [`attach_offset`](crate::attach_offset) takes.
 const GET_SMS_TIMESTAMPS: &[&str] = &["/sms/*/date"];
 
+/// Paths to the timestamps in a `getVoicemailMessages` response, in the form
+/// [`attach_zone`](crate::attach_zone) takes.
+const GET_VOICEMAIL_MESSAGES_TIMESTAMPS: &[&str] = &["/messages/*/date"];
+
 /// \- Adds a Charge to a specific Reseller Client
 ///
 /// Parameters for [`Client::add_charge`] (wire method `addCharge`).
@@ -8281,9 +8285,17 @@ pub struct GetVoicemailMessagesParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
     /// Start Date for Filtering Voicemail Messages (Example: '2016-01-30')
+    ///
+    /// Matched against each message's date in Eastern time (`America/Toronto`),
+    /// not in the mailbox's zone and not in UTC, so a message can match a day
+    /// other than the one its reported `date` shows.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_from: Option<chrono::NaiveDate>,
     /// End Date for Filtering Voicemail Messages (Example: '2016-01-30')
+    ///
+    /// Matched against each message's date in Eastern time (`America/Toronto`),
+    /// not in the mailbox's zone and not in UTC, so a message can match a day
+    /// other than the one its reported `date` shows.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<chrono::NaiveDate>,
 }
@@ -17899,9 +17911,9 @@ pub struct GetVoicemailMessagesResponseMessage {
     pub message_num: Option<u64>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_reported_datetime"
+        deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
     )]
-    pub date: Option<crate::Reported<chrono::NaiveDateTime>>,
+    pub date: Option<crate::Reported<crate::WallClock>>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -19168,6 +19180,24 @@ pub fn offset_timestamps(method: &str) -> Option<&'static [&'static str]> {
         "getResellerMMS" => Some(GET_RESELLER_MMS_TIMESTAMPS),
         "getResellerSMS" => Some(GET_RESELLER_SMS_TIMESTAMPS),
         "getSMS" => Some(GET_SMS_TIMESTAMPS),
+        _ => None,
+    }
+}
+
+/// The paths [`attach_zone`](crate::attach_zone) needs to qualify `method`'s
+/// response timestamps, or `None` for a method whose response reports none
+/// in a named zone the caller supplies.
+///
+/// `Some` for `getVoicemailMessages`, whose timestamps are rendered in the
+/// mailbox's current `timezone` setting. A raw envelope, such as
+/// [`Client::call_raw`] returns, reports them as bare wall clocks; pass the
+/// mailbox's zone and these paths to `attach_zone` before deserializing.
+///
+/// Like [`requires_multipart`], it answers only for the methods this crate
+/// was generated from: a method VoIP.ms has added since answers `None`.
+pub fn zone_timestamps(method: &str) -> Option<&'static [&'static str]> {
+    match method {
+        "getVoicemailMessages" => Some(GET_VOICEMAIL_MESSAGES_TIMESTAMPS),
         _ => None,
     }
 }
@@ -21719,6 +21749,10 @@ impl Client {
     /// to are provided.
     ///
     /// Call the `getVoicemailMessages` API method and deserialize into [`GetVoicemailMessagesResponse`].
+    ///
+    /// The reported timestamps name no offset, so each reads as
+    /// [`WallClock::Bare`](crate::WallClock::Bare).
+    /// [`Client::get_voicemail_messages_in_zone`] qualifies them.
     pub async fn get_voicemail_messages(
         &self,
         params: &GetVoicemailMessagesParams,
@@ -21726,7 +21760,36 @@ impl Client {
         self.call("getVoicemailMessages", params).await
     }
 
+    /// Call the `getVoicemailMessages` API method and deserialize into [`GetVoicemailMessagesResponse`],
+    /// qualifying each reported timestamp with its offset in `zone`.
+    ///
+    /// VoIP.ms renders the timestamps in the mailbox's current `timezone`
+    /// setting (`getVoicemails`' `timezone`), at the time they are read, and
+    /// names neither the zone nor an offset.
+    /// Pass that zone: each timestamp becomes
+    /// [`WallClock::Zoned`](crate::WallClock::Zoned) with the offset in force
+    /// at that instant, and one the zone repeats or skips at a DST change
+    /// stays [`WallClock::Bare`](crate::WallClock::Bare). This is still one
+    /// request; the zone is not looked up.
+    pub async fn get_voicemail_messages_in_zone(
+        &self,
+        params: &GetVoicemailMessagesParams,
+        zone: chrono_tz::Tz,
+    ) -> Result<GetVoicemailMessagesResponse> {
+        self.call_in_zone(
+            "getVoicemailMessages",
+            params,
+            zone,
+            GET_VOICEMAIL_MESSAGES_TIMESTAMPS,
+        )
+        .await
+    }
+
     /// Call the `getVoicemailMessages` API method and return the raw JSON envelope.
+    ///
+    /// The envelope reports its timestamps as bare wall clocks:
+    /// [`attach_zone`](crate::attach_zone) qualifies them, over the paths
+    /// [`zone_timestamps`](crate::zone_timestamps) answers for `getVoicemailMessages`.
     pub async fn get_voicemail_messages_raw(
         &self,
         params: &GetVoicemailMessagesParams,

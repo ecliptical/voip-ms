@@ -247,4 +247,22 @@ mod completeness {
              confirm the new method takes a timezone and update RECORD_LISTING"
         );
     }
+
+    /// `zone_timestamps` answers for `getVoicemailMessages` and no other method,
+    /// which is what lets the voicemail probe be the only zone probe.
+    #[test]
+    fn zone_timestamps_names_exactly_the_voicemail_message_list() {
+        let zoned: BTreeSet<&str> = WIRE_METHODS
+            .iter()
+            .copied()
+            .filter(|m| voip_ms::zone_timestamps(m).is_some())
+            .collect();
+
+        assert_eq!(
+            zoned,
+            BTreeSet::from(["getVoicemailMessages"]),
+            "the set of methods whose timestamps need a caller-supplied zone \
+             changed; give the new method a probe that supplies its zone"
+        );
+    }
 }

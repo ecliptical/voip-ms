@@ -983,13 +983,216 @@ fn voicemail_message_date_accepts_full_timestamp() {
     let messages = vm.messages;
     assert_eq!(
         messages[0].date.as_ref().and_then(voip_ms::Reported::get),
-        Some(
+        Some(voip_ms::WallClock::Bare(
             chrono::NaiveDate::from_ymd_opt(2023, 6, 26)
                 .unwrap()
                 .and_hms_opt(15, 37, 5)
                 .unwrap()
-        )
+        ))
     );
+}
+
+/// A `getVoicemailMessages` envelope as VoIP.ms sends it for a mailbox in
+/// `America/Toronto`: one row either side of the 2026-03-08 spring-forward, one
+/// in the hour the 2026-11-01 fall-back repeats, and one with no date.
+fn voicemail_messages_envelope() -> Value {
+    json!({
+        "status": "success",
+        "messages": [
+            { "mailbox": 101, "message_num": "1", "date": "2026-03-08 01:30:00" },
+            { "mailbox": 101, "message_num": "2", "date": "2026-03-08 03:30:00" },
+            { "mailbox": 101, "message_num": "3", "date": "2026-11-01 01:30:00" },
+            { "mailbox": 101, "message_num": "4", "date": "" },
+        ],
+    })
+}
+
+/// What [`voicemail_messages_envelope`]'s rows read as once qualified in
+/// `America/Toronto`.
+fn assert_voicemail_messages_in_toronto(messages: &[voip_ms::GetVoicemailMessagesResponseMessage]) {
+    use voip_ms::{Reported, WallClock};
+
+    let dates: Vec<_> = messages
+        .iter()
+        .map(|m| m.date.as_ref().and_then(Reported::get))
+        .collect();
+    let zoned = |at: &str| {
+        Some(WallClock::Zoned(
+            chrono::DateTime::parse_from_rfc3339(at).unwrap(),
+        ))
+    };
+    assert_eq!(dates[0], zoned("2026-03-08T01:30:00-05:00"));
+    assert_eq!(dates[1], zoned("2026-03-08T03:30:00-04:00"));
+    // 01:30 happens twice that night, so no offset is guessed at.
+    assert_eq!(
+        dates[2],
+        Some(WallClock::Bare(
+            chrono::NaiveDate::from_ymd_opt(2026, 11, 1)
+                .unwrap()
+                .and_hms_opt(1, 30, 0)
+                .unwrap()
+        ))
+    );
+    assert_eq!(dates[3], None);
+    // Either side of the change names the same kind of instant: 06:30 UTC and
+    // 07:30 UTC, an hour apart as the wall clocks are two.
+    let utc = |i: usize| {
+        dates[i]
+            .and_then(|d| d.zoned())
+            .map(|d| d.to_utc().to_rfc3339())
+    };
+    assert_eq!(utc(0).as_deref(), Some("2026-03-08T06:30:00+00:00"));
+    assert_eq!(utc(1).as_deref(), Some("2026-03-08T07:30:00+00:00"));
+}
+
+#[tokio::test]
+async fn typed_voicemail_messages_in_zone_qualifies_each_row() {
+    // One request, and no zone on it: the method takes none, so the zone comes
+    // from the caller and is applied to the response.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getVoicemailMessages"))
+        .and(query_param("mailbox", "101"))
+        .and(query_param_is_missing("timezone"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(voicemail_messages_envelope()))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let response = client
+        .get_voicemail_messages_in_zone(
+            &voip_ms::GetVoicemailMessagesParams::new(101),
+            chrono_tz::America::Toronto,
+        )
+        .await
+        .unwrap();
+    assert_voicemail_messages_in_toronto(&response.messages);
+}
+
+#[tokio::test]
+async fn typed_voicemail_messages_without_a_zone_stay_bare() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getVoicemailMessages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(voicemail_messages_envelope()))
+        .mount(&server)
+        .await;
+
+    let response = client
+        .get_voicemail_messages(&voip_ms::GetVoicemailMessagesParams::new(101))
+        .await
+        .unwrap();
+    let date = response.messages[0]
+        .date
+        .as_ref()
+        .and_then(voip_ms::Reported::get);
+    assert_eq!(
+        date,
+        Some(voip_ms::WallClock::Bare(
+            chrono::NaiveDate::from_ymd_opt(2026, 3, 8)
+                .unwrap()
+                .and_hms_opt(1, 30, 0)
+                .unwrap()
+        ))
+    );
+}
+
+#[tokio::test]
+async fn a_raw_voicemail_messages_call_is_qualified_by_attach_zone() {
+    // The raw envelope is what VoIP.ms sent; `attach_zone` over the paths
+    // `zone_timestamps` names is the step a raw caller takes before
+    // deserializing.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getVoicemailMessages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(voicemail_messages_envelope()))
+        .mount(&server)
+        .await;
+
+    let mut envelope = client
+        .call_raw("getVoicemailMessages", &json!({ "mailbox": 101 }))
+        .await
+        .unwrap();
+    assert_eq!(envelope["messages"][0]["date"], "2026-03-08 01:30:00");
+
+    let timestamps = voip_ms::zone_timestamps("getVoicemailMessages").unwrap();
+    voip_ms::attach_zone(&mut envelope, chrono_tz::America::Toronto, timestamps);
+    assert_eq!(envelope["messages"][0]["date"], "2026-03-08 01:30:00-05:00");
+    assert_eq!(envelope["messages"][1]["date"], "2026-03-08 03:30:00-04:00");
+    assert_eq!(envelope["messages"][2]["date"], "2026-11-01 01:30:00");
+    assert_eq!(envelope["messages"][3]["date"], "");
+
+    let typed: voip_ms::GetVoicemailMessagesResponse = serde_json::from_value(envelope).unwrap();
+    assert_voicemail_messages_in_toronto(&typed.messages);
+}
+
+#[tokio::test]
+async fn a_single_voicemail_message_is_qualified_on_both_routes() {
+    // A one-message mailbox comes back as the object itself, not a list of one.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getVoicemailMessages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "messages": { "mailbox": 101, "message_num": "17", "date": "2026-09-22 18:47:40" },
+        })))
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    let expected = Some(voip_ms::WallClock::Zoned(
+        chrono::DateTime::parse_from_rfc3339("2026-09-22T18:47:40-04:00").unwrap(),
+    ));
+    let params = voip_ms::GetVoicemailMessagesParams::new(101);
+
+    let typed = client
+        .get_voicemail_messages_in_zone(&params, chrono_tz::America::Toronto)
+        .await
+        .unwrap();
+    assert_eq!(typed.messages.len(), 1);
+    assert_eq!(
+        typed.messages[0]
+            .date
+            .as_ref()
+            .and_then(voip_ms::Reported::get),
+        expected
+    );
+
+    let mut envelope = client.get_voicemail_messages_raw(&params).await.unwrap();
+    voip_ms::attach_zone(
+        &mut envelope,
+        chrono_tz::America::Toronto,
+        voip_ms::zone_timestamps("getVoicemailMessages").unwrap(),
+    );
+    assert_eq!(envelope["messages"]["date"], "2026-09-22 18:47:40-04:00");
+    let raw: voip_ms::GetVoicemailMessagesResponse = serde_json::from_value(envelope).unwrap();
+    assert_eq!(
+        raw.messages[0]
+            .date
+            .as_ref()
+            .and_then(voip_ms::Reported::get),
+        expected
+    );
+}
+
+#[test]
+fn zone_timestamps_names_only_the_voicemail_message_dates() {
+    assert_eq!(
+        voip_ms::zone_timestamps("getVoicemailMessages"),
+        Some(&["/messages/*/date"][..])
+    );
+    // The two lookups do not overlap: a timestamp is qualified one way.
+    assert_eq!(voip_ms::zone_timestamps("getCDR"), None);
+    assert_eq!(voip_ms::offset_timestamps("getVoicemailMessages"), None);
+    assert_eq!(voip_ms::zone_timestamps("someBrandNewMethod"), None);
 }
 
 #[test]

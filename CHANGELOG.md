@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - YYYY-MM-DD
+
+### Added
+
+- `Client::get_voicemail_messages_in_zone(params, zone)` qualifies each
+  message's `date` with the UTC offset `zone` was at when the message arrived.
+  VoIP.ms renders `date` in the mailbox's current `timezone` setting and names
+  neither the zone nor an offset. Pass the mailbox's zone (`getVoicemails`'
+  `timezone`) and every row resolves, including rows that arrived under an
+  earlier setting, because VoIP.ms renders the stored instant afresh on each
+  read.
+  - Each row gets the offset in force at its own instant, so rows on either side
+    of a DST change get different offsets.
+  - A wall clock the zone repeats when clocks fall back, or skips when they
+    spring forward, stays bare rather than being guessed at.
+  - The call is still one request. The crate does not look the zone up.
+- `attach_zone` and `zone_timestamps`, the raw-envelope equivalent: after
+  `call_raw("getVoicemailMessages", ..)`, pass the envelope, the mailbox's zone
+  and `zone_timestamps("getVoicemailMessages")` to `attach_zone`, then
+  deserialize. `zone_timestamps` is emitted by the codegen, like
+  `offset_timestamps`.
+- `WallClock`, the type of a voicemail message's `date`:
+  `Zoned(DateTime<FixedOffset>)` or `Bare(NaiveDateTime)`, with `.local()` for
+  the wall clock either way and `.zoned()` for the instant. Its `Display`
+  writes the wire spelling, with the offset appended when it has one, and reads
+  back as the same value.
+- `GetVoicemailMessagesParams::date_from` / `date_to` document how VoIP.ms
+  matches the window. Measured against the live API: the window is Eastern time
+  (`America/Toronto`), not the mailbox's zone and not UTC, so with a mailbox set
+  to `Europe/Berlin` a message reported as `2026-08-25 03:25:11` matches
+  `2026-08-24`.
+
+### Changed
+
+- **Breaking**: `GetVoicemailMessagesResponseMessage::date` is
+  `Option<Reported<WallClock>>` instead of
+  `Option<Reported<NaiveDateTime>>`. It reads a bare wall clock as
+  `WallClock::Bare` and a qualified one as `WallClock::Zoned`, so the plain
+  `get_voicemail_messages` and an unqualified raw envelope still deserialize.
+  Text that parses as neither is still `Reported::Unreadable`.
+
+### Upgrading
+
+Code reading a voicemail message's `date` now gets a `WallClock` from
+`.get()`: call `.local()` on it for the `NaiveDateTime` it returned before.
+To get the instant, call `get_voicemail_messages_in_zone` with the mailbox's
+zone and read `.zoned()`.
+
 ## [0.13.0] - 2026-09-22
 
 ### Fixed
@@ -1085,7 +1133,8 @@ a real failed request and asserts nothing it exposes carries the password.
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
-[0.13.0]: https://github.com/ecliptical/voip-ms/compare/v0.12.2...HEAD
+[0.14.0]: https://github.com/ecliptical/voip-ms/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.13.0
 [0.12.2]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.2
 [0.12.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.1
 [0.12.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.12.0

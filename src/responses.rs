@@ -28,7 +28,7 @@ use serde_json::Value;
 use std::convert::Infallible;
 use std::str::FromStr;
 
-use crate::types::{Reported, Routing, TransactionDate};
+use crate::types::{Reported, Routing, TransactionDate, WallClock};
 
 /// Deserialize a wire value (string, number, or bool) into its string form.
 ///
@@ -207,6 +207,10 @@ where
 /// The wire spelling of a VoIP.ms timestamp.
 pub(crate) const DATETIME_WIRE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
+/// A VoIP.ms timestamp with the offset [`crate::attach_offset`] and
+/// [`crate::attach_zone`] append (`2026-09-16 15:14:35-04:00`).
+pub(crate) const OFFSET_DATETIME_WIRE_FORMAT: &str = "%Y-%m-%d %H:%M:%S%:z";
+
 /// The wire spelling of a VoIP.ms calendar date.
 const DATE_WIRE_FORMAT: &str = "%Y-%m-%d";
 
@@ -299,14 +303,42 @@ where
         )));
     }
 
-    Ok(Some(
-        match DateTime::parse_from_str(&text, "%Y-%m-%d %H:%M:%S%:z")
-            .or_else(|_| DateTime::parse_from_rfc3339(&text))
-        {
-            Ok(at) => Reported::Parsed(at),
-            Err(_) => Reported::Unreadable(text),
-        },
-    ))
+    Ok(Some(match parse_offset_datetime(&text) {
+        Some(at) => Reported::Parsed(at),
+        None => Reported::Unreadable(text),
+    }))
+}
+
+/// A timestamp that names its offset, in the wire spelling with the offset
+/// appended or as RFC 3339.
+fn parse_offset_datetime(s: &str) -> Option<DateTime<FixedOffset>> {
+    DateTime::parse_from_str(s, OFFSET_DATETIME_WIRE_FORMAT)
+        .or_else(|_| DateTime::parse_from_rfc3339(s))
+        .ok()
+}
+
+/// Deserialize a timestamp that may or may not name its UTC offset into a
+/// [`WallClock`], keeping the wire text when it does not parse.
+///
+/// Unlike [`deserialize_opt_datetime_offset`], a bare wall clock is accepted:
+/// [`crate::attach_zone`] leaves one bare when no zone was supplied or when the
+/// wall clock is ambiguous or nonexistent in the zone, so a bare value is part
+/// of this field's contract rather than a break in it.
+pub(crate) fn deserialize_opt_reported_wall_clock<'de, D>(
+    deserializer: D,
+) -> Result<Option<Reported<WallClock>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserialize_opt_reported(deserializer, |s| {
+        if names_offset(s) {
+            parse_offset_datetime(s).map(WallClock::Zoned)
+        } else {
+            NaiveDateTime::parse_from_str(s, DATETIME_WIRE_FORMAT)
+                .ok()
+                .map(WallClock::Bare)
+        }
+    })
 }
 
 pub(crate) fn deserialize_opt_routing<'de, D>(deserializer: D) -> Result<Option<Routing>, D::Error>
@@ -811,6 +843,48 @@ mod tests {
                 "2026-02-30 00:00:00-04:00".to_string()
             ))
         );
+    }
+
+    #[test]
+    fn opt_reported_wall_clock_reads_a_bare_and_a_qualified_value() {
+        let call = deserialize_opt_reported_wall_clock::<serde_json::Value>;
+        let wall = NaiveDate::from_ymd_opt(2026, 9, 22)
+            .unwrap()
+            .and_hms_opt(18, 47, 40)
+            .unwrap();
+        assert_eq!(call(json!(null)).unwrap(), None);
+        assert_eq!(call(json!("")).unwrap(), None);
+        assert_eq!(call(json!("0000-00-00 00:00:00")).unwrap(), None);
+        // A bare wall clock is part of this field's contract, unlike the
+        // record-listing timestamps, so it reads rather than failing.
+        assert_eq!(
+            call(json!("2026-09-22 18:47:40")).unwrap(),
+            Some(Reported::Parsed(WallClock::Bare(wall)))
+        );
+        assert_eq!(
+            call(json!("2026-09-22 18:47:40-04:00")).unwrap(),
+            Some(Reported::Parsed(WallClock::Zoned(
+                DateTime::parse_from_rfc3339("2026-09-22T18:47:40-04:00").unwrap()
+            )))
+        );
+        assert_eq!(
+            call(json!("2026-09-22T22:47:40Z")).unwrap(),
+            Some(Reported::Parsed(WallClock::Zoned(
+                DateTime::parse_from_rfc3339("2026-09-22T22:47:40+00:00").unwrap()
+            )))
+        );
+        // Neither form parses: the text is kept, as for every response date.
+        assert_eq!(
+            call(json!("2026-09-22")).unwrap(),
+            Some(Reported::Unreadable("2026-09-22".to_string()))
+        );
+        assert_eq!(
+            call(json!("2026-02-30 00:00:00-04:00")).unwrap(),
+            Some(Reported::Unreadable(
+                "2026-02-30 00:00:00-04:00".to_string()
+            ))
+        );
+        assert!(call(json!(["2026-09-22 18:47:40"])).is_err());
     }
 
     /// The offset check reads the time portion, so the date's own hyphens

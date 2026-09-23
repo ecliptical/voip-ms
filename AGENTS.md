@@ -435,7 +435,8 @@ in `xtask/src/field_overrides.rs`:
   `getCallTranscriptions` and `getVoicemailTranscriptions` report `date` as
   `String` and cannot fail on any value; `getCallRecordings` has no `date`.
   `getConferenceRecordings` and `getVoicemailMessages` are the two that share
-  the shape and keep `NaiveDateTime`: each lists individual records and totals
+  the shape and type `date` as a point in time (`NaiveDateTime` and
+  [`crate::WallClock`], decision #8): each lists individual records and totals
   nothing, so there is no per-charge sum for a window row to carry -- a
   recording and a voicemail each happened at an instant. Revisit that only if
   one of them grows a summary row.
@@ -713,12 +714,13 @@ named zone through `Client::get_cdr` and fails if a record's instant moves,
 which is the check that settles it on a live run; it covers a whole-hour and a
 half-hour zone for that reason.
 
-The other 11 `NaiveDateTime` response fields cannot be typed this way. They
+The other nine `NaiveDateTime` response fields cannot be typed this way. They
 belong to methods with no `timezone` parameter (`getRegistrationStatus`,
 `getDIDsInfo`, `getFAXMessages`, …); their zone is the account's configured one,
-which nothing in the API reports -- the only zone on any response is
-`GetVoicemailsResponseVoicemail::timezone`, a voicemail box's own setting. Typing
-those would mean the crate inventing a zone.
+which nothing in the API reports. Typing those would mean the crate inventing a
+zone. The only zone any response reports is
+`GetVoicemailsResponseVoicemail::timezone`, a voicemail box's own setting, and
+the one field rendered in it is typed separately (decision #8a).
 
 **How to apply**: `cargo xtask gen` derives the fields from the response shapes:
 every `datetime` scalar under an `OFFSET_OPS` method is retyped and its path
@@ -769,6 +771,72 @@ case agree with the field case. Nothing returns one -- `src/generated.rs` has no
 refresh that produced one would need both the emitter and the walk taught about
 it together.
 
+### 8a. Voicemail message dates are qualified in the mailbox's zone
+
+**Decision**: `GetVoicemailMessagesResponseMessage::date` is
+`Option<Reported<WallClock>>`, where [`crate::WallClock`] is
+`Zoned(DateTime<FixedOffset>)` or `Bare(NaiveDateTime)`. The plain
+`get_voicemail_messages` leaves every value bare.
+`get_voicemail_messages_in_zone(params, tz)` takes the mailbox's zone,
+qualifies each value in it through `Client::call_in_zone`, and then
+deserializes. A raw caller does the same with the public `attach_zone` over the
+paths `zone_timestamps(method)` answers. Both are emitted from the `ZONE_OPS`
+table in `xtask/src/main.rs`, the same way `offset_timestamps` is emitted from
+`OFFSET_OPS`.
+
+**Rationale**: Measured against the live API on 2026-09-22 and 2026-09-23 with
+the test account and `examples/call_raw.rs`:
+
+* The response names no zone. Every message carries exactly `callerid`, `date`,
+  `duration`, `folder`, `listened`, `mailbox`, `message_num` and `urgent`, and
+  the request takes only `mailbox`, `folder`, `date_from` and `date_to`, so it
+  cannot choose one either.
+* `date` is the stored instant, rendered in the mailbox's *current* `timezone`
+  setting at the time it is read. Mailbox 101's message 17 read `12:47:40`
+  while the mailbox was set to `Pacific/Honolulu` and `18:47:40` after it went
+  back to `America/Toronto`. Message 14 read `2026-08-24 21:25:11` under
+  Toronto and `2026-08-25 03:25:11` under `Europe/Berlin`. So a caller holding
+  the mailbox's current zone resolves every row correctly, including rows
+  recorded under an earlier setting.
+* `date_from` / `date_to` are **not** matched in the mailbox's zone. Under
+  Toronto, message 14 (01:25 UTC on 2026-08-25) matched `2026-08-24` and not
+  `2026-08-25`, so the window is not UTC. Under Berlin the same message read
+  `2026-08-25 03:25:11` and still matched `2026-08-24` only. The window is
+  Eastern time. Whether that is the account's configured zone or a fixed server
+  zone was not measured. The finding is written on both params through
+  `ZoneOp::param_notes`, and the run fails if an entry names a param the WSDL
+  does not declare.
+
+Each row is resolved at its own instant, so rows on either side of a DST change
+get different offsets. Decision #8 is the opposite case: there the server
+applies one offset across the whole range. A wall clock the zone repeats when
+clocks fall back is ambiguous, and one it skips when they spring forward should
+not occur. Both stay `Bare`, because choosing a side would be a guess. So do a
+value that already names an offset (`names_offset`, as in `attach_offset`), a
+blank, and text that is not a `YYYY-MM-DD HH:MM:SS` wall clock. An offset with a
+seconds part (a zone's pre-standard local mean time) also stays `Bare`, because
+the wire spelling stops at minutes and `WallClock`'s `Display` would not
+round-trip it.
+
+The deserializer accepts a bare value, which is why this is a separate type and
+not decision #8's `DateTime<FixedOffset>`. A bare value here comes from a call
+that supplied no zone or from a row left unresolved, so it is part of the
+field's contract rather than a break in it. Unreadable text still degrades to
+`Reported::Unreadable`.
+
+The crate still makes one request per method call. Looking the zone up with
+`getVoicemails` inside `get_voicemail_messages_in_zone` would double the
+requests, and a failed `getVoicemails` would then fail a message read. The
+caller can fetch the mailbox once for many reads.
+
+**How to apply**: A new method whose timestamps are rendered in a named zone the
+caller can learn goes in `ZONE_OPS`, with the zone's source as its `zone` doc
+fragment. `cargo xtask gen` fails when a zone op is also an offset op, when its
+response has no timestamp, or when a `param_notes` entry names an undeclared
+param. The livetest `voicemail` area probes `getVoicemailMessages` against the
+mailbox `getVoicemails` reports with the most new messages, qualified in that
+mailbox's zone, so the key diff covers the method.
+
 ## Code Patterns
 
 ### Calling the wire API
@@ -784,8 +852,9 @@ are the single explicit escape hatch, for an upload method this crate has not
 been regenerated for, which `requires_multipart` answers `false` for. A caller
 dispatching by wire name calls `call_raw` like a generated method does;
 `requires_multipart(method)` answers the transport question without making the
-call, and `offset_timestamps(method)` names the timestamps the caller then
-completes with `attach_offset` (decision #8). Every generated method is a thin
+call, `offset_timestamps(method)` names the timestamps the caller then
+completes with `attach_offset` (decision #8), and `zone_timestamps(method)` the
+ones it qualifies with `attach_zone` (decision #8a). Every generated method is a thin
 wrapper over `call` or `call_raw`, whatever its transport:
 
 ```rust
@@ -1008,7 +1077,8 @@ so callers name the exact compatible version without a separate dependency.
 
 * **chrono 0.4** (`serde`): `NaiveDate`/`NaiveDateTime` in typed response
   fields and date-range params, and `DateTime<FixedOffset>` for the
-  record-listing timestamps (decision #8); the `serde` feature supplies the
+  record-listing timestamps (decision #8) and a zoned `WallClock` (decision
+  #8a); the `serde` feature supplies the
   params' `YYYY-MM-DD` `Serialize`.
 * **reqwest 0.13.5** (`json`, `multipart`, `query`, no default features): HTTP
   client + JSON deserialization. `multipart` carries the file-parameter methods

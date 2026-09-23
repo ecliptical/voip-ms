@@ -326,9 +326,25 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (body, _empty) = self
+        self.call_qualified(method, params, |_| {}).await
+    }
+
+    /// [`Client::call`], letting `qualify` complete the envelope before it is
+    /// deserialized.
+    async fn call_qualified<P, T>(
+        &self,
+        method: &str,
+        params: &P,
+        qualify: impl FnOnce(&mut Value),
+    ) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let (mut body, _empty) = self
             .fetch(method, params, Transport::for_method(method))
             .await?;
+        qualify(&mut body);
         serde_json::from_value(body)
             .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
     }
@@ -354,12 +370,37 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (mut body, _empty) = self
-            .fetch(method, params, Transport::for_method(method))
-            .await?;
-        attach_offset(&mut body, offset, timestamps);
-        serde_json::from_value(body)
-            .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
+        self.call_qualified(method, params, |body| {
+            attach_offset(body, offset, timestamps);
+        })
+        .await
+    }
+
+    /// Issue a request and deserialize the response, first qualifying the wall
+    /// clocks `timestamps` reaches in `zone`.
+    ///
+    /// For a method whose timestamps are rendered in a named zone the request
+    /// cannot choose and the response does not report, such as a mailbox's own
+    /// `timezone`. Each entry is a path in the form [`attach_zone`] takes, and
+    /// the call is still one request: the zone comes from the caller.
+    ///
+    /// Empty-collection statuses fold into an empty response, as in
+    /// [`Client::call`].
+    pub(crate) async fn call_in_zone<P, T>(
+        &self,
+        method: &str,
+        params: &P,
+        zone: chrono_tz::Tz,
+        timestamps: &[&str],
+    ) -> Result<T>
+    where
+        P: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        self.call_qualified(method, params, |body| {
+            attach_zone(body, zone, timestamps);
+        })
+        .await
     }
 
     /// The base URL this client posts to.
@@ -404,19 +445,89 @@ impl Client {
 /// ```
 pub fn attach_offset(body: &mut Value, offset: chrono::FixedOffset, timestamps: &[&str]) {
     let suffix = offset.to_string();
+    qualify_timestamps(body, timestamps, |s| s.push_str(&suffix));
+}
+
+/// Qualify the bare wall clocks `timestamps` reaches in `body` with the UTC
+/// offset `zone` was at when each one happened, so each parses as the instant
+/// it names.
+///
+/// `getVoicemailMessages` renders a message's `date` in the mailbox's current
+/// `timezone` setting (`getVoicemails`' `timezone`) at the time it is read, and
+/// names neither the zone nor an offset. Given that zone, every value resolves,
+/// including one recorded while the mailbox had a different setting, since
+/// VoIP.ms renders the stored instant afresh on each read.
+///
+/// Paths take the form [`attach_offset`] documents, and
+/// [`zone_timestamps`](crate::zone_timestamps) answers each such method's
+/// paths from its wire name.
+///
+/// Each value is resolved on its own, so rows on either side of a DST change
+/// get different offsets. A value is left alone when it is blank, when it
+/// already names an offset, when it is not a `YYYY-MM-DD HH:MM:SS` wall clock,
+/// and when the wall clock is ambiguous in `zone` (the repeated hour when
+/// clocks fall back) or does not exist in it (the hour skipped when they spring
+/// forward). Choosing either side of an ambiguous hour would be a guess, and a
+/// value left bare still deserializes, as [`WallClock::Bare`](crate::WallClock::Bare).
+///
+/// ```
+/// use voip_ms::{attach_zone, chrono_tz::America::Toronto, serde_json::json};
+///
+/// let mut body = json!({ "messages": [
+///     { "date": "2026-09-22 18:47:40" },
+///     { "date": "2026-11-01 01:30:00" },
+/// ] });
+/// attach_zone(&mut body, Toronto, &["/messages/*/date"]);
+/// assert_eq!(body["messages"][0]["date"], "2026-09-22 18:47:40-04:00");
+/// // 01:30 happens twice in Toronto that night, so it stays bare.
+/// assert_eq!(body["messages"][1]["date"], "2026-11-01 01:30:00");
+/// ```
+pub fn attach_zone(body: &mut Value, zone: chrono_tz::Tz, timestamps: &[&str]) {
+    use chrono::{Offset, TimeZone};
+
+    qualify_timestamps(body, timestamps, |s| {
+        let wall = s.trim();
+        let Ok(local) =
+            chrono::NaiveDateTime::parse_from_str(wall, crate::responses::DATETIME_WIRE_FORMAT)
+        else {
+            return;
+        };
+
+        // `single` is `None` for a wall clock the zone repeats or skips.
+        let Some(at) = zone.from_local_datetime(&local).single() else {
+            return;
+        };
+
+        // An offset with a seconds part only occurs in a zone's pre-standard
+        // local mean time, and the wire spelling stops at minutes.
+        let offset = at.offset().fix();
+        if offset.local_minus_utc() % 60 != 0 {
+            return;
+        }
+
+        *s = format!("{wall}{offset}");
+    });
+}
+
+/// Apply `qualify` to every string `timestamps` reaches in `body` that holds a
+/// wall clock with no offset, skipping blanks and values that already name one.
+fn qualify_timestamps(body: &mut Value, timestamps: &[&str], mut qualify: impl FnMut(&mut String)) {
     for path in timestamps {
-        attach_at(body, path.trim_start_matches('/'), &suffix);
+        qualify_at(body, path.trim_start_matches('/'), &mut qualify);
     }
 }
 
-/// Walk one [`attach_offset`] path, appending `suffix` to the string it lands on.
-fn attach_at(value: &mut Value, path: &str, suffix: &str) {
+/// Walk one [`attach_offset`] path, applying `qualify` to the string it lands on.
+fn qualify_at<F>(value: &mut Value, path: &str, qualify: &mut F)
+where
+    F: FnMut(&mut String),
+{
     let Some((segment, rest)) = path.split_once('/') else {
         if let Some(Value::String(s)) = value.get_mut(path)
             && !s.trim().is_empty()
             && !crate::responses::names_offset(s)
         {
-            s.push_str(suffix);
+            qualify(s);
         }
 
         return;
@@ -424,7 +535,7 @@ fn attach_at(value: &mut Value, path: &str, suffix: &str) {
 
     if segment != "*" {
         if let Some(child) = value.get_mut(segment) {
-            attach_at(child, rest, suffix);
+            qualify_at(child, rest, qualify);
         }
 
         return;
@@ -433,13 +544,13 @@ fn attach_at(value: &mut Value, path: &str, suffix: &str) {
     match value {
         Value::Array(items) => {
             for item in items {
-                attach_at(item, rest, suffix);
+                qualify_at(item, rest, qualify);
             }
         }
 
         // VoIP.ms returns a one-element list as a bare object, which
         // `deserialize_vec_from_single_or_seq` accepts on the way in.
-        other => attach_at(other, rest, suffix),
+        other => qualify_at(other, rest, qualify),
     }
 }
 
@@ -708,5 +819,87 @@ mod tests {
         assert_eq!(body["cdr"][0]["date"], "2026-09-16 15:14:35-05:00");
         assert_eq!(body["cdr"][1]["date"], "2026-09-16T15:14:35Z");
         assert_eq!(body["cdr"][2]["date"], "2026-09-16 15:14:35+0530");
+    }
+
+    const MESSAGE_DATES: &[&str] = &["/messages/*/date"];
+
+    /// Qualify one wall clock in `America/Toronto` and return what it became.
+    fn in_toronto(wall: &str) -> Value {
+        let mut body = serde_json::json!({ "messages": [{ "date": wall }] });
+        attach_zone(&mut body, chrono_tz::America::Toronto, MESSAGE_DATES);
+        body["messages"][0]["date"].clone()
+    }
+
+    #[test]
+    fn attach_zone_resolves_each_row_at_its_own_instant() {
+        // Toronto springs forward at 02:00 on 2026-03-08 and falls back at 02:00
+        // on 2026-11-01, so rows either side of each change get different
+        // offsets from the same zone.
+        assert_eq!(
+            in_toronto("2026-03-08 01:59:59"),
+            "2026-03-08 01:59:59-05:00"
+        );
+        assert_eq!(
+            in_toronto("2026-03-08 03:00:00"),
+            "2026-03-08 03:00:00-04:00"
+        );
+        assert_eq!(
+            in_toronto("2026-11-01 00:59:59"),
+            "2026-11-01 00:59:59-04:00"
+        );
+        assert_eq!(
+            in_toronto("2026-11-01 02:00:00"),
+            "2026-11-01 02:00:00-05:00"
+        );
+    }
+
+    #[test]
+    fn attach_zone_leaves_a_repeated_or_skipped_wall_clock_bare() {
+        // 01:30 happens twice when clocks fall back; either offset is a guess.
+        assert_eq!(in_toronto("2026-11-01 01:30:00"), "2026-11-01 01:30:00");
+        // 02:30 never happens when they spring forward.
+        assert_eq!(in_toronto("2026-03-08 02:30:00"), "2026-03-08 02:30:00");
+    }
+
+    #[test]
+    fn attach_zone_leaves_blank_qualified_and_unreadable_values_alone() {
+        assert_eq!(in_toronto(""), "");
+        assert_eq!(in_toronto("   "), "   ");
+        assert_eq!(
+            in_toronto("2026-09-22 18:47:40+02:00"),
+            "2026-09-22 18:47:40+02:00"
+        );
+        assert_eq!(in_toronto("0000-00-00 00:00:00"), "0000-00-00 00:00:00");
+        assert_eq!(in_toronto("2026-09-22"), "2026-09-22");
+    }
+
+    #[test]
+    fn attach_zone_trims_what_it_qualifies() {
+        // A suffix after trailing blanks would not parse, so the padding goes.
+        assert_eq!(
+            in_toronto(" 2026-09-22 18:47:40 "),
+            "2026-09-22 18:47:40-04:00"
+        );
+    }
+
+    #[test]
+    fn attach_zone_reaches_a_bare_record() {
+        let mut body = serde_json::json!({ "messages": { "date": "2026-09-22 18:47:40" } });
+        attach_zone(&mut body, chrono_tz::Pacific::Honolulu, MESSAGE_DATES);
+        assert_eq!(body["messages"]["date"], "2026-09-22 18:47:40-10:00");
+    }
+
+    #[test]
+    fn attach_zone_writes_utc_as_a_zero_offset() {
+        let mut body = serde_json::json!({ "messages": [{ "date": "2026-09-22 22:47:40" }] });
+        attach_zone(&mut body, chrono_tz::UTC, MESSAGE_DATES);
+        assert_eq!(body["messages"][0]["date"], "2026-09-22 22:47:40+00:00");
+    }
+
+    #[test]
+    fn attach_zone_leaves_a_local_mean_time_offset_bare() {
+        // Toronto's local mean time before 1895 is -05:17:32, which the wire
+        // spelling cannot carry to the second.
+        assert_eq!(in_toronto("1880-01-01 12:00:00"), "1880-01-01 12:00:00");
     }
 }

@@ -22,7 +22,10 @@ use std::fmt::Debug;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
-use voip_ms::{Client, Error, TimezoneOffset, attach_offset, offset_timestamps};
+use voip_ms::chrono_tz::Tz;
+use voip_ms::{
+    Client, Error, TimezoneOffset, attach_offset, attach_zone, offset_timestamps, zone_timestamps,
+};
 
 use crate::harness::keydiff;
 use crate::response_fields;
@@ -172,6 +175,39 @@ where
         Ok(request) => probe_zoned(client, method, &request, count).await,
         Err(error) => ProbeOutcome::Transport(error),
     }
+}
+
+/// Probe a method whose timestamps are rendered in a named zone the caller
+/// supplies, qualifying them in `zone` before the typed step.
+///
+/// The paths are [`voip_ms::zone_timestamps`]'s answer for `method`. A method it
+/// answers `None` for classifies as `Transport`, as in [`probe_zoned`]: reaching
+/// it here is a bug in this harness rather than drift in the API.
+pub async fn probe_in_zone<P, T>(
+    client: &Client,
+    method: &str,
+    params: &P,
+    zone: Tz,
+    count: impl Fn(&T) -> Option<usize>,
+) -> ProbeOutcome
+where
+    P: Serialize + Sync,
+    T: DeserializeOwned + Debug,
+{
+    let Some(timestamps) = zone_timestamps(method) else {
+        return ProbeOutcome::Transport(format!(
+            "{method} reports no timestamps in a caller-supplied zone, so it is not a zone probe"
+        ));
+    };
+
+    probe_qualified(
+        client,
+        method,
+        params,
+        |body| attach_zone(body, zone, timestamps),
+        count,
+    )
+    .await
 }
 
 /// The shared probe body, reached by every probe here: fetch the raw envelope,

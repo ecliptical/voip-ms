@@ -4,7 +4,7 @@
 //! Types here are wired into `src/generated.rs` by `xtask` through the
 //! field-name override table in `xtask/src/field_overrides.rs`.
 
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::de::{Deserializer, Error as DeError, Visitor};
 use serde::ser::Serializer;
@@ -676,6 +676,64 @@ impl<T: fmt::Display> fmt::Display for Reported<T> {
     }
 }
 
+/// A wall clock VoIP.ms reported without an offset, qualified with one when the
+/// zone it was rendered in is known.
+///
+/// `getVoicemailMessages` renders each message's `date` in the mailbox's
+/// current `timezone` setting and does not say which zone that is. A caller
+/// holding the zone passes it to
+/// [`Client::get_voicemail_messages_in_zone`](crate::Client::get_voicemail_messages_in_zone)
+/// or [`attach_zone`](crate::attach_zone), and each value becomes
+/// [`WallClock::Zoned`]. A value stays [`WallClock::Bare`] when no zone was
+/// supplied, and also when the wall clock is ambiguous in the zone (the
+/// repeated hour when clocks fall back) or does not exist in it (the hour
+/// skipped when they spring forward).
+///
+/// [`Display`](std::fmt::Display) renders the wire spelling, with the offset
+/// appended for a zoned value (`2026-09-22 18:47:40-04:00`), which the response
+/// field reads back as the same value. The offset is written to the minute,
+/// which is all the wire carries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WallClock {
+    /// The instant, with the UTC offset in force in the zone at that moment.
+    Zoned(DateTime<FixedOffset>),
+    /// The wall clock as reported, with no offset.
+    Bare(NaiveDateTime),
+}
+
+impl WallClock {
+    /// The wall clock as VoIP.ms reported it, whether or not it was qualified.
+    pub fn local(&self) -> NaiveDateTime {
+        match self {
+            WallClock::Zoned(at) => at.naive_local(),
+            WallClock::Bare(at) => *at,
+        }
+    }
+
+    /// The instant, or `None` for a wall clock no offset was attached to.
+    pub fn zoned(&self) -> Option<DateTime<FixedOffset>> {
+        match self {
+            WallClock::Zoned(at) => Some(*at),
+            WallClock::Bare(_) => None,
+        }
+    }
+}
+
+impl fmt::Display for WallClock {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WallClock::Zoned(at) => write!(
+                f,
+                "{}",
+                at.format(crate::responses::OFFSET_DATETIME_WIRE_FORMAT)
+            ),
+            WallClock::Bare(at) => {
+                write!(f, "{}", at.format(crate::responses::DATETIME_WIRE_FORMAT))
+            }
+        }
+    }
+}
+
 /// The `date` a `getTransactionHistory` row carries: when it posted, or the
 /// window it summarizes.
 ///
@@ -1256,6 +1314,58 @@ mod tests {
         // The arm the examples print through: a degraded date still renders as
         // what VoIP.ms sent rather than as nothing.
         assert_eq!(unreadable.to_string(), "08/10/2026");
+    }
+
+    /// `Display` has to write what the response field reads back as the same
+    /// value, in both forms.
+    #[test]
+    fn wall_clock_display_round_trips_through_the_field() {
+        #[derive(Deserialize)]
+        struct Row {
+            #[serde(
+                default,
+                deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
+            )]
+            date: Option<Reported<WallClock>>,
+        }
+
+        let wall = NaiveDate::from_ymd_opt(2026, 9, 22)
+            .unwrap()
+            .and_hms_opt(18, 47, 40)
+            .unwrap();
+        for (value, rendered) in [
+            (WallClock::Bare(wall), "2026-09-22 18:47:40"),
+            (
+                WallClock::Zoned(
+                    DateTime::parse_from_rfc3339("2026-09-22T18:47:40-04:00").unwrap(),
+                ),
+                "2026-09-22 18:47:40-04:00",
+            ),
+            (
+                WallClock::Zoned(
+                    DateTime::parse_from_rfc3339("2026-09-22T18:47:40+05:30").unwrap(),
+                ),
+                "2026-09-22 18:47:40+05:30",
+            ),
+        ] {
+            assert_eq!(value.to_string(), rendered);
+            let row: Row = serde_json::from_value(serde_json::json!({ "date": rendered })).unwrap();
+            assert_eq!(row.date, Some(Reported::Parsed(value)));
+        }
+    }
+
+    #[test]
+    fn wall_clock_reports_its_local_time_either_way() {
+        let wall = NaiveDate::from_ymd_opt(2026, 9, 22)
+            .unwrap()
+            .and_hms_opt(18, 47, 40)
+            .unwrap();
+        let at = DateTime::parse_from_rfc3339("2026-09-22T18:47:40-04:00").unwrap();
+
+        assert_eq!(WallClock::Zoned(at).local(), wall);
+        assert_eq!(WallClock::Zoned(at).zoned(), Some(at));
+        assert_eq!(WallClock::Bare(wall).local(), wall);
+        assert_eq!(WallClock::Bare(wall).zoned(), None);
     }
 
     #[test]
