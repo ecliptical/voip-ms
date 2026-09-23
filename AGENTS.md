@@ -898,9 +898,12 @@ an offset (`names_offset`), a blank, and text that is not a
 place, trimmed: as the instant with its offset, or, for a wall clock with no
 single offset, as that wall clock followed by the zone's name
 (`2026-11-01 01:30:00 America/Toronto`). Both helpers write that one form, so a
-server-zone field and a record-listing field agree on the unresolvable hour, and
-both kinds of field read it as `Bare`. A named-zone field also reads the plain
-spelling, which is what an unqualified call leaves.
+server-zone field and a record-listing field agree on the unresolvable hour.
+Both kinds of field resolve the value in the named zone again, so it reads as
+`Bare` -- and a zone name that does fix the instant (`... 01:30:00 UTC`) reads
+as `Zoned` rather than being dropped. A record-listing field accepts only the
+server zone's name. A named-zone field also reads the plain spelling, which is
+what an unqualified call leaves.
 
 `WallClock`'s equality is hand-written. `DateTime<FixedOffset>`'s own `==`
 compares instants and ignores the offset, so a derived one would call

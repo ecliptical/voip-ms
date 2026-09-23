@@ -468,10 +468,12 @@ pub fn attach_offset(body: &mut Value, timezone: crate::TimezoneOffset, timestam
     let shift = chrono::TimeDelta::seconds(timezone.shift_seconds());
     qualify_timestamps(body, timestamps, |wall| {
         let local = parse_wall(wall)?.checked_sub_signed(shift)?;
-        Some(match resolve_in(crate::SERVER_ZONE, local) {
-            Some(at) => Qualified::At(at),
-            None => Qualified::InZone(local, crate::SERVER_ZONE),
-        })
+        Some(
+            match crate::responses::resolve_in(crate::SERVER_ZONE, local) {
+                Some(at) => Qualified::At(at),
+                None => Qualified::InZone(local, crate::SERVER_ZONE),
+            },
+        )
     });
 }
 
@@ -514,7 +516,7 @@ pub fn attach_offset(body: &mut Value, timezone: crate::TimezoneOffset, timestam
 pub fn attach_zone(body: &mut Value, zone: chrono_tz::Tz, timestamps: &[&str]) {
     qualify_timestamps(body, timestamps, |wall| {
         let local = parse_wall(wall)?;
-        Some(match resolve_in(zone, local) {
+        Some(match crate::responses::resolve_in(zone, local) {
             Some(at) => Qualified::At(at),
             None => Qualified::InZone(local, zone),
         })
@@ -533,20 +535,6 @@ enum Qualified {
 /// A trimmed `YYYY-MM-DD HH:MM:SS` wall clock.
 fn parse_wall(wall: &str) -> Option<chrono::NaiveDateTime> {
     chrono::NaiveDateTime::parse_from_str(wall, crate::responses::DATETIME_WIRE_FORMAT).ok()
-}
-
-/// `local` as an instant in `zone`, with the offset in force then, or `None`
-/// when `zone` repeats or skips that wall clock or is at an offset with a
-/// seconds part there (a zone's pre-standard local mean time, which the wire
-/// spelling cannot carry, since it stops at minutes).
-fn resolve_in(
-    zone: chrono_tz::Tz,
-    local: chrono::NaiveDateTime,
-) -> Option<chrono::DateTime<chrono::FixedOffset>> {
-    use chrono::TimeZone;
-
-    let at = zone.from_local_datetime(&local).single()?.fixed_offset();
-    (at.offset().local_minus_utc() % 60 == 0).then_some(at)
 }
 
 /// Rewrite every string `timestamps` reaches in `body` that holds a wall clock
@@ -1043,7 +1031,7 @@ mod tests {
     }
 
     #[test]
-    fn attach_zone_leaves_a_local_mean_time_offset_bare() {
+    fn attach_zone_names_the_zone_for_a_local_mean_time_offset() {
         // Toronto's local mean time before 1895 is -05:17:32, which the wire
         // spelling cannot carry to the second.
         assert_eq!(

@@ -282,12 +282,15 @@ fn parse_offset_datetime(s: &str) -> Option<DateTime<FixedOffset>> {
 /// [`WallClock`], keeping the wire text when it does not parse.
 ///
 /// A bare wall clock is accepted as [`WallClock::Bare`] rather than refused or
-/// read as UTC, with or without the zone name [`crate::attach_zone`] appends to
-/// one it could not resolve. A value stays bare when the zone it was rendered
-/// in is not known, or when its wall clock is ambiguous or nonexistent in that
-/// zone, so a bare value is part of the contract rather than a break in it --
-/// and typing it `Bare` claims no zone, where reading it as UTC would invent
-/// one.
+/// read as UTC. A value stays bare when the zone it was rendered in is not
+/// known, or when its wall clock is ambiguous or nonexistent in that zone, so a
+/// bare value is part of the contract rather than a break in it -- and typing
+/// it `Bare` claims no zone, where reading it as UTC would invent one.
+///
+/// A wall clock followed by a zone name, the form [`crate::attach_zone`]
+/// writes for one it could not resolve, is resolved in that zone again: `Bare`
+/// when the zone still gives it no single offset, `Zoned` when it does, so the
+/// name is never read and then ignored.
 pub(crate) fn deserialize_opt_reported_wall_clock<'de, D>(
     deserializer: D,
 ) -> Result<Option<Reported<WallClock>>, D::Error>
@@ -295,7 +298,7 @@ where
     D: Deserializer<'de>,
 {
     deserialize_opt_reported(deserializer, |s| match split_zone_name(s) {
-        Some((wall, _)) => parse_bare(wall),
+        Some((wall, zone)) => zone_named(wall, zone),
         None if names_offset(s) => parse_offset_datetime(s).map(WallClock::Zoned),
         None => parse_bare(s),
     })
@@ -332,7 +335,7 @@ where
     }
 
     let parsed = match split_zone_name(&text) {
-        Some((wall, zone)) if zone == crate::SERVER_ZONE => parse_bare(wall),
+        Some((wall, zone)) if zone == crate::SERVER_ZONE => zone_named(wall, zone),
         Some(_) => None,
         None if names_offset(&text) => parse_offset_datetime(&text).map(WallClock::Zoned),
         None if parse_bare(&text).is_some() => {
@@ -358,12 +361,37 @@ fn parse_bare(s: &str) -> Option<WallClock> {
         .map(WallClock::Bare)
 }
 
-/// A value the qualification helpers wrote for a wall clock with no single
-/// offset -- `<wall clock> <IANA zone name>` -- split into its two parts, or
-/// `None` when the text after the last space is not a zone name.
+/// A `<wall clock> <IANA zone name>` value split into its two parts, or `None`
+/// when the text after the last space is not a zone name.
 fn split_zone_name(s: &str) -> Option<(&str, Tz)> {
     let (wall, zone) = s.rsplit_once(' ')?;
     Some((wall, zone.parse::<Tz>().ok()?))
+}
+
+/// A `<wall clock> <IANA zone name>` value as the instant it names in that
+/// zone, or as [`WallClock::Bare`] when the zone gives that wall clock no
+/// single offset -- the one case the qualification helpers write this form
+/// for. `None` when the wall clock does not parse.
+fn zone_named(wall: &str, zone: Tz) -> Option<WallClock> {
+    let WallClock::Bare(local) = parse_bare(wall)? else {
+        return None;
+    };
+
+    Some(match resolve_in(zone, local) {
+        Some(at) => WallClock::Zoned(at),
+        None => WallClock::Bare(local),
+    })
+}
+
+/// `local` as an instant in `zone`, with the offset in force then, or `None`
+/// when `zone` repeats or skips that wall clock or is at an offset with a
+/// seconds part there (a zone's pre-standard local mean time, which the wire
+/// spelling cannot carry, since it stops at minutes).
+pub(crate) fn resolve_in(zone: Tz, local: NaiveDateTime) -> Option<DateTime<FixedOffset>> {
+    use chrono::TimeZone;
+
+    let at = zone.from_local_datetime(&local).single()?.fixed_offset();
+    (at.offset().local_minus_utc() % 60 == 0).then_some(at)
 }
 
 pub(crate) fn deserialize_opt_routing<'de, D>(deserializer: D) -> Result<Option<Routing>, D::Error>
@@ -893,7 +921,9 @@ mod tests {
     }
 
     /// Both helpers write an unresolvable wall clock one way, and a named-zone
-    /// field reads it as the same `Bare` value as the plain spelling.
+    /// field reads it as the same `Bare` value as the plain spelling. A zone
+    /// name that does fix the instant is not dropped: the value is resolved in
+    /// it.
     #[test]
     fn opt_reported_wall_clock_reads_the_zone_named_form() {
         let call = deserialize_opt_reported_wall_clock::<serde_json::Value>;
@@ -903,13 +933,22 @@ mod tests {
                 .and_hms_opt(1, 30, 0)
                 .unwrap(),
         )));
+        let zoned = |rfc3339: &str| {
+            Some(Reported::Parsed(WallClock::Zoned(
+                DateTime::parse_from_rfc3339(rfc3339).unwrap(),
+            )))
+        };
         assert_eq!(
             call(json!("2026-11-01 01:30:00 America/Toronto")).unwrap(),
             wall
         );
         assert_eq!(
             call(json!("2026-11-01 01:30:00 Pacific/Honolulu")).unwrap(),
-            wall
+            zoned("2026-11-01T01:30:00-10:00")
+        );
+        assert_eq!(
+            call(json!("2026-11-01 01:30:00 UTC")).unwrap(),
+            zoned("2026-11-01T01:30:00+00:00")
         );
         assert_eq!(call(json!("2026-11-01 01:30:00")).unwrap(), wall);
     }
