@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Breaking**: the e911 postal code is sent as `zip_code`, the name the docs
+  and voip.ms's own PHP client use, instead of the WSDL's `zip`. The field on
+  `E911ProvisionParams`, `E911ProvisionManuallyParams`, `E911UpdateParams` and
+  `E911ValidateParams` is renamed from `zip` to `zip_code` to match.
+- **Breaking**: `GetLNPAttachParams` gains `portid`, which the docs mark
+  required and the PHP client sends but the WSDL omits, so the typed
+  `get_lnp_attach` could not send it. `GetLNPAttachParams::new` takes
+  `(portid, attachid)`.
+
 ## [0.15.0] - 2026-09-23
 
 ### Added

@@ -146,6 +146,10 @@ refresh needs eyes on the diff, not just a green build:
   area's `methods()` in `livetest/src/areas/`. The completeness gate
   (`cargo test -p livetest`) fails until every wire method is owned by exactly
   one area.
+* **A stale WSDL correction** -- `cargo xtask gen` fails with "stale WSDL
+  correction" when the WSDL now declares a parameter that `CORRECTIONS` in
+  [xtask/src/wsdl.rs](xtask/src/wsdl.rs) renames or adds. Drop the entry and
+  regenerate.
 * **New base64 file parameters** -- a method taking one cannot work over GET
   (design decision #7). `cargo xtask gen` warns for any parameter whose mined
   description mentions base64 that is not in `BASE64_FILE_PARAM_PATHS` in

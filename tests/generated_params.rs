@@ -1404,7 +1404,10 @@ fn get_lnp_attach_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetLNPAttachParams { attachid: Some(1) };
+    let p2 = GetLNPAttachParams {
+        portid: Some(1),
+        attachid: Some(1),
+    };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }

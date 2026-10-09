@@ -5743,8 +5743,9 @@ pub struct E911ProvisionParams {
     /// states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be sent to the e911 service. Only available for
     /// addresses from Canada. Value can be EN (English) or FR (French).
     /// (required)
@@ -5791,8 +5792,9 @@ pub struct E911ProvisionManuallyParams {
     /// states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be sent to the e911 service. Only available for
     /// addresses from Canada. Value can be EN (English) or FR (French).
     /// (required)
@@ -5838,8 +5840,9 @@ pub struct E911UpdateParams {
     /// (United states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be updated to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be updated to the e911 service. Only available for
     /// addresses from Canada. Value can be EN (English) or FR (French).
     /// (required)
@@ -5885,8 +5888,9 @@ pub struct E911ValidateParams {
     /// (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be validated. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be validated. Only available for addresses from
     /// Canada. Value can be EN (English) or FR (French).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -6966,6 +6970,9 @@ pub struct GetJoinWhenEmptyTypesParams {
 /// Parameters for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct GetLNPAttachParams {
+    /// ID of the port previously created. (required)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub portid: Option<u64>,
     /// ID of the invoice (attachment) previously uploaded. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attachid: Option<u64>,
@@ -6973,14 +6980,15 @@ pub struct GetLNPAttachParams {
 
 impl GetLNPAttachParams {
     /// A `GetLNPAttachParams` with the parameters the VoIP.ms docs mark as
-    /// required: `attachid`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `portid` and `attachid`. Every other field keeps its default,
+    /// so struct-update syntax still fills in the rest.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(attachid: u64) -> Self {
+    pub fn new(portid: u64, attachid: u64) -> Self {
         Self {
+            portid: Some(portid),
             attachid: Some(attachid),
         }
     }

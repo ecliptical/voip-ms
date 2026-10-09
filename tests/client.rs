@@ -527,6 +527,45 @@ async fn snake_cased_param_keeps_camel_case_wire_name() {
 }
 
 #[tokio::test]
+async fn corrected_wsdl_params_use_the_names_the_server_reads() {
+    // The WSDL declares the e911 postal code as `zip` and omits
+    // `getLNPAttach`'s `portid`; the docs and voip.ms's PHP client send
+    // `zip_code` and `portid`.
+    use voip_ms::{E911ValidateParams, GetLNPAttachParams};
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "e911Validate"))
+        .and(query_param("zip_code", "02134"))
+        .and(query_param_is_missing("zip"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getLNPAttach"))
+        .and(query_param("portid", "42"))
+        .and(query_param("attachid", "7"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let e911 = E911ValidateParams {
+        zip_code: Some("02134".into()),
+        ..Default::default()
+    };
+    client.e911_validate_raw(&e911).await.unwrap();
+    client
+        .get_lnp_attach_raw(&GetLNPAttachParams::new(42, 7))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
 async fn true_only_flag_present_when_true() {
     // `test` is a plain `bool`: `true` serializes `1`, and `false` (the
     // default) is left off the wire entirely.
