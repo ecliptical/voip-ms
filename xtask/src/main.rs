@@ -596,6 +596,13 @@ fn emit_params_constructor(
         None => unreachable!("an empty list returned above"),
     };
 
+    let rest = if required.len() < body_fields.len() {
+        " Every other field keeps its default, so struct-update syntax still fills in \
+         the rest."
+    } else {
+        ""
+    };
+
     let mut out = format!("\nimpl {struct_name} {{\n");
     // Through `render_doc` for the wrapping, which is also why the text carries
     // no intra-doc link: it escapes brackets, since the mined parameter
@@ -605,8 +612,7 @@ fn emit_params_constructor(
         "    ",
         &format!(
             "A `{struct_name}` with the parameters the VoIP.ms docs mark as required: \
-             {listed}. Every other field keeps its default, so struct-update syntax \
-             still fills in the rest."
+             {listed}.{rest}"
         ),
     );
     out.push_str("    ///\n");

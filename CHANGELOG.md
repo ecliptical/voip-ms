@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `GetLNPAttachParams` gains `portid`, which the docs mark
   required and the PHP client sends but the WSDL omits, so the typed
   `get_lnp_attach` could not send it. `GetLNPAttachParams::new` takes
-  `(portid, attachid)`.
+  `(portid, attachid)`, in that order: both are `u64`, so a call migrated from
+  `new(attachid)` that appends `portid` instead of prepending it still
+  compiles and asks for the wrong attachment.
 
 ## [0.15.0] - 2026-09-23
 
