@@ -581,8 +581,9 @@ fn emit_params_constructor(
     }
 
     // An all-required struct has nothing left for the struct-update to fill,
-    // and `clippy::needless_update` says so.
-    if required.len() < body_fields.len() {
+    // and `clippy::needless_update` says so. The doc below must agree.
+    let has_optional = required.len() < body_fields.len();
+    if has_optional {
         assignments.push_str("            ..Default::default()\n");
     }
 
@@ -596,7 +597,7 @@ fn emit_params_constructor(
         None => unreachable!("an empty list returned above"),
     };
 
-    let rest = if required.len() < body_fields.len() {
+    let rest = if has_optional {
         " Every other field keeps its default, so struct-update syntax still fills in \
          the rest."
     } else {
