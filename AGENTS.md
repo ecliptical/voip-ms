@@ -978,6 +978,14 @@ pub async fn set_recording(&self, params: &SetRecordingParams) -> Result<SetReco
 }
 ```
 
+A request's total time limit is the `reqwest::Client`'s, unless the `Client`
+came from `with_timeout`, whose limit `send` sets on each request with
+`RequestBuilder::timeout`. Running out of time is then an `Error::Http` that
+`Error::transport` classifies; a timer around the call drops the request and
+leaves no `Error`. reqwest replaces the client's total limit with the
+request's rather than taking the smaller; a test in `tests/client.rs`
+covers that.
+
 Both transports render their fields through one serializer (`src/form.rs`), so
 they differ in where a value rides and never in how it is written. That
 serializer matches `serde_urlencoded`, which is what `reqwest`'s `.query()`
