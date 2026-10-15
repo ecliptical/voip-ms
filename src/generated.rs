@@ -4053,8 +4053,7 @@ pub struct AddLNPFileParams {
 
 impl AddLNPFileParams {
     /// A `AddLNPFileParams` with the parameters the VoIP.ms docs mark as
-    /// required: `portid` and `file`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `portid` and `file`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -4192,8 +4191,7 @@ pub struct AddMemberToConferenceParams {
 
 impl AddMemberToConferenceParams {
     /// A `AddMemberToConferenceParams` with the parameters the VoIP.ms docs
-    /// mark as required: `member` and `conference`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// mark as required: `member` and `conference`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -4262,8 +4260,7 @@ pub struct AssignDIDvPRIParams {
 
 impl AssignDIDvPRIParams {
     /// A `AssignDIDvPRIParams` with the parameters the VoIP.ms docs mark as
-    /// required: `vpri` and `did`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `vpri` and `did`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -4905,8 +4902,7 @@ pub struct DelCallHuntingParams {
 
 impl DelCallHuntingParams {
     /// A `DelCallHuntingParams` with the parameters the VoIP.ms docs mark as
-    /// required: `callhunting`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `callhunting`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -4930,8 +4926,7 @@ pub struct DelCallParkingParams {
 
 impl DelCallParkingParams {
     /// A `DelCallParkingParams` with the parameters the VoIP.ms docs mark as
-    /// required: `callparking`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `callparking`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -4959,8 +4954,7 @@ pub struct DelCallRecordingParams {
 
 impl DelCallRecordingParams {
     /// A `DelCallRecordingParams` with the parameters the VoIP.ms docs mark as
-    /// required: `callrecording` and `account`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// required: `callrecording` and `account`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -4985,8 +4979,7 @@ pub struct DelCallbackParams {
 
 impl DelCallbackParams {
     /// A `DelCallbackParams` with the parameters the VoIP.ms docs mark as
-    /// required: `callback`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `callback`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5010,8 +5003,7 @@ pub struct DelCallerIDFilteringParams {
 
 impl DelCallerIDFilteringParams {
     /// A `DelCallerIDFilteringParams` with the parameters the VoIP.ms docs mark
-    /// as required: `filtering`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `filtering`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5035,8 +5027,7 @@ pub struct DelClientParams {
 
 impl DelClientParams {
     /// A `DelClientParams` with the parameters the VoIP.ms docs mark as
-    /// required: `client`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `client`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5060,8 +5051,7 @@ pub struct DelConferenceParams {
 
 impl DelConferenceParams {
     /// A `DelConferenceParams` with the parameters the VoIP.ms docs mark as
-    /// required: `conference`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `conference`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5085,8 +5075,7 @@ pub struct DelConferenceMemberParams {
 
 impl DelConferenceMemberParams {
     /// A `DelConferenceMemberParams` with the parameters the VoIP.ms docs mark
-    /// as required: `member`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `member`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5110,8 +5099,7 @@ pub struct DelDISAParams {
 
 impl DelDISAParams {
     /// A `DelDISAParams` with the parameters the VoIP.ms docs mark as required:
-    /// `disa`. Every other field keeps its default, so struct-update syntax
-    /// still fills in the rest.
+    /// `disa`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5207,8 +5195,7 @@ pub struct DelIVRParams {
 
 impl DelIVRParams {
     /// A `DelIVRParams` with the parameters the VoIP.ms docs mark as required:
-    /// `ivr`. Every other field keeps its default, so struct-update syntax
-    /// still fills in the rest.
+    /// `ivr`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5231,8 +5218,7 @@ pub struct DelLocationParams {
 
 impl DelLocationParams {
     /// A `DelLocationParams` with the parameters the VoIP.ms docs mark as
-    /// required: `name` and `id`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `name` and `id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5321,8 +5307,7 @@ pub struct DelMusicOnHoldParams {
 
 impl DelMusicOnHoldParams {
     /// A `DelMusicOnHoldParams` with the parameters the VoIP.ms docs mark as
-    /// required: `music_on_hold`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `music_on_hold`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5346,8 +5331,7 @@ pub struct DelPhonebookParams {
 
 impl DelPhonebookParams {
     /// A `DelPhonebookParams` with the parameters the VoIP.ms docs mark as
-    /// required: `phonebook`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `phonebook`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5371,8 +5355,7 @@ pub struct DelPhonebookGroupParams {
 
 impl DelPhonebookGroupParams {
     /// A `DelPhonebookGroupParams` with the parameters the VoIP.ms docs mark as
-    /// required: `group`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `group`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5394,8 +5377,7 @@ pub struct DelQueueParams {
 
 impl DelQueueParams {
     /// A `DelQueueParams` with the parameters the VoIP.ms docs mark as
-    /// required: `queue`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `queue`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5417,8 +5399,7 @@ pub struct DelRecordingParams {
 
 impl DelRecordingParams {
     /// A `DelRecordingParams` with the parameters the VoIP.ms docs mark as
-    /// required: `recording`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `recording`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5442,8 +5423,7 @@ pub struct DelRingGroupParams {
 
 impl DelRingGroupParams {
     /// A `DelRingGroupParams` with the parameters the VoIP.ms docs mark as
-    /// required: `ring_group`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `ring_group`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5467,8 +5447,7 @@ pub struct DelSIPURIParams {
 
 impl DelSIPURIParams {
     /// A `DelSIPURIParams` with the parameters the VoIP.ms docs mark as
-    /// required: `sip_uri`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `sip_uri`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5495,8 +5474,7 @@ pub struct DelStaticMemberParams {
 
 impl DelStaticMemberParams {
     /// A `DelStaticMemberParams` with the parameters the VoIP.ms docs mark as
-    /// required: `member` and `queue`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `member` and `queue`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5531,8 +5509,7 @@ pub struct DelTimeConditionParams {
 
 impl DelTimeConditionParams {
     /// A `DelTimeConditionParams` with the parameters the VoIP.ms docs mark as
-    /// required: `timecondition`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `timecondition`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5556,8 +5533,7 @@ pub struct DelVoicemailParams {
 
 impl DelVoicemailParams {
     /// A `DelVoicemailParams` with the parameters the VoIP.ms docs mark as
-    /// required: `mailbox`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `mailbox`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5613,8 +5589,7 @@ pub struct DeleteMMSParams {
 
 impl DeleteMMSParams {
     /// A `DeleteMMSParams` with the parameters the VoIP.ms docs mark as
-    /// required: `id`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5636,8 +5611,7 @@ pub struct DeleteSMSParams {
 
 impl DeleteSMSParams {
     /// A `DeleteSMSParams` with the parameters the VoIP.ms docs mark as
-    /// required: `id`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5671,8 +5645,7 @@ pub struct E911CancelParams {
 
 impl E911CancelParams {
     /// A `E911CancelParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `did`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5696,8 +5669,7 @@ pub struct E911InfoParams {
 
 impl E911InfoParams {
     /// A `E911InfoParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `did`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -5743,8 +5715,9 @@ pub struct E911ProvisionParams {
     /// states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be sent to the e911 service. Only available for
     /// addresses from Canada. Value can be EN (English) or FR (French).
     /// (required)
@@ -5791,8 +5764,9 @@ pub struct E911ProvisionManuallyParams {
     /// states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be sent to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be sent to the e911 service. Only available for
     /// addresses from Canada. Value can be EN (English) or FR (French).
     /// (required)
@@ -5838,8 +5812,9 @@ pub struct E911UpdateParams {
     /// (United states) or CA (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be updated to the e911 service. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be updated to the e911 service. Only available for
     /// addresses from Canada. Value can be EN (English) or FR (French).
     /// (required)
@@ -5885,8 +5860,9 @@ pub struct E911ValidateParams {
     /// (Canada). (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    /// Zip / Postal code that will be validated. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
+    pub zip_code: Option<String>,
     /// Language that will be validated. Only available for addresses from
     /// Canada. Value can be EN (English) or FR (French).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -6128,8 +6104,7 @@ pub struct GetCallRecordingParams {
 
 impl GetCallRecordingParams {
     /// A `GetCallRecordingParams` with the parameters the VoIP.ms docs mark as
-    /// required: `callrecording` and `account`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// required: `callrecording` and `account`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6295,8 +6270,7 @@ pub struct GetChargesParams {
 
 impl GetChargesParams {
     /// A `GetChargesParams` with the parameters the VoIP.ms docs mark as
-    /// required: `client`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `client`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6320,8 +6294,7 @@ pub struct GetClientPackagesParams {
 
 impl GetClientPackagesParams {
     /// A `GetClientPackagesParams` with the parameters the VoIP.ms docs mark as
-    /// required: `client`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `client`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6345,8 +6318,7 @@ pub struct GetClientThresholdParams {
 
 impl GetClientThresholdParams {
     /// A `GetClientThresholdParams` with the parameters the VoIP.ms docs mark
-    /// as required: `client`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `client`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6411,8 +6383,7 @@ pub struct GetConferenceRecordingFileParams {
 
 impl GetConferenceRecordingFileParams {
     /// A `GetConferenceRecordingFileParams` with the parameters the VoIP.ms
-    /// docs mark as required: `conference` and `recording`. Every other field
-    /// keeps its default, so struct-update syntax still fills in the rest.
+    /// docs mark as required: `conference` and `recording`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6562,8 +6533,7 @@ pub struct GetDIDsInternationalGeographicParams {
 
 impl GetDIDsInternationalGeographicParams {
     /// A `GetDIDsInternationalGeographicParams` with the parameters the VoIP.ms
-    /// docs mark as required: `country_id`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// docs mark as required: `country_id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6587,8 +6557,7 @@ pub struct GetDIDsInternationalNationalParams {
 
 impl GetDIDsInternationalNationalParams {
     /// A `GetDIDsInternationalNationalParams` with the parameters the VoIP.ms
-    /// docs mark as required: `country_id`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// docs mark as required: `country_id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6612,8 +6581,7 @@ pub struct GetDIDsInternationalTollFreeParams {
 
 impl GetDIDsInternationalTollFreeParams {
     /// A `GetDIDsInternationalTollFreeParams` with the parameters the VoIP.ms
-    /// docs mark as required: `country_id`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// docs mark as required: `country_id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6666,8 +6634,7 @@ pub struct GetDIDvPRIParams {
 
 impl GetDIDvPRIParams {
     /// A `GetDIDvPRIParams` with the parameters the VoIP.ms docs mark as
-    /// required: `vpri`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `vpri`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6713,8 +6680,7 @@ pub struct GetDepositsParams {
 
 impl GetDepositsParams {
     /// A `GetDepositsParams` with the parameters the VoIP.ms docs mark as
-    /// required: `client`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `client`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6770,8 +6736,7 @@ pub struct GetFAXMessagePDFParams {
 
 impl GetFAXMessagePDFParams {
     /// A `GetFAXMessagePDFParams` with the parameters the VoIP.ms docs mark as
-    /// required: `id`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6827,8 +6792,7 @@ pub struct GetFAXNumbersPortabilityParams {
 
 impl GetFAXNumbersPortabilityParams {
     /// A `GetFAXNumbersPortabilityParams` with the parameters the VoIP.ms docs
-    /// mark as required: `did`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// mark as required: `did`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6864,8 +6828,7 @@ pub struct GetFAXRateCentersCANParams {
 
 impl GetFAXRateCentersCANParams {
     /// A `GetFAXRateCentersCANParams` with the parameters the VoIP.ms docs mark
-    /// as required: `province`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `province`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6889,8 +6852,7 @@ pub struct GetFAXRateCentersUSAParams {
 
 impl GetFAXRateCentersUSAParams {
     /// A `GetFAXRateCentersUSAParams` with the parameters the VoIP.ms docs mark
-    /// as required: `state`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `state`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -6966,6 +6928,9 @@ pub struct GetJoinWhenEmptyTypesParams {
 /// Parameters for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct GetLNPAttachParams {
+    /// ID of the port previously created. (required)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub portid: Option<u64>,
     /// ID of the invoice (attachment) previously uploaded. (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attachid: Option<u64>,
@@ -6973,14 +6938,14 @@ pub struct GetLNPAttachParams {
 
 impl GetLNPAttachParams {
     /// A `GetLNPAttachParams` with the parameters the VoIP.ms docs mark as
-    /// required: `attachid`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `portid` and `attachid`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(attachid: u64) -> Self {
+    pub fn new(portid: u64, attachid: u64) -> Self {
         Self {
+            portid: Some(portid),
             attachid: Some(attachid),
         }
     }
@@ -6999,8 +6964,7 @@ pub struct GetLNPAttachListParams {
 
 impl GetLNPAttachListParams {
     /// A `GetLNPAttachListParams` with the parameters the VoIP.ms docs mark as
-    /// required: `portid`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `portid`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7024,8 +6988,7 @@ pub struct GetLNPDetailsParams {
 
 impl GetLNPDetailsParams {
     /// A `GetLNPDetailsParams` with the parameters the VoIP.ms docs mark as
-    /// required: `portid`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `portid`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7085,8 +7048,7 @@ pub struct GetLNPNotesParams {
 
 impl GetLNPNotesParams {
     /// A `GetLNPNotesParams` with the parameters the VoIP.ms docs mark as
-    /// required: `portid`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `portid`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7110,8 +7072,7 @@ pub struct GetLNPStatusParams {
 
 impl GetLNPStatusParams {
     /// A `GetLNPStatusParams` with the parameters the VoIP.ms docs mark as
-    /// required: `portid`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `portid`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7375,8 +7336,7 @@ pub struct GetPortabilityParams {
 
 impl GetPortabilityParams {
     /// A `GetPortabilityParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `did`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7422,8 +7382,7 @@ pub struct GetRateCentersCANParams {
 
 impl GetRateCentersCANParams {
     /// A `GetRateCentersCANParams` with the parameters the VoIP.ms docs mark as
-    /// required: `province`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `province`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7447,8 +7406,7 @@ pub struct GetRateCentersUSAParams {
 
 impl GetRateCentersUSAParams {
     /// A `GetRateCentersUSAParams` with the parameters the VoIP.ms docs mark as
-    /// required: `state`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `state`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7475,8 +7433,7 @@ pub struct GetRatesParams {
 
 impl GetRatesParams {
     /// A `GetRatesParams` with the parameters the VoIP.ms docs mark as
-    /// required: `package` and `query`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `package` and `query`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7501,8 +7458,7 @@ pub struct GetRecordingFileParams {
 
 impl GetRecordingFileParams {
     /// A `GetRecordingFileParams` with the parameters the VoIP.ms docs mark as
-    /// required: `recording`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `recording`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7538,8 +7494,7 @@ pub struct GetRegistrationStatusParams {
 
 impl GetRegistrationStatusParams {
     /// A `GetRegistrationStatusParams` with the parameters the VoIP.ms docs
-    /// mark as required: `account`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// mark as required: `account`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -7577,8 +7532,7 @@ pub struct GetResellerBalanceParams {
 
 impl GetResellerBalanceParams {
     /// A `GetResellerBalanceParams` with the parameters the VoIP.ms docs mark
-    /// as required: `client`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `client`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8165,8 +8119,7 @@ pub struct GetTerminationRatesParams {
 
 impl GetTerminationRatesParams {
     /// A `GetTerminationRatesParams` with the parameters the VoIP.ms docs mark
-    /// as required: `query` and `route`. Every other field keeps its default,
-    /// so struct-update syntax still fills in the rest.
+    /// as required: `query` and `route`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8220,8 +8173,7 @@ pub struct GetTransactionHistoryParams {
 
 impl GetTransactionHistoryParams {
     /// A `GetTransactionHistoryParams` with the parameters the VoIP.ms docs
-    /// mark as required: `date_from` and `date_to`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// mark as required: `date_from` and `date_to`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8280,9 +8232,7 @@ pub struct GetVoicemailMessageFileParams {
 
 impl GetVoicemailMessageFileParams {
     /// A `GetVoicemailMessageFileParams` with the parameters the VoIP.ms docs
-    /// mark as required: `mailbox`, `folder` and `message_num`. Every other
-    /// field keeps its default, so struct-update syntax still fills in the
-    /// rest.
+    /// mark as required: `mailbox`, `folder` and `message_num`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8433,8 +8383,7 @@ pub struct MailFAXMessagePDFParams {
 
 impl MailFAXMessagePDFParams {
     /// A `MailFAXMessagePDFParams` with the parameters the VoIP.ms docs mark as
-    /// required: `id` and `email`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `id` and `email`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8478,8 +8427,7 @@ pub struct MarkListenedVoicemailMessageParams {
 impl MarkListenedVoicemailMessageParams {
     /// A `MarkListenedVoicemailMessageParams` with the parameters the VoIP.ms
     /// docs mark as required: `mailbox`, `folder`, `message_num` and
-    /// `listened`. Every other field keeps its default, so struct-update syntax
-    /// still fills in the rest.
+    /// `listened`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8525,8 +8473,6 @@ pub struct MarkUrgentVoicemailMessageParams {
 impl MarkUrgentVoicemailMessageParams {
     /// A `MarkUrgentVoicemailMessageParams` with the parameters the VoIP.ms
     /// docs mark as required: `mailbox`, `folder`, `message_num` and `urgent`.
-    /// Every other field keeps its default, so struct-update syntax still fills
-    /// in the rest.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8601,8 +8547,7 @@ pub struct MoveFolderVoicemailMessageParams {
 impl MoveFolderVoicemailMessageParams {
     /// A `MoveFolderVoicemailMessageParams` with the parameters the VoIP.ms
     /// docs mark as required: `mailbox`, `folder`, `message_num` and
-    /// `new_folder`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// `new_folder`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -9493,8 +9438,7 @@ pub struct SearchFAXAreaCodeCANParams {
 
 impl SearchFAXAreaCodeCANParams {
     /// A `SearchFAXAreaCodeCANParams` with the parameters the VoIP.ms docs mark
-    /// as required: `area_code`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `area_code`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -9519,8 +9463,7 @@ pub struct SearchFAXAreaCodeUSAParams {
 
 impl SearchFAXAreaCodeUSAParams {
     /// A `SearchFAXAreaCodeUSAParams` with the parameters the VoIP.ms docs mark
-    /// as required: `area_code`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// as required: `area_code`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -9578,8 +9521,7 @@ pub struct SearchVanityParams {
 
 impl SearchVanityParams {
     /// A `SearchVanityParams` with the parameters the VoIP.ms docs mark as
-    /// required: `vanity_type` and `query`. Every other field keeps its
-    /// default, so struct-update syntax still fills in the rest.
+    /// required: `vanity_type` and `query`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -9611,9 +9553,7 @@ pub struct SendCallRecordingEmailParams {
 
 impl SendCallRecordingEmailParams {
     /// A `SendCallRecordingEmailParams` with the parameters the VoIP.ms docs
-    /// mark as required: `callrecording`, `account` and `email`. Every other
-    /// field keeps its default, so struct-update syntax still fills in the
-    /// rest.
+    /// mark as required: `callrecording`, `account` and `email`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -9762,8 +9702,7 @@ pub struct SendSMSParams {
 
 impl SendSMSParams {
     /// A `SendSMSParams` with the parameters the VoIP.ms docs mark as required:
-    /// `did`, `dst` and `message`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// `did`, `dst` and `message`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -9800,8 +9739,6 @@ pub struct SendVoicemailEmailParams {
 impl SendVoicemailEmailParams {
     /// A `SendVoicemailEmailParams` with the parameters the VoIP.ms docs mark
     /// as required: `mailbox`, `folder`, `message_num` and `email_address`.
-    /// Every other field keeps its default, so struct-update syntax still fills
-    /// in the rest.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -10391,8 +10328,7 @@ pub struct SetDIDBillingTypeParams {
 
 impl SetDIDBillingTypeParams {
     /// A `SetDIDBillingTypeParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did` and `billing_type`. Every other field keeps its default,
-    /// so struct-update syntax still fills in the rest.
+    /// required: `did` and `billing_type`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -10542,8 +10478,7 @@ pub struct SetDIDPOPParams {
 
 impl SetDIDPOPParams {
     /// A `SetDIDPOPParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did` and `pop`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `did` and `pop`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -10580,8 +10515,7 @@ pub struct SetDIDRoutingParams {
 
 impl SetDIDRoutingParams {
     /// A `SetDIDRoutingParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did` and `routing`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
+    /// required: `did` and `routing`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -11054,8 +10988,7 @@ pub struct SetLocationParams {
 
 impl SetLocationParams {
     /// A `SetLocationParams` with the parameters the VoIP.ms docs mark as
-    /// required: `name`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `name`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -11969,8 +11902,7 @@ pub struct UnconnectDIDParams {
 
 impl UnconnectDIDParams {
     /// A `UnconnectDIDParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `did`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -11995,8 +11927,7 @@ pub struct UnconnectFAXParams {
 
 impl UnconnectFAXParams {
     /// A `UnconnectFAXParams` with the parameters the VoIP.ms docs mark as
-    /// required: `did`. Every other field keeps its default, so struct-update
-    /// syntax still fills in the rest.
+    /// required: `did`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be

@@ -155,7 +155,7 @@ async fn validate_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E911
             city: Some(address.city.clone()),
             state: Some(address.state.clone()),
             country: Some(address.country.clone()),
-            zip: Some(address.zip.clone()),
+            zip_code: Some(address.zip.clone()),
             language: address.language.clone(),
             ..Default::default()
         })
@@ -186,7 +186,7 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
             city: Some(address.city.clone()),
             state: Some(address.state.clone()),
             country: Some(address.country.clone()),
-            zip: Some(address.zip.clone()),
+            zip_code: Some(address.zip.clone()),
             language: address.language.clone(),
             ..Default::default()
         })
@@ -237,7 +237,7 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
             city: Some(address.city.clone()),
             state: Some(address.state.clone()),
             country: Some(address.country.clone()),
-            zip: Some(address.zip.clone()),
+            zip_code: Some(address.zip.clone()),
             language: address.language.clone(),
             ..Default::default()
         })

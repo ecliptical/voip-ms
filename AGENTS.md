@@ -42,6 +42,17 @@ artifacts). The `xsd_to_rust` mapping lives in `xtask/src/main.rs`; the
 field-name override table (see 5a) corrects individual fields the WSDL
 mistypes entirely.
 
+The WSDL's parameter *names* are not authoritative either: it lags the portal
+docs, which list dozens of parameters it lacks and name a few differently.
+`CORRECTIONS` in `xtask/src/wsdl.rs` renames or adds a WSDL input, applied as
+the WSDL is parsed so every xtask command sees the same surface. A
+disagreement with the docs alone does not earn an entry -- the docs have their
+own copy-paste errors (`getResellerMMS` documents its MMS id as `sms`). An entry
+needs a second source: voip.ms's PHP client in its public `API.zip`, which posts
+each parameter under an explicit key without reading the WSDL, or a live call.
+An entry that stops fitting the WSDL fails the parse, with a message naming
+the fix (DEVELOPMENT.md lists the cases).
+
 **How to apply**: When VoIP.ms adds an API method, replace
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
 `src/generated.rs` — the `@generated` banner reflects reality. The
