@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A raw call can send a numeric `serde_json::Value` when serde_json's
+  `arbitrary_precision` feature is on. Any crate in the build can turn the
+  feature on (rust_decimal's `serde-with-arbitrary-precision` does), and every
+  `call_raw` with a `json!` number then failed with
+  `ParamsError::Unencodable` before anything was sent. The number is sent as
+  the text serde_json holds for it, so `1.50` goes out as `1.50`.
 - **Breaking**: the e911 postal code is sent as `zip_code`, the name the docs
   and voip.ms's own PHP client use, instead of the WSDL's `zip`. The field on
   `E911ProvisionParams`, `E911ProvisionManuallyParams`, `E911UpdateParams` and

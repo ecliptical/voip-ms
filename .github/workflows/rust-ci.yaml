@@ -31,12 +31,14 @@ jobs:
       - name: Run clippy
         # Same selection as the test job, so everything that runs is linted.
         run: cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
-      - name: Run the library tests with serde_json's arbitrary_precision
+      - name: Run the tests with serde_json's arbitrary_precision
         # A downstream crate can turn the feature on for this one (Cargo
-        # unifies features), and it changes how a `&Value` hands a number to a
-        # visitor. The library tests only: under it, `tests/client.rs`'s raw
-        # calls with numeric `Value` params fail to encode.
-        run: cargo test -p voip-ms --lib --features serde_json/arbitrary_precision
+        # unifies features; rust_decimal's `serde-with-arbitrary-precision`
+        # does). It changes how a `&Value` hands a number to a visitor, and
+        # how a `serde_json::Number` serializes: as a private struct holding
+        # the number's text, which `src/form.rs` must recognize for a raw
+        # call's `json!` number to reach the wire.
+        run: cargo test --workspace --features unchecked-raw,serde_json/arbitrary_precision
       - name: Check the non-default TLS backend
         # `native-tls` ships but is not the default, so nothing else builds it.
         # It cannot go in the test job: enabled alongside the default rustls,
