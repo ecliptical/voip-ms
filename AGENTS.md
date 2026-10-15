@@ -991,7 +991,13 @@ they differ in where a value rides and never in how it is written. That
 serializer matches `serde_urlencoded`, which is what `reqwest`'s `.query()`
 applies to a parameter set, and its tests assert the agreement value by value --
 including the one arm where `Display` would diverge, a whole float, which the
-query string renders `1.0` and `to_string` renders `1`. The multipart form was
+query string renders `1.0` and `to_string` renders `1`. The one value where they
+part is a `serde_json::Number` under serde_json's `arbitrary_precision` feature,
+which serializes as a private struct holding the number's text.
+`serde_urlencoded` refuses it like any struct; `form.rs` sends the text as it
+arrives, because any crate in the build can turn the feature on, and the GET's
+query string is built from `form.rs`'s fields, so `serde_urlencoded` never sees
+the struct. CI runs the whole suite with the feature on. The multipart form was
 originally built by reading back the query string the GET form produced, which
 bought the same parity at the cost of encoding and decoding the whole payload:
 roughly 30 MB of transient allocation for an 8 MB fax.
