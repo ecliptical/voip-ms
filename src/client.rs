@@ -752,8 +752,10 @@ impl fmt::Debug for ClientBuilder {
 
 /// Classify a response's `status` field.
 ///
-/// Returns `Ok(None)` for `success`, `Err(Error::Api)` for a genuine failure,
-/// and `Ok(Some(status))` for an empty-collection status
+/// Returns `Ok(None)` for a success status ([`ApiStatus::is_success`]:
+/// `success`, or `success_test` for a call made with `test` set),
+/// `Err(Error::Api)` for a genuine failure, and `Ok(Some(status))` for an
+/// empty-collection status
 /// ([`ApiStatus::is_empty_collection`], e.g. `no_sms`) -- VoIP.ms's per-method "the list
 /// is empty" code. Whether that case is an error is left to the caller:
 /// [`Client::call_raw`] surfaces it verbatim, while the typed
@@ -763,11 +765,10 @@ fn check_status(body: &Value) -> Result<Option<ApiStatus>> {
         .get("status")
         .and_then(Value::as_str)
         .ok_or_else(|| Error::InvalidResponse("response missing `status` field".into()))?;
-    if status == "success" {
-        return Ok(None);
-    }
     let status = ApiStatus::from_wire(status);
-    if status.is_empty_collection() {
+    if status.is_success() {
+        Ok(None)
+    } else if status.is_empty_collection() {
         Ok(Some(status))
     } else {
         Err(Error::Api(status))
@@ -850,6 +851,11 @@ mod tests {
     fn check_status_classifies_each_case() {
         assert!(matches!(
             check_status(&serde_json::json!({"status": "success"})),
+            Ok(None)
+        ));
+        // The body a live `setFaxFolder` with `test=1` answered.
+        assert!(matches!(
+            check_status(&serde_json::json!({"status": "success_test", "message": "success_test"})),
             Ok(None)
         ));
         assert!(matches!(

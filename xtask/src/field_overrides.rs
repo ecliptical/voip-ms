@@ -501,14 +501,17 @@ const CONFERENCE_PROMPT_FIELDS: &[&str] = &[
 
 /// Fields that are identifiers or free text, not quantities, but that an
 /// all-digit doc sample made the extractor infer as `integer` on the response
-/// side. Forced to `String` everywhere, which is what the param side already
-/// was, so the read side only becomes more tolerant.
+/// side, or that the WSDL declares `xsd:integer` on the param side. Forced to
+/// `String` everywhere.
 ///
 /// Each would lose information as a number:
 ///
 /// * `zip` -- a US ZIP has leading zeros (`02134`) and a Canadian postal code
 ///   is alphanumeric (`M5V 3A8`);
 /// * `password` -- a voicemail PIN of `0123` is not 123;
+/// * `pin`, `port_out_pin` -- confirmed live on a DISA: voip.ms stores and
+///   reports a PIN of `0123`, and refuses `123` because a DISA PIN must be
+///   exactly four digits;
 /// * `security_code` -- `setEmailToFax` documents it as "an alphanumeric code";
 /// * `dtmf_digits` -- a dial string carries `*`, `#`, and pause characters;
 /// * `callerid_prefix` -- `getDIDsInfo` reports `MIA [555]`.
@@ -516,6 +519,8 @@ const IDENTIFIER_STRING_FIELDS: &[&str] = &[
     "callerid_prefix",
     "dtmf_digits",
     "password",
+    "pin",
+    "port_out_pin",
     "security_code",
     "zip",
 ];

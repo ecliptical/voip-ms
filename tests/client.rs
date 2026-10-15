@@ -1,8 +1,9 @@
 use rust_decimal::Decimal;
 use serde_json::{Value, json};
 use voip_ms::{
-    ApiStatus, Client, Error, GetBalanceParams, GetCDRParams, GetConferenceParams,
-    GetSubAccountsParams, GetSubAccountsResponse, MaxMembers, ParamsError,
+    ApiStatus, Client, Error, GetBalanceParams, GetCDRParams, GetConferenceParams, GetDISAsParams,
+    GetSubAccountsParams, GetSubAccountsResponse, MaxMembers, ParamsError, SetDISAParams,
+    SetEmailToFAXParams, SetFAXFolderParams,
 };
 use wiremock::matchers::{
     body_string_contains, header_regex, method, path, query_param, query_param_is_missing,
@@ -3104,4 +3105,92 @@ async fn a_body_stalled_past_the_limit_is_a_classified_timeout() {
 
     assert!(matches!(err, Error::Http(_)), "{err:?}");
     assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}
+
+#[tokio::test]
+async fn a_test_call_answered_success_test_is_not_an_error() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setFaxFolder"))
+        .and(query_param("test", "1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success_test",
+            "message": "success_test"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let resp = client
+        .set_fax_folder(&SetFAXFolderParams {
+            test: true,
+            ..SetFAXFolderParams::new("probe")
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status, ApiStatus::SuccessTest);
+    assert!(resp.status.is_success());
+}
+
+#[tokio::test]
+async fn a_pin_keeps_its_leading_zero_both_ways() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setDISA"))
+        .and(query_param("pin", "0123"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({"status": "success", "disa": 18816})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getDISAs"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "success",
+            "disa": [{"disa": "18816", "name": "probe", "pin": "0123"}]
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let created = client
+        .set_disa(&SetDISAParams::new("probe", "0123", 5))
+        .await
+        .unwrap();
+    assert_eq!(created.disa, Some(18816));
+
+    let listed = client
+        .get_disas(&GetDISAsParams { disa: Some(18816) })
+        .await
+        .unwrap();
+    assert_eq!(listed.disa[0].pin.as_deref(), Some("0123"));
+}
+
+#[tokio::test]
+async fn set_email_to_fax_reports_the_configuration_id() {
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "setEmailToFax"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({"status": "success", "id": 37876})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let resp = client
+        .set_email_to_fax(&SetEmailToFAXParams::default())
+        .await
+        .unwrap();
+
+    assert_eq!(resp.id, Some(37876));
 }

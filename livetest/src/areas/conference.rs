@@ -182,7 +182,7 @@ async fn member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scop
         .set_conference_member(&SetConferenceMemberParams {
             name: Some(name),
             description: Some(description),
-            pin: Some(4321),
+            pin: Some("4321".into()),
             ..Default::default()
         })
         .await;

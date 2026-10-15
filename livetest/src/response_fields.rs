@@ -1610,7 +1610,7 @@ pub const RESPONSE_FIELDS: &[(&str, &[&str])] = &[
     ("setDIDRouting", &["status"]),
     ("setDIDVoicemail", &["status"]),
     ("setDISA", &["disa", "status"]),
-    ("setEmailToFax", &["status"]),
+    ("setEmailToFax", &["id", "status"]),
     ("setFaxFolder", &["status"]),
     ("setFaxNumberEmail", &["status"]),
     ("setFaxNumberInfo", &["status"]),
