@@ -14,9 +14,9 @@
 //! renderings agree value by value, against `serde_urlencoded` itself.
 //!
 //! The one value where they part is a `serde_json::Number` under serde_json's
-//! `arbitrary_precision` feature, which `serde_urlencoded` refuses and this
-//! module sends as the number's text: [`PartSerializer`]'s `serialize_struct`
-//! says why.
+//! `arbitrary_precision` feature, which `serde_urlencoded` refuses as a
+//! parameter value or name and this module sends as the number's text:
+//! [`PartSerializer`]'s `serialize_struct` says why.
 //!
 //! Rendering once for both transports puts the multipart POST's saving on the
 //! GET's bill, so a field owns only what it must: see [`Field`]. What is left
@@ -33,7 +33,7 @@
 //! decimal digits and cannot drift, so the integer arms use it. A float's is
 //! equally fixed but fixed to something else -- `1` for `1.0`, and never an
 //! exponent -- so the float arms render through `ryu`, which is what
-//! `serde_urlencoded` and `serde_json` use for the same job. Nothing here calls
+//! `serde_urlencoded` uses for the same job. Nothing here calls
 //! `to_string` on a domain type: one arrives through its own `Serialize` impl,
 //! which hands this serializer a string or a number.
 
@@ -153,9 +153,9 @@ impl<'a> Serializer for FieldsSerializer<'a> {
         Ok(self)
     }
 
-    /// Any struct but a `serde_json::Number`, which is a struct only under
-    /// `arbitrary_precision` and is refused here as the bare number it is
-    /// without it. `serde_urlencoded` would take it as a parameter set and send
+    /// Any struct except serde_json's `arbitrary_precision` number, which is
+    /// refused here just as the bare `u64`, `i64` or `f64` it is without the
+    /// feature. `serde_urlencoded` would take it as a parameter set and send
     /// its text under the field name `$serde_json::private::Number`.
     fn serialize_struct(
         self,
@@ -614,10 +614,13 @@ impl ser::SerializeTupleStruct for PairElements<'_> {
 
 /// The struct name a `serde_json::Number` serializes under when serde_json's
 /// `arbitrary_precision` feature is on. The struct has one field, keyed by the
-/// same name, holding the number's text as it was parsed or written (`1.50`
-/// stays `1.50`). Cargo unifies features, so any crate in the build that turns
-/// the feature on (rust_decimal's `serde-with-arbitrary-precision` does) turns
-/// it on for every `json!` number a caller hands this crate.
+/// same name, holding the text serde_json keeps for the number: a parsed number
+/// keeps its digits (`1.50` stays `1.50`) with its exponent written `e+` or
+/// `e-` (`1E3` becomes `1e+3`), and one built from an `f64` is serde_json's own
+/// float formatting (`1e16` becomes `1e+16`). Cargo unifies features, so any
+/// crate in the build that turns the feature on (rust_decimal's
+/// `serde-with-arbitrary-precision` does) turns it on for every `json!` number
+/// a caller hands this crate.
 const JSON_NUMBER: &str = "$serde_json::private::Number";
 
 /// One parameter's value. `Ok(None)` is an absent value, which carries no field
@@ -781,9 +784,10 @@ impl Serializer for PartSerializer {
         Err(ser::Error::custom("has no value a wire field can carry"))
     }
 
-    /// A `serde_json::Number` under `arbitrary_precision` carries its text, as
-    /// the same number does as a `u64`, `i64` or `f64` without the feature.
-    /// Every other struct has no scalar form.
+    /// A `serde_json::Number` under `arbitrary_precision` carries the text
+    /// serde_json keeps for it, which can differ from what the `u64`, `i64` or
+    /// `f64` arms render for the same number without the feature (`1.50`
+    /// against `1.5`). Every other struct has no scalar form.
     ///
     /// `serde_urlencoded` refuses this struct, as it refuses every struct in
     /// value position. Matching it would make a raw call with a `json!` number
@@ -816,7 +820,8 @@ impl Serializer for PartSerializer {
 
 /// The fields of a [`JSON_NUMBER`] struct: exactly one, keyed [`JSON_NUMBER`],
 /// whose text is sent as it arrives rather than parsed and re-formatted.
-struct NumberText(Option<String>);
+/// `None` until that field has arrived; `Some(None)` if it rendered as absent.
+struct NumberText(Option<Option<String>>);
 
 impl ser::SerializeStruct for NumberText {
     type Ok = Option<String>;
@@ -830,14 +835,14 @@ impl ser::SerializeStruct for NumberText {
             return Err(ser::Error::custom("has no value a wire field can carry"));
         }
 
-        self.0 = value.serialize(PartSerializer)?;
+        self.0 = Some(value.serialize(PartSerializer)?);
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
         match self.0 {
-            Some(text) => Ok(Some(text)),
-            None => Err(ser::Error::custom("has no value a wire field can carry")),
+            Some(Some(text)) => Ok(Some(text)),
+            _ => Err(ser::Error::custom("has no value a wire field can carry")),
         }
     }
 }
@@ -1090,12 +1095,18 @@ mod tests {
     /// `1.5`, and a number past `u64` into a rounded float.
     #[test]
     fn an_arbitrary_precision_number_carries_its_text_verbatim() {
-        for text in ["1.50", "18446744073709551616", "-4", "1e3"] {
+        for text in ["1.50", "18446744073709551616", "-4", "1e+3"] {
             assert_eq!(
                 only_field(&one(ArbitraryNumber(text))),
                 ("value".to_string(), text.to_string())
             );
         }
+
+        // As a parameter name too, where `serde_urlencoded` refuses it as well.
+        assert_eq!(
+            fields_of(&[(ArbitraryNumber("5"), "x")][..]),
+            Ok(vec![("5".to_string(), "x".to_string())])
+        );
     }
 
     /// Recognizing serde_json's number does not open the arm to other structs:
@@ -1105,16 +1116,16 @@ mod tests {
     fn a_struct_that_is_not_a_json_number_has_no_scalar_form() {
         struct Shaped {
             name: &'static str,
-            keys: &'static [&'static str],
+            fields: &'static [(&'static str, Option<&'static str>)],
         }
 
         impl Serialize for Shaped {
             fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
                 use ser::SerializeStruct;
 
-                let mut number = s.serialize_struct(self.name, self.keys.len())?;
-                for key in self.keys {
-                    number.serialize_field(key, "1")?;
+                let mut number = s.serialize_struct(self.name, self.fields.len())?;
+                for (key, value) in self.fields {
+                    number.serialize_field(key, value)?;
                 }
 
                 number.end()
@@ -1125,19 +1136,28 @@ mod tests {
         for shaped in [
             Shaped {
                 name: "Number",
-                keys: &[TOKEN],
+                fields: &[(TOKEN, Some("1"))],
             },
             Shaped {
                 name: TOKEN,
-                keys: &["value"],
+                fields: &[("value", Some("1"))],
             },
             Shaped {
                 name: TOKEN,
-                keys: &[TOKEN, TOKEN],
+                fields: &[(TOKEN, Some("1")), (TOKEN, Some("1"))],
+            },
+            // A second field is refused even when the first held nothing.
+            Shaped {
+                name: TOKEN,
+                fields: &[(TOKEN, None), (TOKEN, Some("9"))],
             },
             Shaped {
                 name: TOKEN,
-                keys: &[],
+                fields: &[(TOKEN, None)],
+            },
+            Shaped {
+                name: TOKEN,
+                fields: &[],
             },
         ] {
             let error = to_fields(&one(shaped)).unwrap_err().into_message();
@@ -1153,24 +1173,27 @@ mod tests {
         assert!(to_fields(&one(Number { value: "1" })).is_err());
     }
 
-    /// A number parsed by serde_json itself, in whichever configuration this
-    /// build has. With `arbitrary_precision` it is the parsed text; without, it
-    /// is the `u64`, `i64` or `f64` serde_json parsed it into.
+    /// A number from serde_json itself, in whichever configuration this build
+    /// has. With `arbitrary_precision` it is the text serde_json keeps, whose
+    /// exponent and float formatting are serde_json's choice: these pin them,
+    /// so a serde_json upgrade that changes what reaches the wire fails here.
+    /// Without the feature, it is the `u64`, `i64` or `f64` serde_json holds.
     #[test]
     fn a_json_number_carries_the_text_serde_json_holds_for_it() {
-        let probe: serde_json::Value = serde_json::from_str("1.50").unwrap();
-        let arbitrary_precision = serde_json::to_string(&probe).unwrap() == "1.50";
+        let parsed = |text| serde_json::from_str::<serde_json::Value>(text).unwrap();
+        let arbitrary_precision = serde_json::to_string(&parsed("1.50")).unwrap() == "1.50";
 
-        for (text, with_feature, without_feature) in [
-            ("1.50", "1.50", "1.5"),
+        for (number, with_feature, without_feature) in [
+            (parsed("1.50"), "1.50", "1.5"),
             (
-                "18446744073709551616",
+                parsed("18446744073709551616"),
                 "18446744073709551616",
                 "1.8446744073709552e19",
             ),
-            ("-4", "-4", "-4"),
+            (parsed("-4"), "-4", "-4"),
+            (parsed("1E3"), "1e+3", "1000.0"),
+            (serde_json::json!(1e16), "1e+16", "1e16"),
         ] {
-            let number: serde_json::Value = serde_json::from_str(text).unwrap();
             let wire = if arbitrary_precision {
                 with_feature
             } else {
