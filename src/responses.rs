@@ -27,7 +27,8 @@ use crate::generated::GetRecordingFileResponse;
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 use rust_decimal::Decimal;
-use serde::de::{Error as DeError, Visitor};
+use serde::de::value::MapAccessDeserializer;
+use serde::de::{Error as DeError, MapAccess, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -129,14 +130,32 @@ where
             Ok(Some(Cow::Owned(serde_json::Number::from(n).to_string())))
         }
 
+        fn visit_u128<E: DeError>(self, n: u128) -> Result<Self::Value, E> {
+            Ok(Some(Cow::Owned(n.to_string())))
+        }
+
+        fn visit_i128<E: DeError>(self, n: i128) -> Result<Self::Value, E> {
+            Ok(Some(Cow::Owned(n.to_string())))
+        }
+
+        // A non-finite float has no `Value::Number`; `Value` holds it as null.
         fn visit_f64<E: DeError>(self, n: f64) -> Result<Self::Value, E> {
-            let text =
-                serde_json::Number::from_f64(n).map_or_else(|| n.to_string(), |n| n.to_string());
-            Ok(Some(Cow::Owned(text)))
+            Ok(serde_json::Number::from_f64(n).map(|n| Cow::Owned(n.to_string())))
         }
 
         fn visit_bool<E: DeError>(self, b: bool) -> Result<Self::Value, E> {
             Ok(Some(Cow::Owned(b.to_string())))
+        }
+
+        // With serde_json's `arbitrary_precision` on (Cargo unifies it in from
+        // any crate in the build), a `&Value` hands over a number it cannot
+        // carry as a primitive as a single-entry map holding the number's text.
+        // `Value` reads that map back into the number.
+        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
+            match Value::deserialize(MapAccessDeserializer::new(map))? {
+                Value::Number(n) => Ok(Some(Cow::Owned(n.to_string()))),
+                _ => Err(A::Error::invalid_type(Unexpected::Map, &self)),
+            }
         }
     }
 
@@ -644,11 +663,11 @@ where
 /// The rows a list field's wire value holds. VoIP.ms's `print_r`-derived
 /// output collapses a one-element list to the element itself (e.g.
 /// `getVoicemailMessageFile`'s `message` comes back as an object, not a
-/// one-element array), so an array is its rows, null or an empty string is no
+/// one-element array), so an array is its rows, null or a blank string is no
 /// rows, and any other value is the one row, which the row type may still
 /// refuse.
 pub(crate) enum ListRows<'a> {
-    None,
+    Empty,
     Seq(&'a [Value]),
     Single(&'a Value),
 }
@@ -656,8 +675,8 @@ pub(crate) enum ListRows<'a> {
 impl<'a> ListRows<'a> {
     pub(crate) fn of(value: &'a Value) -> Self {
         match value {
-            Value::Null => Self::None,
-            Value::String(s) if s.trim().is_empty() => Self::None,
+            Value::Null => Self::Empty,
+            Value::String(s) if s.trim().is_empty() => Self::Empty,
             Value::Array(items) => Self::Seq(items),
             one => Self::Single(one),
         }
@@ -665,7 +684,7 @@ impl<'a> ListRows<'a> {
 
     pub(crate) fn as_slice(&self) -> &'a [Value] {
         match *self {
-            Self::None => &[],
+            Self::Empty => &[],
             Self::Seq(items) => items,
             Self::Single(one) => std::slice::from_ref(one),
         }
@@ -684,7 +703,7 @@ where
 {
     let value = Option::<Value>::deserialize(deserializer)?.unwrap_or(Value::Null);
     match ListRows::of(&value) {
-        ListRows::None => Ok(Vec::new()),
+        ListRows::Empty => Ok(Vec::new()),
         ListRows::Seq(_) => Vec::<T>::deserialize(value).map_err(D::Error::custom),
         ListRows::Single(_) => T::deserialize(value)
             .map(|v| vec![v])
@@ -780,9 +799,10 @@ where
 }
 
 /// A `getRecordingFile` row as [`crate::GetRecordingFileResponseRecording`]
-/// reads it, with `data` borrowed. The fields, their order (a row may arrive as
-/// a JSON array) and their readers are that struct's, so the two accept and
-/// refuse the same rows.
+/// reads it, with `data` borrowed. The fields and their order (a row may arrive
+/// as a JSON array) are that struct's, and each field's reader accepts and
+/// refuses the same values as that struct's, so the two accept and refuse the
+/// same rows.
 #[derive(Deserialize)]
 struct RecordingFileRow<'a> {
     #[serde(
@@ -801,23 +821,24 @@ impl GetRecordingFileResponse {
     /// single recording or a list of them, with a blank or missing `data`
     /// skipped. `Ok(None)` when no recording carries audio.
     ///
-    /// `envelope` is the value [`Client::get_recording_file_raw`] returns; its
-    /// `status` is not read. Every recording is read before one is chosen, so
-    /// this is an error exactly when deserializing `envelope` into [`Self`]
-    /// is: `recordings` that is neither a recording nor a list of them, or any
+    /// `envelope` is the value [`Client::get_recording_file_raw`] returns: an
+    /// object with a string `status`, which this does not read. For such an
+    /// envelope, every recording is read before one is chosen, so this is an
+    /// error exactly when deserializing `envelope` into [`Self`] is:
+    /// `recordings` that is neither a recording nor a list of them, or any
     /// recording whose `value` or `data` that type refuses, even one after the
     /// recording with audio. A `data` VoIP.ms reports as a number or a bool is
     /// that value's JSON text, owned since there is no string to borrow.
     ///
     /// [`Client::get_recording_file_raw`]: crate::Client::get_recording_file_raw
     pub fn audio_in(envelope: &Value) -> serde_json::Result<Option<Cow<'_, str>>> {
-        let rows = envelope
+        envelope
             .get("recordings")
             .map_or(&[][..], |v| ListRows::of(v).as_slice())
             .iter()
-            .map(RecordingFileRow::deserialize)
-            .collect::<serde_json::Result<Vec<_>>>()?;
-        Ok(rows.into_iter().find_map(|row| row.data))
+            .try_fold(None, |audio, row| {
+                Ok(audio.or(RecordingFileRow::deserialize(row)?.data))
+            })
     }
 }
 
@@ -1343,6 +1364,18 @@ mod tests {
                 Err(()),
             ),
             (
+                json!({"status": "success", "recordings": {"data": null}}),
+                Ok(None),
+            ),
+            (
+                json!({"status": "success", "recordings": {"data": true}}),
+                Ok(Some("true")),
+            ),
+            (
+                json!({"status": "success", "recordings": {"data": -3}}),
+                Ok(Some("-3")),
+            ),
+            (
                 json!({"status": "success", "recordings": {"data": 7}}),
                 Ok(Some("7")),
             ),
@@ -1376,6 +1409,26 @@ mod tests {
                 expected,
                 "audio_in: {envelope}"
             );
+        }
+    }
+
+    // Parsed from text, since `json!` writes every number in its canonical
+    // form. With serde_json's `arbitrary_precision` on, these keep their
+    // original text and reach `deserialize_opt_text` as a map or a 128-bit
+    // integer; CI runs the library tests that way too.
+    #[test]
+    fn audio_in_reads_a_number_as_the_typed_response_does() {
+        for number in ["1.50", "1e3", "-0", "18446744073709551616"] {
+            let text = format!(r#"{{"status": "success", "recordings": {{"data": {number}}}}}"#);
+            let envelope: Value = serde_json::from_str(&text).unwrap();
+            let typed = serde_json::from_value::<GetRecordingFileResponse>(envelope.clone())
+                .unwrap()
+                .recordings
+                .into_iter()
+                .find_map(|r| r.data);
+            let read = GetRecordingFileResponse::audio_in(&envelope).unwrap();
+            assert!(typed.is_some(), "typed: {number}");
+            assert_eq!(read.as_deref(), typed.as_deref(), "audio_in: {number}");
         }
     }
 

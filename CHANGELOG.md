@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `getRecordingFile` envelope carries audio: the first non-blank `data`,
   borrowed from the envelope, so checking a recording no longer copies its
   base64. It reads `recordings` the way `GetRecordingFileResponse` does (one
-  recording or a list) and is an error exactly when deserializing into that
-  type is.
+  recording or a list) and, for an envelope the raw call returns, is an error
+  exactly when deserializing into that type is.
 
 ### Fixed
 
