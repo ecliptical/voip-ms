@@ -166,10 +166,9 @@ handing back a raw string would make the caller parse it a second time to
 learn whether it was `success` or an empty-collection code. `ApiStatus` carries
 `Success` and `SuccessTest` variants for that reason -- they are synthesized by
 the generator (`SUCCESS_STATUSES`), since the docs' error-code table lists only
-errors. A
-nested record's same-named field (a fax's, a port's, an e911 record's) is
-unrelated and keeps its inferred type; `response_codegen.rs` distinguishes them
-by whether the struct is the method's root.
+errors. A nested record's same-named field (a fax's, a port's, an e911
+record's) is unrelated and keeps its inferred type; `response_codegen.rs`
+distinguishes them by whether the struct is the method's root.
 
 Each family carries the one serde direction it uses -- `*Params` derive
 `Serialize`, `*Response` derive `Deserialize` -- plus `PartialEq` and `Eq`,

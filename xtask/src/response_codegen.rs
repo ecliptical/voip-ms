@@ -32,9 +32,11 @@ use crate::{acronyms_sorted, camel_to_pascal};
 /// Render all `*Response` structs for the methods in `responses`.
 ///
 /// `method_names` enumerates methods in the canonical (WSDL) order so
-/// the output is stable across runs.
+/// the output is stable across runs. `test_methods` names the methods that
+/// take a `test` flag, whose `status` can be `success_test`.
 pub fn emit_response_structs(
     method_names: &[String],
+    test_methods: &std::collections::BTreeSet<&str>,
     responses: &BTreeMap<String, Shape>,
     resolver: &Resolver,
     enums_used: &mut std::collections::BTreeSet<String>,
@@ -48,7 +50,12 @@ pub fn emit_response_structs(
 
         let pascal = camel_to_pascal(op, &acronyms);
         let root = format!("{pascal}Response");
-        let mut emitter = Emitter::new(resolver, root.clone(), enums_used);
+        let mut emitter = Emitter::new(
+            resolver,
+            root.clone(),
+            test_methods.contains(op.as_str()),
+            enums_used,
+        );
         emitter.emit_struct(&root, shape);
 
         out.push_str(&format!(
@@ -240,6 +247,9 @@ struct Emitter<'a> {
     /// own, typed `voip_ms::ApiStatus`; a nested struct's same-named field
     /// (a fax's, a port's) is unrelated and keeps its inferred type.
     root: String,
+    /// Whether the method takes a `test` flag, so its `status` can be
+    /// `voip_ms::ApiStatus::SuccessTest`.
+    takes_test: bool,
     /// Shapes this emitter would have to guess at, collected rather than
     /// emitted. See [`Emitter::element_scalar_type`].
     unsupported: Vec<String>,
@@ -249,6 +259,7 @@ impl<'a> Emitter<'a> {
     fn new(
         resolver: &'a Resolver<'a>,
         root: String,
+        takes_test: bool,
         enums_used: &'a mut std::collections::BTreeSet<String>,
     ) -> Self {
         Self {
@@ -256,6 +267,7 @@ impl<'a> Emitter<'a> {
             resolver,
             enums_used,
             root,
+            takes_test,
             unsupported: Vec::new(),
         }
     }
@@ -355,9 +367,16 @@ impl<'a> Emitter<'a> {
             // not optional: `check_status` has already required the field.
             if name == self.root && fname == "status" {
                 body.push_str(
-                    "    /// The status VoIP.ms reported for the call: \
-                     [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],\n    \
-                     /// or the empty-collection code\n    \
+                    "    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],\n",
+                );
+                if self.takes_test {
+                    body.push_str(
+                        "    /// [`ApiStatus::SuccessTest`] for a call made with `test` set,\n",
+                    );
+                }
+
+                body.push_str(
+                    "    /// or the empty-collection code\n    \
                      /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.\n",
                 );
                 body.push_str("    pub status: ApiStatus,\n");
@@ -773,6 +792,7 @@ mod tests {
         let responses = BTreeMap::from([("getCDR".to_string(), shape.clone())]);
         emit_response_structs(
             &["getCDR".to_string()],
+            &Default::default(),
             &responses,
             &resolver,
             &mut Default::default(),
@@ -798,6 +818,7 @@ mod tests {
         let responses = BTreeMap::from([("getThing".to_string(), shape)]);
         let err = emit_response_structs(
             &["getThing".to_string()],
+            &Default::default(),
             &responses,
             &resolver,
             &mut Default::default(),

@@ -1122,15 +1122,15 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
     out.push_str("    }\n\n");
 
     // is_success
-    out.push_str("    /// Whether this status reports a call voip.ms accepted:\n");
-    out.push_str("    /// [`ApiStatus::Success`], or [`ApiStatus::SuccessTest`] for a call\n");
-    out.push_str("    /// made with `test` set, which saved nothing.\n");
-    out.push_str("    pub fn is_success(&self) -> bool {\n");
-    out.push_str("        matches!(self, ");
     let arms: Vec<String> = success_variants
         .iter()
         .map(|v| format!("ApiStatus::{v}"))
         .collect();
+    let links: Vec<String> = arms.iter().map(|a| format!("[`{a}`]")).collect();
+    out.push_str("    /// Whether this status reports a call voip.ms accepted: one of\n");
+    out.push_str(&format!("    /// {}.\n", links.join(", ")));
+    out.push_str("    pub fn is_success(&self) -> bool {\n");
+    out.push_str("        matches!(self, ");
     out.push_str(&arms.join(" | "));
     out.push_str(")\n    }\n\n");
 
@@ -1340,9 +1340,20 @@ fn emit(
         }
     }
 
+    let test_methods: BTreeSet<&str> = wsdl
+        .operations
+        .iter()
+        .filter(|op| {
+            wsdl.types
+                .get(&format!("{op}Input"))
+                .is_some_and(|fields| fields.iter().any(|(name, _)| name == "test"))
+        })
+        .map(String::as_str)
+        .collect();
     let mut response_enums = BTreeSet::new();
     let responses_text = response_codegen::emit_response_structs(
         &wsdl.operations,
+        &test_methods,
         responses,
         resolver,
         &mut response_enums,

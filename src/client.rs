@@ -752,10 +752,10 @@ impl fmt::Debug for ClientBuilder {
 
 /// Classify a response's `status` field.
 ///
-/// Returns `Ok(None)` for a success status ([`ApiStatus::is_success`]: `success`,
-/// or `success_test` for a call made with `test` set), `Err(Error::Api)` for a
-/// genuine failure,
-/// and `Ok(Some(status))` for an empty-collection status
+/// Returns `Ok(None)` for a success status ([`ApiStatus::is_success`]:
+/// `success`, or `success_test` for a call made with `test` set),
+/// `Err(Error::Api)` for a genuine failure, and `Ok(Some(status))` for an
+/// empty-collection status
 /// ([`ApiStatus::is_empty_collection`], e.g. `no_sms`) -- VoIP.ms's per-method "the list
 /// is empty" code. Whether that case is an error is left to the caller:
 /// [`Client::call_raw`] surfaces it verbatim, while the typed
