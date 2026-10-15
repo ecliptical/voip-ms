@@ -2942,3 +2942,166 @@ async fn a_transaction_history_span_does_not_lose_the_response() {
         Some(Decimal::from_str_exact("-0.1760").unwrap())
     );
 }
+
+/// Awaits `call` under an outer bound, so a limit that never fires fails the
+/// test instead of hanging the binary.
+async fn settled<T>(call: impl std::future::Future<Output = T>) -> T {
+    tokio::time::timeout(std::time::Duration::from_secs(10), call)
+        .await
+        .expect("call settled within the outer timeout")
+}
+
+/// A `Client` for `base_url` whose HTTP client has a total timeout of `limit`.
+fn bounded_client(base_url: &str, limit: std::time::Duration) -> Client {
+    let http = voip_ms::reqwest::Client::builder()
+        .timeout(limit)
+        .build()
+        .unwrap();
+    Client::builder("user@example.com", "secret")
+        .base_url(format!("{base_url}/api/v1/rest.php").parse().unwrap())
+        .http_client(http)
+        .build()
+}
+
+#[tokio::test]
+async fn a_request_past_its_own_limit_is_a_classified_timeout() {
+    use std::time::Duration;
+    use voip_ms::TransportFailure;
+
+    let server = MockServer::start().await;
+    let client = bounded_client(&server.uri(), Duration::from_secs(30));
+    Mock::given(method("GET"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success" }))
+                .set_delay(Duration::from_secs(3)),
+        )
+        .mount(&server)
+        .await;
+
+    // The HTTP client's own limit outlasts the delay, so without the shorter
+    // per-request one this call would succeed.
+    let err = settled(
+        client
+            .with_timeout(Duration::from_millis(250))
+            .call_raw("getBalance", &json!({})),
+    )
+    .await
+    .expect_err("the per-request limit must expire before the delayed reply");
+
+    assert!(matches!(err, Error::Http(_)), "{err:?}");
+    assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}
+
+#[tokio::test]
+async fn a_multipart_post_past_its_own_limit_is_a_classified_timeout() {
+    use std::time::Duration;
+    use voip_ms::{SetRecordingParams, TransportFailure};
+
+    let (server, client) = fixture().await;
+    Mock::given(method("POST"))
+        .and(header_regex(
+            "content-type",
+            "^multipart/form-data; boundary=",
+        ))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success", "recording": 295001 }))
+                .set_delay(Duration::from_secs(3)),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let err = settled(
+        client
+            .with_timeout(Duration::from_millis(250))
+            .set_recording(&SetRecordingParams {
+                name: Some("greeting".into()),
+                file: Some("QUJD".into()),
+                ..Default::default()
+            }),
+    )
+    .await
+    .expect_err("the per-request limit must expire before the delayed reply");
+
+    assert!(matches!(err, Error::Http(_)), "{err:?}");
+    assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}
+
+/// reqwest replaces the HTTP client's total limit with a request's own rather
+/// than taking the smaller, so a longer per-request limit outlasts the
+/// client's. The client the copy came from keeps its limit.
+#[tokio::test]
+async fn a_per_request_limit_replaces_the_http_clients_own() {
+    use std::time::Duration;
+    use voip_ms::TransportFailure;
+
+    let server = MockServer::start().await;
+    let client = bounded_client(&server.uri(), Duration::from_millis(250));
+    Mock::given(method("GET"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success" }))
+                .set_delay(Duration::from_secs(1)),
+        )
+        .mount(&server)
+        .await;
+
+    let longer = settled(
+        client
+            .with_timeout(Duration::from_secs(5))
+            .call_raw("getBalance", &json!({})),
+    )
+    .await;
+    assert_eq!(longer.unwrap()["status"], "success");
+
+    let err = settled(client.call_raw("getBalance", &json!({})))
+        .await
+        .expect_err("the HTTP client's own limit must expire before the delayed reply");
+    assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}
+
+/// The limit runs until the body has been read, and a body that stalls past it
+/// is a timeout rather than an unreadable reply. reqwest reports it as a decode
+/// error wrapping the timeout, so it stays `Timeout` only while `classify`
+/// reads `is_timeout` before `is_body` and `is_decode`.
+#[tokio::test]
+async fn a_body_stalled_past_the_limit_is_a_classified_timeout() {
+    use std::time::Duration;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use voip_ms::TransportFailure;
+
+    // wiremock delays a whole response, so this peer sends the headers and the
+    // start of the body itself, then stalls before the rest.
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let peer = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut request = [0; 4096];
+        let _ = socket.read(&mut request).await;
+        socket
+            .write_all(
+                b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\
+                  Content-Length: 100\r\n\r\n{\"status\"",
+            )
+            .await
+            .unwrap();
+        tokio::time::sleep(Duration::from_secs(3)).await;
+    });
+
+    let client = bounded_client(&format!("http://{addr}"), Duration::from_secs(30));
+    let err = settled(
+        client
+            .with_timeout(Duration::from_millis(250))
+            .call_raw("getBalance", &json!({})),
+    )
+    .await
+    .expect_err("the per-request limit must expire before the body completes");
+    peer.abort();
+
+    assert!(matches!(err, Error::Http(_)), "{err:?}");
+    assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}

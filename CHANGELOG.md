@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Client::with_timeout(timeout)`: a copy of the client whose every request,
+  typed or raw, over GET or multipart POST, must finish within `timeout`. A
+  request that runs out of time is `Error::Http` and `transport()` answers
+  `TransportFailure::Timeout`, which a caller's own `tokio::time::timeout`
+  around the call cannot give. The limit replaces the `reqwest::Client`'s
+  total timeout rather than capping it, so a longer one outlasts it.
+
 ### Fixed
 
 - **Breaking**: the e911 postal code is sent as `zip_code`, the name the docs

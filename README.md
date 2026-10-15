@@ -147,7 +147,7 @@ field by field.
 
 ### Customizing the HTTP client
 
-Use [`Client::builder`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.builder) to plug in your own `reqwest::Client` — for proxies,
+Use [`Client::builder`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.builder) to plug in your own `reqwest::Client` -- for proxies,
 custom timeouts, retry middleware, or anything else you'd configure on
 reqwest directly.
 
@@ -163,6 +163,25 @@ let http = reqwest::Client::builder()
 let client = Client::builder("you@example.com", "api-password")
     .http_client(http)
     .build();
+```
+
+A limit for some requests only, such as the time left before an overall
+deadline, goes on a copy of the client from
+[`Client::with_timeout`](https://docs.rs/voip-ms/latest/voip_ms/struct.Client.html#method.with_timeout).
+It replaces the HTTP client's own total timeout for every call made through
+the copy, and a request that runs out of time is an `Error::Http` that
+`transport()` classifies as `TransportFailure::Timeout`.
+
+```rust,no_run
+# use std::time::Duration;
+# async fn example(client: &voip_ms::Client, left: Duration) -> voip_ms::Result<()> {
+let balance = client
+    .with_timeout(left)
+    .get_balance(&voip_ms::GetBalanceParams::default())
+    .await?;
+# let _ = balance;
+# Ok(())
+# }
 ```
 
 ### Running the examples
