@@ -1155,7 +1155,7 @@ voip-ms/
 │   ├── error.rs         # Error, ApiStatus, Result, TransportFailure
 │   ├── form.rs          # Params -> the wire fields both transports carry
 │   ├── generated.rs     # 222 *Params + Client methods + *Response (generated)
-│   ├── responses.rs     # Custom serde deserializers for generated.rs
+│   ├── responses.rs     # Custom serde deserializers for generated.rs; audio_in
 │   └── types.rs         # Hand-written domain types (Routing, …)
 ├── tests/
 │   ├── client.rs                # wiremock integration + wire-contract tests
