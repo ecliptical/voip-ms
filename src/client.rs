@@ -444,6 +444,10 @@ impl Client {
     /// let deadline = Instant::now() + Duration::from_secs(20);
     /// for _ in 0..3 {
     ///     let left = deadline.saturating_duration_since(Instant::now());
+    ///     if left.is_zero() {
+    ///         break;
+    ///     }
+    ///
     ///     client
     ///         .with_timeout(left)
     ///         .get_balance(&GetBalanceParams::default())
