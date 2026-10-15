@@ -41,7 +41,8 @@ enum Fix {
 /// the WSDL is an error naming the fix, so none can linger.
 const CORRECTIONS: &[Correction] = &[
     // The docs and the PHP client both send `zip_code`, which is also the name
-    // `e911Info` reports the same value under.
+    // `e911Info` reports the same value under. Confirmed live on e911Validate:
+    // a postal code sent as `zip` answers `missing_zip`, the same as none.
     Correction {
         op: "e911Provision",
         fix: ZIP_CODE,
