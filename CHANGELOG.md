@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `GetRecordingFileResponse::audio_in(envelope)` answers whether a raw
+  `getRecordingFile` envelope carries audio: the first non-blank `data`,
+  borrowed from the envelope, so checking a recording no longer copies its
+  base64. It reads `recordings` the way `GetRecordingFileResponse` does (one
+  recording or a list) and is an error exactly when deserializing into that
+  type is.
+
 ### Fixed
 
 - **Breaking**: the e911 postal code is sent as `zip_code`, the name the docs
