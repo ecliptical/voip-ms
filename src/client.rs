@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use std::borrow::Cow;
 use std::fmt;
 use std::sync::LazyLock;
+use std::time::Duration;
 
 use crate::error::{ApiStatus, Error, ParamsError, Result};
 use crate::form;
@@ -56,6 +57,7 @@ pub struct Client {
     base_url: Url,
     api_username: String,
     api_password: String,
+    timeout: Option<Duration>,
 }
 
 impl Client {
@@ -137,6 +139,10 @@ impl Client {
                     });
                 self.http.post(self.base_url.clone()).multipart(form)
             }
+        };
+        let request = match self.timeout {
+            Some(timeout) => request.timeout(timeout),
+            None => request,
         };
 
         let text = request.send().await?.error_for_status()?.text().await?;
@@ -413,6 +419,46 @@ impl Client {
         .await
     }
 
+    /// A copy of this client whose every request must finish within `timeout`,
+    /// from connecting until the response body has been read.
+    ///
+    /// A request that runs out of time is [`Error::Http`], and
+    /// [`Error::transport`] answers
+    /// [`TransportFailure::Timeout`](crate::TransportFailure::Timeout) for it,
+    /// as for any other timeout. That is the difference from wrapping a call
+    /// in a timer of one's own, which drops the request and leaves no
+    /// [`Error`] to classify.
+    ///
+    /// The limit replaces the total timeout of the [`reqwest::Client`] this
+    /// client was built with, whether it is shorter or longer, so a caller
+    /// that wants the smaller of the two passes it. That client's connect and
+    /// read timeouts still apply. Every call made through the copy is limited:
+    /// typed, raw, and both transports.
+    ///
+    /// ```no_run
+    /// # async fn example(client: &voip_ms::Client) -> voip_ms::Result<()> {
+    /// use std::time::{Duration, Instant};
+    /// use voip_ms::GetBalanceParams;
+    ///
+    /// // Three requests under one overall deadline.
+    /// let deadline = Instant::now() + Duration::from_secs(20);
+    /// for _ in 0..3 {
+    ///     let left = deadline.saturating_duration_since(Instant::now());
+    ///     client
+    ///         .with_timeout(left)
+    ///         .get_balance(&GetBalanceParams::default())
+    ///         .await?;
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_timeout(&self, timeout: Duration) -> Client {
+        Client {
+            timeout: Some(timeout),
+            ..self.clone()
+        }
+    }
+
     /// The base URL this client posts to.
     pub fn base_url(&self) -> &Url {
         &self.base_url
@@ -646,6 +692,7 @@ impl fmt::Debug for Client {
             .field("base_url", &base_url.as_str())
             .field("api_username", &self.api_username)
             .field("api_password", &REDACTED)
+            .field("timeout", &self.timeout)
             .finish()
     }
 }
@@ -679,6 +726,7 @@ impl ClientBuilder {
             base_url: self.base_url.unwrap_or_else(|| DEFAULT_URL.clone()),
             api_username: self.api_username,
             api_password: self.api_password,
+            timeout: None,
         }
     }
 }

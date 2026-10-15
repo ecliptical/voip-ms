@@ -2942,3 +2942,118 @@ async fn a_transaction_history_span_does_not_lose_the_response() {
         Some(Decimal::from_str_exact("-0.1760").unwrap())
     );
 }
+
+/// Awaits `call` under an outer bound, so a limit that never fires fails the
+/// test instead of hanging the binary.
+async fn settled<T>(call: impl std::future::Future<Output = T>) -> T {
+    tokio::time::timeout(std::time::Duration::from_secs(10), call)
+        .await
+        .expect("call settled within the outer timeout")
+}
+
+#[tokio::test]
+async fn a_request_past_its_own_limit_is_a_classified_timeout() {
+    use std::time::Duration;
+    use voip_ms::TransportFailure;
+
+    let (server, client) = fixture().await;
+    Mock::given(method("GET"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success" }))
+                .set_delay(Duration::from_secs(3)),
+        )
+        .mount(&server)
+        .await;
+
+    // The default HTTP client has no total limit, so without the per-request
+    // one this call would succeed after the delay.
+    let err = settled(
+        client
+            .with_timeout(Duration::from_millis(250))
+            .call_raw("getBalance", &json!({})),
+    )
+    .await
+    .expect_err("the per-request limit must expire before the delayed reply");
+
+    assert!(matches!(err, Error::Http(_)), "{err:?}");
+    assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}
+
+#[tokio::test]
+async fn a_multipart_post_past_its_own_limit_is_a_classified_timeout() {
+    use std::time::Duration;
+    use voip_ms::{SetRecordingParams, TransportFailure};
+
+    let (server, client) = fixture().await;
+    Mock::given(method("POST"))
+        .and(header_regex(
+            "content-type",
+            "^multipart/form-data; boundary=",
+        ))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success", "recording": 295001 }))
+                .set_delay(Duration::from_secs(3)),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let err = settled(
+        client
+            .with_timeout(Duration::from_millis(250))
+            .set_recording(&SetRecordingParams {
+                name: Some("greeting".into()),
+                file: Some("QUJD".into()),
+                ..Default::default()
+            }),
+    )
+    .await
+    .expect_err("the per-request limit must expire before the delayed reply");
+
+    assert!(matches!(err, Error::Http(_)), "{err:?}");
+    assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}
+
+/// reqwest replaces the HTTP client's total limit with a request's own rather
+/// than taking the smaller, so a longer per-request limit outlasts the
+/// client's. The client the copy came from keeps its limit.
+#[tokio::test]
+async fn a_per_request_limit_replaces_the_http_clients_own() {
+    use std::time::Duration;
+    use voip_ms::TransportFailure;
+
+    let server = MockServer::start().await;
+    let http = voip_ms::reqwest::Client::builder()
+        .timeout(Duration::from_millis(250))
+        .build()
+        .unwrap();
+    let client = Client::builder("user@example.com", "secret")
+        .base_url(format!("{}/api/v1/rest.php", server.uri()).parse().unwrap())
+        .http_client(http)
+        .build();
+    Mock::given(method("GET"))
+        .and(query_param("method", "getBalance"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "status": "success" }))
+                .set_delay(Duration::from_secs(1)),
+        )
+        .mount(&server)
+        .await;
+
+    let longer = settled(
+        client
+            .with_timeout(Duration::from_secs(5))
+            .call_raw("getBalance", &json!({})),
+    )
+    .await;
+    assert_eq!(longer.unwrap()["status"], "success");
+
+    let err = settled(client.call_raw("getBalance", &json!({})))
+        .await
+        .expect_err("the HTTP client's own limit must expire before the delayed reply");
+    assert_eq!(err.transport(), Some(TransportFailure::Timeout));
+}
