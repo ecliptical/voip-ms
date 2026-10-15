@@ -271,6 +271,11 @@
         { "path": "cdr[].useragent", "type": "string" }
       ]
     },
+    "setEmailToFax": {
+      "additions": [
+        { "path": "id", "type": "integer" }
+      ]
+    },
     "setSIPURI": {
       "shape": {
         "kind": "object",

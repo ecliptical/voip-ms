@@ -1179,6 +1179,8 @@ impl<'de> serde::Deserialize<'de> for VoicemailFolder {
 pub enum ApiStatus {
     /// `success` -- The request succeeded
     Success,
+    /// `success_test` -- The request was made with `test` set and was accepted; nothing was saved
+    SuccessTest,
     /// `account_with_dids` -- The Account has DIDs assigned to it.
     AccountWithDIDs,
     /// `api_limit_exceeded` -- API requests limit per minute has been reached
@@ -2149,6 +2151,7 @@ impl ApiStatus {
     pub fn as_wire(&self) -> &str {
         match self {
             ApiStatus::Success => "success",
+            ApiStatus::SuccessTest => "success_test",
             ApiStatus::AccountWithDIDs => "account_with_dids",
             ApiStatus::APILimitExceeded => "api_limit_exceeded",
             ApiStatus::APINotEnabled => "api_not_enabled",
@@ -2654,6 +2657,7 @@ impl ApiStatus {
     pub fn from_wire(s: &str) -> Self {
         match s {
             "success" => ApiStatus::Success,
+            "success_test" => ApiStatus::SuccessTest,
             "account_with_dids" => ApiStatus::AccountWithDIDs,
             "api_limit_exceeded" => ApiStatus::APILimitExceeded,
             "api_not_enabled" => ApiStatus::APINotEnabled,
@@ -3159,6 +3163,9 @@ impl ApiStatus {
     pub fn description(&self) -> Option<&'static str> {
         match self {
             ApiStatus::Success => Some("The request succeeded"),
+            ApiStatus::SuccessTest => {
+                Some("The request was made with `test` set and was accepted; nothing was saved")
+            }
             ApiStatus::AccountWithDIDs => Some("The Account has DIDs assigned to it."),
             ApiStatus::APILimitExceeded => Some("API requests limit per minute has been reached"),
             ApiStatus::APINotEnabled => Some("API has not been enabled or has been disabled"),
@@ -3875,6 +3882,13 @@ impl ApiStatus {
     /// [`ApiStatus::Unknown`]).
     pub fn is_documented(&self) -> bool {
         !matches!(self, ApiStatus::Unknown(_))
+    }
+
+    /// Whether this status reports a call voip.ms accepted:
+    /// [`ApiStatus::Success`], or [`ApiStatus::SuccessTest`] for a call
+    /// made with `test` set, which saved nothing.
+    pub fn is_success(&self) -> bool {
+        matches!(self, ApiStatus::Success | ApiStatus::SuccessTest)
     }
 
     /// Whether this status means "the requested collection is empty,"
@@ -10211,7 +10225,7 @@ pub struct SetConferenceMemberParams {
     pub description: Option<String>,
     /// Assigned PIN.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pin: Option<u64>,
+    pub pin: Option<String>,
     /// Sets if the conference recording when a member joins or leaves will be
     /// played (yes/no).
     #[serde(
@@ -10386,7 +10400,7 @@ pub struct SetDIDInfoParams {
     /// Port Out PIN protection is used as a means of authorizing outgoing
     /// portability (only for selected US numbers with the lock icon)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub port_out_pin: Option<u64>,
+    pub port_out_pin: Option<String>,
     /// Billing type for the DID (1 = Per Minute, 2 = Flat) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_type: Option<DidBillingType>,
@@ -10571,7 +10585,7 @@ pub struct SetDISAParams {
     pub name: Option<String>,
     /// Password for the DISA (required)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pin: Option<u64>,
+    pub pin: Option<String>,
     /// Time between digits (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digit_timeout: Option<u64>,
@@ -10591,10 +10605,10 @@ impl SetDISAParams {
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(name: impl Into<String>, pin: u64, digit_timeout: u64) -> Self {
+    pub fn new(name: impl Into<String>, pin: impl Into<String>, digit_timeout: u64) -> Self {
         Self {
             name: Some(name.into()),
-            pin: Some(pin),
+            pin: Some(pin.into()),
             digit_timeout: Some(digit_timeout),
             ..Default::default()
         }
@@ -11942,7 +11956,7 @@ impl UnconnectFAXParams {
 /// Response body for [`Client::add_charge`] (wire method `addCharge`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddChargeResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -11951,7 +11965,7 @@ pub struct AddChargeResponse {
 /// Response body for [`Client::add_lnp_file`] (wire method `addLNPFile`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddLNPFileResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -11965,7 +11979,7 @@ pub struct AddLNPFileResponse {
 /// Response body for [`Client::add_lnp_port`] (wire method `addLNPPort`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddLNPPortResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -11979,7 +11993,7 @@ pub struct AddLNPPortResponse {
 /// Response body for [`Client::add_member_to_conference`] (wire method `addMemberToConference`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddMemberToConferenceResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -11993,7 +12007,7 @@ pub struct AddMemberToConferenceResponse {
 /// Response body for [`Client::add_payment`] (wire method `addPayment`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AddPaymentResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12002,7 +12016,7 @@ pub struct AddPaymentResponse {
 /// Response body for [`Client::assign_did_vpri`] (wire method `assignDIDvPRI`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct AssignDIDvPRIResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12027,7 +12041,7 @@ pub struct AssignDIDvPRIResponse {
 /// Response body for [`Client::back_order_did_can`] (wire method `backOrderDIDCAN`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct BackOrderDIDCANResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12036,7 +12050,7 @@ pub struct BackOrderDIDCANResponse {
 /// Response body for [`Client::back_order_did_usa`] (wire method `backOrderDIDUSA`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct BackOrderDIDUSAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12045,7 +12059,7 @@ pub struct BackOrderDIDUSAResponse {
 /// Response body for [`Client::cancel_did`] (wire method `cancelDID`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CancelDIDResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12054,7 +12068,7 @@ pub struct CancelDIDResponse {
 /// Response body for [`Client::cancel_fax_number`] (wire method `cancelFaxNumber`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CancelFAXNumberResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12068,7 +12082,7 @@ pub struct CancelFAXNumberResponse {
 /// Response body for [`Client::connect_did`] (wire method `connectDID`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ConnectDIDResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12077,7 +12091,7 @@ pub struct ConnectDIDResponse {
 /// Response body for [`Client::connect_fax`] (wire method `connectFAX`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ConnectFAXResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12086,7 +12100,7 @@ pub struct ConnectFAXResponse {
 /// Response body for [`Client::create_sub_account`] (wire method `createSubAccount`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CreateSubAccountResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12105,7 +12119,7 @@ pub struct CreateSubAccountResponse {
 /// Response body for [`Client::create_voicemail`] (wire method `createVoicemail`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct CreateVoicemailResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12114,7 +12128,7 @@ pub struct CreateVoicemailResponse {
 /// Response body for [`Client::del_call_hunting`] (wire method `delCallHunting`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallHuntingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12123,7 +12137,7 @@ pub struct DelCallHuntingResponse {
 /// Response body for [`Client::del_call_parking`] (wire method `delCallParking`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallParkingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12132,7 +12146,7 @@ pub struct DelCallParkingResponse {
 /// Response body for [`Client::del_call_recording`] (wire method `delCallRecording`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallRecordingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12141,7 +12155,7 @@ pub struct DelCallRecordingResponse {
 /// Response body for [`Client::del_callback`] (wire method `delCallback`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallbackResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12150,7 +12164,7 @@ pub struct DelCallbackResponse {
 /// Response body for [`Client::del_caller_id_filtering`] (wire method `delCallerIDFiltering`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelCallerIDFilteringResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12159,7 +12173,7 @@ pub struct DelCallerIDFilteringResponse {
 /// Response body for [`Client::del_client`] (wire method `delClient`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelClientResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12168,7 +12182,7 @@ pub struct DelClientResponse {
 /// Response body for [`Client::del_conference`] (wire method `delConference`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelConferenceResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12177,7 +12191,7 @@ pub struct DelConferenceResponse {
 /// Response body for [`Client::del_conference_member`] (wire method `delConferenceMember`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelConferenceMemberResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12186,7 +12200,7 @@ pub struct DelConferenceMemberResponse {
 /// Response body for [`Client::del_disa`] (wire method `delDISA`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelDISAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12195,7 +12209,7 @@ pub struct DelDISAResponse {
 /// Response body for [`Client::del_email_to_fax`] (wire method `delEmailToFax`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelEmailToFAXResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12204,7 +12218,7 @@ pub struct DelEmailToFAXResponse {
 /// Response body for [`Client::del_fax_folder`] (wire method `delFaxFolder`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelFAXFolderResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12213,7 +12227,7 @@ pub struct DelFAXFolderResponse {
 /// Response body for [`Client::del_forwarding`] (wire method `delForwarding`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelForwardingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12222,7 +12236,7 @@ pub struct DelForwardingResponse {
 /// Response body for [`Client::del_ivr`] (wire method `delIVR`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelIVRResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12231,7 +12245,7 @@ pub struct DelIVRResponse {
 /// Response body for [`Client::del_location`] (wire method `delLocation`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelLocationResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12240,7 +12254,7 @@ pub struct DelLocationResponse {
 /// Response body for [`Client::del_member_from_conference`] (wire method `delMemberFromConference`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelMemberFromConferenceResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12249,7 +12263,7 @@ pub struct DelMemberFromConferenceResponse {
 /// Response body for [`Client::del_messages`] (wire method `delMessages`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelMessagesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12258,7 +12272,7 @@ pub struct DelMessagesResponse {
 /// Response body for [`Client::del_music_on_hold`] (wire method `delMusicOnHold`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelMusicOnHoldResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12267,7 +12281,7 @@ pub struct DelMusicOnHoldResponse {
 /// Response body for [`Client::del_phonebook`] (wire method `delPhonebook`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelPhonebookResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12276,7 +12290,7 @@ pub struct DelPhonebookResponse {
 /// Response body for [`Client::del_phonebook_group`] (wire method `delPhonebookGroup`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelPhonebookGroupResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12285,7 +12299,7 @@ pub struct DelPhonebookGroupResponse {
 /// Response body for [`Client::del_queue`] (wire method `delQueue`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelQueueResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12294,7 +12308,7 @@ pub struct DelQueueResponse {
 /// Response body for [`Client::del_recording`] (wire method `delRecording`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelRecordingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12303,7 +12317,7 @@ pub struct DelRecordingResponse {
 /// Response body for [`Client::del_ring_group`] (wire method `delRingGroup`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelRingGroupResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12312,7 +12326,7 @@ pub struct DelRingGroupResponse {
 /// Response body for [`Client::del_sip_uri`] (wire method `delSIPURI`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelSIPURIResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12321,7 +12335,7 @@ pub struct DelSIPURIResponse {
 /// Response body for [`Client::del_static_member`] (wire method `delStaticMember`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelStaticMemberResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12330,7 +12344,7 @@ pub struct DelStaticMemberResponse {
 /// Response body for [`Client::del_sub_account`] (wire method `delSubAccount`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelSubAccountResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12339,7 +12353,7 @@ pub struct DelSubAccountResponse {
 /// Response body for [`Client::del_time_condition`] (wire method `delTimeCondition`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelTimeConditionResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12348,7 +12362,7 @@ pub struct DelTimeConditionResponse {
 /// Response body for [`Client::del_voicemail`] (wire method `delVoicemail`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DelVoicemailResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12357,7 +12371,7 @@ pub struct DelVoicemailResponse {
 /// Response body for [`Client::delete_fax_message`] (wire method `deleteFaxMessage`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DeleteFAXMessageResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12366,7 +12380,7 @@ pub struct DeleteFAXMessageResponse {
 /// Response body for [`Client::delete_mms`] (wire method `deleteMMS`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DeleteMMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12375,7 +12389,7 @@ pub struct DeleteMMSResponse {
 /// Response body for [`Client::delete_sms`] (wire method `deleteSMS`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct DeleteSMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12398,7 +12412,7 @@ pub struct E911AddressTypesResponseType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911AddressTypesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12412,7 +12426,7 @@ pub struct E911AddressTypesResponse {
 /// Response body for [`Client::e911_cancel`] (wire method `e911Cancel`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911CancelResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12495,7 +12509,7 @@ pub struct E911InfoResponseInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911InfoResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12506,7 +12520,7 @@ pub struct E911InfoResponse {
 /// Response body for [`Client::e911_provision`] (wire method `e911Provision`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911ProvisionResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12515,7 +12529,7 @@ pub struct E911ProvisionResponse {
 /// Response body for [`Client::e911_provision_manually`] (wire method `e911ProvisionManually`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911ProvisionManuallyResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12524,7 +12538,7 @@ pub struct E911ProvisionManuallyResponse {
 /// Response body for [`Client::e911_update`] (wire method `e911Update`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911UpdateResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12533,7 +12547,7 @@ pub struct E911UpdateResponse {
 /// Response body for [`Client::e911_validate`] (wire method `e911Validate`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct E911ValidateResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12556,7 +12570,7 @@ pub struct GetAllowedCodecsResponseAllowedCodec {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetAllowedCodecsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12584,7 +12598,7 @@ pub struct GetAuthTypesResponseAuthType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetAuthTypesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12662,7 +12676,7 @@ pub struct GetBackOrdersResponseBackOrder {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBackOrdersResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12720,7 +12734,7 @@ pub struct GetBalanceResponseBalance {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBalanceResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12745,7 +12759,7 @@ pub struct GetBalanceManagementResponseBalanceManagement {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetBalanceManagementResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12838,7 +12852,7 @@ pub struct GetCDRResponseCDR {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCDRResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12866,7 +12880,7 @@ pub struct GetCallAccountsResponseAccount {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallAccountsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12894,7 +12908,7 @@ pub struct GetCallBillingResponseCallBilling {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallBillingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -12957,7 +12971,7 @@ pub struct GetCallHuntingsResponseCallHunting {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallHuntingsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13020,7 +13034,7 @@ pub struct GetCallParkingResponseCallHunting {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallParkingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13034,7 +13048,7 @@ pub struct GetCallParkingResponse {
 /// Response body for [`Client::get_call_recording`] (wire method `getCallRecording`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallRecordingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13114,7 +13128,7 @@ pub struct GetCallRecordingsResponseRecording {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallRecordingsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13186,7 +13200,7 @@ pub struct GetCallTranscriptionsResponseTranscription {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallTranscriptionsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13214,7 +13228,7 @@ pub struct GetCallTypesResponseCallType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallTypesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13267,7 +13281,7 @@ pub struct GetCallbacksResponseCallback {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallbacksResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13325,7 +13339,7 @@ pub struct GetCallerIDFilteringResponseFiltering {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCallerIDFilteringResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13353,7 +13367,7 @@ pub struct GetCarriersResponseCarrier {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCarriersResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13391,7 +13405,7 @@ pub struct GetChargesResponseCharge {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetChargesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13419,7 +13433,7 @@ pub struct GetClientPackagesResponsePackage {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientPackagesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13447,7 +13461,7 @@ pub struct GetClientThresholdResponseThresholdInformation {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientThresholdResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13527,7 +13541,7 @@ pub struct GetClientsResponseClient {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetClientsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13675,7 +13689,7 @@ pub struct GetConferenceResponseConference {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13706,9 +13720,9 @@ pub struct GetConferenceMembersResponseMember {
     pub description: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub pin: Option<u64>,
+    pub pin: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
@@ -13778,7 +13792,7 @@ pub struct GetConferenceMembersResponseMember {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceMembersResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13806,7 +13820,7 @@ pub struct GetConferenceRecordingFileResponseRecording {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceRecordingFileResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13849,7 +13863,7 @@ pub struct GetConferenceRecordingsResponseRecording {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetConferenceRecordingsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13877,7 +13891,7 @@ pub struct GetCountriesResponseCountry {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetCountriesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13905,7 +13919,7 @@ pub struct GetDIDCountriesResponseCountry {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDCountriesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -13978,7 +13992,7 @@ pub struct GetDIDsCANResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsCANResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14059,9 +14073,9 @@ pub struct GetDIDsInfoResponseDID {
     pub note: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub port_out_pin: Option<u64>,
+    pub port_out_pin: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<DidBillingType, _>"
@@ -14201,7 +14215,7 @@ pub struct GetDIDsInfoResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInfoResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14274,7 +14288,7 @@ pub struct GetDIDsInternationalGeographicResponseLocation {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalGeographicResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14342,7 +14356,7 @@ pub struct GetDIDsInternationalNationalResponseLocation {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalNationalResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14400,7 +14414,7 @@ pub struct GetDIDsInternationalTollFreeResponseLocation {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsInternationalTollFreeResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14478,7 +14492,7 @@ pub struct GetDIDsUSAResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDsUSAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14492,7 +14506,7 @@ pub struct GetDIDsUSAResponse {
 /// Response body for [`Client::get_did_vpri`] (wire method `getDIDvPRI`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDIDvPRIResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14518,9 +14532,9 @@ pub struct GetDISAsResponseDISA {
     pub name: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
-    pub pin: Option<u64>,
+    pub pin: Option<String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -14540,7 +14554,7 @@ pub struct GetDISAsResponseDISA {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDISAsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14568,7 +14582,7 @@ pub struct GetDTMFModesResponseDTMFMode {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDTMFModesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14606,7 +14620,7 @@ pub struct GetDepositsResponseDeposit {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDepositsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14634,7 +14648,7 @@ pub struct GetDeviceTypesResponseDeviceType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetDeviceTypesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14682,7 +14696,7 @@ pub struct GetEmailToFAXResponseEmailToFAX {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetEmailToFAXResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14711,7 +14725,7 @@ pub struct GetFAXFoldersResponseFolder {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXFoldersResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14725,7 +14739,7 @@ pub struct GetFAXFoldersResponse {
 /// Response body for [`Client::get_fax_message_pdf`] (wire method `getFaxMessagePDF`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXMessagePDFResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14808,7 +14822,7 @@ pub struct GetFAXMessagesResponseFAX {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXMessagesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14926,7 +14940,7 @@ pub struct GetFAXNumbersInfoResponseNumber {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXNumbersInfoResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14940,7 +14954,7 @@ pub struct GetFAXNumbersInfoResponse {
 /// Response body for [`Client::get_fax_numbers_portability`] (wire method `getFaxNumbersPortability`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXNumbersPortabilityResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -14979,7 +14993,7 @@ pub struct GetFAXProvincesResponseProvince {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXProvincesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15017,7 +15031,7 @@ pub struct GetFAXRateCentersCANResponseRatecenter {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXRateCentersCANResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15055,7 +15069,7 @@ pub struct GetFAXRateCentersUSAResponseRatecenter {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXRateCentersUSAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15093,7 +15107,7 @@ pub struct GetFAXStatesResponseState {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetFAXStatesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15146,7 +15160,7 @@ pub struct GetForwardingsResponseForwarding {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetForwardingsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15160,7 +15174,7 @@ pub struct GetForwardingsResponse {
 /// Response body for [`Client::get_ip`] (wire method `getIP`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetIPResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15213,7 +15227,7 @@ pub struct GetIVRsResponseIVR {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetIVRsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15241,7 +15255,7 @@ pub struct GetInternationalTypesResponseType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetInternationalTypesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15269,7 +15283,7 @@ pub struct GetJoinWhenEmptyTypesResponseType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetJoinWhenEmptyTypesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15283,7 +15297,7 @@ pub struct GetJoinWhenEmptyTypesResponse {
 /// Response body for [`Client::get_lnp_attach`] (wire method `getLNPAttach`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPAttachResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15328,7 +15342,7 @@ pub struct GetLNPAttachListResponseList {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPAttachListResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15406,7 +15420,7 @@ pub struct GetLNPDetailsResponseAttachment {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPDetailsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15591,7 +15605,7 @@ pub struct GetLNPListResponseList {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPListResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15605,7 +15619,7 @@ pub struct GetLNPListResponse {
 /// Response body for [`Client::get_lnp_list_status`] (wire method `getLNPListStatus`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPListStatusResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15638,7 +15652,7 @@ pub struct GetLNPNotesResponseList {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPNotesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15652,7 +15666,7 @@ pub struct GetLNPNotesResponse {
 /// Response body for [`Client::get_lnp_status`] (wire method `getLNPStatus`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLNPStatusResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15685,7 +15699,7 @@ pub struct GetLanguagesResponseLanguage {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLanguagesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15713,7 +15727,7 @@ pub struct GetLocalesResponseLocale {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLocalesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15727,7 +15741,7 @@ pub struct GetLocalesResponse {
 /// Response body for [`Client::get_locations`] (wire method `getLocations`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLocationsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15755,7 +15769,7 @@ pub struct GetLockInternationalResponseLockInternational {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetLockInternationalResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15829,7 +15843,7 @@ pub struct GetMMSResponseSMS {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15843,7 +15857,7 @@ pub struct GetMMSResponse {
 /// Response body for [`Client::get_media_mms`] (wire method `getMediaMMS`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMediaMMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15906,7 +15920,7 @@ pub struct GetMusicOnHoldResponseMusicOnHold {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetMusicOnHoldResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -15934,7 +15948,7 @@ pub struct GetNATResponseNAT {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetNATResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16002,7 +16016,7 @@ pub struct GetPackagesResponsePackage {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPackagesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16060,7 +16074,7 @@ pub struct GetPhonebookResponsePhonebook {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPhonebookResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16093,7 +16107,7 @@ pub struct GetPhonebookGroupsResponsePhonebook {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPhonebookGroupsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16121,7 +16135,7 @@ pub struct GetPlayInstructionsResponsePlayInstruction {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPlayInstructionsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16156,7 +16170,7 @@ pub struct GetPortabilityResponsePlan {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetPortabilityResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16194,7 +16208,7 @@ pub struct GetProtocolsResponseProtocol {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetProtocolsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16222,7 +16236,7 @@ pub struct GetProvincesResponseProvince {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetProvincesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16405,7 +16419,7 @@ pub struct GetQueuesResponseQueue {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetQueuesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16433,7 +16447,7 @@ pub struct GetRateCentersCANResponseRatecenter {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRateCentersCANResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16461,7 +16475,7 @@ pub struct GetRateCentersUSAResponseRatecenter {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRateCentersUSAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16509,7 +16523,7 @@ pub struct GetRatesResponseRate {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRatesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16537,7 +16551,7 @@ pub struct GetRecordingFileResponseRecording {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRecordingFileResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16565,7 +16579,7 @@ pub struct GetRecordingsResponseRecording {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRecordingsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16638,7 +16652,7 @@ pub struct GetRegistrationStatusResponseRegistration {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRegistrationStatusResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16681,7 +16695,7 @@ pub struct GetReportEstimatedHoldTimeResponseType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetReportEstimatedHoldTimeResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16734,7 +16748,7 @@ pub struct GetResellerBalanceResponseBalance {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerBalanceResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16809,7 +16823,7 @@ pub struct GetResellerCDRResponseCDR {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerCDRResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16858,7 +16872,7 @@ pub struct GetResellerMMSResponseSMS {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerMMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16907,7 +16921,7 @@ pub struct GetResellerSMSResponseSMS {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetResellerSMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16960,7 +16974,7 @@ pub struct GetRingGroupsResponseRingGroup {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRingGroupsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -16988,7 +17002,7 @@ pub struct GetRingStrategiesResponseStrategy {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRingStrategiesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17016,7 +17030,7 @@ pub struct GetRoutesResponseRoute {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetRoutesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17060,7 +17074,7 @@ pub struct GetSIPURIsResponseSIPURI {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSIPURIsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17115,7 +17129,7 @@ pub struct GetSMSResponseSMS {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17168,7 +17182,7 @@ pub struct GetServersInfoResponseServer {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetServersInfoResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17196,7 +17210,7 @@ pub struct GetStatesResponseState {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetStatesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17239,7 +17253,7 @@ pub struct GetStaticMembersResponseMember {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetStaticMembersResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17487,7 +17501,7 @@ pub struct GetSubAccountsResponseAccount {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetSubAccountsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17539,7 +17553,7 @@ pub struct GetTerminationRatesResponseRate {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTerminationRatesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17612,7 +17626,7 @@ pub struct GetTimeConditionsResponseTimecondition {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTimeConditionsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17640,7 +17654,7 @@ pub struct GetTimezonesResponseTimezone {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTimezonesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17684,7 +17698,7 @@ pub struct GetTransactionHistoryResponseTransaction {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetTransactionHistoryResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17747,7 +17761,7 @@ pub struct GetVPRIsResponseVPRI {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVPRIsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17775,7 +17789,7 @@ pub struct GetVoicemailAttachmentFormatsResponseEmailAttachmentFormat {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailAttachmentFormatsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17803,7 +17817,7 @@ pub struct GetVoicemailFoldersResponseFolder {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailFoldersResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17841,7 +17855,7 @@ pub struct GetVoicemailMessageFileResponseMessage {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailMessageFileResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17899,7 +17913,7 @@ pub struct GetVoicemailMessagesResponseMessage {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailMessagesResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17927,7 +17941,7 @@ pub struct GetVoicemailSetupsResponseVoicemailsetup {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailSetupsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -17970,7 +17984,7 @@ pub struct GetVoicemailTranscriptionsResponseMessage {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailTranscriptionsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18103,7 +18117,7 @@ pub struct GetVoicemailsResponseVoicemail {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct GetVoicemailsResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18117,7 +18131,7 @@ pub struct GetVoicemailsResponse {
 /// Response body for [`Client::mail_fax_message_pdf`] (wire method `mailFaxMessagePDF`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MailFAXMessagePDFResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18131,7 +18145,7 @@ pub struct MailFAXMessagePDFResponse {
 /// Response body for [`Client::mark_listened_voicemail_message`] (wire method `markListenedVoicemailMessage`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MarkListenedVoicemailMessageResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18140,7 +18154,7 @@ pub struct MarkListenedVoicemailMessageResponse {
 /// Response body for [`Client::mark_urgent_voicemail_message`] (wire method `markUrgentVoicemailMessage`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MarkUrgentVoicemailMessageResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18149,7 +18163,7 @@ pub struct MarkUrgentVoicemailMessageResponse {
 /// Response body for [`Client::move_fax_message`] (wire method `moveFaxMessage`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MoveFAXMessageResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18158,7 +18172,7 @@ pub struct MoveFAXMessageResponse {
 /// Response body for [`Client::move_folder_voicemail_message`] (wire method `moveFolderVoicemailMessage`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct MoveFolderVoicemailMessageResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18167,7 +18181,7 @@ pub struct MoveFolderVoicemailMessageResponse {
 /// Response body for [`Client::order_did`] (wire method `orderDID`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18176,7 +18190,7 @@ pub struct OrderDIDResponse {
 /// Response body for [`Client::order_did_international_geographic`] (wire method `orderDIDInternationalGeographic`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDInternationalGeographicResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18185,7 +18199,7 @@ pub struct OrderDIDInternationalGeographicResponse {
 /// Response body for [`Client::order_did_international_national`] (wire method `orderDIDInternationalNational`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDInternationalNationalResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18194,7 +18208,7 @@ pub struct OrderDIDInternationalNationalResponse {
 /// Response body for [`Client::order_did_international_toll_free`] (wire method `orderDIDInternationalTollFree`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDInternationalTollFreeResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18203,7 +18217,7 @@ pub struct OrderDIDInternationalTollFreeResponse {
 /// Response body for [`Client::order_did_virtual`] (wire method `orderDIDVirtual`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderDIDVirtualResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18212,7 +18226,7 @@ pub struct OrderDIDVirtualResponse {
 /// Response body for [`Client::order_fax_number`] (wire method `orderFaxNumber`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderFAXNumberResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18226,7 +18240,7 @@ pub struct OrderFAXNumberResponse {
 /// Response body for [`Client::order_toll_free`] (wire method `orderTollFree`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderTollFreeResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18235,7 +18249,7 @@ pub struct OrderTollFreeResponse {
 /// Response body for [`Client::order_vanity`] (wire method `orderVanity`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct OrderVanityResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18244,7 +18258,7 @@ pub struct OrderVanityResponse {
 /// Response body for [`Client::remove_did_vpri`] (wire method `removeDIDvPRI`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct RemoveDIDvPRIResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18318,7 +18332,7 @@ pub struct SearchDIDsCANResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchDIDsCANResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18386,7 +18400,7 @@ pub struct SearchDIDsUSAResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchDIDsUSAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18419,7 +18433,7 @@ pub struct SearchFAXAreaCodeCANResponseRatecenter {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchFAXAreaCodeCANResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18452,7 +18466,7 @@ pub struct SearchFAXAreaCodeUSAResponseRatecenter {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchFAXAreaCodeUSAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18490,7 +18504,7 @@ pub struct SearchTollFreeCANUSResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchTollFreeCANUSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18543,7 +18557,7 @@ pub struct SearchTollFreeUSAResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchTollFreeUSAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18601,7 +18615,7 @@ pub struct SearchVanityResponseDID {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SearchVanityResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18615,7 +18629,7 @@ pub struct SearchVanityResponse {
 /// Response body for [`Client::send_call_recording_email`] (wire method `sendCallRecordingEmail`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendCallRecordingEmailResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18629,7 +18643,7 @@ pub struct SendCallRecordingEmailResponse {
 /// Response body for [`Client::send_fax_message`] (wire method `sendFaxMessage`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendFAXMessageResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18638,7 +18652,7 @@ pub struct SendFAXMessageResponse {
 /// Response body for [`Client::send_mms`] (wire method `sendMMS`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendMMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18652,7 +18666,7 @@ pub struct SendMMSResponse {
 /// Response body for [`Client::send_sms`] (wire method `sendSMS`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendSMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18666,7 +18680,7 @@ pub struct SendSMSResponse {
 /// Response body for [`Client::send_voicemail_email`] (wire method `sendVoicemailEmail`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SendVoicemailEmailResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18675,7 +18689,7 @@ pub struct SendVoicemailEmailResponse {
 /// Response body for [`Client::set_call_hunting`] (wire method `setCallHunting`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallHuntingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18689,7 +18703,7 @@ pub struct SetCallHuntingResponse {
 /// Response body for [`Client::set_call_parking`] (wire method `setCallParking`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallParkingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18703,7 +18717,7 @@ pub struct SetCallParkingResponse {
 /// Response body for [`Client::set_callback`] (wire method `setCallback`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallbackResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18717,7 +18731,7 @@ pub struct SetCallbackResponse {
 /// Response body for [`Client::set_caller_id_filtering`] (wire method `setCallerIDFiltering`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetCallerIDFilteringResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18731,7 +18745,7 @@ pub struct SetCallerIDFilteringResponse {
 /// Response body for [`Client::set_client`] (wire method `setClient`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetClientResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18740,7 +18754,7 @@ pub struct SetClientResponse {
 /// Response body for [`Client::set_client_threshold`] (wire method `setClientThreshold`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetClientThresholdResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18749,7 +18763,7 @@ pub struct SetClientThresholdResponse {
 /// Response body for [`Client::set_conference`] (wire method `setConference`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetConferenceResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18763,7 +18777,7 @@ pub struct SetConferenceResponse {
 /// Response body for [`Client::set_conference_member`] (wire method `setConferenceMember`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetConferenceMemberResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18777,7 +18791,7 @@ pub struct SetConferenceMemberResponse {
 /// Response body for [`Client::set_did_billing_type`] (wire method `setDIDBillingType`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDBillingTypeResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18786,7 +18800,7 @@ pub struct SetDIDBillingTypeResponse {
 /// Response body for [`Client::set_did_info`] (wire method `setDIDInfo`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDInfoResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18795,7 +18809,7 @@ pub struct SetDIDInfoResponse {
 /// Response body for [`Client::set_did_pop`] (wire method `setDIDPOP`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDPOPResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18804,7 +18818,7 @@ pub struct SetDIDPOPResponse {
 /// Response body for [`Client::set_did_routing`] (wire method `setDIDRouting`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDRoutingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18813,7 +18827,7 @@ pub struct SetDIDRoutingResponse {
 /// Response body for [`Client::set_did_voicemail`] (wire method `setDIDVoicemail`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDIDVoicemailResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18822,7 +18836,7 @@ pub struct SetDIDVoicemailResponse {
 /// Response body for [`Client::set_disa`] (wire method `setDISA`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetDISAResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18836,16 +18850,21 @@ pub struct SetDISAResponse {
 /// Response body for [`Client::set_email_to_fax`] (wire method `setEmailToFax`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetEmailToFAXResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub id: Option<u64>,
 }
 
 /// Response body for [`Client::set_fax_folder`] (wire method `setFaxFolder`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXFolderResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18854,7 +18873,7 @@ pub struct SetFAXFolderResponse {
 /// Response body for [`Client::set_fax_number_email`] (wire method `setFaxNumberEmail`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXNumberEmailResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18863,7 +18882,7 @@ pub struct SetFAXNumberEmailResponse {
 /// Response body for [`Client::set_fax_number_info`] (wire method `setFaxNumberInfo`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXNumberInfoResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18872,7 +18891,7 @@ pub struct SetFAXNumberInfoResponse {
 /// Response body for [`Client::set_fax_number_url_callback`] (wire method `setFaxNumberURLCallback`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetFAXNumberURLCallbackResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18881,7 +18900,7 @@ pub struct SetFAXNumberURLCallbackResponse {
 /// Response body for [`Client::set_forwarding`] (wire method `setForwarding`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetForwardingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18895,7 +18914,7 @@ pub struct SetForwardingResponse {
 /// Response body for [`Client::set_ivr`] (wire method `setIVR`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetIVRResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18909,7 +18928,7 @@ pub struct SetIVRResponse {
 /// Response body for [`Client::set_location`] (wire method `setLocation`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetLocationResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18918,7 +18937,7 @@ pub struct SetLocationResponse {
 /// Response body for [`Client::set_music_on_hold`] (wire method `setMusicOnHold`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetMusicOnHoldResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18927,7 +18946,7 @@ pub struct SetMusicOnHoldResponse {
 /// Response body for [`Client::set_phonebook`] (wire method `setPhonebook`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetPhonebookResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18941,7 +18960,7 @@ pub struct SetPhonebookResponse {
 /// Response body for [`Client::set_phonebook_group`] (wire method `setPhonebookGroup`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetPhonebookGroupResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18955,7 +18974,7 @@ pub struct SetPhonebookGroupResponse {
 /// Response body for [`Client::set_queue`] (wire method `setQueue`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetQueueResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18969,7 +18988,7 @@ pub struct SetQueueResponse {
 /// Response body for [`Client::set_recording`] (wire method `setRecording`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetRecordingResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18983,7 +19002,7 @@ pub struct SetRecordingResponse {
 /// Response body for [`Client::set_ring_group`] (wire method `setRingGroup`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetRingGroupResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -18997,7 +19016,7 @@ pub struct SetRingGroupResponse {
 /// Response body for [`Client::set_sip_uri`] (wire method `setSIPURI`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetSIPURIResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19006,7 +19025,7 @@ pub struct SetSIPURIResponse {
 /// Response body for [`Client::set_sms`] (wire method `setSMS`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetSMSResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19021,7 +19040,7 @@ pub struct SetSMSResponse {
 /// Response body for [`Client::set_static_member`] (wire method `setStaticMember`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetStaticMemberResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19035,7 +19054,7 @@ pub struct SetStaticMemberResponse {
 /// Response body for [`Client::set_sub_account`] (wire method `setSubAccount`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetSubAccountResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19044,7 +19063,7 @@ pub struct SetSubAccountResponse {
 /// Response body for [`Client::set_time_condition`] (wire method `setTimeCondition`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetTimeConditionResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19058,7 +19077,7 @@ pub struct SetTimeConditionResponse {
 /// Response body for [`Client::set_voicemail`] (wire method `setVoicemail`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SetVoicemailResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19067,7 +19086,7 @@ pub struct SetVoicemailResponse {
 /// Response body for [`Client::signup_client`] (wire method `signupClient`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct SignupClientResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19081,7 +19100,7 @@ pub struct SignupClientResponse {
 /// Response body for [`Client::unconnect_did`] (wire method `unconnectDID`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct UnconnectDIDResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
@@ -19090,7 +19109,7 @@ pub struct UnconnectDIDResponse {
 /// Response body for [`Client::unconnect_fax`] (wire method `unconnectFAX`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct UnconnectFAXResponse {
-    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`],
+    /// The status VoIP.ms reported for the call: [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,

@@ -356,7 +356,7 @@ impl<'a> Emitter<'a> {
             if name == self.root && fname == "status" {
                 body.push_str(
                     "    /// The status VoIP.ms reported for the call: \
-                     [`ApiStatus::Success`],\n    \
+                     [`ApiStatus::Success`] or [`ApiStatus::SuccessTest`],\n    \
                      /// or the empty-collection code\n    \
                      /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.\n",
                 );

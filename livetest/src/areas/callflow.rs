@@ -342,7 +342,7 @@ async fn disa_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope)
     let created = client
         .set_disa(&SetDISAParams {
             name: Some(name),
-            pin: Some(1234),
+            pin: Some("1234".into()),
             digit_timeout: Some(5),
             ..Default::default()
         })

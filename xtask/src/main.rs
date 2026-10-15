@@ -1000,16 +1000,26 @@ fn status_variant_name(code: &str, acronyms: &[&'static str]) -> String {
     camel_to_pascal(code, acronyms)
 }
 
-/// The one status the error-code table does not list, because it is not an
-/// error. It is a variant so a typed response's `status` field names the
-/// ordinary case instead of landing in `voip_ms::ApiStatus::Unknown`.
-const SUCCESS_STATUS: (&str, &str) = ("success", "The request succeeded");
+/// The statuses the error-code table does not list, because they are not
+/// errors. They are variants so a typed response's `status` field names them
+/// instead of landing in `voip_ms::ApiStatus::Unknown`.
+///
+/// `success_test` is the reply to a call with `test` set to `1`, measured on a
+/// live account: voip.ms checked the call and saved nothing. A `test` sent as
+/// `true` is ignored and the call takes effect.
+const SUCCESS_STATUSES: &[(&str, &str)] = &[
+    ("success", "The request succeeded"),
+    (
+        "success_test",
+        "The request was made with `test` set and was accepted; nothing was saved",
+    ),
+];
 
-/// Emit the `ApiStatus` enum: a `Success` variant, one PascalCase variant per
-/// documented wire code (carrying its description as a doc comment), and an
-/// `Unknown(String)` catch-all, with
-/// `as_wire`/`from_wire`/`description`/`is_documented`/`is_empty_collection`
-/// and the `FromStr`/`Display`/`Deserialize` impls. The wire strings are preserved verbatim (including the rare
+/// Emit the `ApiStatus` enum: the [`SUCCESS_STATUSES`] variants, one PascalCase
+/// variant per documented wire code (carrying its description as a doc
+/// comment), and an `Unknown(String)` catch-all, with
+/// `as_wire`/`from_wire`/`description`/`is_documented`/`is_success`/
+/// `is_empty_collection` and the `FromStr`/`Display`/`Deserialize` impls. The wire strings are preserved verbatim (including the rare
 /// capitalized codes); only the variant *identifiers* are normalized.
 fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> String {
     if statuses.is_empty() {
@@ -1017,22 +1027,18 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
     }
 
     let acronyms = acronyms_sorted();
-    // `Success` leads the list so every match arm below covers it without a
-    // special case; it is the one status that is not an error, and the
-    // error-code table does not list it.
-    let variants: Vec<(String, String, String)> = std::iter::once((
-        "Success".to_string(),
-        SUCCESS_STATUS.0.to_string(),
-        SUCCESS_STATUS.1.to_string(),
-    ))
-    .chain(statuses.iter().map(|(code, desc)| {
-        (
-            status_variant_name(code, &acronyms),
-            code.clone(),
-            desc.clone(),
-        )
-    }))
-    .collect();
+    // The success statuses lead the list so every match arm below covers them
+    // without a special case.
+    let variants: Vec<(String, String, String)> = SUCCESS_STATUSES
+        .iter()
+        .map(|(code, desc)| (code.to_string(), desc.to_string()))
+        .chain(statuses.iter().cloned())
+        .map(|(code, desc)| (status_variant_name(&code, &acronyms), code, desc))
+        .collect();
+    let success_variants: Vec<String> = SUCCESS_STATUSES
+        .iter()
+        .map(|(code, _)| status_variant_name(code, &acronyms))
+        .collect();
 
     let mut out = String::new();
 
@@ -1114,6 +1120,19 @@ fn emit_statuses(statuses: &[(String, String)], empty: &BTreeSet<String>) -> Str
     out.push_str("    pub fn is_documented(&self) -> bool {\n");
     out.push_str("        !matches!(self, ApiStatus::Unknown(_))\n");
     out.push_str("    }\n\n");
+
+    // is_success
+    out.push_str("    /// Whether this status reports a call voip.ms accepted:\n");
+    out.push_str("    /// [`ApiStatus::Success`], or [`ApiStatus::SuccessTest`] for a call\n");
+    out.push_str("    /// made with `test` set, which saved nothing.\n");
+    out.push_str("    pub fn is_success(&self) -> bool {\n");
+    out.push_str("        matches!(self, ");
+    let arms: Vec<String> = success_variants
+        .iter()
+        .map(|v| format!("ApiStatus::{v}"))
+        .collect();
+    out.push_str(&arms.join(" | "));
+    out.push_str(")\n    }\n\n");
 
     // is_empty_collection
     let empty_variants: Vec<&String> = variants
@@ -2534,9 +2553,11 @@ fn load_statuses(path: &Path) -> Result<Vec<(String, String)>, String> {
     // collapse to the same PascalCase identifier would fail to compile.
     let acronyms = acronyms_sorted();
     let mut seen: BTreeMap<String, String> = BTreeMap::new();
-    // `Success` is synthesized (see SUCCESS_STATUS), so a docs refresh that
-    // started listing it would emit the variant twice.
-    seen.insert("Success".to_string(), SUCCESS_STATUS.0.to_string());
+    // The success statuses are synthesized (see SUCCESS_STATUSES), so a docs
+    // refresh that started listing one would emit its variant twice.
+    for (code, _) in SUCCESS_STATUSES {
+        seen.insert(status_variant_name(code, &acronyms), code.to_string());
+    }
     for entry in &doc.statuses {
         let ident = status_variant_name(&entry.code, &acronyms);
         if let Some(prev) = seen.insert(ident.clone(), entry.code.clone()) {

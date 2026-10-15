@@ -164,8 +164,9 @@ The one exception is the envelope's own `status`, which is a required
 required the field to exist and classified it before a typed call returns, so
 handing back a raw string would make the caller parse it a second time to
 learn whether it was `success` or an empty-collection code. `ApiStatus` carries
-a `Success` variant for that reason -- it is synthesized by the generator
-(`SUCCESS_STATUS`), since the docs' error-code table lists only errors. A
+`Success` and `SuccessTest` variants for that reason -- they are synthesized by
+the generator (`SUCCESS_STATUSES`), since the docs' error-code table lists only
+errors. A
 nested record's same-named field (a fax's, a port's, an e911 record's) is
 unrelated and keeps its inferred type; `response_codegen.rs` distinguishes them
 by whether the struct is the method's root.
@@ -1043,7 +1044,8 @@ Four variants, no more:
 * `Error::Http` -- wraps `reqwest::Error`. Includes both transport-level
   failures and `error_for_status`'s non-2xx surfacing.
 * `Error::Api(ApiStatus)` -- the response parsed as `{ "status": "..." }`
-  with something other than `"success"`. `ApiStatus` is a generated enum
+  with something other than a success status (`ApiStatus::is_success`) or an
+  empty-collection code. `ApiStatus` is a generated enum
   with one PascalCase variant per documented code (~475 of them) plus an
   `Unknown(String)` catch-all, so a code VoIP.ms returns but hasn't
   documented is preserved verbatim rather than lost -- the variant set is
@@ -1062,11 +1064,14 @@ Four variants, no more:
   already in use)`) so a log line says what went wrong; `Display` on
   `ApiStatus` itself stays the bare wire string, matching `as_wire`.
 
-  `ApiStatus::Success` is the one variant the table does not supply. It is
-  synthesized by the generator, because a typed response's `status` field
-  (decision 2) reports it and would otherwise land in `Unknown("success")`.
-  `load_statuses` fails the run if a docs refresh starts listing `success`, so
-  the variant cannot be emitted twice.
+  `ApiStatus::Success` and `ApiStatus::SuccessTest` are the variants the table
+  does not supply. They are synthesized by the generator, because a typed
+  response's `status` field (decision 2) reports them and would otherwise land
+  in `Unknown`. `success_test` is voip.ms's answer to a call with `test=1`:
+  checked, nothing saved. Measured live, `test=true` is ignored and the call
+  takes effect, which is why `test` is serialized `1`/`0`. `load_statuses`
+  fails the run if a docs refresh starts listing either code, so no variant can
+  be emitted twice.
 
   **Empty-collection statuses are not errors for typed calls.** VoIP.ms
   returns a distinct `no_*` status per list method when the list is empty

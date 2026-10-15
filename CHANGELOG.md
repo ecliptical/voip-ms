@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `SetEmailToFAXResponse::id`: the id of the configuration a `setEmailToFax`
+  created or updated, which voip.ms returns and the docs do not list.
+- `ApiStatus::is_success()`, true for `Success` and the new `SuccessTest`.
+
+### Fixed
+
+- A call made with `test` set no longer fails. voip.ms answers it
+  `success_test` (checked, nothing saved), which the crate reported as
+  `Error::Api(ApiStatus::Unknown("success_test"))`; it is now a success, and a
+  typed response's `status` is `ApiStatus::SuccessTest`. Measured on a live
+  account: only `test=1`, which the crate sends, is a dry run; `test=true` is
+  ignored and the call takes effect.
+- **Breaking**: `pin` on `SetDISAParams`, `SetConferenceMemberParams`,
+  `GetDISAsResponseDISA` and `GetConferenceMembersResponseMember`, and
+  `port_out_pin` on `SetDIDInfoParams` and `GetDIDsInfoResponseDID`, are
+  `Option<String>` instead of `Option<u64>`. A number cannot carry a leading
+  zero: voip.ms stores a DISA PIN of `0123` and refuses `123`, because a DISA
+  PIN must be exactly four digits. `SetDISAParams::new` takes the PIN as
+  `impl Into<String>`.
+
 ## [0.16.0] - 2026-10-15
 
 ### Added
