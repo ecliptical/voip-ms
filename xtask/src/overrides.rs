@@ -4,11 +4,14 @@
 //!
 //! * supply a full `shape` for a method the extractor couldn't parse
 //!   (for example, methods whose Output block uses a non-standard
-//!   `print_r` dialect or has no Output block at all), or
+//!   `print_r` dialect or has no Output block at all), or whose structure
+//!   it gets wrong (a list the docs print as one object, a map whose keys
+//!   are data), or
 //! * patch one or more scalar types inside an otherwise-correct
 //!   inferred shape (the doc samples often type-erase into one form --
 //!   a phone number can look like an integer, a 0/1 flag can look like
-//!   an integer -- and the inferrer can't always tell), or
+//!   an integer -- and the inferrer can't always tell), together with a
+//!   sample of the value voip.ms sends, or
 //! * add a scalar field the live API returns but the docs never list,
 //!   which the extractor cannot see by construction.
 //!
@@ -29,7 +32,7 @@ use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::extract::{ScalarTy, Shape};
+use crate::extract::{ScalarTy, Shape, StatusEntry};
 
 /// The path segment naming a dynamic-key map's value template, matching what
 /// `dump-fields` emits and the live harness reports.
@@ -93,6 +96,12 @@ pub struct OverridesDoc {
     /// `no_provision`, ...) are deliberately omitted.
     #[serde(default)]
     pub empty_statuses: Vec<String>,
+    /// Status codes the live API returns but the docs' Error Codes table
+    /// omits. Each becomes an `ApiStatus` variant after the documented
+    /// codes. Listing a code the table already has fails the codegen: the
+    /// docs have caught up, so the entry is stale.
+    #[serde(default)]
+    pub undocumented_statuses: Vec<StatusEntry>,
 }
 
 /// A user-defined enum to emit into the generated module.
@@ -145,11 +154,15 @@ pub struct MethodOverride {
     pub additions: Vec<Addition>,
 }
 
+/// A retype of one extracted scalar. The docs' sample was written for the type
+/// the patch corrects, so the patch also supplies a sample of what voip.ms
+/// sends, which replaces it.
 #[derive(Deserialize)]
 pub struct Patch {
     pub path: String,
     #[serde(rename = "type")]
     pub ty: ScalarTy,
+    pub sample: String,
 }
 
 /// An undocumented response field, declared by hand from an observed live
@@ -176,6 +189,7 @@ pub fn load(path: &Path) -> Result<OverridesDoc, String> {
             field_type_override: HashMap::new(),
             param_docs: HashMap::new(),
             empty_statuses: Vec::new(),
+            undocumented_statuses: Vec::new(),
         });
     }
 
@@ -216,17 +230,23 @@ pub fn apply(extracted: Option<Shape>, mo: &MethodOverride) -> Result<Option<Sha
     }
 
     for patch in &mo.patches {
-        apply_patch(&mut shape, &patch.path, patch.ty)?;
+        apply_patch(&mut shape, patch)?;
     }
 
     Ok(Some(shape))
 }
 
-fn apply_patch(shape: &mut Shape, path: &str, ty: ScalarTy) -> Result<(), String> {
+fn apply_patch(shape: &mut Shape, patch: &Patch) -> Result<(), String> {
+    let path = &patch.path;
     let segments = parse_path(path)?;
     match resolve(shape, &segments, path)? {
-        Shape::Scalar { ty: slot, .. } => {
-            *slot = ty;
+        Shape::Scalar { ty, .. } if *ty == patch.ty => Err(format!(
+            "override path `{path}` patches to the type the extracted shape already has; \
+             the docs now agree, so delete the patch"
+        )),
+        Shape::Scalar { ty, sample } => {
+            *ty = patch.ty;
+            sample.clone_from(&patch.sample);
             Ok(())
         }
         _ => Err(format!("override path `{path}` lands on a non-scalar node")),
@@ -454,6 +474,36 @@ mod tests {
     fn addition_onto_a_scalar_is_an_error() {
         let err = apply(Some(cdr_shape()), &addition("cdr[].uniqueid.ip")).unwrap_err();
         assert!(err.contains("expected object"), "{err}");
+    }
+
+    fn patch(ty: ScalarTy) -> MethodOverride {
+        MethodOverride {
+            shape: None,
+            patches: vec![Patch {
+                path: "cdr[].uniqueid".to_string(),
+                ty,
+                sample: "1700000000".to_string(),
+            }],
+            additions: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn a_patch_replaces_the_type_and_the_sample() {
+        let shape = apply(Some(cdr_shape()), &patch(ScalarTy::Integer))
+            .unwrap()
+            .unwrap();
+        let Shape::Scalar { ty, sample } = &element_fields(&shape)[0].1 else {
+            panic!("expected scalar")
+        };
+        assert_eq!(*ty, ScalarTy::Integer);
+        assert_eq!(sample, "1700000000");
+    }
+
+    #[test]
+    fn a_patch_to_the_extracted_type_is_an_error() {
+        let err = apply(Some(cdr_shape()), &patch(ScalarTy::String)).unwrap_err();
+        assert!(err.contains("delete the patch"), "{err}");
     }
 
     #[test]

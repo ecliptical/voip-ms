@@ -2419,6 +2419,12 @@ fn cmd_gen() -> Result<(), String> {
     let overrides_path = root.join("tools").join("api-response-overrides.json");
     let out_path = root.join("src").join("generated.rs");
 
+    extract::verify_digest(&responses_path, "extract-responses")?;
+    extract::verify_digest(
+        &root.join("tools").join("api-statuses.json"),
+        "extract-statuses",
+    )?;
+
     let text =
         fs::read_to_string(&wsdl_path).map_err(|e| format!("read {}: {e}", wsdl_path.display()))?;
     let wsdl = wsdl::parse_wsdl(&text)?;
@@ -2502,33 +2508,22 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
-    // A patch or addition whose leaf field has a field-name override is dead
-    // weight: the override supplies both the Rust type and the deserializer, so
-    // the declared scalar type is never consulted. Warn so the entry gets fixed
+    // An addition whose leaf field has a field-name override keeps its field,
+    // but the override supplies both the Rust type and the deserializer, so the
+    // declared scalar type is never consulted. Warn so the type gets fixed
     // (unless a `field_type_skip` on that field name keeps some struct on the
-    // inferred/patched type, in which case the entry may still be live). An
-    // addition goes through the same resolver as any other scalar field, so it
-    // is shadowed in exactly the same way.
+    // declared type). A patch under such an override is not warned about: its
+    // type and sample still correct the shapes for readers of the JSON.
     let skipped_fields: BTreeSet<&str> = field_type_skip
         .iter()
         .filter_map(|entry| entry.rsplit_once('.').map(|(_, f)| f))
         .collect();
     for (method, mo) in &overrides_doc.methods {
-        let declared = mo
-            .patches
-            .iter()
-            .map(|patch| ("patch", &patch.path))
-            .chain(mo.additions.iter().map(|add| ("addition", &add.path)));
-        for (kind, path) in declared {
+        for path in mo.additions.iter().map(|add| &add.path) {
             let leaf = path.rsplit('.').next().unwrap_or(path);
-            // A path ending in `[]` retypes a list *element*, which the
-            // field-name table never touches.
-            if leaf.ends_with("[]") {
-                continue;
-            }
             if table.get(leaf).is_some() && !skipped_fields.contains(leaf) {
                 eprintln!(
-                    "warning: {method}: {kind} `{path}` is shadowed by the \
+                    "warning: {method}: addition `{path}` is shadowed by the \
                      field-name override for `{leaf}`; its declared type is ignored",
                 );
             }
@@ -2717,7 +2712,10 @@ fn cmd_gen() -> Result<(), String> {
         );
     }
 
-    let statuses = load_statuses(&root.join("tools").join("api-statuses.json"))?;
+    let statuses = load_statuses(
+        &root.join("tools").join("api-statuses.json"),
+        &overrides_doc.undocumented_statuses,
+    )?;
 
     // An empty-status code that no longer appears in the status table (a
     // typo, or a code the docs dropped) would silently never match, so fail
@@ -3040,9 +3038,13 @@ fn check_param_docs(
 }
 
 /// Read `tools/api-statuses.json` into ordered `(code, description)`
-/// pairs. A missing file yields an empty list — status constants are
-/// additive, so codegen proceeds without them (with a warning).
-fn load_statuses(path: &Path) -> Result<Vec<(String, String)>, String> {
+/// pairs, followed by `undocumented`. A missing file yields an empty list --
+/// status constants are additive, so codegen proceeds without them (with a
+/// warning).
+fn load_statuses(
+    path: &Path,
+    undocumented: &[extract::StatusEntry],
+) -> Result<Vec<(String, String)>, String> {
     if !path.exists() {
         eprintln!(
             "warning: {} missing — skipping status-code generation",
@@ -3052,8 +3054,24 @@ fn load_statuses(path: &Path) -> Result<Vec<(String, String)>, String> {
     }
 
     let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    let doc: extract::StatusDocument =
+    let mut doc: extract::StatusDocument =
         serde_json::from_str(&text).map_err(|e| format!("parse {}: {e}", path.display()))?;
+
+    for entry in undocumented {
+        if doc.statuses.iter().any(|e| e.code == entry.code) {
+            return Err(format!(
+                "undocumented status `{}` is in {}; the docs now list it, so delete it \
+                 from undocumented_statuses",
+                entry.code,
+                path.display()
+            ));
+        }
+
+        doc.statuses.push(extract::StatusEntry {
+            code: entry.code.clone(),
+            description: entry.description.clone(),
+        });
+    }
 
     // Guard against duplicate variant names — two distinct wire codes that
     // collapse to the same PascalCase identifier would fail to compile.

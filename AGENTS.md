@@ -81,7 +81,15 @@ generates `*Params`, from three inputs:
    per-path scalar retypes, per-path scalar `additions`, or a full shape
    replacement for the handful of methods the extractor can't parse
    (`setSIPURI` has no Output block; `getLNPDetails` uses a non-standard
-   PHP dialect).
+   PHP dialect) or gets the structure of wrong (`getTerminationRates`'s
+   `route` is a list the docs print as one object).
+
+Every correction lives in the overrides file, never in
+`api-responses.json`: the extract rewrites that file whole, so an edit
+there is lost on the next docs refresh. The extract records a `digest`
+of its output and `cargo xtask gen` fails when the file no longer
+matches it, which turns a hand edit into a CI failure rather than a
+regression a later refresh introduces.
 
 An extractor driven by the docs can only see a documented field, so a
 field VoIP.ms returns but never documents reaches the typed surface
@@ -504,8 +512,8 @@ in `xtask/src/field_overrides.rs`:
   ship the value as a bare JSON number. Deliberately excluded: the plural
   `dids` (sometimes a list of numeric vPRI ids) and `from` (a date filter
   in the `getSMS`-family params, an email in `getEmailToFax`'s response).
-  `cargo xtask gen` warns when a `patches` entry is shadowed by a
-  field-name override so retired per-method patches get removed.
+  A `patches` entry under one of these fields leaves the Rust type alone but
+  still corrects the type and sample in the JSON shapes, so it stays.
 * **Calendar dates** (`date_from`, `date_to`, `reseller_nextbilling` in
   `DATE_FIELDS`) map to [`chrono::NaiveDate`], whose own `Serialize` emits the
   documented `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is
@@ -1126,7 +1134,9 @@ Four variants, no more:
   reports whether it's a known variant. The enum, its impls, and the
   description table are emitted by `cargo xtask gen` from
   `tools/api-statuses.json`, which is extracted from the docs' global
-  "Error Codes" table via `cargo xtask extract-statuses <html>`. Because
+  "Error Codes" table via `cargo xtask extract-statuses <html>`, followed
+  by the codes the live API returns but that table omits
+  (`undocumented_statuses` in `tools/api-response-overrides.json`). Because
   the docs ship a couple of codes capitalized (`Invalid_threshold`), the
   variant's `as_wire` preserves the wire casing while the variant
   *identifier* normalizes through the same acronym-aware PascalCase as
@@ -1160,8 +1170,8 @@ Four variants, no more:
   `no_*` but signal a real failure (`no_base64file`, `no_callstatus`,
   `no_change_billingtype`, `no_provision`, `no_provision_update`,
   `no_sequences`) are deliberately excluded. To reclassify, edit that array
-  and regenerate -- an entry naming a status code absent from
-  `tools/api-statuses.json` fails the codegen.
+  and regenerate -- an entry naming a status code absent from both
+  `tools/api-statuses.json` and `undocumented_statuses` fails the codegen.
 * `Error::InvalidResponse(String)` -- the response was 2xx and JSON but
   didn't contain a `status` field. Should be rare; if it happens
   systematically for a method, that's a VoIP.ms-side break.

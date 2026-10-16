@@ -2023,12 +2023,8 @@ pub enum ApiStatus {
     NoDID,
     /// `no_disa` -- There are no DISAs
     NoDISA,
-    /// `no_emailtofax` -- There are no Email to Fax entries
-    NoEmailtofax,
     /// `no_filter` -- There are no Filters
     NoFilter,
-    /// `no_folder` -- There are no Fax Folders
-    NoFolder,
     /// `no_forwarding` -- There was no Forwarding
     NoForwarding,
     /// `no_ivr` -- There are no ivr
@@ -2047,8 +2043,6 @@ pub enum ApiStatus {
     NoPackage,
     /// `no_phonebook` -- There are no Phonebook entries
     NoPhonebook,
-    /// `no_phonebook_group` -- There are no Phonebook Groups
-    NoPhonebookGroup,
     /// `no_provision` -- E911 service wasn't activated, this response comes with a description of the error.
     NoProvision,
     /// `no_provision_update` -- E911 service wasn't updated, this response comes with a description of the error.
@@ -2069,10 +2063,6 @@ pub enum ApiStatus {
     NoSMS,
     /// `no_timecondition` -- There are no Time Conditions
     NoTimecondition,
-    /// `no_transactions` -- There are no transactions
-    NoTransactions,
-    /// `no_vpri` -- There are no vPRIs
-    NoVPRI,
     /// `order_failed` -- The order wasn't completed.
     OrderFailed,
     /// `problem_sending_mail` -- There was a problem sending an email.
@@ -2141,6 +2131,16 @@ pub enum ApiStatus {
     UsedUsername,
     /// `weak_password` -- This Password is too weak or too common
     WeakPassword,
+    /// `no_emailtofax` -- There are no Email to Fax entries
+    NoEmailtofax,
+    /// `no_folder` -- There are no Fax Folders
+    NoFolder,
+    /// `no_phonebook_group` -- There are no Phonebook Groups
+    NoPhonebookGroup,
+    /// `no_transactions` -- There are no transactions
+    NoTransactions,
+    /// `no_vpri` -- There are no vPRIs
+    NoVPRI,
     /// A `status` value not present in the documented table,
     /// preserved verbatim.
     Unknown(String),
@@ -2587,9 +2587,7 @@ impl ApiStatus {
             ApiStatus::NoConference => "no_conference",
             ApiStatus::NoDID => "no_did",
             ApiStatus::NoDISA => "no_disa",
-            ApiStatus::NoEmailtofax => "no_emailtofax",
             ApiStatus::NoFilter => "no_filter",
-            ApiStatus::NoFolder => "no_folder",
             ApiStatus::NoForwarding => "no_forwarding",
             ApiStatus::NoIVR => "no_ivr",
             ApiStatus::NoMailbox => "no_mailbox",
@@ -2599,7 +2597,6 @@ impl ApiStatus {
             ApiStatus::NoNumbers => "no_numbers",
             ApiStatus::NoPackage => "no_package",
             ApiStatus::NoPhonebook => "no_phonebook",
-            ApiStatus::NoPhonebookGroup => "no_phonebook_group",
             ApiStatus::NoProvision => "no_provision",
             ApiStatus::NoProvisionUpdate => "no_provision_update",
             ApiStatus::NoQueue => "no_queue",
@@ -2610,8 +2607,6 @@ impl ApiStatus {
             ApiStatus::NoSIPURI => "no_sipuri",
             ApiStatus::NoSMS => "no_sms",
             ApiStatus::NoTimecondition => "no_timecondition",
-            ApiStatus::NoTransactions => "no_transactions",
-            ApiStatus::NoVPRI => "no_vpri",
             ApiStatus::OrderFailed => "order_failed",
             ApiStatus::ProblemSendingMail => "problem_sending_mail",
             ApiStatus::ProviderOutofservice => "provider_outofservice",
@@ -2648,6 +2643,11 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => "used_speed_dial",
             ApiStatus::UsedUsername => "used_username",
             ApiStatus::WeakPassword => "weak_password",
+            ApiStatus::NoEmailtofax => "no_emailtofax",
+            ApiStatus::NoFolder => "no_folder",
+            ApiStatus::NoPhonebookGroup => "no_phonebook_group",
+            ApiStatus::NoTransactions => "no_transactions",
+            ApiStatus::NoVPRI => "no_vpri",
             ApiStatus::Unknown(s) => s.as_str(),
         }
     }
@@ -3093,9 +3093,7 @@ impl ApiStatus {
             "no_conference" => ApiStatus::NoConference,
             "no_did" => ApiStatus::NoDID,
             "no_disa" => ApiStatus::NoDISA,
-            "no_emailtofax" => ApiStatus::NoEmailtofax,
             "no_filter" => ApiStatus::NoFilter,
-            "no_folder" => ApiStatus::NoFolder,
             "no_forwarding" => ApiStatus::NoForwarding,
             "no_ivr" => ApiStatus::NoIVR,
             "no_mailbox" => ApiStatus::NoMailbox,
@@ -3105,7 +3103,6 @@ impl ApiStatus {
             "no_numbers" => ApiStatus::NoNumbers,
             "no_package" => ApiStatus::NoPackage,
             "no_phonebook" => ApiStatus::NoPhonebook,
-            "no_phonebook_group" => ApiStatus::NoPhonebookGroup,
             "no_provision" => ApiStatus::NoProvision,
             "no_provision_update" => ApiStatus::NoProvisionUpdate,
             "no_queue" => ApiStatus::NoQueue,
@@ -3116,8 +3113,6 @@ impl ApiStatus {
             "no_sipuri" => ApiStatus::NoSIPURI,
             "no_sms" => ApiStatus::NoSMS,
             "no_timecondition" => ApiStatus::NoTimecondition,
-            "no_transactions" => ApiStatus::NoTransactions,
-            "no_vpri" => ApiStatus::NoVPRI,
             "order_failed" => ApiStatus::OrderFailed,
             "problem_sending_mail" => ApiStatus::ProblemSendingMail,
             "provider_outofservice" => ApiStatus::ProviderOutofservice,
@@ -3154,6 +3149,11 @@ impl ApiStatus {
             "used_speed_dial" => ApiStatus::UsedSpeedDial,
             "used_username" => ApiStatus::UsedUsername,
             "weak_password" => ApiStatus::WeakPassword,
+            "no_emailtofax" => ApiStatus::NoEmailtofax,
+            "no_folder" => ApiStatus::NoFolder,
+            "no_phonebook_group" => ApiStatus::NoPhonebookGroup,
+            "no_transactions" => ApiStatus::NoTransactions,
+            "no_vpri" => ApiStatus::NoVPRI,
             other => ApiStatus::Unknown(other.to_string()),
         }
     }
@@ -3785,9 +3785,7 @@ impl ApiStatus {
             ApiStatus::NoConference => Some("There are no Conferences"),
             ApiStatus::NoDID => Some("There are no DIDs"),
             ApiStatus::NoDISA => Some("There are no DISAs"),
-            ApiStatus::NoEmailtofax => Some("There are no Email to Fax entries"),
             ApiStatus::NoFilter => Some("There are no Filters"),
-            ApiStatus::NoFolder => Some("There are no Fax Folders"),
             ApiStatus::NoForwarding => Some("There was no Forwarding"),
             ApiStatus::NoIVR => Some("There are no ivr"),
             ApiStatus::NoMailbox => Some("There are no Mailboxes"),
@@ -3797,7 +3795,6 @@ impl ApiStatus {
             ApiStatus::NoNumbers => Some("There are no Fax Numbers"),
             ApiStatus::NoPackage => Some("there are no Packages"),
             ApiStatus::NoPhonebook => Some("There are no Phonebook entries"),
-            ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
             ApiStatus::NoProvision => Some(
                 "E911 service wasn't activated, this response comes with a description of the error.",
             ),
@@ -3812,8 +3809,6 @@ impl ApiStatus {
             ApiStatus::NoSIPURI => Some("There are no SIP URIs"),
             ApiStatus::NoSMS => Some("There are no SMS messages"),
             ApiStatus::NoTimecondition => Some("There are no Time Conditions"),
-            ApiStatus::NoTransactions => Some("There are no transactions"),
-            ApiStatus::NoVPRI => Some("There are no vPRIs"),
             ApiStatus::OrderFailed => Some("The order wasn't completed."),
             ApiStatus::ProblemSendingMail => Some("There was a problem sending an email."),
             ApiStatus::ProviderOutofservice => Some("One of our providers is out of service"),
@@ -3874,6 +3869,11 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => Some("You have an entry with this Speed Dial"),
             ApiStatus::UsedUsername => Some("You already have a subaccount using this Username."),
             ApiStatus::WeakPassword => Some("This Password is too weak or too common"),
+            ApiStatus::NoEmailtofax => Some("There are no Email to Fax entries"),
+            ApiStatus::NoFolder => Some("There are no Fax Folders"),
+            ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
+            ApiStatus::NoTransactions => Some("There are no transactions"),
+            ApiStatus::NoVPRI => Some("There are no vPRIs"),
             ApiStatus::Unknown(_) => None,
         }
     }
@@ -3912,9 +3912,7 @@ impl ApiStatus {
                 | ApiStatus::NoConference
                 | ApiStatus::NoDID
                 | ApiStatus::NoDISA
-                | ApiStatus::NoEmailtofax
                 | ApiStatus::NoFilter
-                | ApiStatus::NoFolder
                 | ApiStatus::NoForwarding
                 | ApiStatus::NoIVR
                 | ApiStatus::NoMailbox
@@ -3924,7 +3922,6 @@ impl ApiStatus {
                 | ApiStatus::NoNumbers
                 | ApiStatus::NoPackage
                 | ApiStatus::NoPhonebook
-                | ApiStatus::NoPhonebookGroup
                 | ApiStatus::NoQueue
                 | ApiStatus::NoRate
                 | ApiStatus::NoRecording
@@ -3932,6 +3929,9 @@ impl ApiStatus {
                 | ApiStatus::NoSIPURI
                 | ApiStatus::NoSMS
                 | ApiStatus::NoTimecondition
+                | ApiStatus::NoEmailtofax
+                | ApiStatus::NoFolder
+                | ApiStatus::NoPhonebookGroup
                 | ApiStatus::NoTransactions
                 | ApiStatus::NoVPRI
         )

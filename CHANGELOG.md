@@ -55,6 +55,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Re-extracting `tools/api-responses.json` and `tools/api-statuses.json` from
+  the docs no longer undoes corrections. The response shapes of eight methods
+  (`getTerminationRates`, `e911AddressTypes`, `getLNPListStatus`,
+  `getReportEstimatedHoldTime`, `getVoicemailMessages`, and the `callerid` of
+  `getCallerIDFiltering`, `getPhonebook` and `getFaxMessages`) and five
+  status codes the docs omit (`no_emailtofax`, `no_folder`,
+  `no_phonebook_group`, `no_transactions`, `no_vpri`) had been edited into the
+  extracted files, so a refresh dropped them and typed responses went back to
+  shapes voip.ms does not send. They are in
+  `tools/api-response-overrides.json` now, the new `undocumented_statuses`
+  section holding the status codes. Each extract records a digest of its
+  output, and `cargo xtask gen` fails on a file edited after its extract. A
+  patch carries a `sample` along with its type, so the corrected shapes keep
+  values voip.ms sends (`John Doe <5551234567>`, not `5551234567`), and
+  `getFaxNumbersInfo`'s `did` is patched to `string` again even though its
+  Rust type comes from the field-name table; a patch without a sample, or
+  one that sets the type the extract already has, fails `gen`. The
+  generated code is unchanged except that the five undocumented `ApiStatus`
+  variants follow the documented ones.
 - The routing-string format (`header:record_id`, its headers, the `sys`
   options and examples) is documented on the first routing field of every
   request that takes one, and the request's other routing fields refer to it.
