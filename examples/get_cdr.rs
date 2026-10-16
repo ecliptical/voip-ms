@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .as_ref()
                     .map(ToString::to_string)
                     .unwrap_or_else(|| "(unknown)".to_string()),
-                call.callerid.as_deref().unwrap_or("(unknown)"),
+                call.caller_id.as_deref().unwrap_or("(unknown)"),
                 call.destination.as_deref().unwrap_or("(unknown)"),
                 call.duration.as_deref().unwrap_or("0:00"),
                 call.disposition.as_deref().unwrap_or("(unknown)"),

@@ -20,12 +20,17 @@ committed inputs:
   names, and parameter types. Drives every `*Params` struct and `Client`
   method.
 * `tools/api-responses.json` — *generated* by `cargo xtask extract-responses`
-  from the saved HTML docs. Holds three things:
+  from the saved HTML docs. Holds four things:
   * `methods` — the inferred response shape per method (→ `*Response`
     structs);
   * `param_docs` — per-parameter descriptions mined from each method's
     `Parameters` cell, including `[Required]` markers, examples, and value
     constraints (→ `///` comments on `*Params` fields);
+  * `param_notes` -- the paragraph some methods print flush left under their
+    parameter table, about several parameters at once (the routing-string
+    format, the `members` grammar). Not rendered as is: the generator writes
+    the routing format on every routing field itself, and any other note is
+    worked into a `param_docs` override;
   * `method_docs` — each method's one-line summary (→ the lead `///` comment
     on both the `*Params` struct and the `Client` method). ~218 of 222
     methods carry one; the rest are simply absent in the source.
@@ -40,7 +45,7 @@ committed inputs:
   fix the override file and regenerate. The overrides schema lives in
   [xtask/src/overrides.rs](xtask/src/overrides.rs); see its module docs for
   the path grammar and the `enums` / `field_types` / `field_type_skip` /
-  `additions` sections. Boolean-flag field names (typed `bool`, serialized to
+  `additions` / `param_docs` sections. Boolean-flag field names (typed `bool`, serialized to
   `1`/`0` or `yes`/`no`) are registered in
   [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs), not the JSON.
 
@@ -190,6 +195,21 @@ refresh needs eyes on the diff, not just a green build:
   `[` / `]` → escaped), but a novel pattern can still slip through — that's
   why step 5 runs the strict `cargo doc`, which CI now runs too. Extend
   `sanitize_doc_word` if it does.
+* **Parameter notes and flag descriptions** -- `cargo xtask gen` warns when a
+  method has a `param_notes` entry that no field renders (it takes no routing
+  field and has no `param_docs` override), and when a `bool` param's
+  description still spells a wire value (`1/0`, `'yes'`) after the generator
+  drops the usual value notes. Both want a `"wireMethod.field"` entry in the
+  `param_docs` section of `api-response-overrides.json` that says the same
+  thing in the field's own terms: the note worked into the fields it is
+  about, the flag described as `true` / `false`. Name another param by its
+  Rust ident there, since that is the name a caller sees. An entry naming an
+  undeclared param, or repeating the mined text, fails the run.
+* **Field names** -- a new wire name that runs words together, spells an
+  on/off switch other than `*_enabled`, or names a concept another field
+  already names differently gets an entry in `FIELD_IDENT_RENAME` in
+  [xtask/src/main.rs](xtask/src/main.rs) (design decision #5). An entry
+  whose wire name no struct carries any more fails the run.
 * **Merged parameter rows** — when the source HTML lacks a clean line break
   between two parameters, the param-doc scanner can merge them
   (e.g. a description ending `…Todayclient => [Required] …`). These are

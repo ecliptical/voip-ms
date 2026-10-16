@@ -103,7 +103,7 @@ async fn ivr_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) 
             timeout: Some(10),
             language: Some("en".to_string()),
             recording: Some(recording),
-            voicemailsetup: Some(1),
+            voicemail_setup: Some(1),
             choices: Some("1=sys:hangup".to_string()),
             ..Default::default()
         })

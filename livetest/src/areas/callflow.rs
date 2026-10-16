@@ -184,7 +184,7 @@ impl Area for Callflow {
             "getTimeConditions",
             GetTimeConditionsParams,
             GetTimeConditionsResponse,
-            timecondition
+            time_condition
         );
     }
 
@@ -463,21 +463,21 @@ async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &
             // system action (`sys:hangup`) is a valid target that needs no
             // dependent resource. Best-effort until a live run confirms it.
             routing_match: Some(Routing::System("hangup".into())),
-            routing_nomatch: Some(Routing::System("hangup".into())),
-            starthour: Some("09".to_string()),
-            startminute: Some("00".to_string()),
-            endhour: Some("17".to_string()),
-            endminute: Some("00".to_string()),
+            routing_no_match: Some(Routing::System("hangup".into())),
+            start_hour: Some("09".to_string()),
+            start_minute: Some("00".to_string()),
+            end_hour: Some("17".to_string()),
+            end_minute: Some("00".to_string()),
             // Weekday conditions are day abbreviations (`mon`..`sun`), not
             // numbers -- a numeric value is rejected (`invalid_weekdaystart`).
-            weekdaystart: Some("mon".to_string()),
-            weekdayend: Some("fri".to_string()),
+            weekday_start: Some("mon".to_string()),
+            weekday_end: Some("fri".to_string()),
             ..Default::default()
         })
         .await;
 
     let id = match created {
-        Ok(resp) => match resp.timecondition {
+        Ok(resp) => match resp.time_condition {
             Some(id) => id,
             None => return fail(report, "fixture:setTimeCondition", "no id returned"),
         },
@@ -496,7 +496,7 @@ async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &
             tolerate_absent(
                 client
                     .del_time_condition(&DelTimeConditionParams {
-                        timecondition: Some(id),
+                        time_condition: Some(id),
                     })
                     .await,
             )
@@ -509,7 +509,7 @@ async fn time_condition_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &
         AREA,
         "fixture:getTimeConditions",
         &GetTimeConditionsParams::default(),
-        |r| Some(r.timecondition.len()),
+        |r| Some(r.time_condition.len()),
     )
     .await;
 }
@@ -878,17 +878,17 @@ async fn list_time_condition_orphans(client: &Client) -> anyhow::Result<Vec<Orph
         .get_time_conditions(&GetTimeConditionsParams::default())
         .await?;
     Ok(owned_orphans(
-        resp.timecondition,
+        resp.time_condition,
         "timecondition",
         |t| &t.name,
-        |t| t.timecondition,
+        |t| t.time_condition,
     ))
 }
 
 async fn del_time_condition(client: &Client, id: u64) -> anyhow::Result<()> {
     client
         .del_time_condition(&DelTimeConditionParams {
-            timecondition: Some(id),
+            time_condition: Some(id),
         })
         .await?;
     Ok(())

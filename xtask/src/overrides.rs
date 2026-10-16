@@ -75,6 +75,13 @@ pub struct OverridesDoc {
     /// any name-based `field_types` entry.
     #[serde(default)]
     pub field_type_override: HashMap<String, String>,
+    /// Parameter descriptions that replace the mined ones, keyed
+    /// `"wireMethod.field"` by wire names. For a description the docs get
+    /// wrong, word differently for the same field on two methods, or leave
+    /// in the wire terms of a value the field's Rust type spells otherwise.
+    /// Rendered as written: no flag rewording is applied to it.
+    #[serde(default)]
+    pub param_docs: HashMap<String, String>,
     /// Wire status codes that mean "the requested collection is empty,"
     /// not a failure. VoIP.ms returns a distinct `no_*` status for each
     /// list method when the list has no entries (`no_sms`, `no_cdr`,
@@ -167,6 +174,7 @@ pub fn load(path: &Path) -> Result<OverridesDoc, String> {
             field_types: HashMap::new(),
             field_type_skip: Vec::new(),
             field_type_override: HashMap::new(),
+            param_docs: HashMap::new(),
             empty_statuses: Vec::new(),
         });
     }

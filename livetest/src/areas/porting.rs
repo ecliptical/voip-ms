@@ -133,7 +133,7 @@ async fn port_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, port_id: Option<u
         AREA,
         "fixture:getLNPDetails",
         &GetLNPDetailsParams {
-            portid: Some(portid),
+            port_id: Some(portid),
         },
         |r| Some(r.numbers.len()),
     )
@@ -145,7 +145,7 @@ async fn port_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, port_id: Option<u
         AREA,
         "fixture:getLNPStatus",
         &GetLNPStatusParams {
-            portid: Some(portid),
+            port_id: Some(portid),
         },
         |_| None,
     )
@@ -157,7 +157,7 @@ async fn port_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, port_id: Option<u
         AREA,
         "fixture:getLNPNotes",
         &GetLNPNotesParams {
-            portid: Some(portid),
+            port_id: Some(portid),
         },
         |r| Some(r.list.len()),
     )
@@ -169,7 +169,7 @@ async fn port_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, port_id: Option<u
         AREA,
         "fixture:getLNPList",
         &GetLNPListParams {
-            portid: Some(portid),
+            port_id: Some(portid),
             ..Default::default()
         },
         |r| Some(r.list.len()),
@@ -182,7 +182,7 @@ async fn port_id_reads(ctx: &AreaCtx<'_>, report: &mut Report, port_id: Option<u
         AREA,
         "fixture:getLNPAttachList",
         &GetLNPAttachListParams {
-            portid: Some(portid),
+            port_id: Some(portid),
         },
         |r| Some(r.list.len()),
     )
@@ -217,7 +217,7 @@ async fn submit_port_fixture(ctx: &AreaCtx<'_>, report: &mut Report, cfg: &Porti
             address1: Some(detail.address.clone()),
             city: Some(detail.city.clone()),
             state: Some(detail.state.clone()),
-            zip: Some(detail.zip.clone()),
+            zip_code: Some(detail.zip.clone()),
             country: Some(detail.country.clone()),
             notes: Some(ctx.token.marker(0)),
             ..Default::default()
