@@ -4,7 +4,9 @@
 //!
 //! * supply a full `shape` for a method the extractor couldn't parse
 //!   (for example, methods whose Output block uses a non-standard
-//!   `print_r` dialect or has no Output block at all), or
+//!   `print_r` dialect or has no Output block at all), or whose structure
+//!   it gets wrong (a list the docs print as one object, a map whose keys
+//!   are data), or
 //! * patch one or more scalar types inside an otherwise-correct
 //!   inferred shape (the doc samples often type-erase into one form --
 //!   a phone number can look like an integer, a 0/1 flag can look like
@@ -29,7 +31,7 @@ use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::extract::{ScalarTy, Shape};
+use crate::extract::{ScalarTy, Shape, StatusEntry};
 
 /// The path segment naming a dynamic-key map's value template, matching what
 /// `dump-fields` emits and the live harness reports.
@@ -93,6 +95,12 @@ pub struct OverridesDoc {
     /// `no_provision`, ...) are deliberately omitted.
     #[serde(default)]
     pub empty_statuses: Vec<String>,
+    /// Status codes the live API returns but the docs' Error Codes table
+    /// omits. Each becomes an `ApiStatus` variant after the documented
+    /// codes. Listing a code the table already has fails the codegen: the
+    /// docs have caught up, so the entry is stale.
+    #[serde(default)]
+    pub undocumented_statuses: Vec<StatusEntry>,
 }
 
 /// A user-defined enum to emit into the generated module.
@@ -176,6 +184,7 @@ pub fn load(path: &Path) -> Result<OverridesDoc, String> {
             field_type_override: HashMap::new(),
             param_docs: HashMap::new(),
             empty_statuses: Vec::new(),
+            undocumented_statuses: Vec::new(),
         });
     }
 
@@ -225,6 +234,10 @@ pub fn apply(extracted: Option<Shape>, mo: &MethodOverride) -> Result<Option<Sha
 fn apply_patch(shape: &mut Shape, path: &str, ty: ScalarTy) -> Result<(), String> {
     let segments = parse_path(path)?;
     match resolve(shape, &segments, path)? {
+        Shape::Scalar { ty: slot, .. } if *slot == ty => Err(format!(
+            "override path `{path}` patches to the type the extracted shape already has; \
+             the docs now agree, so delete the patch"
+        )),
         Shape::Scalar { ty: slot, .. } => {
             *slot = ty;
             Ok(())
@@ -454,6 +467,34 @@ mod tests {
     fn addition_onto_a_scalar_is_an_error() {
         let err = apply(Some(cdr_shape()), &addition("cdr[].uniqueid.ip")).unwrap_err();
         assert!(err.contains("expected object"), "{err}");
+    }
+
+    fn patch(ty: ScalarTy) -> MethodOverride {
+        MethodOverride {
+            shape: None,
+            patches: vec![Patch {
+                path: "cdr[].uniqueid".to_string(),
+                ty,
+            }],
+            additions: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn a_patch_retypes_the_scalar() {
+        let shape = apply(Some(cdr_shape()), &patch(ScalarTy::Integer))
+            .unwrap()
+            .unwrap();
+        let Shape::Scalar { ty, .. } = &element_fields(&shape)[0].1 else {
+            panic!("expected scalar")
+        };
+        assert_eq!(*ty, ScalarTy::Integer);
+    }
+
+    #[test]
+    fn a_patch_to_the_extracted_type_is_an_error() {
+        let err = apply(Some(cdr_shape()), &patch(ScalarTy::String)).unwrap_err();
+        assert!(err.contains("delete the patch"), "{err}");
     }
 
     #[test]

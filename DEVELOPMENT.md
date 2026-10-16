@@ -44,13 +44,17 @@ committed inputs:
   description), rendered as the `ApiStatus` enum (one PascalCase variant per
   code + `Unknown(String)`, with `description()`/`is_documented()` lookups).
 * `tools/api-response-overrides.json` — *hand-edited* corrections to the
-  above (per-path scalar retypes, added scalar fields the docs omit, or a full
-  shape replacement for the handful of methods the extractor can't parse).
+  above (per-path scalar retypes, added scalar fields the docs omit, a full
+  shape replacement for a method the extractor can't parse or gets the
+  structure of wrong, and status codes the docs' table omits).
   Never edit the generated `api-responses.json` / `api-statuses.json` by hand --
-  fix the override file and regenerate. The overrides schema lives in
+  fix the override file and regenerate. Each extract records a `digest` of
+  what it wrote, and `cargo xtask gen` (so CI) fails when a file no longer
+  matches it, because the next extract would silently drop the edit. The
+  overrides schema lives in
   [xtask/src/overrides.rs](xtask/src/overrides.rs); see its module docs for
   the path grammar and the `enums` / `field_types` / `field_type_skip` /
-  `additions` / `param_docs` sections. Boolean-flag field names (typed `bool`, serialized to
+  `additions` / `param_docs` / `undocumented_statuses` sections. Boolean-flag field names (typed `bool`, serialized to
   `1`/`0` or `yes`/`no`) are registered in
   [xtask/src/field_overrides.rs](xtask/src/field_overrides.rs), not the JSON.
 
@@ -181,7 +185,16 @@ refresh needs eyes on the diff, not just a green build:
   resolve by adjusting the acronym list or treating one as `Unknown`.
 * **Mis-typed response scalars** — a phone-number field parsed as `integer`,
   a `0/1` flag parsed as `integer`, a date placeholder, etc. Fix via a
-  per-path retype in `api-response-overrides.json`.
+  per-path retype in `api-response-overrides.json`. A patch that sets the type
+  the extract already has fails `cargo xtask gen`: the docs have caught up, so
+  delete it.
+* **Mis-structured responses** -- the docs print a list as a single object
+  (`getTerminationRates`'s `route`), or a map whose keys are data
+  (`getLNPListStatus`'s `list_status`). Patches only retype scalars, so these
+  take a full `shape` replacement for the method.
+* **Undocumented status codes** -- a code the live API returns that the
+  docs' Error Codes table omits goes in `undocumented_statuses`. If the docs
+  later list it, `cargo xtask gen` fails until the entry is deleted.
 * **Undocumented response fields** -- the extractor only sees what the Output
   block lists, so a field the API returns but the docs omit is invisible to it
   (`getCDR`'s `ip` and `useragent`, found by diffing a live response against

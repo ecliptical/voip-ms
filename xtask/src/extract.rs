@@ -93,9 +93,9 @@ pub enum Shape {
     /// A string-keyed map whose keys are data, not schema (a `code =>
     /// description` catalog like `getLNPListStatus`'s `list_status`). The inner
     /// shape is the value template; keys are always strings. The `print_r`
-    /// extractor never infers this -- it comes only from a hand-authored
-    /// `api-responses.json`/override shape, where an object with dynamic keys
-    /// would otherwise be forced into a fixed-field struct.
+    /// extractor never infers this -- it comes only from a full shape in the
+    /// overrides file, where an object with dynamic keys would otherwise be
+    /// forced into a fixed-field struct.
     Map(Box<Shape>),
 }
 
@@ -169,6 +169,80 @@ pub struct StatusEntry {
     pub description: String,
 }
 
+/// The key under which an extracted document records the digest of the rest
+/// of its content.
+const DIGEST_KEY: &str = "digest";
+
+/// Render `doc` as the pretty JSON an extract writes, with a trailing
+/// [`DIGEST_KEY`] entry over the rest of its content.
+fn seal(doc: &impl Serialize) -> Result<String, String> {
+    let mut value = serde_json::to_value(doc).map_err(|e| format!("serialize JSON: {e}"))?;
+    let digest = content_digest(&value)?;
+    let JsonValue::Object(fields) = &mut value else {
+        return Err("an extracted document must be a JSON object".into());
+    };
+
+    fields.insert(DIGEST_KEY.into(), JsonValue::String(digest));
+    let pretty =
+        serde_json::to_string_pretty(&value).map_err(|e| format!("serialize JSON: {e}"))?;
+    Ok(format!("{pretty}\n"))
+}
+
+/// Check that the extracted document at `path` still matches the digest its
+/// extract recorded. A mismatch means the file was edited by hand, and the
+/// next run of `cargo xtask <extract_cmd>` would silently drop that edit. A
+/// missing file passes; its readers decide what that means.
+pub fn verify_digest(path: &Path, extract_cmd: &str) -> Result<(), String> {
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    match matches_digest(&text) {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(format!(
+            "{} was edited after `cargo xtask {extract_cmd}` wrote it, and the next \
+             extract would drop that edit; restore the file and put the correction in \
+             tools/api-response-overrides.json",
+            path.display()
+        )),
+        Err(e) => Err(format!(
+            "{}: {e}, so `cargo xtask {extract_cmd}` did not write it",
+            path.display()
+        )),
+    }
+}
+
+/// Whether sealed `text` still matches its recorded digest. Fails when the
+/// text is not JSON or records no digest.
+fn matches_digest(text: &str) -> Result<bool, String> {
+    let mut value: JsonValue = serde_json::from_str(text).map_err(|e| format!("parse: {e}"))?;
+    let recorded = match &mut value {
+        JsonValue::Object(fields) => fields.shift_remove(DIGEST_KEY),
+        _ => None,
+    };
+
+    let Some(JsonValue::String(recorded)) = recorded else {
+        return Err(format!("no `{DIGEST_KEY}`"));
+    };
+
+    Ok(content_digest(&value)? == recorded)
+}
+
+/// FNV-1a (64-bit) over the compact JSON form of `value`, as 16 hex digits.
+/// It catches an accidental edit, not a deliberate forgery, and formatting
+/// alone does not change it.
+fn content_digest(value: &JsonValue) -> Result<String, String> {
+    let compact = serde_json::to_string(value).map_err(|e| format!("serialize JSON: {e}"))?;
+    let hash = compact
+        .bytes()
+        .fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| {
+            (hash ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3)
+        });
+
+    Ok(format!("{hash:016x}"))
+}
+
 /// Extract the global "Error Codes" table from the saved API doc HTML into
 /// `tools/api-statuses.json`. The table is a flat `code → description`
 /// listing shared across every method (the docs do not map statuses to
@@ -188,9 +262,7 @@ pub fn cmd_extract_statuses(html_path: &Path, out_path: &Path) -> Result<(), Str
         version: 1,
         statuses,
     };
-    let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
-    fs::write(out_path, format!("{pretty}\n"))
-        .map_err(|e| format!("write {}: {e}", out_path.display()))?;
+    fs::write(out_path, seal(&doc)?).map_err(|e| format!("write {}: {e}", out_path.display()))?;
 
     println!(
         "wrote {} ({} status codes)",
@@ -446,9 +518,7 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
         param_notes,
         method_docs,
     };
-    let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
-    fs::write(out_path, format!("{pretty}\n"))
-        .map_err(|e| format!("write {}: {e}", out_path.display()))?;
+    fs::write(out_path, seal(&doc)?).map_err(|e| format!("write {}: {e}", out_path.display()))?;
 
     let missing: Vec<&&str> = known.iter().filter(|op| !covered.contains(**op)).collect();
     println!(
@@ -1255,5 +1325,44 @@ mod tests {
             "(Values: 1 = Business, 0 = Residential) - Default: 0"
         );
         assert_eq!(normalize_desc("[Required] - Id"), "Id (required)");
+    }
+
+    fn sealed_statuses() -> String {
+        seal(&StatusDocument {
+            version: 1,
+            statuses: vec![StatusEntry {
+                code: "no_did".into(),
+                description: "There are no DIDs".into(),
+            }],
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn a_sealed_document_matches_its_digest() {
+        assert_eq!(matches_digest(&sealed_statuses()), Ok(true));
+    }
+
+    #[test]
+    fn an_edited_value_no_longer_matches() {
+        let edited = sealed_statuses().replace("There are no DIDs", "No DIDs");
+        assert_eq!(matches_digest(&edited), Ok(false));
+    }
+
+    #[test]
+    fn reformatting_keeps_the_match() {
+        let value: JsonValue = serde_json::from_str(&sealed_statuses()).unwrap();
+        let compact = serde_json::to_string(&value).unwrap();
+        assert_eq!(matches_digest(&compact), Ok(true));
+    }
+
+    #[test]
+    fn a_document_without_a_digest_is_an_error() {
+        let unsealed = serde_json::to_string(&StatusDocument {
+            version: 1,
+            statuses: Vec::new(),
+        })
+        .unwrap();
+        assert!(matches_digest(&unsealed).is_err());
     }
 }

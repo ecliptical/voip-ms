@@ -2419,6 +2419,12 @@ fn cmd_gen() -> Result<(), String> {
     let overrides_path = root.join("tools").join("api-response-overrides.json");
     let out_path = root.join("src").join("generated.rs");
 
+    extract::verify_digest(&responses_path, "extract-responses")?;
+    extract::verify_digest(
+        &root.join("tools").join("api-statuses.json"),
+        "extract-statuses",
+    )?;
+
     let text =
         fs::read_to_string(&wsdl_path).map_err(|e| format!("read {}: {e}", wsdl_path.display()))?;
     let wsdl = wsdl::parse_wsdl(&text)?;
@@ -2717,7 +2723,10 @@ fn cmd_gen() -> Result<(), String> {
         );
     }
 
-    let statuses = load_statuses(&root.join("tools").join("api-statuses.json"))?;
+    let statuses = load_statuses(
+        &root.join("tools").join("api-statuses.json"),
+        &overrides_doc.undocumented_statuses,
+    )?;
 
     // An empty-status code that no longer appears in the status table (a
     // typo, or a code the docs dropped) would silently never match, so fail
@@ -3040,9 +3049,13 @@ fn check_param_docs(
 }
 
 /// Read `tools/api-statuses.json` into ordered `(code, description)`
-/// pairs. A missing file yields an empty list — status constants are
-/// additive, so codegen proceeds without them (with a warning).
-fn load_statuses(path: &Path) -> Result<Vec<(String, String)>, String> {
+/// pairs, followed by `undocumented`. A missing file yields an empty list --
+/// status constants are additive, so codegen proceeds without them (with a
+/// warning).
+fn load_statuses(
+    path: &Path,
+    undocumented: &[extract::StatusEntry],
+) -> Result<Vec<(String, String)>, String> {
     if !path.exists() {
         eprintln!(
             "warning: {} missing — skipping status-code generation",
@@ -3052,8 +3065,24 @@ fn load_statuses(path: &Path) -> Result<Vec<(String, String)>, String> {
     }
 
     let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    let doc: extract::StatusDocument =
+    let mut doc: extract::StatusDocument =
         serde_json::from_str(&text).map_err(|e| format!("parse {}: {e}", path.display()))?;
+
+    for entry in undocumented {
+        if doc.statuses.iter().any(|e| e.code == entry.code) {
+            return Err(format!(
+                "undocumented status `{}` is in {}; the docs now list it, so delete it \
+                 from undocumented_statuses",
+                entry.code,
+                path.display()
+            ));
+        }
+
+        doc.statuses.push(extract::StatusEntry {
+            code: entry.code.clone(),
+            description: entry.description.clone(),
+        });
+    }
 
     // Guard against duplicate variant names — two distinct wire codes that
     // collapse to the same PascalCase identifier would fail to compile.

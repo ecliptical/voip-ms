@@ -1466,16 +1466,16 @@
                   "name": "value",
                   "shape": {
                     "kind": "scalar",
-                    "type": "string",
-                    "sample": "once"
+                    "type": "bool_yn",
+                    "sample": "yes"
                   }
                 },
                 {
                   "name": "description",
                   "shape": {
                     "kind": "scalar",
-                    "type": "string",
-                    "sample": "Yes, only once"
+                    "type": "bool_yn",
+                    "sample": "Yes"
                   }
                 }
               ]
@@ -2792,28 +2792,25 @@
         {
           "name": "route",
           "shape": {
-            "kind": "list",
-            "element": {
-              "kind": "object",
-              "fields": [
-                {
-                  "name": "value",
-                  "shape": {
-                    "kind": "scalar",
-                    "type": "integer",
-                    "sample": "2"
-                  }
-                },
-                {
-                  "name": "description",
-                  "shape": {
-                    "kind": "scalar",
-                    "type": "string",
-                    "sample": "Premium"
-                  }
+            "kind": "object",
+            "fields": [
+              {
+                "name": "value",
+                "shape": {
+                  "kind": "scalar",
+                  "type": "integer",
+                  "sample": "2"
                 }
-              ]
-            }
+              },
+              {
+                "name": "description",
+                "shape": {
+                  "kind": "scalar",
+                  "type": "string",
+                  "sample": "Premium"
+                }
+              }
+            ]
           }
         },
         {
@@ -4224,8 +4221,8 @@
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "string",
-                    "sample": "John Doe <5551234567>"
+                    "type": "integer",
+                    "sample": "5551234567"
                   }
                 },
                 {
@@ -5744,8 +5741,8 @@
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "string",
-                    "sample": "John Doe <5552223333>"
+                    "type": "integer",
+                    "sample": "5552223333"
                   }
                 },
                 {
@@ -8540,8 +8537,8 @@
                   "name": "did",
                   "shape": {
                     "kind": "scalar",
-                    "type": "string",
-                    "sample": "647.948.4755"
+                    "type": "integer",
+                    "sample": "5551234567"
                   }
                 },
                 {
@@ -8761,8 +8758,8 @@
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "string",
-                    "sample": "John Doe <5552341234>"
+                    "type": "integer",
+                    "sample": "5552341234"
                   }
                 },
                 {
@@ -9253,28 +9250,41 @@
         {
           "name": "types",
           "shape": {
-            "kind": "list",
-            "element": {
-              "kind": "object",
-              "fields": [
-                {
-                  "name": "value",
-                  "shape": {
-                    "kind": "scalar",
-                    "type": "string",
-                    "sample": "Apartment"
-                  }
-                },
-                {
-                  "name": "description",
-                  "shape": {
-                    "kind": "scalar",
-                    "type": "string",
-                    "sample": "Apartment"
-                  }
-                }
-              ]
-            }
+            "kind": "scalar",
+            "type": "string",
+            "sample": "Array( Array ("
+          }
+        },
+        {
+          "name": "value",
+          "shape": {
+            "kind": "scalar",
+            "type": "string",
+            "sample": "\"Apartment\","
+          }
+        },
+        {
+          "name": "description",
+          "shape": {
+            "kind": "scalar",
+            "type": "string",
+            "sample": "\"Apartment\" ), Array ("
+          }
+        },
+        {
+          "name": "value",
+          "shape": {
+            "kind": "scalar",
+            "type": "string",
+            "sample": "\"Basement\","
+          }
+        },
+        {
+          "name": "description",
+          "shape": {
+            "kind": "scalar",
+            "type": "string",
+            "sample": "\"Basement\""
           }
         }
       ]
@@ -9533,12 +9543,9 @@
         {
           "name": "list_status",
           "shape": {
-            "kind": "map",
-            "value": {
-              "kind": "scalar",
-              "type": "string",
-              "sample": "Awaiting Documentation"
-            }
+            "kind": "scalar",
+            "type": "string",
+            "sample": "Array( \"status_code\" => \"Status Description\","
           }
         }
       ]
@@ -10266,16 +10273,16 @@
                   "name": "date",
                   "shape": {
                     "kind": "scalar",
-                    "type": "datetime",
-                    "sample": "2016-01-30 09:15:42"
+                    "type": "date",
+                    "sample": "2016-01-30"
                   }
                 },
                 {
                   "name": "callerid",
                   "shape": {
                     "kind": "scalar",
-                    "type": "string",
-                    "sample": "John Doe <5551234567>"
+                    "type": "integer",
+                    "sample": "5551234567"
                   }
                 },
                 {
@@ -12124,5 +12131,6 @@
     "moveFolderVoicemailMessage": "- Move Voicemail Message to a Destination Folder.",
     "sendVoicemailEmail": "- Send a Voicemail Message File to an Email Address.",
     "setVoicemail": "- Updates the information from a specific Voicemail."
-  }
+  },
+  "digest": "66b5b5d1fdf27cc1"
 }

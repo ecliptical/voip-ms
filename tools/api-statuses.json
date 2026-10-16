@@ -1686,16 +1686,8 @@
       "description": "There are no DISAs"
     },
     {
-      "code": "no_emailtofax",
-      "description": "There are no Email to Fax entries"
-    },
-    {
       "code": "no_filter",
       "description": "There are no Filters"
-    },
-    {
-      "code": "no_folder",
-      "description": "There are no Fax Folders"
     },
     {
       "code": "no_forwarding",
@@ -1732,10 +1724,6 @@
     {
       "code": "no_phonebook",
       "description": "There are no Phonebook entries"
-    },
-    {
-      "code": "no_phonebook_group",
-      "description": "There are no Phonebook Groups"
     },
     {
       "code": "no_provision",
@@ -1776,14 +1764,6 @@
     {
       "code": "no_timecondition",
       "description": "There are no Time Conditions"
-    },
-    {
-      "code": "no_transactions",
-      "description": "There are no transactions"
-    },
-    {
-      "code": "no_vpri",
-      "description": "There are no vPRIs"
     },
     {
       "code": "order_failed",
@@ -1921,5 +1901,6 @@
       "code": "weak_password",
       "description": "This Password is too weak or too common"
     }
-  ]
+  ],
+  "digest": "cd29ba98e46194dd"
 }
