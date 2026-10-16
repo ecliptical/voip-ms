@@ -11268,22 +11268,22 @@ pub struct SetQueueParams {
         rename = "fail_over_routing_leave_empty"
     )]
     pub failover_routing_leave_empty: Option<crate::Routing>,
-    /// Same as routingjoinempty, except that there were still queue members,
-    /// but all were status unavailable. Same format as
+    /// Same as `failover_routing_join_empty`, except that there were still
+    /// queue members, but all were status unavailable. Same format as
     /// `failover_routing_timeout`.
     #[serde(
         skip_serializing_if = "Option::is_none",
         rename = "fail_over_routing_join_unavail"
     )]
-    pub failover_routing_join_unavail: Option<crate::Routing>,
-    /// Same as routingleaveempty, except that there were still queue members,
-    /// but all were status unavailable. Same format as
+    pub failover_routing_join_unavailable: Option<crate::Routing>,
+    /// Same as `failover_routing_leave_empty`, except that there were still
+    /// queue members, but all were status unavailable. Same format as
     /// `failover_routing_timeout`.
     #[serde(
         skip_serializing_if = "Option::is_none",
         rename = "fail_over_routing_leave_unavail"
     )]
-    pub failover_routing_leave_unavail: Option<crate::Routing>,
+    pub failover_routing_leave_unavailable: Option<crate::Routing>,
 }
 
 /// \- Updates a specific Recording File if a Recording ID is provided.
@@ -16489,13 +16489,13 @@ pub struct GetQueuesResponseQueue {
         deserialize_with = "crate::responses::deserialize_opt_routing",
         rename = "fail_over_routing_join_unavail"
     )]
-    pub failover_routing_join_unavail: Option<crate::Routing>,
+    pub failover_routing_join_unavailable: Option<crate::Routing>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_routing",
         rename = "fail_over_routing_leave_unavail"
     )]
-    pub failover_routing_leave_unavail: Option<crate::Routing>,
+    pub failover_routing_leave_unavailable: Option<crate::Routing>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]

@@ -34,6 +34,11 @@ committed inputs:
   * `method_docs` — each method's one-line summary (→ the lead `///` comment
     on both the `*Params` struct and the `Client` method). ~218 of 222
     methods carry one; the rest are simply absent in the source.
+* `tools/param-docs.json` -- *written by* `cargo xtask gen`, not read by it: each
+  params field's description exactly as `src/generated.rs` renders it
+  (mined text with the overrides, flag rewording and routing format applied),
+  for consumers that read descriptions from JSON. Never edit it; CI fails if
+  it differs from what `gen` writes.
 * `tools/api-statuses.json` — *generated* by `cargo xtask extract-statuses`
   from the same HTML. The global error-code table (`status` string →
   description), rendered as the `ApiStatus` enum (one PascalCase variant per

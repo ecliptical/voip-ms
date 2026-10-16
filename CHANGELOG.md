@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   | `cancelcomment` | `cancel_comment` |
   | `dialtime`, `internal_dialtime` | `dial_time`, `internal_dial_time` |
   | `email_enable`, `enable`, `sms_forward_enable`, `url_callback_enable` | `email_enabled`, `enabled`, `sms_forward_enabled`, `url_callback_enabled` |
-  | `fail_over_routing_full`, `_join_empty`, `_join_unavail`, `_leave_empty`, `_leave_unavail`, `_timeout` | `failover_routing_full`, `_join_empty`, `_join_unavail`, `_leave_empty`, `_leave_unavail`, `_timeout` |
+  | `fail_over_routing_full`, `_join_empty`, `_join_unavail`, `_leave_empty`, `_leave_unavail`, `_timeout` | `failover_routing_full`, `_join_empty`, `_join_unavailable`, `_leave_empty`, `_leave_unavailable`, `_timeout` |
   | `failover_noanswer`, `noanswer`, `routing_nomatch` | `failover_no_answer`, `no_answer`, `routing_no_match` |
   | `firstname`, `lastname` | `first_name`, `last_name` |
   | `minute_puertorico` | `minute_puerto_rico` |
@@ -69,6 +69,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AddLNPPortParams`' `is_mobile`, `location_type` and `notes` docs no longer
   start with a dash, and `SetSubAccountParams::ip_restriction` is documented
   as accepting the same values as `CreateSubAccountParams::ip_restriction`.
+- The corrected request-field docs are also written to `tools/param-docs.json`
+  in the repository, keyed by wire method and wire field, for tools that read
+  descriptions from JSON rather than rustdoc.
 
 ## [0.17.0] - 2026-10-16
 

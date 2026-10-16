@@ -106,7 +106,8 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
 ///   `port_id`);
 /// * an on/off switch ends in `_enabled` (`email_enable`, `enable`);
 /// * one spelling per concept: `first_name` / `last_name`, `zip_code`,
-///   `failover_*`, `toll_free_*` for `tf*`, `caller_id` for `callerid`;
+///   `failover_*`, `toll_free_*` for `tf*`, `caller_id` for `callerid`,
+///   `unavailable` for `unavail`;
 /// * voip.ms's misspellings are corrected (`frecuency`, `ammount`).
 ///
 /// The wire name still travels on the wire through the serde `rename` the
@@ -140,7 +141,7 @@ const FIELD_IDENT_RENAME: &[(&str, &str)] = &[
     ),
     (
         "fail_over_routing_join_unavail",
-        "failover_routing_join_unavail",
+        "failover_routing_join_unavailable",
     ),
     (
         "fail_over_routing_leave_empty",
@@ -148,7 +149,7 @@ const FIELD_IDENT_RENAME: &[(&str, &str)] = &[
     ),
     (
         "fail_over_routing_leave_unavail",
-        "failover_routing_leave_unavail",
+        "failover_routing_leave_unavailable",
     ),
     ("fail_over_routing_timeout", "failover_routing_timeout"),
     ("failover_noanswer", "failover_no_answer"),
@@ -1495,6 +1496,7 @@ fn emit(
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
     zone_timestamps: &BTreeMap<String, Vec<String>>,
     base64_file_params: &BTreeMap<String, Vec<String>>,
+    rendered_docs: &mut ParamDocs,
 ) -> Result<String, String> {
     let acronyms = acronyms_sorted();
     // Which side each declared enum lands on, collected while the structs are
@@ -1593,6 +1595,13 @@ fn emit(
                 }
 
                 render_doc(&mut body, "    ", paragraph);
+            }
+
+            if !paragraphs.is_empty() {
+                rendered_docs
+                    .entry(op.clone())
+                    .or_default()
+                    .insert(fname.clone(), paragraphs.join("\n\n"));
             }
 
             // A `param_skip_if` override emits the field unwrapped (plain `T`,
@@ -2745,6 +2754,7 @@ fn cmd_gen() -> Result<(), String> {
         eprintln!("warning: {warning}");
     }
 
+    let mut rendered_docs = ParamDocs::new();
     let rendered = emit(
         &wsdl,
         &responses,
@@ -2758,6 +2768,7 @@ fn cmd_gen() -> Result<(), String> {
         &zoned_timestamps,
         &zone_timestamps,
         &base64_file_params.by_op,
+        &mut rendered_docs,
     )?;
     write_rust(&out_path, &rendered)?;
     println!(
@@ -2773,6 +2784,7 @@ fn cmd_gen() -> Result<(), String> {
     // From the same shapes, so the harness's key-diff table can't fall behind
     // the structs it describes.
     dump_fields::write_table(&responses)?;
+    write_param_docs(&rendered_docs)?;
 
     Ok(())
 }
@@ -2885,6 +2897,29 @@ fn load_param_notes(responses_path: &Path) -> Result<BTreeMap<String, String>, S
         .iter()
         .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
         .collect())
+}
+
+/// Where [`write_param_docs`] writes, relative to the repository root.
+const PARAM_DOCS_REL: &str = "tools/param-docs.json";
+
+/// Write the description of every params field as `src/generated.rs` renders
+/// it -- mined text, `param_docs` overrides, flag rewording, the routing format
+/// and zone notes applied -- keyed by wire method then wire field, under
+/// `param_docs` like the mined section of `tools/api-responses.json`.
+/// Paragraphs are separated by a blank line. The text is the one before
+/// rustdoc wrapping and escaping, so it reads the same outside rustdoc.
+fn write_param_docs(docs: &ParamDocs) -> Result<(), String> {
+    let doc = serde_json::json!({ "version": 1, "param_docs": docs });
+    let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
+    let out_path = repo_root().join(PARAM_DOCS_REL);
+    fs::write(&out_path, format!("{pretty}\n"))
+        .map_err(|e| format!("write {}: {e}", out_path.display()))?;
+    println!(
+        "wrote {} ({} param descriptions)",
+        out_path.display(),
+        docs.values().map(BTreeMap::len).sum::<usize>(),
+    );
+    Ok(())
 }
 
 /// Check the parameter descriptions against the overrides that correct them.

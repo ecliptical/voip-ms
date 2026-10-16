@@ -137,6 +137,14 @@ it in three places rather than render it verbatim:
   `cargo xtask gen` warns about a note no field renders and about a flag
   description that still spells a wire value.
 
+The same text, before rustdoc wrapping and escaping, is written to
+`tools/param-docs.json` (keyed by wire method, then wire field, under
+`param_docs`), so a consumer that reads descriptions from JSON rather than
+rustdoc gets the corrected text too. It describes each field in its Rust
+type's terms: a `bool` flag says `true` / `false`. Only `cargo xtask gen`
+writes it; the mined `param_docs` in `tools/api-responses.json` stay the
+docs' own text.
+
 All response fields are `Option<T>` with `#[serde(default)]` so that
 VoIP.ms adding, removing, or omitting a field never breaks
 deserialization. Numbers, booleans (`0/1`, `Y/N`), dates, and decimals
@@ -342,7 +350,8 @@ every struct, params and response alike:
   `rate_center`), including the `id` of a record id (`portid` -> `port_id`);
 * an on/off switch ends in `_enabled`;
 * one spelling per concept: `first_name` / `last_name`, `zip_code`,
-  `failover_*`, `toll_free_*` for `tf*`, `caller_id` for `callerid`;
+  `failover_*`, `toll_free_*` for `tf*`, `caller_id` for `callerid`,
+  `unavailable` for `unavail`;
 * a misspelling is corrected.
 
 The wire name still travels in the serde `rename`, so nothing changes on the
@@ -1235,6 +1244,7 @@ voip-ms/
 │   ├── server.wsdl                   # Committed WSDL snapshot
 │   ├── api-responses.json            # Extracted response shapes (generated)
 │   ├── api-statuses.json             # Extracted error-code table (generated)
+│   ├── param-docs.json               # Rendered param descriptions (written by gen)
 │   └── api-response-overrides.json   # Hand-edited shape corrections + enums
 ├── livetest/                         # Operator-local live-API drift harness (bin)
 │   └── src/
