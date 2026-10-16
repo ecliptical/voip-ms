@@ -10,7 +10,8 @@
 //! * patch one or more scalar types inside an otherwise-correct
 //!   inferred shape (the doc samples often type-erase into one form --
 //!   a phone number can look like an integer, a 0/1 flag can look like
-//!   an integer -- and the inferrer can't always tell), or
+//!   an integer -- and the inferrer can't always tell), together with a
+//!   sample of the value voip.ms sends, or
 //! * add a scalar field the live API returns but the docs never list,
 //!   which the extractor cannot see by construction.
 //!
@@ -153,11 +154,15 @@ pub struct MethodOverride {
     pub additions: Vec<Addition>,
 }
 
+/// A retype of one extracted scalar. The docs' sample was written for the type
+/// the patch corrects, so the patch also supplies a sample of what voip.ms
+/// sends, which replaces it.
 #[derive(Deserialize)]
 pub struct Patch {
     pub path: String,
     #[serde(rename = "type")]
     pub ty: ScalarTy,
+    pub sample: String,
 }
 
 /// An undocumented response field, declared by hand from an observed live
@@ -225,21 +230,23 @@ pub fn apply(extracted: Option<Shape>, mo: &MethodOverride) -> Result<Option<Sha
     }
 
     for patch in &mo.patches {
-        apply_patch(&mut shape, &patch.path, patch.ty)?;
+        apply_patch(&mut shape, patch)?;
     }
 
     Ok(Some(shape))
 }
 
-fn apply_patch(shape: &mut Shape, path: &str, ty: ScalarTy) -> Result<(), String> {
+fn apply_patch(shape: &mut Shape, patch: &Patch) -> Result<(), String> {
+    let path = &patch.path;
     let segments = parse_path(path)?;
     match resolve(shape, &segments, path)? {
-        Shape::Scalar { ty: slot, .. } if *slot == ty => Err(format!(
+        Shape::Scalar { ty, .. } if *ty == patch.ty => Err(format!(
             "override path `{path}` patches to the type the extracted shape already has; \
              the docs now agree, so delete the patch"
         )),
-        Shape::Scalar { ty: slot, .. } => {
-            *slot = ty;
+        Shape::Scalar { ty, sample } => {
+            *ty = patch.ty;
+            sample.clone_from(&patch.sample);
             Ok(())
         }
         _ => Err(format!("override path `{path}` lands on a non-scalar node")),
@@ -475,20 +482,22 @@ mod tests {
             patches: vec![Patch {
                 path: "cdr[].uniqueid".to_string(),
                 ty,
+                sample: "1700000000".to_string(),
             }],
             additions: Vec::new(),
         }
     }
 
     #[test]
-    fn a_patch_retypes_the_scalar() {
+    fn a_patch_replaces_the_type_and_the_sample() {
         let shape = apply(Some(cdr_shape()), &patch(ScalarTy::Integer))
             .unwrap()
             .unwrap();
-        let Shape::Scalar { ty, .. } = &element_fields(&shape)[0].1 else {
+        let Shape::Scalar { ty, sample } = &element_fields(&shape)[0].1 else {
             panic!("expected scalar")
         };
         assert_eq!(*ty, ScalarTy::Integer);
+        assert_eq!(sample, "1700000000");
     }
 
     #[test]

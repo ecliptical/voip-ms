@@ -512,8 +512,8 @@ in `xtask/src/field_overrides.rs`:
   ship the value as a bare JSON number. Deliberately excluded: the plural
   `dids` (sometimes a list of numeric vPRI ids) and `from` (a date filter
   in the `getSMS`-family params, an email in `getEmailToFax`'s response).
-  `cargo xtask gen` warns when a `patches` entry is shadowed by a
-  field-name override so retired per-method patches get removed.
+  A `patches` entry under one of these fields leaves the Rust type alone but
+  still corrects the type and sample in the JSON shapes, so it stays.
 * **Calendar dates** (`date_from`, `date_to`, `reseller_nextbilling` in
   `DATE_FIELDS`) map to [`chrono::NaiveDate`], whose own `Serialize` emits the
   documented `YYYY-MM-DD` wire form. The bare `date` field is excluded -- it is

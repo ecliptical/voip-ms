@@ -105,7 +105,7 @@ cargo xtask check-flags
 
 # 5. Apply any corrections to tools/api-response-overrides.json (NOT the
 #    generated files), then regenerate src/generated.rs. Heed its warnings:
-#    a patch shadowed by a field-name override should be deleted, and a
+#    an addition shadowed by a field-name override needs its type fixed, and a
 #    parameter documented as base64 but absent from BASE64_FILE_PARAM_PATHS
 #    in xtask/src/field_overrides.rs is a method that needs the multipart
 #    transport (design decision #7) and will not work over GET.
@@ -185,7 +185,11 @@ refresh needs eyes on the diff, not just a green build:
   resolve by adjusting the acronym list or treating one as `Unknown`.
 * **Mis-typed response scalars** — a phone-number field parsed as `integer`,
   a `0/1` flag parsed as `integer`, a date placeholder, etc. Fix via a
-  per-path retype in `api-response-overrides.json`. A patch that sets the type
+  per-path retype in `api-response-overrides.json`, which also gives a
+  `sample` of the value voip.ms sends: the docs' sample was written for the
+  wrong type, and the shapes are read as JSON as well as rendered to Rust. A
+  patch is worth keeping even when a field-name override fixes the Rust type,
+  since its type and sample still correct the JSON. A patch that sets the type
   the extract already has fails `cargo xtask gen`: the docs have caught up, so
   delete it.
 * **Mis-structured responses** -- the docs print a list as a single object

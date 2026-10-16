@@ -2508,33 +2508,22 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
-    // A patch or addition whose leaf field has a field-name override is dead
-    // weight: the override supplies both the Rust type and the deserializer, so
-    // the declared scalar type is never consulted. Warn so the entry gets fixed
+    // An addition whose leaf field has a field-name override keeps its field,
+    // but the override supplies both the Rust type and the deserializer, so the
+    // declared scalar type is never consulted. Warn so the type gets fixed
     // (unless a `field_type_skip` on that field name keeps some struct on the
-    // inferred/patched type, in which case the entry may still be live). An
-    // addition goes through the same resolver as any other scalar field, so it
-    // is shadowed in exactly the same way.
+    // declared type). A patch under such an override is not warned about: its
+    // type and sample still correct the shapes for readers of the JSON.
     let skipped_fields: BTreeSet<&str> = field_type_skip
         .iter()
         .filter_map(|entry| entry.rsplit_once('.').map(|(_, f)| f))
         .collect();
     for (method, mo) in &overrides_doc.methods {
-        let declared = mo
-            .patches
-            .iter()
-            .map(|patch| ("patch", &patch.path))
-            .chain(mo.additions.iter().map(|add| ("addition", &add.path)));
-        for (kind, path) in declared {
+        for path in mo.additions.iter().map(|add| &add.path) {
             let leaf = path.rsplit('.').next().unwrap_or(path);
-            // A path ending in `[]` retypes a list *element*, which the
-            // field-name table never touches.
-            if leaf.ends_with("[]") {
-                continue;
-            }
             if table.get(leaf).is_some() && !skipped_fields.contains(leaf) {
                 eprintln!(
-                    "warning: {method}: {kind} `{path}` is shadowed by the \
+                    "warning: {method}: addition `{path}` is shadowed by the \
                      field-name override for `{leaf}`; its declared type is ignored",
                 );
             }

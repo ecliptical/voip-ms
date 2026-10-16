@@ -67,7 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tools/api-response-overrides.json` now, the new `undocumented_statuses`
   section holding the status codes. Each extract records a digest of its
   output, and `cargo xtask gen` fails on a file edited after its extract. A
-  patch that sets the type the extract already has also fails `gen`. The
+  patch carries a `sample` along with its type, so the corrected shapes keep
+  values voip.ms sends (`John Doe <5551234567>`, not `5551234567`), and
+  `getFaxNumbersInfo`'s `did` is patched to `string` again even though its
+  Rust type comes from the field-name table; a patch without a sample, or
+  one that sets the type the extract already has, fails `gen`. The
   generated code is unchanged except that the five undocumented `ApiStatus`
   variants follow the documented ones.
 - The routing-string format (`header:record_id`, its headers, the `sys`

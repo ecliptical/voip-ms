@@ -265,46 +265,46 @@
   "methods": {
     "getJoinWhenEmptyTypes": {
       "patches": [
-        { "path": "types[].value",       "type": "string" },
-        { "path": "types[].description", "type": "string" }
+        { "path": "types[].value",       "type": "string", "sample": "yes" },
+        { "path": "types[].description", "type": "string", "sample": "Yes" }
       ]
     },
     "getPlayInstructions": {
       "patches": [
-        { "path": "play_instructions[].description", "type": "string" }
+        { "path": "play_instructions[].description", "type": "string", "sample": "Yes" }
       ]
     },
     "getDIDsInfo": {
       "patches": [
-        { "path": "dids[].sms_available",  "type": "bool_01" },
-        { "path": "dids[].sms_enabled",    "type": "bool_01" }
+        { "path": "dids[].sms_available", "type": "bool_01", "sample": "1" },
+        { "path": "dids[].sms_enabled",   "type": "bool_01", "sample": "1" }
       ]
     },
     "getDIDvPRI": {
       "patches": [
-        { "path": "dids[]", "type": "string" }
+        { "path": "dids[]", "type": "string", "sample": "7862285619" }
       ]
     },
     "getReportEstimatedHoldTime": {
       "patches": [
-        { "path": "types[].value",       "type": "string" },
-        { "path": "types[].description", "type": "string" }
+        { "path": "types[].value",       "type": "string", "sample": "once" },
+        { "path": "types[].description", "type": "string", "sample": "Yes, only once" }
       ]
     },
     "getCallerIDFiltering": {
       "patches": [
-        { "path": "filtering[].callerid", "type": "string" }
+        { "path": "filtering[].callerid", "type": "string", "sample": "John Doe <5551234567>" }
       ]
     },
     "getPhonebook": {
       "patches": [
-        { "path": "phonebooks[].callerid", "type": "string" }
+        { "path": "phonebooks[].callerid", "type": "string", "sample": "John Doe <5552223333>" }
       ]
     },
     "getVoicemailMessages": {
       "patches": [
-        { "path": "messages[].date",     "type": "datetime" },
-        { "path": "messages[].callerid", "type": "string" }
+        { "path": "messages[].date",     "type": "datetime", "sample": "2016-01-30 09:15:42" },
+        { "path": "messages[].callerid", "type": "string",   "sample": "John Doe <5551234567>" }
       ]
     },
     "getTerminationRates": {
@@ -480,24 +480,25 @@
     },
     "getEmailToFax": {
       "patches": [
-        { "path": "emailToFax[].from", "type": "string" },
-        { "path": "emailToFax[].id",   "type": "integer" }
+        { "path": "emailToFax[].from", "type": "string",  "sample": "5552341234" },
+        { "path": "emailToFax[].id",   "type": "integer", "sample": "0000" }
       ]
     },
     "getFaxFolders": {
       "patches": [
-        { "path": "folders[].id", "type": "integer" }
+        { "path": "folders[].id", "type": "integer", "sample": "0000" }
       ]
     },
     "getFaxMessages": {
       "patches": [
-        { "path": "faxes[].id",       "type": "integer" },
-        { "path": "faxes[].callerid", "type": "string" }
+        { "path": "faxes[].id",       "type": "integer", "sample": "0000" },
+        { "path": "faxes[].callerid", "type": "string",  "sample": "John Doe <5552341234>" }
       ]
     },
     "getFaxNumbersInfo": {
       "patches": [
-        { "path": "numbers[].id", "type": "integer" }
+        { "path": "numbers[].id",  "type": "integer", "sample": "0000" },
+        { "path": "numbers[].did", "type": "string",  "sample": "647.948.4755" }
       ]
     },
     "getMediaMMS": {
