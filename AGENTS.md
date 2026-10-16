@@ -113,6 +113,42 @@ one-line summary). `cargo xtask gen` renders these as `///` comments on
 the `*Params` fields and on the `*Params` struct + `Client` method,
 respectively.
 
+**A param doc describes the field a caller writes, in the field's terms.** The
+mined text is voip.ms's, written for its wire form, so the generator corrects
+it in three places rather than render it verbatim:
+
+* The paragraph some methods print flush left under their parameter table
+  (the routing-string format, the `members` grammar) is about several
+  parameters, so the extractor keeps it apart in `param_notes` instead of
+  running it into the last row, where it landed on `test` for the DID orders.
+  The routing format is written by the generator (`ROUTING_FORMAT_DOC`) on the
+  first routing field of every params struct -- its `routing` when it has
+  one -- and the struct's other routing fields refer to that field. The docs
+  print the format in three versions of differing completeness and on no
+  method that takes `routing_match`, so one fixed text is the only way every
+  routing field gets the whole of it.
+* A `bool` flag's description loses the wire spellings of its values
+  (`(Boolean: 1/0)`, `(Values: 'yes'/'no')`) and says a default as
+  `true` / `false`, since the field takes neither `1` nor `yes`.
+* `param_docs` in `tools/api-response-overrides.json` replaces a description
+  outright: one the generic rules leave in wire terms, one the docs word
+  differently for the same field on two methods (`ip_restriction`), or one a
+  note has to be worked into. It names other params by their Rust ident.
+  `cargo xtask gen` warns about a note no field renders and about a flag
+  description that still spells a wire value.
+
+The same text, before rustdoc wrapping and escaping, is written to
+`tools/param-docs.json` (keyed by wire method, then wire field, under
+`param_docs`), so a consumer that reads descriptions from JSON rather than
+rustdoc gets the corrected text too. Each entry is the `doc` and whether a
+caller must set the field (`required`), as data because an override can
+replace the text that carried the `(required)` marker. Both are in the crate's
+terms: a `bool` flag says `true` / `false`, and the offset ops' `timezone` is
+not required although voip.ms needs it on the wire, since the typed method
+sends UTC in its place. Only `cargo xtask gen`
+writes it; the mined `param_docs` in `tools/api-responses.json` stay the
+docs' own text.
+
 All response fields are `Option<T>` with `#[serde(default)]` so that
 VoIP.ms adding, removing, or omitting a field never breaks
 deserialization. Numbers, booleans (`0/1`, `Y/N`), dates, and decimals
@@ -153,7 +189,7 @@ well-shaped string they cannot read. Four are scalar helpers in
 sentinel word and reject everything else, so a `getQueues` row reporting
 `announce_frequency` as `"every 30s"` costs the response. Those reach
 `maximum_wait_time`, `maximum_callers`, `max_members` and the `SECONDS_FIELDS`
-set. That is the whole remaining exposure, and it is not hypothetical: `GetTransactionHistoryResponseTransaction::ammount` is a strict
+set. That is the whole remaining exposure, and it is not hypothetical: `GetTransactionHistoryResponseTransaction::amount` is a strict
 `Decimal` on the same row whose `uniqueid` VoIP.ms already reports as the
 literal `n/a`. Extending `Reported<T>` to them is the same change made here for
 dates, and wants the same thing first -- an observation, or a decision recorded
@@ -261,9 +297,10 @@ leaving every other at its `Default`. Two bounds keep it honest:
   better but not perfect, so the constructor is a convenience and never a
   contract. A field it asks for may be optional in practice, and one it omits
   may turn out to be needed. Where the crate deliberately contradicts a marker
-  it needs an entry in `REQUIRED_CTOR_SKIP` (`xtask/src/main.rs`): the offset
+  it needs an entry in `REQUIRED_OVERRULED` (`xtask/src/main.rs`): the offset
   ops' `timezone` is marked required and defaulted to UTC by decision 5a, so a
-  constructor demanding it would contradict the method it builds for.
+  constructor demanding it would contradict the method it builds for. The same
+  rule (`is_required`) sets `required` in `tools/param-docs.json`.
 * **A long positional argument list reads worse than a struct literal.**
   `MAX_CTOR_FIELDS` caps it at six; `AddLNPPortParams` (12 required) and
   `CreateVoicemailParams` (11) get no `new` at all.
@@ -305,6 +342,34 @@ identifier-shaped. A keyword escape is a last resort, not an outcome:
 applied on both sides. The same table carries a rename where the upstream WSDL
 names one method's id differently than its siblings.
 
+**An ident follows one naming scheme; the wire name does not have to.**
+voip.ms names one concept several ways (`firstname` / `firstName`, `zip` /
+`zip_code`, `email_enable` / `email_enabled`, `callhunting` beside
+`ring_group`) and misspells some (`announce_position_frecuency`). A caller
+writing a struct literal, and a consumer that uses the idents as parameter
+names, should not have to know which spelling one method picked, so
+`FIELD_IDENT_RENAME` in `xtask/src/main.rs` maps a wire name to the ident in
+every struct, params and response alike:
+
+* every word is split (`callhunting` -> `call_hunting`, `ratecenter` ->
+  `rate_center`), including the `id` of a record id (`portid` -> `port_id`);
+* an on/off switch ends in `_enabled`;
+* one spelling per concept: `first_name` / `last_name`, `zip_code`,
+  `failover_*`, `toll_free_*` for `tf*`, `caller_id` for `callerid`,
+  `unavailable` for `unavail`;
+* a misspelling is corrected.
+
+The wire name still travels in the serde `rename`, so nothing changes on the
+wire. Renaming an ident breaks every caller that names it, so a new entry for
+a field that has shipped waits for a breaking release.
+`cargo xtask gen` fails on an entry whose wire name no struct carries any more
+or that names the ident the tokenizer derives anyway. A `FIELD_IDENT_OVERRIDE`
+entry wins over the table for its one struct.
+
+Type names are not renamed: `GetTimeConditionsParams` keeps voip.ms's word for
+the method, and a nested response struct keeps the wire name of its field
+(`GetVoicemailSetupsResponseVoicemailsetup`).
+
 **Type names keep VoIP.ms's acronym casing** (`GetDIDsInfoParams`,
 `SendSMSResponse`, `ApiStatus::NoSIPURI`) even though C-CASE and clippy's
 `upper_case_acronyms` want `GetDidsInfoParams`. The name then reads the same
@@ -320,6 +385,8 @@ produces a single-letter token in `tokenize()`, add it to the `ACRONYMS`
 constant in `xtask/src/main.rs` and regenerate. When a new method has a field
 named `type`, give it a `FIELD_IDENT_OVERRIDE` entry naming what it holds in
 that struct rather than letting it emit as `r#type`.
+When a new field's wire name breaks the scheme above, add it to
+`FIELD_IDENT_RENAME`.
 
 ### 5a. Domain types substituted by field name
 
@@ -494,7 +561,12 @@ in `xtask/src/field_overrides.rs`:
   then updated it converted each field by hand. Only the param side moves --
   every response already reported a number -- so no response gains a way to
   fail. Entries are the *wire* name, which is why `ring_group` is listed twice
-  (`delRingGroup` spells it `ringgroup`).
+  (`delRingGroup` spells it `ringgroup`). `id` names a different record in
+  every method and is not always a number, so it is typed per struct instead
+  (`NUMERIC_ID_PARAM_PATHS`): `getBackOrders` filters by the back order id its
+  response reports as a number. `delLocation`'s `id` stays `String`, because
+  `getLocations` reports only location names and so nothing shows what form
+  the id takes.
 * **Identifiers an all-digit sample made look numeric** (`zip`, `password`,
   `security_code`, `dtmf_digits`, `callerid_prefix` in
   `IDENTIFIER_STRING_FIELDS`) map to `String`, the same reasoning as
@@ -1177,6 +1249,7 @@ voip-ms/
 │   ├── server.wsdl                   # Committed WSDL snapshot
 │   ├── api-responses.json            # Extracted response shapes (generated)
 │   ├── api-statuses.json             # Extracted error-code table (generated)
+│   ├── param-docs.json               # Rendered param descriptions (written by gen)
 │   └── api-response-overrides.json   # Hand-edited shape corrections + enums
 ├── livetest/                         # Operator-local live-API drift harness (bin)
 │   └── src/

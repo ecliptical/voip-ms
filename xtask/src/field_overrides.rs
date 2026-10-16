@@ -258,6 +258,28 @@ pub(crate) const NAMED_ZONE_TZ_RESPONSE_PATHS: &[&str] = &[
     "GetTimezonesResponseTimezone.value",
 ];
 
+/// Params whose name means a numeric id in this struct only, typed `u64` per
+/// struct for the reason [`NAMED_ZONE_TZ_PARAM_PATHS`] is: `id` names a
+/// different record in every method, not every one a number, so [`U64_FIELDS`]
+/// cannot list it. `getBackOrders` filters by the back order `id` its response
+/// reports as a number. `delLocation`'s `id` stays `String`: `getLocations`
+/// reports only location names, so no response says what form the id takes.
+/// Keyed `"StructName.field"`.
+pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] = &["GetBackOrdersParams.id"];
+
+/// The [`FieldOverride`] for a numeric id. Its wire form is a bare number
+/// either way, so the param side needs no serializer; only the response side
+/// has to tolerate the numeric string voip.ms may send instead.
+pub(crate) fn numeric_id_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "u64".into(),
+        response_deserializer: Some(
+            "crate::responses::deserialize_opt_u64_from_string_or_number".into(),
+        ),
+        ..Default::default()
+    }
+}
+
 /// The [`FieldOverride`] typing a param as `chrono_tz::Tz`: the IANA name
 /// travels on the wire via `serialize_opt_tz`.
 pub(crate) fn tz_param_override() -> FieldOverride {
@@ -466,6 +488,7 @@ const U64_FIELDS: &[&str] = &[
     "unavailable_message_recording",
     "voice_announcement",
     "voicemail",
+    "vpri",
 ];
 
 /// `setConference`'s 20 prompt slots, each documented as "the recording
@@ -621,16 +644,7 @@ fn builtin() -> Vec<(&'static str, FieldOverride)> {
         ),
         ..Default::default()
     };
-    // A numeric id whose wire form is a bare number either way, so the param
-    // side needs no serializer; only the response side has to tolerate the
-    // numeric string voip.ms may send instead.
-    let numeric_id = FieldOverride {
-        rust_type: "u64".into(),
-        response_deserializer: Some(
-            "crate::responses::deserialize_opt_u64_from_string_or_number".into(),
-        ),
-        ..Default::default()
-    };
+    let numeric_id = numeric_id_override();
     // Decimal's own Serialize emits the bare number the wire wants, so no
     // param_serializer; the response side tolerates a numeric string.
     let decimal = FieldOverride {

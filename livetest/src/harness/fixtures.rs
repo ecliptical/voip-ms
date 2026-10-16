@@ -39,7 +39,7 @@ pub fn required_queue_params(queue_number: u64) -> SetQueueParams {
         join_when_empty: Some(QueueEmptyBehavior::Yes),
         leave_when_empty: Some(QueueEmptyBehavior::No),
         ring_strategy: Some(RingStrategy::RingAll),
-        ring_inuse: Some(false),
+        ring_in_use: Some(false),
         ..Default::default()
     }
 }

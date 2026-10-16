@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: field names follow one scheme across every `*Params` and
+  `*Response` struct, where voip.ms's wire names do not: every word is split,
+  an on/off switch ends in `_enabled`, one concept has one spelling, and
+  voip.ms's misspellings are corrected. The wire names are unchanged. A struct
+  literal, field access or destructure naming an old field stops compiling:
+
+  | Old | New |
+  |---|---|
+  | `ammount` | `amount` |
+  | `announce_position_frecuency` | `announce_position_frequency` |
+  | `attachid` | `attachment_id` |
+  | `base64file` | `base64_file` |
+  | `callbilling` | `call_billing` |
+  | `callerid`, `callerid_e164`, `callerid_number`, `callerid_override`, `callerid_prefix`, `say_callerid` | `caller_id`, `caller_id_e164`, `caller_id_number`, `caller_id_override`, `caller_id_prefix`, `say_caller_id` |
+  | `callhunting`, `callparking`, `callrecording`, `calltype` | `call_hunting`, `call_parking`, `call_recording`, `call_type` |
+  | `cancelcomment` | `cancel_comment` |
+  | `dialtime`, `internal_dialtime` | `dial_time`, `internal_dial_time` |
+  | `email_enable`, `enable`, `sms_forward_enable`, `url_callback_enable` | `email_enabled`, `enabled`, `sms_forward_enabled`, `url_callback_enabled` |
+  | `fail_over_routing_full`, `_join_empty`, `_join_unavail`, `_leave_empty`, `_leave_unavail`, `_timeout` | `failover_routing_full`, `_join_empty`, `_join_unavailable`, `_leave_empty`, `_leave_unavailable`, `_timeout` |
+  | `failover_noanswer`, `noanswer`, `routing_nomatch` | `failover_no_answer`, `no_answer`, `routing_no_match` |
+  | `firstname`, `lastname` | `first_name`, `last_name` |
+  | `minute_puertorico` | `minute_puerto_rico` |
+  | `musiconhold` | `music_on_hold` |
+  | `perminute_minute`, `perminute_monthly`, `perminute_setup` | `per_minute_minute`, `per_minute_monthly`, `per_minute_setup` |
+  | `portid`, `portout` | `port_id`, `port_out` |
+  | `ratecenter`, `ratecenters` | `rate_center`, `rate_centers` |
+  | `reseller_chargesetup`, `reseller_nextbilling` | `reseller_charge_setup`, `reseller_next_billing` |
+  | `ring_inuse` | `ring_in_use` |
+  | `sms_sipaccount`, `sms_sipaccount_enabled` | `sms_sip_account`, `sms_sip_account_enabled` |
+  | `starthour`, `startminute`, `endhour`, `endminute`, `weekdaystart`, `weekdayend` | `start_hour`, `start_minute`, `end_hour`, `end_minute`, `weekday_start`, `weekday_end` |
+  | `stationid`, `uniqueid` | `station_id`, `unique_id` |
+  | `subaccount` | `sub_account` |
+  | `tf_type`, `tfcarrier` | `toll_free_type`, `toll_free_carrier` |
+  | `thankyou_for_your_patience` | `thank_you_for_your_patience` |
+  | `timecondition` | `time_condition` |
+  | `useragent` | `user_agent` |
+  | `voicemailsetup`, `voicemailsetups` | `voicemail_setup`, `voicemail_setups` |
+  | `zip` | `zip_code` |
+
+- **Breaking**: `GetDIDvPRIParams::vpri` and `GetBackOrdersParams::id` are
+  `Option<u64>` instead of `Option<String>`, like the vPRI and back order ids
+  every other request takes and every response reports.
+  `GetDIDvPRIParams::new` takes the id as `u64`.
+
+### Fixed
+
+- The routing-string format (`header:record_id`, its headers, the `sys`
+  options and examples) is documented on the first routing field of every
+  request that takes one, and the request's other routing fields refer to it.
+  It had been attached to `test` on the DID and toll-free order requests,
+  to `voicemail_threshold` on `SetDIDInfoParams` and to the last failover on
+  `SetQueueParams`, and was cut short on `SetDIDRoutingParams`. The same fix
+  moves the `members` grammar from `SetRingGroupParams::language` to
+  `members`, and the per-member note from `SetCallHuntingParams::press` to
+  `ring_time` and `press`.
+- A `bool` flag's doc no longer names voip.ms's wire values (`(Boolean: 1/0)`,
+  `(Values: 'yes'/'no')`) and gives its default as `true` / `false`.
+- `AddLNPPortParams`' `is_mobile`, `location_type` and `notes` docs no longer
+  start with a dash, and `SetSubAccountParams::ip_restriction` is documented
+  as accepting the same values as `CreateSubAccountParams::ip_restriction`.
+- The corrected request-field docs are also written to `tools/param-docs.json`
+  in the repository, keyed by wire method and wire field, for tools that read
+  descriptions from JSON rather than rustdoc. Each entry carries the text and
+  whether a caller must set the field.
+
 ## [0.17.0] - 2026-10-16
 
 ### Added

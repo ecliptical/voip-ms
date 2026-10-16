@@ -30,6 +30,11 @@ pub struct Document {
     /// override flow, which only reads `methods`) keep parsing.
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub param_docs: serde_json::Map<String, JsonValue>,
+    /// Per-method notes mined from the paragraph that follows a method's
+    /// parameter table, keyed by wire method name. A note describes the
+    /// parameters as a group, so no parameter carries it.
+    #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
+    pub param_notes: serde_json::Map<String, JsonValue>,
     /// Per-method one-line descriptions mined from each method's
     /// description row in the docs. Keyed by wire method name. Most methods
     /// carry one (~218 of 222); the rest are absent. Optional for
@@ -380,6 +385,7 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
     let blocks = scan_html(&html);
     let mut methods = serde_json::Map::new();
     let mut param_docs = serde_json::Map::new();
+    let mut param_notes = serde_json::Map::new();
     let mut covered: BTreeSet<String> = BTreeSet::new();
     let mut params_covered: BTreeSet<String> = BTreeSet::new();
     for block in &blocks {
@@ -409,7 +415,11 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
                 if params_covered.contains(name) {
                     continue;
                 }
-                let docs = parse_param_docs(&block.body);
+                let ParamCell { params: docs, note } = parse_param_docs(&block.body);
+                if let Some(note) = note {
+                    param_notes.insert(name.clone(), JsonValue::String(note));
+                }
+
                 if !docs.is_empty() {
                     let map: serde_json::Map<String, JsonValue> = docs
                         .into_iter()
@@ -433,6 +443,7 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
         version: 1,
         methods,
         param_docs,
+        param_notes,
         method_docs,
     };
     let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
@@ -658,28 +669,57 @@ fn html_decode(s: &str) -> String {
 // Parameter-description parser
 // ---------------------------------------------------------------------------
 
-/// Parse a method's `Parameters` cell into `(param_name, description)`
-/// pairs, preserving the order they appear in the docs.
+/// A method's `Parameters` cell: the per-parameter descriptions and the
+/// note that follows the table, if any.
+#[derive(Debug, Default, PartialEq)]
+struct ParamCell {
+    /// `(param_name, description)` pairs in the order the docs list them.
+    params: Vec<(String, String)>,
+    /// The paragraph after the table, which describes the method's
+    /// parameters as a group (the routing-string format, a `members`
+    /// grammar) rather than any one of them.
+    note: Option<String>,
+}
+
+/// Parse a method's `Parameters` cell into its descriptions and trailing
+/// note.
 ///
 /// Each parameter starts a line `name => description`; the arrow is
-/// surrounded by arbitrary whitespace. Lines that don't start a new
-/// parameter are continuation text belonging to the previous one. The
-/// `api_username`/`api_password` rows (present on most methods) are
-/// dropped — they come from the `Client`, not the request struct.
+/// surrounded by arbitrary whitespace. An indented line that doesn't start a
+/// new parameter is continuation text belonging to the previous one, and so is
+/// a flush-left line opening with `(`, the one way the docs wrap a
+/// description onto the next line. Any other flush-left line that is not a
+/// parameter ends the table: it and everything after it is the note, which
+/// the docs set flush left so it reads under the whole table. Without that rule the note ran on into
+/// the last parameter's description. The `api_username`/`api_password` rows
+/// (present on most methods) are dropped -- they come from the `Client`, not
+/// the request struct.
 ///
 /// `raw` is the still-HTML-encoded cell body. Inline tags (e.g. the
 /// Cloudflare email-obfuscation `<a>`) are stripped, entities decoded,
 /// and whitespace collapsed before light normalization.
-fn parse_param_docs(raw: &str) -> Vec<(String, String)> {
+fn parse_param_docs(raw: &str) -> ParamCell {
     let mut out: Vec<(String, String)> = Vec::new();
+    let mut note: Vec<String> = Vec::new();
     for line in raw.lines() {
         let cleaned = collapse_ws(&unescape_slashes(&html_decode(&strip_tags(line))));
         if cleaned.is_empty() {
             continue;
         }
 
+        if !note.is_empty() {
+            note.push(cleaned);
+            continue;
+        }
+
         match split_param_line(&cleaned) {
             Some((name, desc)) => out.push((name.to_string(), desc.to_string())),
+            None if !line.starts_with(char::is_whitespace)
+                && !cleaned.starts_with('(')
+                && !out.is_empty() =>
+            {
+                note.push(cleaned)
+            }
             None => {
                 // Continuation of the previous parameter's description.
                 if let Some(last) = out.last_mut() {
@@ -692,11 +732,14 @@ fn parse_param_docs(raw: &str) -> Vec<(String, String)> {
         }
     }
 
-    out.into_iter()
+    let params = out
+        .into_iter()
         .filter(|(name, _)| !crate::CLIENT_FIELDS.contains(&name.as_str()))
         .map(|(name, desc)| (name, normalize_desc(&desc)))
         .filter(|(_, desc)| !desc.is_empty())
-        .collect()
+        .collect();
+    let note = (!note.is_empty()).then(|| note.join(" "));
+    ParamCell { params, note }
 }
 
 /// If `line` begins a `name => description` parameter row, return the
@@ -762,6 +805,8 @@ fn collapse_ws(s: &str) -> String {
 ///
 /// * a leading `[Required]`/`[Optional]` marker becomes a trailing
 ///   `(required)` / `(optional)` note;
+/// * a leading `- ` is dropped: the docs use it as a column separator, so a
+///   description with no lead sentence starts with one;
 /// * a `Values:` label gains a following space (`Values:1=Enable` →
 ///   `Values: 1=Enable`) for readability.
 ///
@@ -777,6 +822,10 @@ fn normalize_desc(desc: &str) -> String {
             suffix = note;
             break;
         }
+    }
+
+    if let Some(rest) = text.strip_prefix("- ") {
+        text = rest.to_string();
     }
 
     // Tidy `Values:1=Enable` → `Values: 1=Enable`; leave the list itself
@@ -1109,5 +1158,102 @@ fn shape_to_json(shape: &Shape) -> JsonValue {
             obj.insert("value".into(), shape_to_json(value));
             JsonValue::Object(obj)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pairs(cell: &ParamCell) -> Vec<(&str, &str)> {
+        cell.params
+            .iter()
+            .map(|(n, d)| (n.as_str(), d.as_str()))
+            .collect()
+    }
+
+    #[test]
+    fn flush_left_text_after_the_table_is_the_note_not_the_last_param() {
+        let raw = [
+            "",
+            "did     => [Required] DID to be Ordered",
+            "routing => [Required] Main Routing for the DID",
+            "test    =>            Set to true if testing how Orders work",
+            "                      - Orders can not be undone",
+            "",
+            "routing can receive values in the following format => header:record_id",
+            "",
+            "    vm          Used for routing calls to a Voicemail",
+        ]
+        .join("\n");
+        let cell = parse_param_docs(&raw);
+        assert_eq!(
+            pairs(&cell),
+            [
+                ("did", "DID to be Ordered (required)"),
+                ("routing", "Main Routing for the DID (required)"),
+                (
+                    "test",
+                    "Set to true if testing how Orders work - Orders can not be undone"
+                ),
+            ]
+        );
+        assert_eq!(
+            cell.note.as_deref(),
+            Some(
+                "routing can receive values in the following format => header:record_id \
+                 vm Used for routing calls to a Voicemail"
+            )
+        );
+    }
+
+    #[test]
+    fn a_param_after_a_blank_line_stays_in_the_table() {
+        let raw = [
+            "",
+            "name =>  Name",
+            "",
+            "          more about name",
+            "",
+            "id   =>  Id",
+        ]
+        .join("\n");
+        let cell = parse_param_docs(&raw);
+        assert_eq!(
+            pairs(&cell),
+            [("name", "Name more about name"), ("id", "Id")]
+        );
+        assert_eq!(cell.note, None);
+    }
+
+    #[test]
+    fn a_flush_left_parenthetical_continues_the_description() {
+        let raw = [
+            "activate           =>  Activates Client",
+            "balance_management =>  Balance Management for Client ",
+            "(Values from getBalanceManagement)",
+        ]
+        .join("\n");
+        let cell = parse_param_docs(&raw);
+        assert_eq!(
+            pairs(&cell),
+            [
+                ("activate", "Activates Client"),
+                (
+                    "balance_management",
+                    "Balance Management for Client (Values from getBalanceManagement)"
+                ),
+            ]
+        );
+        assert_eq!(cell.note, None);
+    }
+
+    #[test]
+    fn a_leading_dash_is_dropped() {
+        assert_eq!(
+            normalize_desc("- (Values: 1 = Business, 0 = Residential) - Default: 0"),
+            "(Values: 1 = Business, 0 = Residential) - Default: 0"
+        );
+        assert_eq!(normalize_desc("[Required] - Id"), "Id (required)");
     }
 }

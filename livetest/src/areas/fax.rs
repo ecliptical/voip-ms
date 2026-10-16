@@ -421,7 +421,7 @@ async fn find_available_fax_location(ctx: &AreaCtx<'_>) -> voip_ms::Result<Optio
         .await?;
 
     Ok(resp
-        .ratecenters
+        .rate_centers
         .into_iter()
         .find(|r| r.available == Some(true) && r.location.is_some())
         .and_then(|r| r.location))

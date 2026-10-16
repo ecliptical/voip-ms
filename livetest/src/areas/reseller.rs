@@ -192,8 +192,8 @@ async fn signup_fixture(ctx: &AreaCtx<'_>, report: &mut Report, cfg: &ResellerCo
     let result = ctx
         .client
         .signup_client(&SignupClientParams {
-            firstname: Some(detail.first_name.clone()),
-            lastname: Some(detail.last_name.clone()),
+            first_name: Some(detail.first_name.clone()),
+            last_name: Some(detail.last_name.clone()),
             email: Some(detail.email.clone()),
             confirm_email: Some(detail.email.clone()),
             password: Some(detail.password.clone()),
@@ -202,7 +202,7 @@ async fn signup_fixture(ctx: &AreaCtx<'_>, report: &mut Report, cfg: &ResellerCo
             city: Some(detail.city.clone()),
             state: Some(detail.state.clone()),
             country: Some(detail.country.clone()),
-            zip: Some(detail.zip.clone()),
+            zip_code: Some(detail.zip.clone()),
             phone_number: Some(detail.phone.clone()),
             activate: Some(false),
             ..Default::default()

@@ -69,7 +69,7 @@ impl Area for Voicemail {
             "getVoicemailSetups",
             GetVoicemailSetupsParams,
             GetVoicemailSetupsResponse,
-            voicemailsetups
+            voicemail_setups
         );
         skip_needs_input!(
             report,
@@ -210,7 +210,7 @@ async fn voicemail_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
             delete_message: Some(false),
             say_time: Some(false),
             timezone: Some(voip_ms::chrono_tz::America::New_York),
-            say_callerid: Some(false),
+            say_caller_id: Some(false),
             play_instructions: Some(PlayInstructions::Unread),
             language: Some("en".to_string()),
             // `createVoicemail` requires a real attachment format from

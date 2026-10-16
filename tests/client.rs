@@ -331,7 +331,7 @@ async fn typed_get_sub_accounts_tolerates_minus_one_sentinel_values() {
         .first()
         .expect("expected at least one sub-account");
     assert_eq!(account.id, Some(123));
-    assert_eq!(account.callerid_number, None);
+    assert_eq!(account.caller_id_number, None);
     assert_eq!(account.canada_routing, None);
 }
 
@@ -418,7 +418,7 @@ async fn flag_params_serialize_to_wire_form() {
 
     let params = SetSMSParams {
         did: Some("5551234567".into()),
-        enable: Some(true),
+        enabled: Some(true),
         email_enabled: Some(false),
         ..Default::default()
     };
@@ -989,7 +989,7 @@ fn callerid_accepts_named_display_form() {
     .unwrap();
     let messages = vm.messages;
     assert_eq!(
-        messages[0].callerid.as_deref(),
+        messages[0].caller_id.as_deref(),
         Some("PARKWOODSDENTAL <4164442828>")
     );
 
@@ -1000,7 +1000,7 @@ fn callerid_accepts_named_display_form() {
     }))
     .unwrap();
     let faxes = fax.faxes;
-    assert_eq!(faxes[0].callerid.as_deref(), Some("5552341234"));
+    assert_eq!(faxes[0].caller_id.as_deref(), Some("5552341234"));
 }
 
 #[test]
@@ -1363,14 +1363,14 @@ fn search_fax_area_code_can_is_a_ratecenter_list() {
     }))
     .unwrap();
 
-    assert_eq!(resp.ratecenters.len(), 5);
-    assert_eq!(resp.ratecenters[0].area_code, Some(514));
-    assert_eq!(resp.ratecenters[0].available, Some(true));
+    assert_eq!(resp.rate_centers.len(), 5);
+    assert_eq!(resp.rate_centers[0].area_code, Some(514));
+    assert_eq!(resp.rate_centers[0].available, Some(true));
     assert_eq!(
-        resp.ratecenters[0].ratecenter.as_deref(),
+        resp.rate_centers[0].rate_center.as_deref(),
         Some("ILE-PERROT")
     );
-    assert_eq!(resp.ratecenters[4].ratecenter.as_deref(), Some("ROXBORO"));
+    assert_eq!(resp.rate_centers[4].rate_center.as_deref(), Some("ROXBORO"));
 }
 
 #[test]
@@ -1387,11 +1387,11 @@ fn search_fax_area_code_usa_is_a_ratecenter_list() {
     }))
     .unwrap();
 
-    assert_eq!(resp.ratecenters.len(), 1);
-    assert_eq!(resp.ratecenters[0].area_code, Some(415));
-    assert_eq!(resp.ratecenters[0].available, Some(true));
+    assert_eq!(resp.rate_centers.len(), 1);
+    assert_eq!(resp.rate_centers[0].area_code, Some(415));
+    assert_eq!(resp.rate_centers[0].available, Some(true));
     assert_eq!(
-        resp.ratecenters[0].ratecenter.as_deref(),
+        resp.rate_centers[0].rate_center.as_deref(),
         Some("BELVEDERE (MARIN)")
     );
 }
@@ -1404,11 +1404,11 @@ fn search_fax_area_code_empty_is_success() {
     // `ratecenters` field at all; the list must default to empty, not fail.
     let can: SearchFAXAreaCodeCANResponse =
         serde_json::from_value(json!({ "status": "success" })).unwrap();
-    assert!(can.ratecenters.is_empty());
+    assert!(can.rate_centers.is_empty());
 
     let usa: SearchFAXAreaCodeUSAResponse =
         serde_json::from_value(json!({ "status": "success" })).unwrap();
-    assert!(usa.ratecenters.is_empty());
+    assert!(usa.rate_centers.is_empty());
 }
 
 #[test]
@@ -1523,7 +1523,7 @@ fn lnp_list_is_a_list_of_orders() {
     .unwrap();
 
     assert_eq!(resp.list.len(), 2);
-    assert_eq!(resp.list[0].portid.as_deref(), Some("0000"));
+    assert_eq!(resp.list[0].port_id.as_deref(), Some("0000"));
     assert_eq!(resp.list[1].status.as_deref(), Some("completed"));
 }
 
@@ -1545,7 +1545,7 @@ fn lnp_notes_and_attach_list_are_lists() {
     }))
     .unwrap();
     assert_eq!(attach.list.len(), 1);
-    assert_eq!(attach.list[0].attachid.as_deref(), Some("000"));
+    assert_eq!(attach.list[0].attachment_id.as_deref(), Some("000"));
 }
 
 #[test]
@@ -1586,7 +1586,7 @@ fn callerid_override_fields_are_strings_with_minus_one_as_none() {
         "accounts": [{ "id": "1", "account": "a", "callerid_number": "-1", "default_e911": "" }]
     }))
     .unwrap();
-    assert_eq!(unset.accounts[0].callerid_number, None);
+    assert_eq!(unset.accounts[0].caller_id_number, None);
     assert_eq!(unset.accounts[0].default_e911, None);
 
     let set: GetSubAccountsResponse = serde_json::from_value(json!({
@@ -1595,7 +1595,7 @@ fn callerid_override_fields_are_strings_with_minus_one_as_none() {
     }))
     .unwrap();
     assert_eq!(
-        set.accounts[0].callerid_number.as_deref(),
+        set.accounts[0].caller_id_number.as_deref(),
         Some("+1 (647) 478-1287")
     );
 
@@ -1604,7 +1604,7 @@ fn callerid_override_fields_are_strings_with_minus_one_as_none() {
         "forwardings": [{ "forwarding": "1", "callerid_override": "-1" }]
     }))
     .unwrap();
-    assert_eq!(fwd.forwardings[0].callerid_override, None);
+    assert_eq!(fwd.forwardings[0].caller_id_override, None);
 }
 
 #[tokio::test]
@@ -1626,7 +1626,7 @@ async fn typed_get_cdr_decodes_alphanumeric_uniqueid() {
 
     let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
     let cdr = envelope.cdr.first().expect("expected at least one CDR row");
-    assert_eq!(cdr.uniqueid.as_deref(), Some("12964421x41098i8c"));
+    assert_eq!(cdr.unique_id.as_deref(), Some("12964421x41098i8c"));
     assert_eq!(cdr.destination.as_deref(), Some("5551234567"));
 }
 
@@ -1662,11 +1662,11 @@ async fn typed_get_cdr_decodes_ip_and_useragent() {
     let envelope = client.get_cdr(&GetCDRParams::default()).await.unwrap();
     assert_eq!(envelope.cdr[0].ip.as_deref(), Some("203.0.113.7"));
     assert_eq!(
-        envelope.cdr[0].useragent.as_deref(),
+        envelope.cdr[0].user_agent.as_deref(),
         Some("VoIP_ms Softphone/0.0.6 (build 2335157")
     );
     assert_eq!(envelope.cdr[1].ip, None);
-    assert_eq!(envelope.cdr[1].useragent, None);
+    assert_eq!(envelope.cdr[1].user_agent, None);
 }
 
 #[tokio::test]
@@ -2305,7 +2305,7 @@ async fn every_file_carrying_method_posts_and_the_rest_do_not() {
         .unwrap();
     client
         .add_lnp_file(&AddLNPFileParams {
-            portid: Some(1),
+            port_id: Some(1),
             file: Some("QUJD".into()),
         })
         .await
@@ -2751,7 +2751,7 @@ async fn identifier_fields_keep_their_leading_zeros() {
         .await
         .unwrap();
     assert_eq!(clients.clients[0].client, Some(561115));
-    assert_eq!(clients.clients[0].zip.as_deref(), Some("02134"));
+    assert_eq!(clients.clients[0].zip_code.as_deref(), Some("02134"));
 
     Mock::given(method("GET"))
         .and(path("/api/v1/rest.php"))
@@ -2937,9 +2937,9 @@ async fn a_transaction_history_span_does_not_lose_the_response() {
     );
     // The synthesized row names no transaction and is metered to four decimal
     // places; both survive beside the range.
-    assert_eq!(envelope.transactions[1].uniqueid.as_deref(), Some("n/a"));
+    assert_eq!(envelope.transactions[1].unique_id.as_deref(), Some("n/a"));
     assert_eq!(
-        envelope.transactions[1].ammount,
+        envelope.transactions[1].amount,
         Some(Decimal::from_str_exact("-0.1760").unwrap())
     );
 }

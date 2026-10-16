@@ -111,7 +111,7 @@ fn window_params() -> GetCDRParams {
         date_from: Some(today - voip_ms::chrono::Duration::days(30)),
         date_to: Some(today),
         answered: Some(true),
-        noanswer: Some(true),
+        no_answer: Some(true),
         busy: Some(true),
         failed: Some(true),
         ..Default::default()
@@ -151,7 +151,7 @@ async fn offset_round_trip(
         // has none, and the probe's own degraded check reports it; a `Bare`
         // one is the hour the server zone repeats, which has none either.
         let (Some(id), Some(utc_date)) = (
-            utc_record.uniqueid.as_deref(),
+            utc_record.unique_id.as_deref(),
             utc_record
                 .date
                 .as_ref()
@@ -164,7 +164,7 @@ async fn offset_round_trip(
         let Some(zone_date) = at_zone
             .cdr
             .iter()
-            .find(|r| r.uniqueid.as_deref() == Some(id))
+            .find(|r| r.unique_id.as_deref() == Some(id))
             .and_then(|r| r.date.as_ref().and_then(Reported::get))
             .and_then(|d| d.zoned())
         else {

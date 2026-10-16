@@ -34,7 +34,7 @@ fn add_lnp_file_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = AddLNPFileParams {
-        portid: Some(1),
+        port_id: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -216,7 +216,7 @@ fn del_call_hunting_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = DelCallHuntingParams {
-        callhunting: Some(1),
+        call_hunting: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -230,7 +230,7 @@ fn del_call_parking_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = DelCallParkingParams {
-        callparking: Some(1),
+        call_parking: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -244,7 +244,7 @@ fn del_call_recording_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = DelCallRecordingParams {
-        callrecording: Some("x".into()),
+        call_recording: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -570,7 +570,7 @@ fn del_time_condition_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = DelTimeConditionParams {
-        timecondition: Some(1),
+        time_condition: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -766,7 +766,7 @@ fn get_back_orders_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetBackOrdersParams {
-        id: Some("x".into()),
+        id: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -822,7 +822,7 @@ fn get_call_huntings_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetCallHuntingsParams {
-        callhunting: Some(1),
+        call_hunting: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -836,7 +836,7 @@ fn get_call_parking_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetCallParkingParams {
-        callparking: Some(1),
+        call_parking: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -850,7 +850,7 @@ fn get_call_recording_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetCallRecordingParams {
-        callrecording: Some("x".into()),
+        call_recording: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1168,9 +1168,7 @@ fn get_did_v_pri_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetDIDvPRIParams {
-        vpri: Some("x".into()),
-    };
+    let p2 = GetDIDvPRIParams { vpri: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1405,8 +1403,8 @@ fn get_lnp_attach_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetLNPAttachParams {
-        portid: Some(1),
-        attachid: Some(1),
+        port_id: Some(1),
+        attachment_id: Some(1),
     };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
@@ -1418,7 +1416,7 @@ fn get_lnp_attach_list_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetLNPAttachListParams { portid: Some(1) };
+    let p2 = GetLNPAttachListParams { port_id: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1429,7 +1427,7 @@ fn get_lnp_details_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetLNPDetailsParams { portid: Some(1) };
+    let p2 = GetLNPDetailsParams { port_id: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1441,7 +1439,7 @@ fn get_lnp_list_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetLNPListParams {
-        portid: Some(1),
+        port_id: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -1454,7 +1452,7 @@ fn get_lnp_notes_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetLNPNotesParams { portid: Some(1) };
+    let p2 = GetLNPNotesParams { port_id: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1465,7 +1463,7 @@ fn get_lnp_status_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
-    let p2 = GetLNPStatusParams { portid: Some(1) };
+    let p2 = GetLNPStatusParams { port_id: Some(1) };
     let v2 = serde_json::to_value(&p2).unwrap();
     assert!(v2.is_object());
 }
@@ -1953,7 +1951,7 @@ fn get_time_conditions_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetTimeConditionsParams {
-        timecondition: Some(1),
+        time_condition: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2051,7 +2049,7 @@ fn get_voicemail_setups_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetVoicemailSetupsParams {
-        voicemailsetup: Some("x".into()),
+        voicemail_setup: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2387,7 +2385,7 @@ fn send_call_recording_email_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SendCallRecordingEmailParams {
-        callrecording: Some("x".into()),
+        call_recording: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2457,7 +2455,7 @@ fn set_call_hunting_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetCallHuntingParams {
-        callhunting: Some(1),
+        call_hunting: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2471,7 +2469,7 @@ fn set_call_parking_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetCallParkingParams {
-        callparking: Some(1),
+        call_parking: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2904,7 +2902,7 @@ fn set_time_condition_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SetTimeConditionParams {
-        timecondition: Some(1),
+        time_condition: Some(1),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -2932,7 +2930,7 @@ fn signup_client_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = SignupClientParams {
-        firstname: Some("x".into()),
+        first_name: Some("x".into()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
@@ -3012,4 +3010,47 @@ fn a_whole_params_struct_compares() {
         }
     );
     assert_ne!(built, SendSMSParams::default());
+}
+
+/// A field whose ident follows the crate's naming scheme rather than voip.ms's
+/// wire name still sends the wire name.
+#[test]
+fn a_renamed_field_sends_its_wire_name() {
+    let keys = |v: serde_json::Value| -> Vec<String> {
+        let mut keys: Vec<String> = v.as_object().unwrap().keys().cloned().collect();
+        keys.sort();
+        keys
+    };
+
+    let port = AddLNPPortParams {
+        first_name: Some("Ada".into()),
+        zip_code: Some("02134".into()),
+        toll_free_type: Some(1),
+        ..Default::default()
+    };
+    assert_eq!(
+        keys(serde_json::to_value(&port).unwrap()),
+        ["firstName", "tfType", "zip"]
+    );
+
+    let sms = SetSMSParams {
+        enabled: Some(true),
+        url_callback_enabled: Some(false),
+        sms_sip_account_enabled: Some(true),
+        ..Default::default()
+    };
+    assert_eq!(
+        keys(serde_json::to_value(&sms).unwrap()),
+        ["enable", "sms_sipaccount_enabled", "url_callback_enable"]
+    );
+
+    let queue = SetQueueParams {
+        announce_position_frequency: Some(Seconds::Value(30)),
+        failover_routing_full: Some(Routing::System("hangup".into())),
+        ..Default::default()
+    };
+    assert_eq!(
+        keys(serde_json::to_value(&queue).unwrap()),
+        ["announce_position_frecuency", "fail_over_routing_full"]
+    );
 }

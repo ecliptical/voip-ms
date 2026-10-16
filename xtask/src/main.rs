@@ -97,14 +97,167 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     ),
 ];
 
-/// The Rust field identifier for a wire field, applying any
-/// [`FIELD_IDENT_OVERRIDE`] and otherwise deriving it with [`rust_field_ident`].
+/// Field identifier renames keyed by wire field name alone, applied in every
+/// `*Params` and `*Response` struct carrying that name. They hold the idents to
+/// one scheme where voip.ms's wire names do not, so one concept has one name:
+///
+/// * every word is split (`callhunting` -> `call_hunting`, `ratecenter` ->
+///   `rate_center`), including the `id` of a record id (`portid` ->
+///   `port_id`);
+/// * an on/off switch ends in `_enabled` (`email_enable`, `enable`);
+/// * one spelling per concept: `first_name` / `last_name`, `zip_code`,
+///   `failover_*`, `toll_free_*` for `tf*`, `caller_id` for `callerid`,
+///   `unavailable` for `unavail`;
+/// * voip.ms's misspellings are corrected (`frecuency`, `ammount`).
+///
+/// The wire name still travels on the wire through the serde `rename` the
+/// differing ident produces. A [`FIELD_IDENT_OVERRIDE`] entry wins over this
+/// table for its one struct.
+const FIELD_IDENT_RENAME: &[(&str, &str)] = &[
+    ("ammount", "amount"),
+    ("announce_position_frecuency", "announce_position_frequency"),
+    ("attachid", "attachment_id"),
+    ("base64file", "base64_file"),
+    ("callbilling", "call_billing"),
+    ("callerid", "caller_id"),
+    ("callerid_e164", "caller_id_e164"),
+    ("callerid_number", "caller_id_number"),
+    ("callerid_override", "caller_id_override"),
+    ("callerid_prefix", "caller_id_prefix"),
+    ("callhunting", "call_hunting"),
+    ("callparking", "call_parking"),
+    ("callrecording", "call_recording"),
+    ("calltype", "call_type"),
+    ("cancelcomment", "cancel_comment"),
+    ("dialtime", "dial_time"),
+    ("email_enable", "email_enabled"),
+    ("enable", "enabled"),
+    ("endhour", "end_hour"),
+    ("endminute", "end_minute"),
+    ("fail_over_routing_full", "failover_routing_full"),
+    (
+        "fail_over_routing_join_empty",
+        "failover_routing_join_empty",
+    ),
+    (
+        "fail_over_routing_join_unavail",
+        "failover_routing_join_unavailable",
+    ),
+    (
+        "fail_over_routing_leave_empty",
+        "failover_routing_leave_empty",
+    ),
+    (
+        "fail_over_routing_leave_unavail",
+        "failover_routing_leave_unavailable",
+    ),
+    ("fail_over_routing_timeout", "failover_routing_timeout"),
+    ("failover_noanswer", "failover_no_answer"),
+    ("firstname", "first_name"),
+    ("internal_dialtime", "internal_dial_time"),
+    ("lastname", "last_name"),
+    ("minute_puertorico", "minute_puerto_rico"),
+    ("musiconhold", "music_on_hold"),
+    ("noanswer", "no_answer"),
+    ("perminute_minute", "per_minute_minute"),
+    ("perminute_monthly", "per_minute_monthly"),
+    ("perminute_setup", "per_minute_setup"),
+    ("portid", "port_id"),
+    ("portout", "port_out"),
+    ("ratecenter", "rate_center"),
+    ("ratecenters", "rate_centers"),
+    ("reseller_chargesetup", "reseller_charge_setup"),
+    ("reseller_nextbilling", "reseller_next_billing"),
+    ("ring_inuse", "ring_in_use"),
+    ("routing_nomatch", "routing_no_match"),
+    ("say_callerid", "say_caller_id"),
+    ("sms_forward_enable", "sms_forward_enabled"),
+    ("sms_sipaccount", "sms_sip_account"),
+    ("sms_sipaccount_enabled", "sms_sip_account_enabled"),
+    ("starthour", "start_hour"),
+    ("startminute", "start_minute"),
+    ("stationid", "station_id"),
+    ("subaccount", "sub_account"),
+    ("tfType", "toll_free_type"),
+    ("tfcarrier", "toll_free_carrier"),
+    ("thankyou_for_your_patience", "thank_you_for_your_patience"),
+    ("timecondition", "time_condition"),
+    ("uniqueid", "unique_id"),
+    ("url_callback_enable", "url_callback_enabled"),
+    ("useragent", "user_agent"),
+    ("voicemailsetup", "voicemail_setup"),
+    ("voicemailsetups", "voicemail_setups"),
+    ("weekdayend", "weekday_end"),
+    ("weekdaystart", "weekday_start"),
+    ("zip", "zip_code"),
+];
+
+/// The Rust field identifier for a wire field: its [`FIELD_IDENT_OVERRIDE`]
+/// for this struct, else its [`FIELD_IDENT_RENAME`], else what
+/// [`rust_field_ident`] derives.
 pub(crate) fn field_ident(struct_name: &str, fname: &str, acronyms: &[&'static str]) -> String {
     FIELD_IDENT_OVERRIDE
         .iter()
         .find(|(s, f, _)| *s == struct_name && *f == fname)
-        .map(|(_, _, ident)| (*ident).to_string())
+        .map(|(_, _, ident)| *ident)
+        .or_else(|| {
+            FIELD_IDENT_RENAME
+                .iter()
+                .find(|(wire, _)| *wire == fname)
+                .map(|(_, ident)| *ident)
+        })
+        .map(str::to_string)
         .unwrap_or_else(|| rust_field_ident(fname, acronyms))
+}
+
+/// Fail on a [`FIELD_IDENT_RENAME`] entry that names a wire field no params or
+/// response struct carries (a docs or WSDL refresh renamed or dropped it), or
+/// that renames a field to the ident [`rust_field_ident`] derives anyway.
+fn check_field_ident_renames(
+    wsdl: &Wsdl,
+    responses: &BTreeMap<String, Shape>,
+) -> Result<(), String> {
+    fn collect<'a>(shape: &'a Shape, names: &mut BTreeSet<&'a str>) {
+        match shape {
+            Shape::Scalar { .. } => {}
+            Shape::Object(fields) => {
+                for (name, inner) in fields {
+                    names.insert(name);
+                    collect(inner, names);
+                }
+            }
+            Shape::List(inner) | Shape::Map(inner) => collect(inner, names),
+        }
+    }
+
+    let mut names: BTreeSet<&str> = wsdl
+        .types
+        .values()
+        .flatten()
+        .map(|(name, _)| name.as_str())
+        .collect();
+    for shape in responses.values() {
+        collect(shape, &mut names);
+    }
+
+    let acronyms = acronyms_sorted();
+    for (wire, ident) in FIELD_IDENT_RENAME {
+        if !names.contains(wire) {
+            return Err(format!(
+                "FIELD_IDENT_RENAME entry `{wire}` names no field of any params or response \
+                 struct; remove it"
+            ));
+        }
+
+        if rust_field_ident(wire, &acronyms) == *ident {
+            return Err(format!(
+                "FIELD_IDENT_RENAME entry `{wire}` renames it to the ident it derives anyway; \
+                 remove it"
+            ));
+        }
+    }
+
+    Ok(())
 }
 
 /// A record-listing method whose `timezone` param is a number (`-12..=13`) on
@@ -497,13 +650,13 @@ fn documents_base64(doc: &str) -> bool {
     squished.contains("base64")
 }
 
-/// Params fields the docs mark `(required)` that a `new` constructor must not
-/// ask for, keyed `"wireMethod.field"`.
+/// Params fields the docs mark `(required)` that a crate caller need not set,
+/// keyed `"wireMethod.field"`.
 ///
-/// The offset ops' `timezone` is the only case: the docs mark it required, and
-/// the crate sends UTC when a caller names no zone, so a constructor demanding
-/// one would contradict the method it builds for.
-const REQUIRED_CTOR_SKIP: &[&str] = &[
+/// The offset ops' `timezone` is the only case: voip.ms needs it on the wire,
+/// and the typed method sends UTC when the field is `None`, so a constructor or
+/// a `required` flag demanding one would contradict the method it builds for.
+const REQUIRED_OVERRULED: &[&str] = &[
     "getCDR.timezone",
     "getMMS.timezone",
     "getResellerCDR.timezone",
@@ -511,6 +664,17 @@ const REQUIRED_CTOR_SKIP: &[&str] = &[
     "getResellerSMS.timezone",
     "getSMS.timezone",
 ];
+
+/// Whether a crate caller must set params field `fname` of wire method `op`: the
+/// mined docs mark it `(required)` and [`REQUIRED_OVERRULED`] does not overrule
+/// them. The `new` constructor asks for exactly these fields.
+fn is_required(op: &str, fname: &str, param_docs: &ParamDocs) -> bool {
+    !REQUIRED_OVERRULED.contains(&format!("{op}.{fname}").as_str())
+        && param_docs
+            .get(op)
+            .and_then(|d| d.get(fname))
+            .is_some_and(|doc| doc.contains("(required)"))
+}
 
 /// The most required fields a positional constructor stays readable at.
 /// `addLNPPort` has 12 and `createVoicemail` 11; past this bound an unlabeled
@@ -531,16 +695,10 @@ fn emit_params_constructor(
     resolver: &field_overrides::Resolver,
     acronyms: &[&'static str],
 ) -> String {
-    let docs = param_docs.get(op);
     let required: Vec<(String, String, bool)> = body_fields
         .iter()
         .copied()
-        .filter(|(fname, _)| {
-            !REQUIRED_CTOR_SKIP.contains(&format!("{op}.{fname}").as_str())
-                && docs
-                    .and_then(|d| d.get(fname))
-                    .is_some_and(|doc| doc.contains("(required)"))
-        })
+        .filter(|(fname, _)| is_required(op, fname, param_docs))
         .map(|(fname, ftype)| {
             let override_ = resolver.resolve(struct_name, fname, true);
             let ty = match override_ {
@@ -641,6 +799,139 @@ const OFFSET_TIMEZONE_DOC: &str = "IANA time zone whose days the date range mean
      there is no start, to the number VoIP.ms needs for that window, since it shifts its \
      Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported \
      timestamps are qualified in the server zone whatever is sent.";
+
+/// The routing-string format, rendered on the first `voip_ms::Routing`-typed
+/// field of each params struct (its `routing`, when it has one). The docs print
+/// it once under a method's parameter table rather than on a parameter, in
+/// three versions of differing completeness, and on no method that takes
+/// `routing_match` or a caller-ID filter's routing; this is the fullest one,
+/// from the DID order methods.
+const ROUTING_FORMAT_DOC: &str = "Format `header:record_id`, where `header` is `account` \
+     (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` \
+     (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, \
+     `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy \
+     tone), `noservice` (number not in service recording), `disconnected` (number \
+     disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` \
+     takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, \
+     `none:`.";
+
+/// The params field of `fields` that carries [`ROUTING_FORMAT_DOC`], as a wire
+/// name: `routing` when the struct has it, else the first routing-typed field.
+/// The struct's other routing fields refer to it.
+fn routing_anchor<'a>(
+    struct_name: &str,
+    fields: &[&'a (String, String)],
+    resolver: &field_overrides::Resolver,
+) -> Option<&'a str> {
+    let routing: Vec<&str> = fields
+        .iter()
+        .map(|(fname, _)| fname.as_str())
+        .filter(|fname| {
+            resolver
+                .resolve(struct_name, fname, true)
+                .is_some_and(|o| o.rust_type == "crate::Routing")
+        })
+        .collect();
+    routing
+        .iter()
+        .find(|f| **f == "routing")
+        .or(routing.first())
+        .copied()
+}
+
+/// How the docs spell a flag's two wire values. A `bool` field takes `true` or
+/// `false`, so on one these are dropped, each with the `- ` that sets it off
+/// from the clause before.
+const FLAG_VALUE_NOTES: &[&str] = &[
+    "(Boolean: 1/0)",
+    "(Values: 1 = true, 0 = false)",
+    "(Values: 1=Enable / 0=Disable)",
+    "(Values: 'yes'/'no')",
+    "(Values 'yes'/'no')",
+    "(yes/no)",
+];
+
+/// Leading words that name a flag's wire value for "on", and the `bool` value
+/// they mean.
+const FLAG_VALUE_LEADS: &[(&str, &str)] = &[
+    ("'yes' to ", "true to "),
+    ("Yes for ", "True for "),
+    ("Yes to ", "True to "),
+];
+
+/// Reword a mined description for a `bool` params field: drop the wire value
+/// notes and say a default as `true` / `false`.
+fn bool_param_doc(doc: &str) -> String {
+    let mut text = doc.to_string();
+    for note in FLAG_VALUE_NOTES {
+        text = text.replace(&format!("- {note}"), "").replace(note, "");
+    }
+
+    text = text
+        .replace("- Default: 0", "Default: false")
+        .replace("- Default: 1", "Default: true");
+    for (lead, value) in FLAG_VALUE_LEADS {
+        if let Some(rest) = text.strip_prefix(lead) {
+            text = format!("{value}{rest}");
+        }
+    }
+
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Whether a `bool` field's description still spells a wire value after
+/// [`bool_param_doc`], so it needs a `param_docs` override.
+fn names_flag_wire_value(doc: &str) -> bool {
+    ["1/0", "'yes'", "'no'", "yes/no", "1 =", "1=", "0 =", "0="]
+        .iter()
+        .any(|spelling| doc.contains(spelling))
+}
+
+/// The description rendered on params field `fname` of wire method `op`.
+///
+/// A `param_docs` override replaces the mined text outright. Otherwise a
+/// `bool` field's mined text is reworded by [`bool_param_doc`]. The routing
+/// anchor then gains [`ROUTING_FORMAT_DOC`] as a second paragraph, and the
+/// struct's other routing fields a reference to the anchor.
+#[allow(clippy::too_many_arguments)]
+fn param_doc(
+    op: &str,
+    struct_name: &str,
+    fname: &str,
+    rust_ty: &str,
+    mined: Option<&str>,
+    doc_overrides: &BTreeMap<String, String>,
+    routing_anchor: Option<&str>,
+    acronyms: &[&'static str],
+) -> Vec<String> {
+    let lead = match doc_overrides.get(&format!("{op}.{fname}")) {
+        Some(text) => Some(text.clone()),
+        None if rust_ty == "bool" => mined.map(bool_param_doc),
+        None => mined.map(str::to_string),
+    };
+    let mut paragraphs: Vec<String> = lead.into_iter().filter(|t| !t.is_empty()).collect();
+    if rust_ty == "crate::Routing"
+        && let Some(anchor) = routing_anchor
+    {
+        if anchor == fname {
+            paragraphs.push(ROUTING_FORMAT_DOC.to_string());
+        } else {
+            let anchor_ident = field_ident(struct_name, anchor, acronyms);
+            match paragraphs.last_mut() {
+                Some(text) => {
+                    if !text.ends_with('.') {
+                        text.push('.');
+                    }
+
+                    text.push_str(&format!(" Same format as `{anchor_ident}`."));
+                }
+                None => paragraphs.push(format!("Same format as `{anchor_ident}`.")),
+            }
+        }
+    }
+
+    paragraphs
+}
 
 /// Rust type for a WSDL param type. Integers map to `u64`, matching the
 /// response side: every VoIP.ms integer param is a non-negative id or count
@@ -1201,6 +1492,7 @@ fn emit(
     wsdl: &Wsdl,
     responses: &BTreeMap<String, Shape>,
     param_docs: &ParamDocs,
+    param_doc_overrides: &BTreeMap<String, String>,
     method_docs: &MethodDocs,
     resolver: &field_overrides::Resolver,
     enums: &std::collections::HashMap<String, overrides::EnumDef>,
@@ -1209,6 +1501,7 @@ fn emit(
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
     zone_timestamps: &BTreeMap<String, Vec<String>>,
     base64_file_params: &BTreeMap<String, Vec<String>>,
+    rendered_docs: &mut RenderedDocs,
 ) -> Result<String, String> {
     let acronyms = acronyms_sorted();
     // Which side each declared enum lands on, collected while the structs are
@@ -1265,6 +1558,7 @@ fn emit(
         body.push_str("#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]\n");
         body.push_str(&format!("pub struct {struct_name} {{\n"));
         let docs = param_docs.get(op);
+        let anchor = routing_anchor(&struct_name, &body_fields, resolver);
         for (fname, ftype) in body_fields.iter().copied() {
             // Params are WSDL scalars, so the name-based table always applies.
             let override_ = resolver.resolve(&struct_name, fname, true);
@@ -1277,24 +1571,46 @@ fn emit(
 
             let ident = field_ident(&struct_name, fname, &acronyms);
             let rename = (ident.trim_start_matches("r#") != fname).then_some(fname);
-            let mined = docs.and_then(|d| d.get(fname));
-            if offset_op(op).is_some() && fname == "timezone" {
+            let mut paragraphs = if offset_op(op).is_some() && fname == "timezone" {
                 // The mined doc describes the numeric wire form the public
                 // `Tz` field is not, and its `(required)` marker is the one
-                // `REQUIRED_CTOR_SKIP` overrules: the field defaults to UTC.
-                render_doc(&mut body, "    ", OFFSET_TIMEZONE_DOC);
-            } else if let Some(desc) = mined {
-                render_doc(&mut body, "    ", desc);
-            }
-
+                // `REQUIRED_OVERRULED` overrules: the field defaults to UTC.
+                vec![OFFSET_TIMEZONE_DOC.to_string()]
+            } else {
+                param_doc(
+                    op,
+                    &struct_name,
+                    fname,
+                    &rust_ty,
+                    docs.and_then(|d| d.get(fname)).map(String::as_str),
+                    param_doc_overrides,
+                    anchor,
+                    &acronyms,
+                )
+            };
             if let Some((_, note)) =
                 zone_op(op).and_then(|z| z.param_notes.iter().find(|(f, _)| *f == fname))
             {
-                if mined.is_some() {
+                paragraphs.push((*note).to_string());
+            }
+
+            for (i, paragraph) in paragraphs.iter().enumerate() {
+                if i > 0 {
                     body.push_str("    ///\n");
                 }
 
-                render_doc(&mut body, "    ", note);
+                render_doc(&mut body, "    ", paragraph);
+            }
+
+            let required = is_required(op, fname, param_docs);
+            if !paragraphs.is_empty() || required {
+                rendered_docs.entry(op.clone()).or_default().insert(
+                    fname.clone(),
+                    RenderedDoc {
+                        doc: paragraphs.join("\n\n"),
+                        required,
+                    },
+                );
             }
 
             // A `param_skip_if` override emits the field unwrapped (plain `T`,
@@ -2146,6 +2462,7 @@ fn cmd_gen() -> Result<(), String> {
     // from these same shapes, and a shape that table cannot describe must stop
     // the run rather than half-finish it.
     dump_fields::validate_roots(&responses)?;
+    check_field_ident_renames(&wsdl, &responses)?;
     let param_docs = load_param_docs(&responses_path)?;
     let method_docs = load_method_docs(&responses_path)?;
 
@@ -2268,6 +2585,14 @@ fn cmd_gen() -> Result<(), String> {
             &mut field_type_override,
             (*path).to_string(),
             field_overrides::tz_response_override(),
+        )?;
+    }
+
+    for path in field_overrides::NUMERIC_ID_PARAM_PATHS {
+        assign_field_type(
+            &mut field_type_override,
+            (*path).to_string(),
+            field_overrides::numeric_id_override(),
         )?;
     }
 
@@ -2422,10 +2747,28 @@ fn cmd_gen() -> Result<(), String> {
         per_struct: &field_type_override,
         skip: &field_type_skip,
     };
+    let param_doc_overrides: BTreeMap<String, String> = overrides_doc
+        .param_docs
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    let param_notes = load_param_notes(&responses_path)?;
+    for warning in check_param_docs(
+        &wsdl,
+        &param_docs,
+        &param_notes,
+        &param_doc_overrides,
+        &resolver,
+    )? {
+        eprintln!("warning: {warning}");
+    }
+
+    let mut rendered_docs = RenderedDocs::new();
     let rendered = emit(
         &wsdl,
         &responses,
         &param_docs,
+        &param_doc_overrides,
         &method_docs,
         &resolver,
         &overrides_doc.enums,
@@ -2434,6 +2777,7 @@ fn cmd_gen() -> Result<(), String> {
         &zoned_timestamps,
         &zone_timestamps,
         &base64_file_params.by_op,
+        &mut rendered_docs,
     )?;
     write_rust(&out_path, &rendered)?;
     println!(
@@ -2449,6 +2793,7 @@ fn cmd_gen() -> Result<(), String> {
     // From the same shapes, so the harness's key-diff table can't fall behind
     // the structs it describes.
     dump_fields::write_table(&responses)?;
+    write_param_docs(&rendered_docs)?;
 
     Ok(())
 }
@@ -2542,6 +2887,156 @@ fn load_method_docs(responses_path: &Path) -> Result<MethodDocs, String> {
         .iter()
         .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
         .collect())
+}
+
+/// Read the `param_notes` section of `tools/api-responses.json`, keyed by wire
+/// method name. Missing file or section yields an empty map.
+fn load_param_notes(responses_path: &Path) -> Result<BTreeMap<String, String>, String> {
+    if !responses_path.exists() {
+        return Ok(BTreeMap::new());
+    }
+
+    let text = fs::read_to_string(responses_path)
+        .map_err(|e| format!("read {}: {e}", responses_path.display()))?;
+    let doc: extract::Document = serde_json::from_str(&text)
+        .map_err(|e| format!("parse {}: {e}", responses_path.display()))?;
+
+    Ok(doc
+        .param_notes
+        .iter()
+        .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+        .collect())
+}
+
+/// Where [`write_param_docs`] writes, relative to the repository root.
+const PARAM_DOCS_REL: &str = "tools/param-docs.json";
+
+/// One params field's entry in `tools/param-docs.json`.
+#[derive(serde::Serialize)]
+struct RenderedDoc {
+    /// The description as `src/generated.rs` renders it, paragraphs separated by
+    /// a blank line, before rustdoc wrapping and escaping.
+    doc: String,
+    /// [`is_required`]: whether a crate caller must set the field.
+    required: bool,
+}
+
+/// [`RenderedDoc`]s keyed by wire method, then wire field.
+type RenderedDocs = BTreeMap<String, BTreeMap<String, RenderedDoc>>;
+
+/// Write the description of every params field as `src/generated.rs` renders
+/// it -- mined text, `param_docs` overrides, flag rewording, the routing format
+/// and zone notes applied -- with whether a caller must set it, keyed by wire
+/// method then wire field under `param_docs`.
+fn write_param_docs(docs: &RenderedDocs) -> Result<(), String> {
+    let doc = serde_json::json!({ "version": 1, "param_docs": docs });
+    let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
+    let out_path = repo_root().join(PARAM_DOCS_REL);
+    fs::write(&out_path, format!("{pretty}\n"))
+        .map_err(|e| format!("write {}: {e}", out_path.display()))?;
+    println!(
+        "wrote {} ({} param descriptions)",
+        out_path.display(),
+        docs.values().map(BTreeMap::len).sum::<usize>(),
+    );
+    Ok(())
+}
+
+/// Check the parameter descriptions against the overrides that correct them.
+///
+/// Fails on a `param_docs` override that names a param the WSDL does not
+/// declare, that repeats the mined text (the docs caught up and the entry is
+/// stale), or that drops or adds the mined `(required)` marker, which would make
+/// the rendered text disagree with [`is_required`]. Returns as warnings, since
+/// each wants a reading of mined prose:
+///
+/// * a mined method note no field renders -- the method takes no routing
+///   field, which renders the routing format, and has no override, which is
+///   where a note about other fields gets worked in;
+/// * a `bool` field whose reworded description still spells a wire value.
+fn check_param_docs(
+    wsdl: &Wsdl,
+    param_docs: &ParamDocs,
+    param_notes: &BTreeMap<String, String>,
+    overrides: &BTreeMap<String, String>,
+    resolver: &field_overrides::Resolver,
+) -> Result<Vec<String>, String> {
+    let acronyms = acronyms_sorted();
+    for (path, text) in overrides {
+        let (op, field) = path
+            .rsplit_once('.')
+            .filter(|(op, field)| !op.is_empty() && !field.is_empty())
+            .ok_or_else(|| format!("param_docs override `{path}` must be `wireMethod.field`"))?;
+        let declared = wsdl
+            .types
+            .get(&format!("{op}Input"))
+            .is_some_and(|fields| fields.iter().any(|(name, _)| name == field));
+        if !declared {
+            return Err(format!(
+                "param_docs override `{path}` names no input field of `{op}`"
+            ));
+        }
+
+        if param_docs.get(op).and_then(|d| d.get(field)) == Some(text) {
+            return Err(format!(
+                "param_docs override `{path}` repeats the mined description; delete it"
+            ));
+        }
+
+        let mined_required = param_docs
+            .get(op)
+            .and_then(|d| d.get(field))
+            .is_some_and(|doc| doc.contains("(required)"));
+        if text.contains("(required)") != mined_required {
+            return Err(format!(
+                "param_docs override `{path}` and the mined description disagree on \
+                 `(required)`, which sets the constructor and `required`; match the docs"
+            ));
+        }
+    }
+
+    let mut warnings = Vec::new();
+    for op in &wsdl.operations {
+        let struct_name = format!("{}Params", camel_to_pascal(op, &acronyms));
+        let empty = Vec::new();
+        let fields = wsdl.types.get(&format!("{op}Input")).unwrap_or(&empty);
+        let rust_type = |fname: &str| {
+            resolver
+                .resolve(&struct_name, fname, true)
+                .map(|o| o.rust_type.as_str())
+        };
+        if param_notes.contains_key(op) {
+            let routed = fields
+                .iter()
+                .any(|(f, _)| rust_type(f) == Some("crate::Routing"));
+            let prefix = format!("{op}.");
+            let overridden = overrides.keys().any(|k| k.starts_with(&prefix));
+            if !routed && !overridden {
+                warnings.push(format!(
+                    "{op} has a note under its parameter table that no field renders; \
+                     work it into a param_docs override"
+                ));
+            }
+        }
+
+        for (fname, _) in fields {
+            let path = format!("{op}.{fname}");
+            if rust_type(fname) != Some("bool") || overrides.contains_key(&path) {
+                continue;
+            }
+
+            if let Some(doc) = param_docs.get(op).and_then(|d| d.get(fname))
+                && names_flag_wire_value(&bool_param_doc(doc))
+            {
+                warnings.push(format!(
+                    "{path} is a bool, but its description still spells a wire value; \
+                     give it a param_docs override"
+                ));
+            }
+        }
+    }
+
+    Ok(warnings)
 }
 
 /// Read `tools/api-statuses.json` into ordered `(code, description)`
@@ -2965,5 +3460,247 @@ mod tests {
             field_overrides::transaction_date_override(),
         )
         .unwrap();
+    }
+
+    #[test]
+    fn a_bool_doc_loses_its_wire_values() {
+        assert_eq!(
+            bool_param_doc(
+                "Flag to enable the email notifications. - (Values: 1 = true, 0 = false) - Default: 0"
+            ),
+            "Flag to enable the email notifications. Default: false"
+        );
+        assert_eq!(
+            bool_param_doc("CNAM for the DID (Boolean: 1/0) (required)"),
+            "CNAM for the DID (required)"
+        );
+        assert_eq!(
+            bool_param_doc("Yes for Saying Time Stamp (Values: 'yes'/'no') (required)"),
+            "True for Saying Time Stamp (required)"
+        );
+        assert_eq!(
+            bool_param_doc("'yes' to enable Voicemail Transcription"),
+            "true to enable Voicemail Transcription"
+        );
+        assert!(!names_flag_wire_value("CNAM for the DID (required)"));
+        assert!(names_flag_wire_value(
+            "(Values: 1 = All the numbers are mobile numbers, 0 = false)"
+        ));
+    }
+
+    /// A WSDL with a DID-routing op, a flag op and a ring-group op, the shapes
+    /// each param-doc rule reads.
+    fn param_doc_wsdl() -> Wsdl {
+        let field = |name: &str| (name.to_string(), "xsd:string".to_string());
+        let mut types = std::collections::HashMap::new();
+        types.insert(
+            "setDIDInfoInput".to_string(),
+            vec![field("did"), field("routing"), field("failover_busy")],
+        );
+        types.insert(
+            "addLNPPortInput".to_string(),
+            vec![field("isMobile"), field("cnam")],
+        );
+        types.insert(
+            "setRingGroupInput".to_string(),
+            vec![field("members"), field("language")],
+        );
+        Wsdl {
+            operations: vec![
+                "setDIDInfo".to_string(),
+                "addLNPPort".to_string(),
+                "setRingGroup".to_string(),
+            ],
+            types,
+        }
+    }
+
+    fn docs(entries: &[(&str, &str, &str)]) -> ParamDocs {
+        let mut out = ParamDocs::new();
+        for (op, field, doc) in entries {
+            out.entry(op.to_string())
+                .or_default()
+                .insert(field.to_string(), doc.to_string());
+        }
+
+        out
+    }
+
+    #[test]
+    fn the_routing_format_lands_on_routing_and_the_failovers_point_to_it() {
+        let table = field_overrides::Table::with_builtins();
+        let per_struct = BTreeMap::new();
+        let skip = BTreeSet::new();
+        let resolver = field_overrides::Resolver {
+            table: &table,
+            per_struct: &per_struct,
+            skip: &skip,
+        };
+        let fields = [
+            ("did".to_string(), "xsd:string".to_string()),
+            ("failover_busy".to_string(), "xsd:string".to_string()),
+            ("routing".to_string(), "xsd:string".to_string()),
+        ];
+        let refs: Vec<&(String, String)> = fields.iter().collect();
+        let anchor = routing_anchor("SetDIDInfoParams", &refs, &resolver);
+        assert_eq!(anchor, Some("routing"));
+
+        let acronyms = acronyms_sorted();
+        let doc = |fname: &str, mined: Option<&str>| {
+            param_doc(
+                "setDIDInfo",
+                "SetDIDInfoParams",
+                fname,
+                "crate::Routing",
+                mined,
+                &BTreeMap::new(),
+                anchor,
+                &acronyms,
+            )
+        };
+        assert_eq!(
+            doc("routing", Some("Main Routing for the DID (required)")),
+            [
+                "Main Routing for the DID (required)".to_string(),
+                ROUTING_FORMAT_DOC.to_string()
+            ]
+        );
+        assert_eq!(
+            doc("failover_busy", Some("Busy Routing for the DID")),
+            ["Busy Routing for the DID. Same format as `routing`."]
+        );
+        assert_eq!(
+            doc("failover_noanswer", None),
+            ["Same format as `routing`."]
+        );
+    }
+
+    #[test]
+    fn an_override_replaces_the_mined_doc_without_rewording() {
+        let overrides = BTreeMap::from([(
+            "addLNPPort.isMobile".to_string(),
+            "true if all the numbers are mobile numbers (Boolean: 1/0)".to_string(),
+        )]);
+        let acronyms = acronyms_sorted();
+        assert_eq!(
+            param_doc(
+                "addLNPPort",
+                "AddLNPPortParams",
+                "isMobile",
+                "bool",
+                Some("(Values: 1 = All the numbers are mobile numbers, 0 = false)"),
+                &overrides,
+                None,
+                &acronyms,
+            ),
+            ["true if all the numbers are mobile numbers (Boolean: 1/0)"]
+        );
+    }
+
+    fn check(
+        param_docs: &ParamDocs,
+        notes: &[(&str, &str)],
+        overrides: &[(&str, &str)],
+    ) -> Result<Vec<String>, String> {
+        let table = field_overrides::Table::with_builtins();
+        let per_struct = BTreeMap::new();
+        let skip = BTreeSet::new();
+        let resolver = field_overrides::Resolver {
+            table: &table,
+            per_struct: &per_struct,
+            skip: &skip,
+        };
+        let pairs = |entries: &[(&str, &str)]| {
+            entries
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect::<BTreeMap<_, _>>()
+        };
+        check_param_docs(
+            &param_doc_wsdl(),
+            param_docs,
+            &pairs(notes),
+            &pairs(overrides),
+            &resolver,
+        )
+    }
+
+    #[test]
+    fn a_param_doc_override_must_name_a_declared_param_and_differ_from_the_docs() {
+        let mined = docs(&[("addLNPPort", "isMobile", "Mobile")]);
+        let undeclared = check(&mined, &[], &[("addLNPPort.notes", "Notes")]).unwrap_err();
+        assert!(undeclared.contains("addLNPPort.notes"), "{undeclared}");
+        let stale = check(&mined, &[], &[("addLNPPort.isMobile", "Mobile")]).unwrap_err();
+        assert!(stale.contains("repeats the mined description"), "{stale}");
+        assert_eq!(
+            check(&mined, &[], &[("addLNPPort.isMobile", "true if mobile")]),
+            Ok(vec![])
+        );
+        let required = docs(&[("addLNPPort", "isMobile", "Mobile (required)")]);
+        let dropped =
+            check(&required, &[], &[("addLNPPort.isMobile", "true if mobile")]).unwrap_err();
+        assert!(dropped.contains("disagree on `(required)`"), "{dropped}");
+        assert_eq!(
+            check(
+                &required,
+                &[],
+                &[("addLNPPort.isMobile", "true if mobile (required)")]
+            ),
+            Ok(vec![])
+        );
+    }
+
+    #[test]
+    fn a_note_no_field_renders_and_a_bool_doc_with_wire_values_warn() {
+        let mined = docs(&[
+            ("addLNPPort", "isMobile", "(Values: 1 = Mobile, 0 = false)"),
+            ("addLNPPort", "cnam", "CNAM (Boolean: 1/0)"),
+        ]);
+        let notes = [
+            ("setDIDInfo", "routing can receive values"),
+            ("setRingGroup", "\"members\" can receive"),
+        ];
+        assert_eq!(
+            check(&mined, &notes, &[]).unwrap(),
+            [
+                "addLNPPort.isMobile is a bool, but its description still spells a wire \
+                 value; give it a param_docs override",
+                "setRingGroup has a note under its parameter table that no field renders; \
+                 work it into a param_docs override",
+            ]
+        );
+        assert_eq!(
+            check(
+                &mined,
+                &notes,
+                &[
+                    ("addLNPPort.isMobile", "true if mobile"),
+                    ("setRingGroup.members", "Members, `;`-separated"),
+                ],
+            ),
+            Ok(vec![])
+        );
+    }
+
+    #[test]
+    fn a_global_rename_applies_everywhere_but_a_struct_override_wins() {
+        let acronyms = acronyms_sorted();
+        assert_eq!(
+            field_ident("AddLNPFileParams", "portid", &acronyms),
+            "port_id"
+        );
+        assert_eq!(
+            field_ident("GetLNPListResponseList", "portid", &acronyms),
+            "port_id"
+        );
+        assert_eq!(
+            field_ident("DelRingGroupParams", "ringgroup", &acronyms),
+            "ring_group"
+        );
+        assert_eq!(
+            field_ident("SearchVanityParams", "type", &acronyms),
+            "vanity_type"
+        );
+        assert_eq!(field_ident("SetSMSParams", "did", &acronyms), "did");
     }
 }

@@ -1,0 +1,4201 @@
+{
+  "version": 1,
+  "param_docs": {
+    "addCharge": {
+      "charge": {
+        "doc": "Amount of money that will be Debited from the customer (Example: 4.99) (required)",
+        "required": true
+      },
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      },
+      "description": {
+        "doc": "Charge Description",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how adding charges works",
+        "required": false
+      }
+    },
+    "addLNPFile": {
+      "file": {
+        "doc": "Base 64 code of the file to be attached (required)",
+        "required": true
+      },
+      "portid": {
+        "doc": "ID of the port previously created. (required)",
+        "required": true
+      }
+    },
+    "addLNPPort": {
+      "address1": {
+        "doc": "This is the \"Customer Address\" as it appears on the CSR (Customer Service Record) of the losing carrier. (required)",
+        "required": true
+      },
+      "address2": {
+        "doc": "Optional Address information (e.g: Suite 343)",
+        "required": false
+      },
+      "btn": {
+        "doc": "Required if `is_mobile` is true. BTN (billing telephone number): the phone number all of the customer's other numbers are charged to on one consolidated bill. Look for it on your invoice, or ask the current provider for it.",
+        "required": false
+      },
+      "city": {
+        "doc": "This is the \"City\" as it appears on the CSR (Customer Service Record) of the losing carrier. (required)",
+        "required": true
+      },
+      "country": {
+        "doc": "This is the \"Country\" as it appears on the CSR (Customer Service Record) of the losing carrier. (required)",
+        "required": true
+      },
+      "firstName": {
+        "doc": "This is the \"Customer First Name\" as it appears on the CSR (Customer Service Record) of the losing carrier. Please Enter the first name of the owner of the number or the autorized contact. No company name must be entered in the field. (required)",
+        "required": true
+      },
+      "isMobile": {
+        "doc": "true if all the numbers are mobile numbers. Default: false",
+        "required": false
+      },
+      "isPartial": {
+        "doc": "true if you have more than one number with your current carrier and are not porting them all, false if you are porting all of them. Either way, list every number you want to port in `numbers`. Default: false",
+        "required": false
+      },
+      "lastName": {
+        "doc": "This is the \"Customer Last Name\" as it appears on the CSR (Customer Service Record) of the losing carrier. Please Enter the last name of the owner of the number or the autorized contact. No company name must be entered in the field (required)",
+        "required": true
+      },
+      "locationType": {
+        "doc": "Whether the numbers are a business's or a residence's. Default: residential",
+        "required": false
+      },
+      "notes": {
+        "doc": "If you would like to include additional information regarding this port, you can use this parameter.",
+        "required": false
+      },
+      "numbers": {
+        "doc": "DID(s) to port into VoIP.ms network (Example: 5552341234,5552341233). If you are porting more than one number, please separate them with commas. (required)",
+        "required": true
+      },
+      "pin": {
+        "doc": "PIN Number",
+        "required": false
+      },
+      "portType": {
+        "doc": "Digits from 1 to 4: 1: United States Local numbers 2: Canadian Local Numbers 3: US/CA Toll Free Numbers 4: United States Fax numbers 5: Canadian Fax Numbers (required)",
+        "required": true
+      },
+      "providerAccount": {
+        "doc": "Your Account with your current service provider. (required)",
+        "required": true
+      },
+      "providerName": {
+        "doc": "The name of your current service provider. (required)",
+        "required": true
+      },
+      "services": {
+        "doc": "Required if `is_mobile` is true. Describe every service you keep with the current carrier, such as DSL/data or hunt group services. A service not listed may be disconnected when the port completes.",
+        "required": false
+      },
+      "state": {
+        "doc": "This is the \"State or Province\" as it appears on the CSR (Customer Service Record) of the losing carrier. (required)",
+        "required": true
+      },
+      "statementName": {
+        "doc": "This is for Business numbers only. Please type your Company Name if applicable, otherwise leave it blank. (required)",
+        "required": true
+      },
+      "tfType": {
+        "doc": "[Required If portType = 3] Values: 1 - American Carrier, American Callers Only, 2 - American Carrier, American and Canadian Callers allowed, 3 - Canadian Carrier",
+        "required": false
+      },
+      "zip": {
+        "doc": "This is the \"ZIP or Postal Code\" as it appears on the CSR (Customer Service Record) of the losing carrier. (required)",
+        "required": true
+      }
+    },
+    "addMemberToConference": {
+      "conference": {
+        "doc": "Specific Conference ID (Example: 234) (required)",
+        "required": true
+      },
+      "member": {
+        "doc": "Specific Member ID (Example: 6547) (required)",
+        "required": true
+      }
+    },
+    "addPayment": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      },
+      "description": {
+        "doc": "Payment Description",
+        "required": false
+      },
+      "payment": {
+        "doc": "Amount of money that will be Credited to the customer (Example: 4.99) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how adding payments works",
+        "required": false
+      }
+    },
+    "assignDIDvPRI": {
+      "did": {
+        "doc": "DID Number to be assign into our Vpri (Example: 561115) (required)",
+        "required": true
+      },
+      "vpri": {
+        "doc": "Id for specific Vpri (required)",
+        "required": true
+      }
+    },
+    "backOrderDIDCAN": {
+      "billing_type": {
+        "doc": "Billing type for the DID (1 = Per Minute, 2 = Flat) (required)",
+        "required": true
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "province": {
+        "doc": "Canadian Province (values from getProvinces) (required)",
+        "required": true
+      },
+      "quantity": {
+        "doc": "Number of DIDs to be Ordered (Example: 3) (required)",
+        "required": true
+      },
+      "ratecenter": {
+        "doc": "USA Ratecenter (Values from getRateCentersUSA) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "backOrderDIDUSA": {
+      "billing_type": {
+        "doc": "Billing type for the DID (1 = Per Minute, 2 = Flat) (required)",
+        "required": true
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "quantity": {
+        "doc": "Number of DIDs to be Ordered (Example: 3) (required)",
+        "required": true
+      },
+      "ratecenter": {
+        "doc": "USA Ratecenter (Values from getRateCentersUSA) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "state": {
+        "doc": "USA State (values from getStates) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "cancelDID": {
+      "cancelcomment": {
+        "doc": "Comment for DID cancellation",
+        "required": false
+      },
+      "did": {
+        "doc": "DID to be canceled and deleted (Example: 5551234567) (required)",
+        "required": true
+      },
+      "portout": {
+        "doc": "Set to true if the DID is being ported out",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how cancellation works - Cancellation can not be undone - When testing, no changes are made",
+        "required": false
+      }
+    },
+    "cancelFaxNumber": {
+      "id": {
+        "doc": "ID for a specific Fax Number (Example: 923) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how cancel a Fax Number",
+        "required": false
+      }
+    },
+    "connectDID": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP') (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID to be Connected to Reseler Sub Account (Example: 5551234567) (required)",
+        "required": true
+      },
+      "dont_charge_monthly": {
+        "doc": "If set to true, the monthly value will not be charged after Connect",
+        "required": false
+      },
+      "dont_charge_setup": {
+        "doc": "If set to true, the setup value will not be charged after Connect",
+        "required": false
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03) (required)",
+        "required": true
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50) (required)",
+        "required": true
+      },
+      "next_billing": {
+        "doc": "Next billing date (Example: '2014-03-30')",
+        "required": false
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99) (required)",
+        "required": true
+      }
+    },
+    "connectFAX": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP') (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "FAX DID to be Connected to Reseller Sub Account (Example: 5551234567) (required)",
+        "required": true
+      },
+      "dont_charge_monthly": {
+        "doc": "If set to true, the monthly value will not be charged after Connect",
+        "required": false
+      },
+      "dont_charge_setup": {
+        "doc": "If set to true, the setup value will not be charged after Connect",
+        "required": false
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03) (required)",
+        "required": true
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50) (required)",
+        "required": true
+      },
+      "next_billing": {
+        "doc": "Next billing date (Example: '2014-03-30')",
+        "required": false
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99) (required)",
+        "required": true
+      }
+    },
+    "createSubAccount": {
+      "allowed_codecs": {
+        "doc": "List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated by semicolon (Example: ulaw;g729;gsm) (required)",
+        "required": true
+      },
+      "auth_type": {
+        "doc": "Authorization Type Code (Values from getAuthTypes) (required)",
+        "required": true
+      },
+      "callerid_number": {
+        "doc": "Caller ID Override",
+        "required": false
+      },
+      "canada_routing": {
+        "doc": "Route Code (Values from getRoutes)",
+        "required": false
+      },
+      "description": {
+        "doc": "Sub Account Description (Example: 'VoIP Account')",
+        "required": false
+      },
+      "device_type": {
+        "doc": "Device Type Code (Values from getDeviceTypes) (required)",
+        "required": true
+      },
+      "dialing_mode": {
+        "doc": "Allows you to dial outgoing calls using either the NANPA configuration or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 = E164, 2 = NANPA)",
+        "required": false
+      },
+      "dtmf_mode": {
+        "doc": "DTMF Mode Code (Values from getDTMFModes) (required)",
+        "required": true
+      },
+      "enable_internal_cnam": {
+        "doc": "Enable Internal CallerID",
+        "required": false
+      },
+      "enable_ip_restriction": {
+        "doc": "Enable IP Restriction",
+        "required": false
+      },
+      "enable_pop_restriction": {
+        "doc": "Enable POP Restriction",
+        "required": false
+      },
+      "internal_cnam": {
+        "doc": "Internal CallerID Name",
+        "required": false
+      },
+      "internal_dialtime": {
+        "doc": "Sub Account Internal Dialtime (Example: 60 -> seconds)",
+        "required": false
+      },
+      "internal_extension": {
+        "doc": "Sub Account Internal Extension (Example: 1 -> Creates 101)",
+        "required": false
+      },
+      "internal_extension_location": {
+        "doc": "Location group for the internal extension (Values from getLocations)",
+        "required": false
+      },
+      "internal_voicemail": {
+        "doc": "Sub Account Internal Voicemail (Example: 101)",
+        "required": false
+      },
+      "international_route": {
+        "doc": "Route Code (Values from getRoutes) (required)",
+        "required": true
+      },
+      "ip": {
+        "doc": "Sub Account IP (For IP Authentication)",
+        "required": false
+      },
+      "ip_restriction": {
+        "doc": "List of IP Addresses, IP Addresses/Netmask, or Fully Qualified Domain Names to allow outgoing calls separated by commas (Example: 123.45.3.21,10.255.12.0/22,device.mydomain.com)",
+        "required": false
+      },
+      "language": {
+        "doc": "Language for system messages, such as \"Invalid Option\" (Values from getLanguages)",
+        "required": false
+      },
+      "lock_international": {
+        "doc": "Lock International Code (Values from getLockInternational) (required)",
+        "required": true
+      },
+      "max_expiry": {
+        "doc": "Max Expiry between 60 and 3600 (Example: 3000)",
+        "required": false
+      },
+      "music_on_hold": {
+        "doc": "Music on Hold Code (Values from getMusicOnHold) (required)",
+        "required": true
+      },
+      "nat": {
+        "doc": "NAT Mode Code (Values from getNAT) (required)",
+        "required": true
+      },
+      "password": {
+        "doc": "Sub Account Password (For Password Authentication)",
+        "required": false
+      },
+      "pop_restriction": {
+        "doc": "List of POP Servers to allow outgoing calls separated by commas (values from getServersInfo. Example: 10,23,45)",
+        "required": false
+      },
+      "protocol": {
+        "doc": "Protocol used for the Sub Account (Values from getProtocols) (required)",
+        "required": true
+      },
+      "record_calls": {
+        "doc": "Record Calls",
+        "required": false
+      },
+      "reseller_chargesetup": {
+        "doc": "True if you want to charge Package Setup Fee after Save",
+        "required": false
+      },
+      "reseller_client": {
+        "doc": "Reseller Account ID (Example: 561115)",
+        "required": false
+      },
+      "reseller_nextbilling": {
+        "doc": "Reseller Next Billing Date (Example: '2012-12-31')",
+        "required": false
+      },
+      "reseller_package": {
+        "doc": "Reseller Package (Example: 92364)",
+        "required": false
+      },
+      "rtp_hold_timeout": {
+        "doc": "RTP Hold Time Out between 1 and 3600 (Example: 600)",
+        "required": false
+      },
+      "rtp_timeout": {
+        "doc": "RTP Time Out between 1 and 3600 (Example: 60)",
+        "required": false
+      },
+      "send_bye": {
+        "doc": "Send BYE on successful transfer",
+        "required": false
+      },
+      "sip_traffic": {
+        "doc": "Encrypted SIP Traffic",
+        "required": false
+      },
+      "tfcarrier": {
+        "doc": "This allows you to select the carrier to be used for outgoing calls to toll-free numbers. (Values: -1 = Use main account settings, 0 = Default server setting, 1 = US carrier, 2 = Canadian carrier)",
+        "required": false
+      },
+      "transcribe": {
+        "doc": "Enable Call Transcription",
+        "required": false
+      },
+      "transcription_email": {
+        "doc": "Call Transcription Email",
+        "required": false
+      },
+      "transcription_locale": {
+        "doc": "Transcription locale code (values from getLocales, comma separated for more than one locale up to 10 locales)",
+        "required": false
+      },
+      "transcription_start_delay": {
+        "doc": "Call Transcription Delay Seconds between 0 and 60, Increments of 5 (Example: 10 -> seconds)",
+        "required": false
+      },
+      "username": {
+        "doc": "Username for the Sub Account (Example: 'VoIP') (required)",
+        "required": true
+      }
+    },
+    "createVoicemail": {
+      "attach_message": {
+        "doc": "True for Attaching WAV files to Message (required)",
+        "required": true
+      },
+      "delete_message": {
+        "doc": "True for Deleting Messages (required)",
+        "required": true
+      },
+      "digits": {
+        "doc": "Digits used to create the voicemail (Example: 01) Minimum 1 digit, maximum 10 digits (required)",
+        "required": true
+      },
+      "email": {
+        "doc": "Email address for receiving messages, multiple email addresses are allowed if separated by a comma",
+        "required": false
+      },
+      "email_attachment_format": {
+        "doc": "Code for Email Attachment format (Values from getVoicemailAttachmentFormats)",
+        "required": false
+      },
+      "language": {
+        "doc": "Code for Language (Values from getLanguages) (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Name for the Mailbox (required)",
+        "required": true
+      },
+      "password": {
+        "doc": "Password for the Mailbox (required)",
+        "required": true
+      },
+      "play_instructions": {
+        "doc": "Code for Play Instructions Setting (Values from getPlayInstructions) (required)",
+        "required": true
+      },
+      "say_callerid": {
+        "doc": "True for Saying the Caller ID (required)",
+        "required": true
+      },
+      "say_time": {
+        "doc": "True for Saying Time Stamp (required)",
+        "required": true
+      },
+      "skip_password": {
+        "doc": "True if Skipping Password (required)",
+        "required": true
+      },
+      "timezone": {
+        "doc": "Time Zone for Mailbox (Values from getTimeZones) (required)",
+        "required": true
+      },
+      "transcription": {
+        "doc": "true to enable Voicemail Transcription",
+        "required": false
+      },
+      "transcription_format": {
+        "doc": "Transcription format ( Values: 'html'/'text')",
+        "required": false
+      },
+      "transcription_locale": {
+        "doc": "Transcription locale code (values from getLocales, comma separated for more than one locale up to 10 locales)",
+        "required": false
+      },
+      "transcription_redaction": {
+        "doc": "True for Transcription redaction",
+        "required": false
+      },
+      "transcription_sentiment": {
+        "doc": "True for Transcription sentiment",
+        "required": false
+      },
+      "transcription_summary": {
+        "doc": "True for Transcription summary",
+        "required": false
+      },
+      "unavailable_message_recording": {
+        "doc": "Recording for the Unavailable Message (values from getRecordings)",
+        "required": false
+      }
+    },
+    "delCallHunting": {
+      "callhunting": {
+        "doc": "ID for a specific Call Hunting (Example: 323) (required)",
+        "required": true
+      }
+    },
+    "delCallParking": {
+      "callparking": {
+        "doc": "ID for a specific Call Parking (Example: 323) (required)",
+        "required": true
+      }
+    },
+    "delCallRecording": {
+      "account": {
+        "doc": "Filter Call Recordings by Account (Values from getCallAccounts) (required)",
+        "required": true
+      },
+      "callrecording": {
+        "doc": "Call Recording (Values from getCallRecordings) (required)",
+        "required": true
+      }
+    },
+    "delCallback": {
+      "callback": {
+        "doc": "ID for a specific Callback (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delCallerIDFiltering": {
+      "filtering": {
+        "doc": "ID for a specific CallerID Filtering (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delClient": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 1998) (required)",
+        "required": true
+      }
+    },
+    "delConference": {
+      "conference": {
+        "doc": "ID for a specific Conference (Example: 737) (required)",
+        "required": true
+      }
+    },
+    "delConferenceMember": {
+      "member": {
+        "doc": "ID for a specific Member Profile (Example: 737) (required)",
+        "required": true
+      }
+    },
+    "delDISA": {
+      "disa": {
+        "doc": "ID for a specific DISA (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delEmailToFax": {
+      "id": {
+        "doc": "ID for a specific \"Email To Fax Configuration\" (Example: 923) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how cancel a \"Email To Fax Configuration\"",
+        "required": false
+      }
+    },
+    "delFaxFolder": {
+      "id": {
+        "doc": "ID for a specific Fax Folder (Example: 923) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how to delete a Fax Folder",
+        "required": false
+      }
+    },
+    "delForwarding": {
+      "forwarding": {
+        "doc": "ID for a specific Forwarding (Example: 19183)",
+        "required": false
+      }
+    },
+    "delIVR": {
+      "ivr": {
+        "doc": "ID for a specific IVR (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delLocation": {
+      "id": {
+        "doc": "Internal Extension Location id (Value from getLocations\") (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Internal Extension Location name (Value from getLocations) (required)",
+        "required": true
+      }
+    },
+    "delMemberFromConference": {
+      "conference": {
+        "doc": "ID for a specific Conference (Example: 3829)",
+        "required": false
+      },
+      "member": {
+        "doc": "ID for a specific Member (Example: 101) (required)",
+        "required": true
+      }
+    },
+    "delMessages": {
+      "folder": {
+        "doc": "Name for specific Folder (Required if message id is passed, Example: 'INBOX', values from: getVoicemailFolders)",
+        "required": false
+      },
+      "mailbox": {
+        "doc": "ID for a specific Mailbox (Example: 1001) (required)",
+        "required": true
+      },
+      "message_num": {
+        "doc": "ID for specific Voicemail Message (Required if folder is passed, Example: 1)",
+        "required": false
+      }
+    },
+    "delMusicOnHold": {
+      "music_on_hold": {
+        "doc": "Music on Hold Name (Values from getMusicOnHold) (required)",
+        "required": true
+      }
+    },
+    "delPhonebook": {
+      "phonebook": {
+        "doc": "ID for a specific Phonebook (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delPhonebookGroup": {
+      "group": {
+        "doc": "ID for a specific Phonebook group (required)",
+        "required": true
+      }
+    },
+    "delQueue": {
+      "queue": {
+        "doc": "ID for a specific Queue (Example: 13183) (required)",
+        "required": true
+      }
+    },
+    "delRecording": {
+      "recording": {
+        "doc": "ID for a specific Recording (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delRingGroup": {
+      "ringgroup": {
+        "doc": "ID for a specific Ring Group (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delSIPURI": {
+      "sipuri": {
+        "doc": "ID for a specific SIP URI (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delStaticMember": {
+      "member": {
+        "doc": "ID for a specific Member Queue (Example: 1918) (required)",
+        "required": true
+      },
+      "queue": {
+        "doc": "ID for a specific Queue (Example: 27183) (required)",
+        "required": true
+      }
+    },
+    "delSubAccount": {
+      "id": {
+        "doc": "ID for a specific Sub Account (Example: 99785)",
+        "required": false
+      }
+    },
+    "delTimeCondition": {
+      "timecondition": {
+        "doc": "ID for a specific Time Condition (Example: 19183) (required)",
+        "required": true
+      }
+    },
+    "delVoicemail": {
+      "mailbox": {
+        "doc": "ID for a specific Mailbox (Example: 1001) (required)",
+        "required": true
+      }
+    },
+    "deleteFaxMessage": {
+      "id": {
+        "doc": "ID for a specific Fax Message (Example: 923) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how cancel a Fax Message",
+        "required": false
+      }
+    },
+    "deleteMMS": {
+      "id": {
+        "doc": "ID for a specific MMS (Example: 1918) (required)",
+        "required": true
+      }
+    },
+    "deleteSMS": {
+      "id": {
+        "doc": "ID for a specific SMS (Example: 1918) (required)",
+        "required": true
+      }
+    },
+    "e911AddressTypes": {
+      "type": {
+        "doc": "Code for a specific Address Type (Example: Apartment)",
+        "required": false
+      }
+    },
+    "e911Cancel": {
+      "did": {
+        "doc": "DID to be canceled. (required)",
+        "required": true
+      }
+    },
+    "e911Info": {
+      "did": {
+        "doc": "DID with e911 enabled / in process. (required)",
+        "required": true
+      }
+    },
+    "e911Provision": {
+      "address_number": {
+        "doc": "Address Number that will be sent to the e911 service.",
+        "required": false
+      },
+      "address_type": {
+        "doc": "Address Type that will be sent to the e911 service (Values from e911AddressTypes).",
+        "required": false
+      },
+      "city": {
+        "doc": "City that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "country": {
+        "doc": "Country that will be sent to the e911 service. Value can be US (United states) or CA (Canada). (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "full_name": {
+        "doc": "Full Name that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "language": {
+        "doc": "Language that will be sent to the e911 service. Only available for addresses from Canada. Value can be EN (English) or FR (French). (required)",
+        "required": true
+      },
+      "other_info": {
+        "doc": "Additional Address Information that will be sent to the e911 service. Only available for addresses from Canada.",
+        "required": false
+      },
+      "state": {
+        "doc": "State / Province that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "street_name": {
+        "doc": "Street Name that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "street_number": {
+        "doc": "Street Number that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "zip_code": {
+        "doc": "Zip / Postal code that will be sent to the e911 service. (required)",
+        "required": true
+      }
+    },
+    "e911ProvisionManually": {
+      "address_number": {
+        "doc": "Address Number that will be sent to the e911 service.",
+        "required": false
+      },
+      "address_type": {
+        "doc": "Address Type that will be sent to the e911 service (Values from e911AddressTypes).",
+        "required": false
+      },
+      "city": {
+        "doc": "City that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "country": {
+        "doc": "Country that will be sent to the e911 service. Value can be US (United states) or CA (Canada). (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "full_name": {
+        "doc": "Full Name that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "language": {
+        "doc": "Language that will be sent to the e911 service. Only available for addresses from Canada. Value can be EN (English) or FR (French). (required)",
+        "required": true
+      },
+      "other_info": {
+        "doc": "Additional Address Information that will be sent to the e911 service. Only available for addresses from Canada.",
+        "required": false
+      },
+      "state": {
+        "doc": "State / Province that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "street_name": {
+        "doc": "Street Name that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "street_number": {
+        "doc": "Street Number that will be sent to the e911 service. (required)",
+        "required": true
+      },
+      "zip_code": {
+        "doc": "Zip / Postal code that will be sent to the e911 service. (required)",
+        "required": true
+      }
+    },
+    "e911Update": {
+      "address_number": {
+        "doc": "Address Number that will be updated to the e911 service.",
+        "required": false
+      },
+      "address_type": {
+        "doc": "Address Type that will be updated to the e911 service (Values from e911AddressTypes).",
+        "required": false
+      },
+      "city": {
+        "doc": "City that will be updated to the e911 service. (required)",
+        "required": true
+      },
+      "country": {
+        "doc": "Country that will be updated to the e911 service. Value can be US (United states) or CA (Canada). (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID with e911 enabled / in process. (required)",
+        "required": true
+      },
+      "full_name": {
+        "doc": "Full Name that will be updated to the e911 service. (required)",
+        "required": true
+      },
+      "language": {
+        "doc": "Language that will be updated to the e911 service. Only available for addresses from Canada. Value can be EN (English) or FR (French). (required)",
+        "required": true
+      },
+      "other_info": {
+        "doc": "Additional Address Information that will be updated to the e911 service. Only available for addresses from Canada.",
+        "required": false
+      },
+      "state": {
+        "doc": "State / Province that will be updated to the e911 service. (required)",
+        "required": true
+      },
+      "street_name": {
+        "doc": "Street Name that will be updated to the e911 service. (required)",
+        "required": true
+      },
+      "street_number": {
+        "doc": "Street Number that will be updated to the e911 service. (required)",
+        "required": true
+      },
+      "zip_code": {
+        "doc": "Zip / Postal code that will be updated to the e911 service. (required)",
+        "required": true
+      }
+    },
+    "e911Validate": {
+      "address_number": {
+        "doc": "Address Number that will be validated.",
+        "required": false
+      },
+      "address_type": {
+        "doc": "Address Type that will be validated (Values from e911AddressTypes).",
+        "required": false
+      },
+      "city": {
+        "doc": "City that will be validated. (required)",
+        "required": true
+      },
+      "country": {
+        "doc": "Country that will be validated. Value can be US (United states) or CA (Canada). (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID with e911 enabled / in process. (required)",
+        "required": true
+      },
+      "full_name": {
+        "doc": "Full Name that will be validated. (required)",
+        "required": true
+      },
+      "language": {
+        "doc": "Language that will be validated. Only available for addresses from Canada. Value can be EN (English) or FR (French).",
+        "required": false
+      },
+      "other_info": {
+        "doc": "Additional Address Information that will be validated. Only available for addresses from Canada.",
+        "required": false
+      },
+      "state": {
+        "doc": "State / Province that will be validated. (required)",
+        "required": true
+      },
+      "street_name": {
+        "doc": "Street Name that will be validated. (required)",
+        "required": true
+      },
+      "street_number": {
+        "doc": "Street Number that will be validated. (required)",
+        "required": true
+      },
+      "zip_code": {
+        "doc": "Zip / Postal code that will be validated. (required)",
+        "required": true
+      }
+    },
+    "getAllowedCodecs": {
+      "codec": {
+        "doc": "Code for a specific Codec (Example: 'ulaw')",
+        "required": false
+      }
+    },
+    "getAuthTypes": {
+      "type": {
+        "doc": "Code for a specific Authorization Type (Example: 2)",
+        "required": false
+      }
+    },
+    "getBackOrders": {
+      "id": {
+        "doc": "ID for a specific backorder DID",
+        "required": false
+      }
+    },
+    "getBalance": {
+      "advanced": {
+        "doc": "True for Calls Statistics",
+        "required": false
+      }
+    },
+    "getBalanceManagement": {
+      "balance_management": {
+        "doc": "Code for a specific Balance Management Setting (Example: 1)",
+        "required": false
+      }
+    },
+    "getCDR": {
+      "account": {
+        "doc": "Filter CDR by Account (Values from getCallAccounts)",
+        "required": false
+      },
+      "answered": {
+        "doc": "Include Answered Calls to CDR",
+        "required": false
+      },
+      "busy": {
+        "doc": "Include Busy Calls to CDR",
+        "required": false
+      },
+      "callbilling": {
+        "doc": "Filter CDR by Call Billing (Values from getCallBilling)",
+        "required": false
+      },
+      "calltype": {
+        "doc": "Filters CDR by Call Type (Values from getCallTypes)",
+        "required": false
+      },
+      "date_from": {
+        "doc": "Start Date for Filtering CDR (Example: '2010-11-30') (required)",
+        "required": true
+      },
+      "date_to": {
+        "doc": "End Date for Filtering CDR (Example: '2010-11-30') (required)",
+        "required": true
+      },
+      "failed": {
+        "doc": "Include Failed Calls to CDR",
+        "required": false
+      },
+      "noanswer": {
+        "doc": "Include NoAnswered calls to CDR",
+        "required": false
+      },
+      "timezone": {
+        "doc": "IANA time zone whose days the date range means (Example: 'America/New_York'); resolved at the query start date, or the end date when there is no start, to the number VoIP.ms needs for that window, since it shifts its Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported timestamps are qualified in the server zone whatever is sent.",
+        "required": false
+      }
+    },
+    "getCallHuntings": {
+      "callhunting": {
+        "doc": "ID for a specific Call Hunting (Example: 323)",
+        "required": false
+      }
+    },
+    "getCallParking": {
+      "callparking": {
+        "doc": "ID for a specific Call Parking (Example: 737)",
+        "required": false
+      }
+    },
+    "getCallRecording": {
+      "account": {
+        "doc": "Main Account or Sub Account related to the call recording (Values from getCallRecordings) (required)",
+        "required": true
+      },
+      "callrecording": {
+        "doc": "Call Recording (Values from getCallRecordings) (required)",
+        "required": true
+      }
+    },
+    "getCallRecordings": {
+      "account": {
+        "doc": "Filter Call Recordings by Account (Values from getCallAccounts) (required)",
+        "required": true
+      },
+      "date_from": {
+        "doc": "Start Date for Filtering Call Recording (Example:'2018-11-01') (required)",
+        "required": true
+      },
+      "date_to": {
+        "doc": "End Date for Filtering Call Recording (Example:'2018-12-01') (required)",
+        "required": true
+      },
+      "length": {
+        "doc": "Number of records to show",
+        "required": false
+      },
+      "start": {
+        "doc": "Number of records shown previously, used for pages",
+        "required": false
+      }
+    },
+    "getCallTranscriptions": {
+      "account": {
+        "doc": "Specific Account (Example: '100001_VoIP') (required)",
+        "required": true
+      },
+      "call_type": {
+        "doc": "Filters by Call Type (Values from getCallTypes)",
+        "required": false
+      },
+      "date_from": {
+        "doc": "Start Date for Filtering (Example: '2010-11-30') (required)",
+        "required": true
+      },
+      "date_to": {
+        "doc": "End Date for Filtering (Example: '2010-11-30') (required)",
+        "required": true
+      }
+    },
+    "getCallTypes": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115)",
+        "required": false
+      }
+    },
+    "getCallbacks": {
+      "callback": {
+        "doc": "ID for a specific Callback (Example: 2359)",
+        "required": false
+      }
+    },
+    "getCallerIDFiltering": {
+      "did": {
+        "doc": "DID for a specific CallerID Filtering (Example: 5551234567)",
+        "required": false
+      },
+      "filtering": {
+        "doc": "ID for a specific CallerID Filtering (Example: 18915)",
+        "required": false
+      }
+    },
+    "getCarriers": {
+      "carrier": {
+        "doc": "Code for a specific Carrier (Example: 2)",
+        "required": false
+      }
+    },
+    "getCharges": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      }
+    },
+    "getClientPackages": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      }
+    },
+    "getClientThreshold": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      }
+    },
+    "getClients": {
+      "client": {
+        "doc": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Reseller Client e-mail (Example: '[email protected]')",
+        "required": false
+      }
+    },
+    "getConference": {
+      "conference": {
+        "doc": "Code for a specific Conference (Example: 1599)",
+        "required": false
+      }
+    },
+    "getConferenceMembers": {
+      "member": {
+        "doc": "Code for a specific Member profile (Example: 1599)",
+        "required": false
+      }
+    },
+    "getConferenceRecordingFile": {
+      "conference": {
+        "doc": "ID for a specific Conference (Example: 5356) (required)",
+        "required": true
+      },
+      "recording": {
+        "doc": "ID for a specific Conference Recording (Example: 1543338379) (required)",
+        "required": true
+      }
+    },
+    "getConferenceRecordings": {
+      "conference": {
+        "doc": "ID for a specific Conference (Example: 5356) (required)",
+        "required": true
+      },
+      "date_from": {
+        "doc": "Start Date for Filtering Transactions (Example: '2016-06-03')",
+        "required": false
+      },
+      "date_to": {
+        "doc": "End Date for Filtering Transactions (Example: '2016-06-04')",
+        "required": false
+      }
+    },
+    "getCountries": {
+      "country": {
+        "doc": "Code for a specific Country (Example: 'CA')",
+        "required": false
+      }
+    },
+    "getDIDCountries": {
+      "country_id": {
+        "doc": "ID for a specific country (Example: 205)",
+        "required": false
+      },
+      "type": {
+        "doc": "Type of International DID (Values from getInternationalTypes) (required)",
+        "required": true
+      }
+    },
+    "getDIDsCAN": {
+      "province": {
+        "doc": "Canadian Province (Values from getProvinces) (required)",
+        "required": true
+      },
+      "ratecenter": {
+        "doc": "Canadian Ratecenter (Values from getRateCentersCAN)",
+        "required": false
+      }
+    },
+    "getDIDsInfo": {
+      "client": {
+        "doc": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "did": {
+        "doc": "DID from Client or Sub Account (Example: 5551234567)",
+        "required": false
+      }
+    },
+    "getDIDsInternationalGeographic": {
+      "country_id": {
+        "doc": "ID for a specific Country (Values from getDIDCountries) (required)",
+        "required": true
+      }
+    },
+    "getDIDsInternationalNational": {
+      "country_id": {
+        "doc": "ID for a specific Country (Values from getDIDCountries) (required)",
+        "required": true
+      }
+    },
+    "getDIDsInternationalTollFree": {
+      "country_id": {
+        "doc": "ID for a specific Country (Values from getDIDCountries) (required)",
+        "required": true
+      }
+    },
+    "getDIDsUSA": {
+      "ratecenter": {
+        "doc": "United States Ratecenter (Values from getRateCentersUSA)",
+        "required": false
+      },
+      "state": {
+        "doc": "United States State (Values from getStates) (required)",
+        "required": true
+      }
+    },
+    "getDIDvPRI": {
+      "vpri": {
+        "doc": "Id for specific Vpri (required)",
+        "required": true
+      }
+    },
+    "getDISAs": {
+      "disa": {
+        "doc": "ID for a specific DISA (Example: 2114)",
+        "required": false
+      }
+    },
+    "getDTMFModes": {
+      "dtmf_mode": {
+        "doc": "Code for a specific DTMF Mode (Example: 'inband')",
+        "required": false
+      }
+    },
+    "getDeposits": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      }
+    },
+    "getDeviceTypes": {
+      "device_type": {
+        "doc": "Code for a specific Device Type (Example: 1)",
+        "required": false
+      }
+    },
+    "getFaxMessagePDF": {
+      "id": {
+        "doc": "ID of the Fax Message requested (Values from getFaxMessages) (required)",
+        "required": true
+      }
+    },
+    "getFaxMessages": {
+      "folder": {
+        "doc": "Name of specific Fax Folder (Example: SENT) - Default value: ALL",
+        "required": false
+      },
+      "from": {
+        "doc": "Start Date for Filtering Fax Messages (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      },
+      "id": {
+        "doc": "ID for a Specific Fax Message (Example: 23434)",
+        "required": false
+      },
+      "to": {
+        "doc": "End Date for Filtering Fax Messages (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      }
+    },
+    "getFaxNumbersInfo": {
+      "did": {
+        "doc": "Fax Number to retrieves the information of a single number, or not send if you want retrieves the information of all your Fax Numbers.",
+        "required": false
+      }
+    },
+    "getFaxNumbersPortability": {
+      "did": {
+        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "required": true
+      }
+    },
+    "getFaxProvinces": {
+      "province": {
+        "doc": "CODE for a specific Province (Example: AB)",
+        "required": false
+      }
+    },
+    "getFaxRateCentersCAN": {
+      "province": {
+        "doc": "Province two letters code (Example: AB) (required)",
+        "required": true
+      }
+    },
+    "getFaxRateCentersUSA": {
+      "state": {
+        "doc": "Province two letters code (Example: AL) (required)",
+        "required": true
+      }
+    },
+    "getFaxStates": {
+      "state": {
+        "doc": "CODE for a specific State (Example: AL)",
+        "required": false
+      }
+    },
+    "getForwardings": {
+      "forwarding": {
+        "doc": "ID for a specific Forwarding (Example: 18635)",
+        "required": false
+      }
+    },
+    "getIVRs": {
+      "ivr": {
+        "doc": "ID for a specific IVR (Example: 4636)",
+        "required": false
+      }
+    },
+    "getInternationalTypes": {
+      "type": {
+        "doc": "Code for a specific International Type (Example: 'NATIONAL')",
+        "required": false
+      }
+    },
+    "getJoinWhenEmptyTypes": {
+      "type": {
+        "doc": "Code for a specific 'JoinWhenEmpty' Type (Example: 'yes')",
+        "required": false
+      }
+    },
+    "getLNPAttach": {
+      "attachid": {
+        "doc": "ID of the invoice (attachment) previously uploaded. (required)",
+        "required": true
+      },
+      "portid": {
+        "doc": "ID of the port previously created. (required)",
+        "required": true
+      }
+    },
+    "getLNPAttachList": {
+      "portid": {
+        "doc": "ID of the port previously created. (required)",
+        "required": true
+      }
+    },
+    "getLNPDetails": {
+      "portid": {
+        "doc": "ID of the port previously created. (required)",
+        "required": true
+      }
+    },
+    "getLNPList": {
+      "endDate": {
+        "doc": "End Date for filtering Ports. (Example: '2014-03-30')",
+        "required": false
+      },
+      "portStatus": {
+        "doc": "Status code to filtering Ports. Example: precessing. (You can use the values returned by the method getLNPListStatus)",
+        "required": false
+      },
+      "portid": {
+        "doc": "ID of the port previously created. (required)",
+        "required": true
+      },
+      "startDate": {
+        "doc": "Start Date for filtering Ports. (Example: '2014-03-30')",
+        "required": false
+      }
+    },
+    "getLNPNotes": {
+      "portid": {
+        "doc": "ID of the port previously created. (required)",
+        "required": true
+      }
+    },
+    "getLNPStatus": {
+      "portid": {
+        "doc": "ID of the port previously created. (required)",
+        "required": true
+      }
+    },
+    "getLanguages": {
+      "language": {
+        "doc": "Code for a specific Language (Example: 'en')",
+        "required": false
+      }
+    },
+    "getLocales": {
+      "locale": {
+        "doc": "Code for a specific Locale Code (Example: 'en-US')",
+        "required": false
+      }
+    },
+    "getLockInternational": {
+      "lock_international": {
+        "doc": "Code for a specific Lock International Mode (Example: 1)",
+        "required": false
+      }
+    },
+    "getMMS": {
+      "all_messages": {
+        "doc": "Filter to recive all MMSs and SMSs, 1 recive all SMS and MMS, 0 if only need MMS, important: the sms ID must be 0",
+        "required": false
+      },
+      "contact": {
+        "doc": "Contact number for Filtering MMSs (Example: 5551234567)",
+        "required": false
+      },
+      "did": {
+        "doc": "DID number for Filtering MMSs (Example: 5551234567)",
+        "required": false
+      },
+      "from": {
+        "doc": "Start Date for Filtering MMSs (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      },
+      "limit": {
+        "doc": "Number of records to be displayed (Example: 20) - Default value: 50",
+        "required": false
+      },
+      "mms": {
+        "doc": "ID for a specific MMS (Example: 1918)",
+        "required": false
+      },
+      "timezone": {
+        "doc": "IANA time zone whose days the date range means (Example: 'America/New_York'); resolved at the query start date, or the end date when there is no start, to the number VoIP.ms needs for that window, since it shifts its Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported timestamps are qualified in the server zone whatever is sent.",
+        "required": false
+      },
+      "to": {
+        "doc": "End Date for Filtering MMSs (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      },
+      "type": {
+        "doc": "Filter MMSs by Type (Boolean: 1 = received / 0 = sent)",
+        "required": false
+      }
+    },
+    "getMediaMMS": {
+      "id": {
+        "doc": "ID for a specific MMS (Example: 1918)",
+        "required": false
+      },
+      "media_as_array": {
+        "doc": "Return the list of media attachments as an Array if the value is 1 or as a JSON Object if the value is 0 (Default: 0)",
+        "required": false
+      }
+    },
+    "getMusicOnHold": {
+      "music_on_hold": {
+        "doc": "Code for a specific Music on Hold (Example: 'jazz')",
+        "required": false
+      }
+    },
+    "getNAT": {
+      "nat": {
+        "doc": "Code for a specific NAT Option (Example: 'route')",
+        "required": false
+      }
+    },
+    "getPackages": {
+      "package": {
+        "doc": "Code for a specific Package (Example: 8378)",
+        "required": false
+      }
+    },
+    "getPhonebook": {
+      "group": {
+        "doc": "ID for a specific Phonebook group",
+        "required": false
+      },
+      "group_name": {
+        "doc": "Group Name",
+        "required": false
+      },
+      "name": {
+        "doc": "Name to be searched in database (Example: 'jane')",
+        "required": false
+      },
+      "phonebook": {
+        "doc": "ID for a specific Phonebook entry (Example: 32207)",
+        "required": false
+      }
+    },
+    "getPhonebookGroups": {
+      "group": {
+        "doc": "ID for a specific Phonebook group",
+        "required": false
+      },
+      "name": {
+        "doc": "Group Name",
+        "required": false
+      }
+    },
+    "getPlayInstructions": {
+      "play_instructions": {
+        "doc": "Code for a specific Play Instructions setting (Example: 'u')",
+        "required": false
+      }
+    },
+    "getPortability": {
+      "did": {
+        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "required": true
+      }
+    },
+    "getProtocols": {
+      "protocol": {
+        "doc": "Code for a specific Protocol (Example: 3)",
+        "required": false
+      }
+    },
+    "getQueues": {
+      "queue": {
+        "doc": "ID for a specific Queue (Example: 4764)",
+        "required": false
+      }
+    },
+    "getRateCentersCAN": {
+      "province": {
+        "doc": "Canadian Province (Values from getProvinces) (required)",
+        "required": true
+      }
+    },
+    "getRateCentersUSA": {
+      "state": {
+        "doc": "United States State (Values from getStates) (required)",
+        "required": true
+      }
+    },
+    "getRates": {
+      "package": {
+        "doc": "ID for a specific Package (Example: 92364) (required)",
+        "required": true
+      },
+      "query": {
+        "doc": "Query for searching rates (Example: 'Canada') (required)",
+        "required": true
+      }
+    },
+    "getRecordingFile": {
+      "recording": {
+        "doc": "ID for a specific Recording (Example: 7567) (required)",
+        "required": true
+      }
+    },
+    "getRecordings": {
+      "recording": {
+        "doc": "ID for a specific Recording (Example: 7567)",
+        "required": false
+      }
+    },
+    "getRegistrationStatus": {
+      "account": {
+        "doc": "Specific Account (Example: '100001_VoIP') (required)",
+        "required": true
+      }
+    },
+    "getReportEstimatedHoldTime": {
+      "type": {
+        "doc": "Code for a specific 'ReportEstimatedHoldTime' Type (Example: 'yes')",
+        "required": false
+      }
+    },
+    "getResellerBalance": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      }
+    },
+    "getResellerCDR": {
+      "account": {
+        "doc": "Filter CDR by Account (Values from getCallAccounts)",
+        "required": false
+      },
+      "answered": {
+        "doc": "Include Answered Calls to CDR",
+        "required": false
+      },
+      "busy": {
+        "doc": "Include Busy Calls to CDR",
+        "required": false
+      },
+      "callbilling": {
+        "doc": "Filter CDR by Call Billing (Values from getCallBilling)",
+        "required": false
+      },
+      "calltype": {
+        "doc": "Filters CDR by Call Type (Values from getCallTypes)",
+        "required": false
+      },
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      },
+      "date_from": {
+        "doc": "Start Date for Filtering CDR (Example: '2010-11-30') (required)",
+        "required": true
+      },
+      "date_to": {
+        "doc": "End Date for Filtering CDR (Example: '2010-11-30') (required)",
+        "required": true
+      },
+      "failed": {
+        "doc": "Include Failed Calls to CDR",
+        "required": false
+      },
+      "noanswer": {
+        "doc": "Include NoAnswered calls to CDR",
+        "required": false
+      },
+      "timezone": {
+        "doc": "IANA time zone whose days the date range means (Example: 'America/New_York'); resolved at the query start date, or the end date when there is no start, to the number VoIP.ms needs for that window, since it shifts its Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported timestamps are qualified in the server zone whatever is sent.",
+        "required": false
+      }
+    },
+    "getResellerMMS": {
+      "all_messages": {
+        "doc": "Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only need SMS, important: the sms ID must be 0",
+        "required": false
+      },
+      "contact": {
+        "doc": "Contact number for Filtering MMSs (Example: 5551234567)",
+        "required": false
+      },
+      "did": {
+        "doc": "DID number for Filtering MMSs (Example: 5551234567)",
+        "required": false
+      },
+      "from": {
+        "doc": "Start Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      },
+      "limit": {
+        "doc": "Number of records to be displayed (Example: 20) - Default value: 50",
+        "required": false
+      },
+      "timezone": {
+        "doc": "IANA time zone whose days the date range means (Example: 'America/New_York'); resolved at the query start date, or the end date when there is no start, to the number VoIP.ms needs for that window, since it shifts its Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported timestamps are qualified in the server zone whatever is sent.",
+        "required": false
+      },
+      "to": {
+        "doc": "End Date for Filtering MMSs (Example: '2014-03-30') - Default value: Todayclient => [Required] ID for a specific Reseller Client (Example: 561115)",
+        "required": false
+      },
+      "type": {
+        "doc": "Filter SMSs by Type (Boolean: 1 = received / 0 = sent)",
+        "required": false
+      }
+    },
+    "getResellerSMS": {
+      "all_messages": {
+        "doc": "Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only need SMS, important: the sms ID must be 0",
+        "required": false
+      },
+      "contact": {
+        "doc": "Contact number for Filtering SMSs (Example: 5551234567)",
+        "required": false
+      },
+      "did": {
+        "doc": "DID number for Filtering SMSs (Example: 5551234567)",
+        "required": false
+      },
+      "from": {
+        "doc": "Start Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      },
+      "limit": {
+        "doc": "Number of records to be displayed (Example: 20) - Default value: 50",
+        "required": false
+      },
+      "sms": {
+        "doc": "ID for a specific SMS (Example: 5853)",
+        "required": false
+      },
+      "timezone": {
+        "doc": "IANA time zone whose days the date range means (Example: 'America/New_York'); resolved at the query start date, or the end date when there is no start, to the number VoIP.ms needs for that window, since it shifts its Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported timestamps are qualified in the server zone whatever is sent.",
+        "required": false
+      },
+      "to": {
+        "doc": "End Date for Filtering SMSs (Example: '2014-03-30') - Default value: Todayclient => [Required] ID for a specific Reseller Client (Example: 561115)",
+        "required": false
+      },
+      "type": {
+        "doc": "Filter SMSs by Type (Boolean: 1 = received / 0 = sent)",
+        "required": false
+      }
+    },
+    "getRingGroups": {
+      "ring_group": {
+        "doc": "ID for a specific Ring Group (Example: 4768)",
+        "required": false
+      }
+    },
+    "getRingStrategies": {
+      "strategy": {
+        "doc": "ID for a specific Ring Strategy (Example: 'rrmemory')",
+        "required": false
+      }
+    },
+    "getRoutes": {
+      "route": {
+        "doc": "Code for a specific Route (Example: 2)",
+        "required": false
+      }
+    },
+    "getSIPURIs": {
+      "sipuri": {
+        "doc": "ID for a specific SIP URI (Example: 6199)",
+        "required": false
+      }
+    },
+    "getSMS": {
+      "all_messages": {
+        "doc": "Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only need SMS, important: the sms ID must be 0",
+        "required": false
+      },
+      "contact": {
+        "doc": "Contact number for Filtering SMSs (Example: 5551234567)",
+        "required": false
+      },
+      "did": {
+        "doc": "DID number for Filtering SMSs (Example: 5551234567)",
+        "required": false
+      },
+      "from": {
+        "doc": "Start Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      },
+      "limit": {
+        "doc": "Number of records to be displayed (Example: 20) - Default value: 50",
+        "required": false
+      },
+      "sms": {
+        "doc": "ID for a specific SMS (Example: 5853)",
+        "required": false
+      },
+      "timezone": {
+        "doc": "IANA time zone whose days the date range means (Example: 'America/New_York'); resolved at the query start date, or the end date when there is no start, to the number VoIP.ms needs for that window, since it shifts its Eastern wall clocks as if Eastern were always UTC-5. Omit for UTC days. The reported timestamps are qualified in the server zone whatever is sent.",
+        "required": false
+      },
+      "to": {
+        "doc": "End Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
+        "required": false
+      },
+      "type": {
+        "doc": "Filter SMSs by Type (Boolean: 1 = received / 0 = sent)",
+        "required": false
+      }
+    },
+    "getServersInfo": {
+      "server_pop": {
+        "doc": "POP for a specific Server (Example: 1)",
+        "required": false
+      }
+    },
+    "getStaticMembers": {
+      "member": {
+        "doc": "ID for a specific Static Member (Example: 163) - The Member must belong to the queue provided",
+        "required": false
+      },
+      "queue": {
+        "doc": "ID for a specific Queue (Example: 4136) (required)",
+        "required": true
+      }
+    },
+    "getSubAccounts": {
+      "account": {
+        "doc": "Parameter could have the following values: * Empty Value [Not Required] * Specific Sub Account (Example: '100000_VoIP') * Specific Reseller Client ID (Example: 561115)",
+        "required": false
+      }
+    },
+    "getTerminationRates": {
+      "query": {
+        "doc": "Query for searching rates (Example: 'Canada') (required)",
+        "required": true
+      },
+      "route": {
+        "doc": "Route Code (Values from getRoutes)(Example: '2') (required)",
+        "required": true
+      }
+    },
+    "getTimeConditions": {
+      "timecondition": {
+        "doc": "ID for a specific Time Condition (Example: 1830)",
+        "required": false
+      }
+    },
+    "getTimezones": {
+      "timezone": {
+        "doc": "Code for a specific Time Zone (Example: 'America/Buenos_Aires')",
+        "required": false
+      }
+    },
+    "getTransactionHistory": {
+      "date_from": {
+        "doc": "Start Date for Filtering Transactions (Example: '2016-06-03') (required)",
+        "required": true
+      },
+      "date_to": {
+        "doc": "End Date for Filtering Transactions (Example: '2016-06-04') (required)",
+        "required": true
+      }
+    },
+    "getVoicemailAttachmentFormats": {
+      "email_attachment_format": {
+        "doc": "ID for a specific attachment format (Example: wav49)",
+        "required": false
+      }
+    },
+    "getVoicemailFolders": {
+      "folder": {
+        "doc": "Folder Name (Example: 'INBOX')",
+        "required": false
+      }
+    },
+    "getVoicemailMessageFile": {
+      "folder": {
+        "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
+        "required": true
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001) (required)",
+        "required": true
+      },
+      "message_num": {
+        "doc": "ID for specific Voicemail Message (Example: 1) (required)",
+        "required": true
+      }
+    },
+    "getVoicemailMessages": {
+      "date_from": {
+        "doc": "Start Date for Filtering Voicemail Messages (Example: '2016-01-30')\n\nNot matched in the mailbox's zone, so a message can match a day other than the one its reported `date` shows. The window was measured to be Eastern days, not UTC ones; whether those days observe DST, as `SERVER_ZONE` does, was not measured.",
+        "required": false
+      },
+      "date_to": {
+        "doc": "End Date for Filtering Voicemail Messages (Example: '2016-01-30')\n\nNot matched in the mailbox's zone, so a message can match a day other than the one its reported `date` shows. The window was measured to be Eastern days, not UTC ones; whether those days observe DST, as `SERVER_ZONE` does, was not measured.",
+        "required": false
+      },
+      "folder": {
+        "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders)",
+        "required": false
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001) (required)",
+        "required": true
+      }
+    },
+    "getVoicemailSetups": {
+      "voicemailsetup": {
+        "doc": "ID for a specific Voicemail Setup (Example: 2)",
+        "required": false
+      }
+    },
+    "getVoicemailTranscriptions": {
+      "date_from": {
+        "doc": "Start Date for Filtering (Example: '2010-11-30') (required)",
+        "required": true
+      },
+      "date_to": {
+        "doc": "End Date for Filtering (Example: '2010-11-30') (required)",
+        "required": true
+      },
+      "folder": {
+        "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
+        "required": true
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001) (required)",
+        "required": true
+      }
+    },
+    "getVoicemails": {
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001)",
+        "required": false
+      }
+    },
+    "mailFaxMessagePDF": {
+      "email": {
+        "doc": "Destination email adreess (example: [email protected]) (required)",
+        "required": true
+      },
+      "id": {
+        "doc": "ID of the Fax Message requested (Values from getFaxMessages) (required)",
+        "required": true
+      }
+    },
+    "markListenedVoicemailMessage": {
+      "folder": {
+        "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
+        "required": true
+      },
+      "listened": {
+        "doc": "Code for mark voicemail as listened or not-listened (required)",
+        "required": true
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001) (required)",
+        "required": true
+      },
+      "message_num": {
+        "doc": "ID for specific Voicemail Message (Example: 1) (required)",
+        "required": true
+      }
+    },
+    "markUrgentVoicemailMessage": {
+      "folder": {
+        "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
+        "required": true
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001) (required)",
+        "required": true
+      },
+      "message_num": {
+        "doc": "ID for specific Voicemail Message (Example: 1) (required)",
+        "required": true
+      },
+      "urgent": {
+        "doc": "Code for mark voicemail as urgent or not-urgent (required)",
+        "required": true
+      }
+    },
+    "moveFaxMessage": {
+      "fax_id": {
+        "doc": "ID of the Fax Message requested (Values from getFaxMessages) (required)",
+        "required": true
+      },
+      "folder_id": {
+        "doc": "ID of the destination Fax Folder (Values from getFaxFolders) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how to move a Fax Message",
+        "required": false
+      }
+    },
+    "moveFolderVoicemailMessage": {
+      "folder": {
+        "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
+        "required": true
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001) (required)",
+        "required": true
+      },
+      "message_num": {
+        "doc": "ID for specific Voicemail Message (Example: 1) (required)",
+        "required": true
+      },
+      "new_folder": {
+        "doc": "Destination Folder (Example: 'Urgent', values from: getVoicemailFolders) (required)",
+        "required": true
+      }
+    },
+    "orderDID": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "billing_type": {
+        "doc": "Billing type for the DID (1 = Per Minute, 2 = Flat) (required)",
+        "required": true
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID to be Ordered (Example: 5552223333) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03)",
+        "required": false
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99)",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "orderDIDInternationalGeographic": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "billing_type": {
+        "doc": "Billing type for the DID (1 = Per Minute, 2 = Flat) (required)",
+        "required": true
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "location_id": {
+        "doc": "ID for a specific International Location (Values from getDIDsInternationalGeographic) (required)",
+        "required": true
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03)",
+        "required": false
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "quantity": {
+        "doc": "Number of dids to be purchased (Example: 2) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99)",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "orderDIDInternationalNational": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "billing_type": {
+        "doc": "Billing type for the DID (1 = Per Minute, 2 = Flat) (required)",
+        "required": true
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "location_id": {
+        "doc": "ID for a specific International Location (Values from getDIDsInternationalNational) (required)",
+        "required": true
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03)",
+        "required": false
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "quantity": {
+        "doc": "Number of dids to be purchased (Example: 2) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99)",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "orderDIDInternationalTollFree": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "location_id": {
+        "doc": "ID for a specific International Location (Values from getDIDsInternationalTollFree) (required)",
+        "required": true
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03)",
+        "required": false
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "quantity": {
+        "doc": "Number of dids to be purchased (Example: 2) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99)",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "orderDIDVirtual": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "digits": {
+        "doc": "Three Digits for the new Virtual DID (Example: 001) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03)",
+        "required": false
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99)",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "orderFaxNumber": {
+      "email": {
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "required": false
+      },
+      "email_attach_file": {
+        "doc": "Flag to enable attach the Fax Message as a PDF file in the notifications. Default: false",
+        "required": false
+      },
+      "email_enable": {
+        "doc": "Flag to enable the email notifications. Default: false",
+        "required": false
+      },
+      "location": {
+        "doc": "Location ID of the Fax Number (Values from getFaxRateCentersCAN/getFaxRateCentersUSA) (required)",
+        "required": true
+      },
+      "quantity": {
+        "doc": "Quantity of Fax Numbers to order (Example: 3) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "url_callback": {
+        "doc": "URL where make a POST when you receive a Fax Message.",
+        "required": false
+      },
+      "url_callback_enable": {
+        "doc": "Flag to enable the URL Callback functionality. Default: false",
+        "required": false
+      },
+      "url_callback_retry": {
+        "doc": "Flag to enable retry the POST action in case we don't receive \"ok\".",
+        "required": false
+      }
+    },
+    "orderTollFree": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID to be Ordered (Example: 8772223333) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03)",
+        "required": false
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99)",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "orderVanity": {
+      "account": {
+        "doc": "Reseller Sub Account (Example: '100001_VoIP')",
+        "required": false
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "carrier": {
+        "doc": "Carrier for the DID (Values from getCarriers) (required)",
+        "required": true
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID to be Ordered (Example: 8772223333) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "minute": {
+        "doc": "Minute Rate for Reseller Client (Example: 0.03)",
+        "required": false
+      },
+      "monthly": {
+        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (Example: 5) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "setup": {
+        "doc": "Setup Fee for Reseller Client (Example: 1.99)",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how Orders work - Orders can not be undone - When testing, no Orders are made",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID (Example: 101)",
+        "required": false
+      }
+    },
+    "removeDIDvPRI": {
+      "did": {
+        "doc": "DID Number to be remove from our Vpri (Example: 561115) (required)",
+        "required": true
+      },
+      "vpri": {
+        "doc": "Id for specific Vpri",
+        "required": false
+      }
+    },
+    "searchDIDsCAN": {
+      "province": {
+        "doc": "Canadian Province (Values from getProvinces)",
+        "required": false
+      },
+      "query": {
+        "doc": "Query for searching (Examples: 'JOHN', '555', '123ABC') (required)",
+        "required": true
+      },
+      "type": {
+        "doc": "Type of search (Values: 'starts', 'contains', 'ends') (required)",
+        "required": true
+      }
+    },
+    "searchDIDsUSA": {
+      "query": {
+        "doc": "Query for searching (Examples: 'JOHN', '555', '123ABC') (required)",
+        "required": true
+      },
+      "state": {
+        "doc": "United States State (Values from getStates)",
+        "required": false
+      },
+      "type": {
+        "doc": "Type of search (Values: 'starts', 'contains', 'ends') (required)",
+        "required": true
+      }
+    },
+    "searchFaxAreaCodeCAN": {
+      "area_code": {
+        "doc": "Area code number, as the initial of the Fax Number you looking for. (values from getFaxRateCentersCAN) (required)",
+        "required": true
+      }
+    },
+    "searchFaxAreaCodeUSA": {
+      "area_code": {
+        "doc": "Area code number, as the initial of the Fax Number you looking for. (values from getFaxRateCentersUSA) (required)",
+        "required": true
+      }
+    },
+    "searchTollFreeCanUS": {
+      "query": {
+        "doc": "Query for searching (Examples: 'JOHN', '555', '123ABC')",
+        "required": false
+      },
+      "type": {
+        "doc": "Type of search (Values: 'starts', 'contains', 'ends')",
+        "required": false
+      }
+    },
+    "searchTollFreeUSA": {
+      "query": {
+        "doc": "Query for searching (Examples: 'JOHN', '555', '123ABC')",
+        "required": false
+      },
+      "type": {
+        "doc": "Type of search (Values: 'starts', 'contains', 'ends')",
+        "required": false
+      }
+    },
+    "searchVanity": {
+      "query": {
+        "doc": "Query for searching : 7 Chars Examples: '***JHON', '**555**', '**HELLO' (required)",
+        "required": true
+      },
+      "type": {
+        "doc": "Type of Vanity Number Values: '8**', '800', '833', '844', '855', '866', '877', '888' (required)",
+        "required": true
+      }
+    },
+    "sendCallRecordingEmail": {
+      "account": {
+        "doc": "Filter Call Recordings by Account (Values from getCallAccounts) (required)",
+        "required": true
+      },
+      "callrecording": {
+        "doc": "Call Recording (Values from getCallRecordings) (required)",
+        "required": true
+      },
+      "email": {
+        "doc": "Email to send call recording (required)",
+        "required": true
+      }
+    },
+    "sendFaxMessage": {
+      "file": {
+        "doc": "The file must be encoded in Base64, and in one of the following formats: pdf, txt, jpg, gif, png, tif (required)",
+        "required": true
+      },
+      "from_name": {
+        "doc": "Name of the sender (Example: 5552341234) (required)",
+        "required": true
+      },
+      "from_number": {
+        "doc": "DID number of the Fax sender (required)",
+        "required": true
+      },
+      "send_email": {
+        "doc": "Email address where you want send a copy of your Fax.",
+        "required": false
+      },
+      "send_email_enabled": {
+        "doc": "Flag to enable the send of a copy of your Fax via email. Default: false",
+        "required": false
+      },
+      "station_id": {
+        "doc": "An word to identify a equipment or department sending the Fax.",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how to send a Fax Message",
+        "required": false
+      },
+      "to_number": {
+        "doc": "Destination DID Number (Example: 5552341234) (required)",
+        "required": true
+      }
+    },
+    "sendMMS": {
+      "did": {
+        "doc": "DID Numbers which is sending the message (Example: 5551234567) (required)",
+        "required": true
+      },
+      "dst": {
+        "doc": "Destination Number (Example: 5551234568) (required)",
+        "required": true
+      },
+      "media1": {
+        "doc": "Url to media file (Example: 'https://voip.ms/themes/voipms/assets/img/talent.jpg?v=2' (optional)",
+        "required": false
+      },
+      "media2": {
+        "doc": "Base 64 image encode (Example: data:image/png;base64,iVBORw0KGgoAAAANSUh...) (optional)",
+        "required": false
+      },
+      "media3": {
+        "doc": "Empty value (Example: '' ) (optional)",
+        "required": false
+      },
+      "message": {
+        "doc": "Message to be sent (Example: 'hello John Smith' max chars: 2048) (required)",
+        "required": true
+      }
+    },
+    "sendSMS": {
+      "did": {
+        "doc": "DID Numbers which is sending the message (Example: 5551234567) (required)",
+        "required": true
+      },
+      "dst": {
+        "doc": "Destination Number (Example: 5551234568) (required)",
+        "required": true
+      },
+      "message": {
+        "doc": "Message to be sent (Example: 'hello John Smith' max chars: 160) (required)",
+        "required": true
+      }
+    },
+    "sendVoicemailEmail": {
+      "email_address": {
+        "doc": "Destination Email address (Example: [email protected]) (required)",
+        "required": true
+      },
+      "folder": {
+        "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
+        "required": true
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001) (required)",
+        "required": true
+      },
+      "message_num": {
+        "doc": "ID for specific Voicemail Message (Example: 1) (required)",
+        "required": true
+      }
+    },
+    "setCallHunting": {
+      "callhunting": {
+        "doc": "ID for a specific Call Hunting (Example: 235 / Leave empty to create a new one)",
+        "required": false
+      },
+      "description": {
+        "doc": "Description for the Call Hunting (required)",
+        "required": true
+      },
+      "language": {
+        "doc": "Language for the Call Hunting (values from getLanguages) (required)",
+        "required": true
+      },
+      "members": {
+        "doc": "The list of members assigned to the call hunting (required)",
+        "required": true
+      },
+      "music": {
+        "doc": "Music on Hold Code (Values from getMusicOnHold) (required)",
+        "required": true
+      },
+      "order": {
+        "doc": "The members will be called in follow or random order (values follow or random) (required)",
+        "required": true
+      },
+      "press": {
+        "doc": "Whether the member must press 1 to take the call, one item per member in `members` (required)",
+        "required": true
+      },
+      "recording": {
+        "doc": "Recording for the Call Hunting (values from getRecordings) (required)",
+        "required": true
+      },
+      "ring_time": {
+        "doc": "The maximum time the call rings the member, one item per member in `members` (required)",
+        "required": true
+      }
+    },
+    "setCallParking": {
+      "callparking": {
+        "doc": "ID for a specific Call Parking (Example: 235 / Leave empty to create a new one)",
+        "required": false
+      },
+      "delay": {
+        "doc": "The number of seconds before the Announce Destination receives an automatic call from the system to announce the extension of the parked call (required)",
+        "required": true
+      },
+      "destination": {
+        "doc": "The system will make an automatic call to this destination to announce the extension of the parked call. (Values: parker, main account or sub-accounts) (required)",
+        "required": true
+      },
+      "failover": {
+        "doc": "Final destination where the call will be forwarded if it isn&rsquo;t answered. (Values: callback, system:hangup, vm:mailbox) (required)",
+        "required": true
+      },
+      "language": {
+        "doc": "Language for the Call Parking (values from getLanguages) (required)",
+        "required": true
+      },
+      "music": {
+        "doc": "Music on Hold Code (Values from getMusicOnHold) (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Name for the Call Parking (required)",
+        "required": true
+      },
+      "timeout": {
+        "doc": "The number of seconds a call will stay parked before it is forwarded to the Failover Destination (required)",
+        "required": true
+      }
+    },
+    "setCallback": {
+      "callback": {
+        "doc": "ID for a specific Callback (Example: 2359 / Leave empty to create a new one)",
+        "required": false
+      },
+      "callerid_number": {
+        "doc": "Caller ID Override for the callback",
+        "required": false
+      },
+      "delay_before": {
+        "doc": "Delay befor calling back (required)",
+        "required": true
+      },
+      "description": {
+        "doc": "Description for the Callback (required)",
+        "required": true
+      },
+      "digit_timeout": {
+        "doc": "Time between digits input (required)",
+        "required": true
+      },
+      "number": {
+        "doc": "Number that will be called back (required)",
+        "required": true
+      },
+      "response_timeout": {
+        "doc": "Time before hanging up for incomplete input (required)",
+        "required": true
+      }
+    },
+    "setCallerIDFiltering": {
+      "callerid": {
+        "doc": "Caller ID that triggers the Filter (i = Not North American format, 0 = Anonymous, NPANXXXXXX, s or sb or sc = STIR/SHAKEN Attestation Level, p = All Phone Book, p:XXXX = Specific Phone Book Group) (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DIDs affected by the filter (all, NPANXXXXXX) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Route the call follows when busy. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "Route the call follows when noanswer. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Route the call follows when unreachable. Same format as `routing`.",
+        "required": false
+      },
+      "filter": {
+        "doc": "ID for a specific Caller ID Filtering (Example: 18915 / Leave empty to create a new one)",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the Caller ID Filtering",
+        "required": false
+      },
+      "routing": {
+        "doc": "Route the call follows when filter is triggered (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      }
+    },
+    "setClient": {
+      "address": {
+        "doc": "Client's Address",
+        "required": false
+      },
+      "balance_management": {
+        "doc": "Balance Management for Client (Values from getBalanceManagement)",
+        "required": false
+      },
+      "city": {
+        "doc": "Client's City",
+        "required": false
+      },
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      },
+      "company": {
+        "doc": "Client's Company",
+        "required": false
+      },
+      "country": {
+        "doc": "Client's Country (Values from getCountries)",
+        "required": false
+      },
+      "email": {
+        "doc": "Client's e-mail (required)",
+        "required": true
+      },
+      "firstname": {
+        "doc": "Client's Firstname (required)",
+        "required": true
+      },
+      "lastname": {
+        "doc": "Client's Lastname (required)",
+        "required": true
+      },
+      "password": {
+        "doc": "Client's Password (required)",
+        "required": true
+      },
+      "phone_number": {
+        "doc": "Client's Phone Number (required)",
+        "required": true
+      },
+      "state": {
+        "doc": "Client's State",
+        "required": false
+      },
+      "zip": {
+        "doc": "Client's Zip Code",
+        "required": false
+      }
+    },
+    "setClientThreshold": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      },
+      "email": {
+        "doc": "Client's e-mail for balance threshold notification",
+        "required": false
+      },
+      "threshold": {
+        "doc": "Threshold amount between 1 and 250 (Example: 10) (required)",
+        "required": true
+      }
+    },
+    "setConference": {
+      "conference": {
+        "doc": "ID for a specific Conference (Example: 5356) (required)",
+        "required": true
+      },
+      "description": {
+        "doc": "Conference description (required)",
+        "required": true
+      },
+      "language": {
+        "doc": "Conference Language (Values from getLanguages)",
+        "required": false
+      },
+      "max_members": {
+        "doc": "Members Max Value (required)",
+        "required": true
+      },
+      "members": {
+        "doc": "Conference Members",
+        "required": false
+      },
+      "name": {
+        "doc": "Conference name (required)",
+        "required": true
+      },
+      "sound_error_menu": {
+        "doc": "The recording played when there is an error on the menu. (Values from getRecordings)",
+        "required": false
+      },
+      "sound_get_pin": {
+        "doc": "The recording played when prompting for a conference PIN (Values from getRecordings)",
+        "required": false
+      },
+      "sound_has_joined": {
+        "doc": "The recording played as a user intro (Values from getRecordings)",
+        "required": false
+      },
+      "sound_has_left": {
+        "doc": "The recording played as a user leaves the conference (Values from getRecordings)",
+        "required": false
+      },
+      "sound_invalid_pin": {
+        "doc": "The recording played when an invalid PIN is entered too many (3) times (Values from getRecordings)",
+        "required": false
+      },
+      "sound_join": {
+        "doc": "The recording played when a user joins, typically some kind of beep sound (Values from getRecordings)",
+        "required": false
+      },
+      "sound_kicked": {
+        "doc": "The recording played to a user who has been kicked from the conference (Values from getRecordings)",
+        "required": false
+      },
+      "sound_leave": {
+        "doc": "The recording played when a user leaves, typically some kind of beep sound (Values from getRecordings)",
+        "required": false
+      },
+      "sound_locked": {
+        "doc": "The recording played to a user trying to join a locked conference (Values from getRecordings)",
+        "required": false
+      },
+      "sound_locked_now": {
+        "doc": "The recording played to an Admin-level user after toggling the conference to locked mode (Values from getRecordings)",
+        "required": false
+      },
+      "sound_muted": {
+        "doc": "The recording played to a user when the mute option is toggled on (Values from getRecordings)",
+        "required": false
+      },
+      "sound_only_one": {
+        "doc": "The recording played to a user when there is only one other person in the conference. (Values from getRecordings)",
+        "required": false
+      },
+      "sound_only_person": {
+        "doc": "The recording played when a user is the only person in the conference (Values from getRecordings)",
+        "required": false
+      },
+      "sound_other_in_party": {
+        "doc": "The recording used in conjunction with the There are option, used like There are (number of participants) Other in party (Values from getRecordings)",
+        "required": false
+      },
+      "sound_participants_muted": {
+        "doc": "The recording played when all non-admin participants are muted. (Values from getRecordings)",
+        "required": false
+      },
+      "sound_participants_unmuted": {
+        "doc": "The recording played when all non-admin participants are unmuted. (Values from getRecordings)",
+        "required": false
+      },
+      "sound_place_into_conference": {
+        "doc": "The recording played when a user is placed into a conference that cannot start until a marked user enters (Values from getRecordings)",
+        "required": false
+      },
+      "sound_there_are": {
+        "doc": "The recording played when announcing how many users there are in a conference. (Values from getRecordings)",
+        "required": false
+      },
+      "sound_unlocked_now": {
+        "doc": "The recording played to an Admin-level user after toggling the conference to unlocked mode (Values from getRecordings)",
+        "required": false
+      },
+      "sound_unmuted": {
+        "doc": "The recording played to a user when the mute option is toggled off (Values from getRecordings)",
+        "required": false
+      }
+    },
+    "setConferenceMember": {
+      "admin": {
+        "doc": "Sets if the member is an admin or not .",
+        "required": false
+      },
+      "announce_join_leave": {
+        "doc": "Sets if the conference recording when a member joins or leaves will be played .",
+        "required": false
+      },
+      "announce_only_user": {
+        "doc": "Sets if the \"only user\" announcement should be played when a caller enters an empty conference .",
+        "required": false
+      },
+      "announce_user_count": {
+        "doc": "Sets if the number of members in the conference should be announced to the caller as he joins .",
+        "required": false
+      },
+      "announcement": {
+        "doc": "If set, this recording will be heard only by the user as he joins the conference (Values from getRecordings).",
+        "required": false
+      },
+      "conference": {
+        "doc": "ID for a specific Conference (Example: 5356) (required)",
+        "required": true
+      },
+      "description": {
+        "doc": "Member description.",
+        "required": false
+      },
+      "drop_silence": {
+        "doc": "The system will drop what is detected as silence from entering into the conference .",
+        "required": false
+      },
+      "jitter_buffer": {
+        "doc": "When set to YES, the system will place a jitter buffer on the caller's audio stream before any audio mixing is performed .",
+        "required": false
+      },
+      "member": {
+        "doc": "ID for a specific Member profile (Example: 5356) (required)",
+        "required": true
+      },
+      "moh_when_empty": {
+        "doc": "Sets whether music on hold (MOH) should be played when only one person is in the conference (Values from getMusicOnHold).",
+        "required": false
+      },
+      "name": {
+        "doc": "Member name. (required)",
+        "required": true
+      },
+      "pin": {
+        "doc": "Assigned PIN.",
+        "required": false
+      },
+      "quiet": {
+        "doc": "When set to \"yes\", enter/leave prompts and user introductions are not played .",
+        "required": false
+      },
+      "silence_threshold": {
+        "doc": "The time, in milliseconds, that silence needs to be present in the user&rsquo;s sound stream before the system can consider it to be in fact silent and close the audio (allowed values are 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900 or 3000).",
+        "required": false
+      },
+      "start_muted": {
+        "doc": "Sets if the member should start out muted after entering the conference .",
+        "required": false
+      },
+      "talk_detection": {
+        "doc": "If set to YES, the conference dashboard will display a notification when a participant starts and stops talking .",
+        "required": false
+      },
+      "talking_threshold": {
+        "doc": "The time, in milliseconds, that a users needs to be sending sound or voice before the system can consider them to be talking (allowed values are 100, 120, 140, 160, 180, 200, 220, 240 or 250).",
+        "required": false
+      }
+    },
+    "setDIDBillingType": {
+      "billing_type": {
+        "doc": "Billing type for the DID (1 = Per Minute, 2 = Flat) (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID affected by the new billing plan (required)",
+        "required": true
+      }
+    },
+    "setDIDInfo": {
+      "billing_type": {
+        "doc": "Billing type for the DID (1 = Per Minute, 2 = Flat) (required)",
+        "required": true
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for the DID",
+        "required": false
+      },
+      "cnam": {
+        "doc": "CNAM for the DID (required)",
+        "required": true
+      },
+      "dialtime": {
+        "doc": "Dial Time Out for the DID (Example: 60 -> in seconds) (required)",
+        "required": true
+      },
+      "did": {
+        "doc": "DID to be Updated (Example: 5551234567) (required)",
+        "required": true
+      },
+      "failover_busy": {
+        "doc": "Busy Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_noanswer": {
+        "doc": "NoAnswer Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "failover_unreachable": {
+        "doc": "Unreachable Routing for the DID. Same format as `routing`.",
+        "required": false
+      },
+      "note": {
+        "doc": "Note for the DID",
+        "required": false
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (\"server_pop\" values from getServersInfo. Example: 3) (required)",
+        "required": true
+      },
+      "port_out_pin": {
+        "doc": "Port Out PIN protection is used as a means of authorizing outgoing portability (only for selected US numbers with the lock icon)",
+        "required": false
+      },
+      "record_calls": {
+        "doc": "Record Calls",
+        "required": false
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "transcribe": {
+        "doc": "Enable Call Transcription",
+        "required": false
+      },
+      "transcription_email": {
+        "doc": "Call Transcription Email",
+        "required": false
+      },
+      "transcription_locale": {
+        "doc": "Transcription locale code (values from getLocales, comma separated for more than one locale up to 10 locales)",
+        "required": false
+      },
+      "transcription_start_delay": {
+        "doc": "Call Transcription Delay Seconds between 0 and 60, Increments of 5 (Example: 10 -> seconds)",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the DID",
+        "required": false
+      },
+      "voicemail_threshold": {
+        "doc": "Voicemail Threshold Seconds between 0 and 60, Increments of 5 (Example: 10 -> seconds)",
+        "required": false
+      }
+    },
+    "setDIDPOP": {
+      "did": {
+        "doc": "DID to be Updated (Example: 5551234567) (required)",
+        "required": true
+      },
+      "pop": {
+        "doc": "Point of Presence for the DID (\"server_pop\" values from getServersInfo. Example: 3) (required)",
+        "required": true
+      }
+    },
+    "setDIDRouting": {
+      "did": {
+        "doc": "DID to be Updated (Example: 5551234567) (required)",
+        "required": true
+      },
+      "routing": {
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      }
+    },
+    "setDIDVoicemail": {
+      "did": {
+        "doc": "DID to be Updated (Example: 5551234567) (required)",
+        "required": true
+      },
+      "voicemail": {
+        "doc": "Mailbox for the DID",
+        "required": false
+      }
+    },
+    "setDISA": {
+      "callerid_override": {
+        "doc": "Caller ID Override for the DISA",
+        "required": false
+      },
+      "digit_timeout": {
+        "doc": "Time between digits (required)",
+        "required": true
+      },
+      "disa": {
+        "doc": "ID for a specific DISA (Example: 2114 / Leave empty to create a new one)",
+        "required": false
+      },
+      "language": {
+        "doc": "Language for the DISA (en, fr, es)",
+        "required": false
+      },
+      "name": {
+        "doc": "Name for the DISA (required)",
+        "required": true
+      },
+      "pin": {
+        "doc": "Password for the DISA (required)",
+        "required": true
+      }
+    },
+    "setEmailToFax": {
+      "auth_email": {
+        "doc": "Email address from you will sent Fax Messages (required)",
+        "required": true
+      },
+      "enabled": {
+        "doc": "If Enable, we will send Fax Message when we receive an email from the provided address.",
+        "required": false
+      },
+      "from_number_id": {
+        "doc": "Fax number that will appear as fax sender. (values from getFaxNumbersInfo) (required)",
+        "required": true
+      },
+      "id": {
+        "doc": "[Only for updates] ID of the \"Email to Fax\" to edit (Values from getEmailToFax)",
+        "required": false
+      },
+      "security_code": {
+        "doc": "An alphanumeric code to identify your emails before send as Fax. (required)",
+        "required": true
+      },
+      "security_code_enabled": {
+        "doc": "If Enable, we will check the mail subject if this include a Security Code before send the Fax.",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing.",
+        "required": false
+      }
+    },
+    "setFaxFolder": {
+      "id": {
+        "doc": "[Only for updates] ID of the Fax Folder to edit (Values from getFaxFolders)",
+        "required": false
+      },
+      "name": {
+        "doc": "Name of the Fax Folder to create or update (Example: FAMILY) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how to create/update a Fax Folder",
+        "required": false
+      }
+    },
+    "setFaxNumberEmail": {
+      "did": {
+        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "required": true
+      },
+      "email": {
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "required": false
+      },
+      "email_attach_file": {
+        "doc": "Flag to enable attach the Fax Message as a PDF file in the notifications. Default: false",
+        "required": false
+      },
+      "email_enable": {
+        "doc": "Flag to enable the email notifications. Default: false",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how to set the email of a Fax Number",
+        "required": false
+      }
+    },
+    "setFaxNumberInfo": {
+      "did": {
+        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "required": true
+      },
+      "email": {
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "required": false
+      },
+      "email_attach_file": {
+        "doc": "Flag to enable attach the Fax Message as a PDF file in the notifications. Default: false",
+        "required": false
+      },
+      "email_enable": {
+        "doc": "Flag to enable the email notifications. Default: false",
+        "required": false
+      },
+      "test": {
+        "doc": "Set to true if testing how to update the information of a Fax Number",
+        "required": false
+      },
+      "url_callback": {
+        "doc": "URL where make a POST when you receive a Fax Message.",
+        "required": false
+      },
+      "url_callback_enable": {
+        "doc": "Flag to enable the URL Callback functionality. Default: false",
+        "required": false
+      },
+      "url_callback_retry": {
+        "doc": "Flag to enable retry the POST action in case we don't receive \"ok\".",
+        "required": false
+      }
+    },
+    "setFaxNumberURLCallback": {
+      "did": {
+        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "required": true
+      },
+      "test": {
+        "doc": "Set to true if testing how to set the URL callback of a Fax Number",
+        "required": false
+      },
+      "url_callback": {
+        "doc": "URL where make a POST when you receive a Fax Message.",
+        "required": false
+      },
+      "url_callback_enable": {
+        "doc": "Flag to enable the URL Callback functionality. Default: false",
+        "required": false
+      },
+      "url_callback_retry": {
+        "doc": "Flag to enable retry the POST action in case we don't receive \"ok\".",
+        "required": false
+      }
+    },
+    "setForwarding": {
+      "callerid_override": {
+        "doc": "Caller ID Override for the Forwarding",
+        "required": false
+      },
+      "description": {
+        "doc": "Description for the Forwarding",
+        "required": false
+      },
+      "diversion_header": {
+        "doc": "If enabled, we will add a Diversion Header to your forwarded call",
+        "required": false
+      },
+      "dtmf_digits": {
+        "doc": "Send DTMF digits when call is answered",
+        "required": false
+      },
+      "forwarding": {
+        "doc": "ID for a specific Forwarding (Example: 19183 / Leave empty to create a new one)",
+        "required": false
+      },
+      "pause": {
+        "doc": "Pause (seconds) when call is answered before sending digits (Example: 1.5 / Values: 0 to 10 in increments of 0.5)",
+        "required": false
+      },
+      "phone_number": {
+        "doc": "Phone Number for the Forwarding (required)",
+        "required": true
+      }
+    },
+    "setIVR": {
+      "choices": {
+        "doc": "Choices for the IVR (Example: '1=sip:5096 ; 2=fwd:20222') (required)",
+        "required": true
+      },
+      "ivr": {
+        "doc": "ID for a specific IVR (Example: 4636 / Leave empty to create a new one)",
+        "required": false
+      },
+      "language": {
+        "doc": "Language for the IVR (values from getLanguages) (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Name for the IVR (required)",
+        "required": true
+      },
+      "recording": {
+        "doc": "Recording for the IVR (values from getRecordings) (required)",
+        "required": true
+      },
+      "timeout": {
+        "doc": "Maximum time for type in a choice after recording (required)",
+        "required": true
+      },
+      "voicemailsetup": {
+        "doc": "Voicemail Setup for the IVR (values from getVoicemailSetups) (required)",
+        "required": true
+      }
+    },
+    "setLocation": {
+      "name": {
+        "doc": "Internal Extension Location name (Example: \"Location1\") (required)",
+        "required": true
+      }
+    },
+    "setMusicOnHold": {
+      "description": {
+        "doc": "Music on Hold Description (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Music on Hold Name (Values from getMusicOnHold)",
+        "required": false
+      },
+      "recordings": {
+        "doc": "Selected recordings separated by commas (Values from getRecordings, example: (1234,1235,1236) (required)",
+        "required": true
+      },
+      "sort": {
+        "doc": "Selected recordings sort mode (Example: \"alpha\", \"random\")",
+        "required": false
+      },
+      "volume": {
+        "doc": "Music on Hold Quiet Volume",
+        "required": false
+      }
+    },
+    "setPhonebook": {
+      "callerid": {
+        "doc": "Caller ID Override when dialing via Speed Dial",
+        "required": false
+      },
+      "group": {
+        "doc": "ID for a specific Phonebook group",
+        "required": false
+      },
+      "name": {
+        "doc": "Name for the Phonebook Entry (required)",
+        "required": true
+      },
+      "note": {
+        "doc": "Note for the phonebook entry",
+        "required": false
+      },
+      "number": {
+        "doc": "Number or SIP for the Phonebook entry (Example: 'sip:2563' or '5552223333') (required)",
+        "required": true
+      },
+      "phonebook": {
+        "doc": "ID for a specific Phonebook entry (Example: 32207 / Leave empty to create a new one)",
+        "required": false
+      },
+      "speed_dial": {
+        "doc": "Speed Dial for the Phonebook entry",
+        "required": false
+      }
+    },
+    "setPhonebookGroup": {
+      "group": {
+        "doc": "ID for a specific Phonebook group (Example: 32207 / Leave empty to create a new one)",
+        "required": false
+      },
+      "members": {
+        "doc": "Phonebook entry codes associated to this group separated by a semicolon",
+        "required": false
+      },
+      "name": {
+        "doc": "Name for the Phonebook group (required)",
+        "required": true
+      }
+    },
+    "setQueue": {
+      "agent_announcement": {
+        "doc": "Recording Code (Values from getRecordings or 'none')",
+        "required": false
+      },
+      "agent_ring_timeout": {
+        "doc": "Number of seconds to ring an agent (Values 5 to 60)",
+        "required": false
+      },
+      "announce_position_frecuency": {
+        "doc": "How often to make any periodic announcement (Values in seconds: multiples of 15, max value: 1200 or 'none' = No announcement)",
+        "required": false
+      },
+      "announce_round_seconds": {
+        "doc": "Announce seconds (Values in seconds: 1 to 60 or 'none' = Do not announce)",
+        "required": false
+      },
+      "callerid_prefix": {
+        "doc": "Caller ID Prefix for queue",
+        "required": false
+      },
+      "fail_over_routing_full": {
+        "doc": "Failover routing to Maximum callers reached. Same format as `failover_routing_timeout`.",
+        "required": false
+      },
+      "fail_over_routing_join_empty": {
+        "doc": "A call was sent to the queue but the queue had no members (Only works when Join when Empty is set to no). Same format as `failover_routing_timeout`.",
+        "required": false
+      },
+      "fail_over_routing_join_unavail": {
+        "doc": "Same as `failover_routing_join_empty`, except that there were still queue members, but all were status unavailable. Same format as `failover_routing_timeout`.",
+        "required": false
+      },
+      "fail_over_routing_leave_empty": {
+        "doc": "The last agent was removed form the queue before alls calls were handled (Only works when Leave when Empty is set to yes). Same format as `failover_routing_timeout`.",
+        "required": false
+      },
+      "fail_over_routing_leave_unavail": {
+        "doc": "Same as `failover_routing_leave_empty`, except that there were still queue members, but all were status unavailable. Same format as `failover_routing_timeout`.",
+        "required": false
+      },
+      "fail_over_routing_timeout": {
+        "doc": "Failover routing to Maximum wait time reached\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": false
+      },
+      "frequency_announcement": {
+        "doc": "Periodic interval to play voice announce recording (Values in seconds: multiples of 15, max value: 1200 or 'none' = No announcement)",
+        "required": false
+      },
+      "if_announce_position_enabled_report_estimated_hold_time": {
+        "doc": "Include estimated hold time in position announcements (Values 'yes'/'no'/'once')",
+        "required": false
+      },
+      "join_announcement": {
+        "doc": "Recording Code (Values from getRecordings or 'none')",
+        "required": false
+      },
+      "join_when_empty": {
+        "doc": "How caller join to the queue (Values from getJoinWhenEmptyTypes) Examples: yes Callers can join a queue with no members or only unavailable members no Callers cannot join a queue with no members strict Callers cannot join a queue with no members or only unavailable members (required)",
+        "required": true
+      },
+      "leave_when_empty": {
+        "doc": "How caller leave the queue (Values 'yes'/'no'/'strict') Examples: yes Callers are sent to failover when there are no members no Callers will remain in the queue even if there are no members strict Callers are sent to failover if there are members but none of them is available. (required)",
+        "required": true
+      },
+      "maximum_callers": {
+        "doc": "Maximum callers (Values: 1 to 60 or 'unlimited')",
+        "required": false
+      },
+      "maximum_wait_time": {
+        "doc": "Ammount of time a caller can wait in queue (Values in seconds: multiples of 30, max value: 1200 or 'unlimited')",
+        "required": false
+      },
+      "member_delay": {
+        "doc": "Member delay when the agent is connected to the caller (Values 1 to 15 in seconds or 'none')",
+        "required": false
+      },
+      "music_on_hold": {
+        "doc": "Music on Hold Code (Values from getMusicOnHold)",
+        "required": false
+      },
+      "priority_weight": {
+        "doc": "weight/priority of queue (Values 1 to 60) (required)",
+        "required": true
+      },
+      "queue": {
+        "doc": "ID for a specific Queue entry (Example: 32208 / Leave empty to create a new one)",
+        "required": false
+      },
+      "queue_language": {
+        "doc": "Language Code (Values from getLanguages) (required)",
+        "required": true
+      },
+      "queue_name": {
+        "doc": "Queue entry name (required)",
+        "required": true
+      },
+      "queue_number": {
+        "doc": "Queue entry number (required)",
+        "required": true
+      },
+      "queue_password": {
+        "doc": "Queue Password",
+        "required": false
+      },
+      "report_hold_time_agent": {
+        "doc": "Report hold time to agent (Values from getReportEstimatedHoldTime) (required)",
+        "required": true
+      },
+      "retry_timer": {
+        "doc": "How long do we wait before trying all the members again (Values 5 to 60 seconds or 'none'= No Delay)",
+        "required": false
+      },
+      "ring_inuse": {
+        "doc": "If you want the queue to avoid sending calls to members (required)",
+        "required": true
+      },
+      "ring_strategy": {
+        "doc": "Ring strategy (Values from getRingStrategies) (required)",
+        "required": true
+      },
+      "thankyou_for_your_patience": {
+        "doc": "True to say \"Thank you for your patience\" immediatly after announcing Queue Position and Estimated hold time left",
+        "required": false
+      },
+      "voice_announcement": {
+        "doc": "Code for Recording (Values from getRecordings or 'none')",
+        "required": false
+      },
+      "wrapup_time": {
+        "doc": "After a successful call, the number of seconds to wait before sending a free agent another call (Values 1 to 60 seconds or 'none'= No Delay)",
+        "required": false
+      }
+    },
+    "setRecording": {
+      "file": {
+        "doc": "Base64 encoded file (Provide Recording ID and file if you want update the file only) (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Name for the Recording Entry (Example: 'recording1') (Provide Recording ID and name if you want update the name only) (Provide Recording ID, file and name if you want update both parameters at the same time) (required)",
+        "required": true
+      },
+      "recording": {
+        "doc": "ID for a specific Phonebook entry (Example: 33221 / Leave empty to create a new one)",
+        "required": false
+      }
+    },
+    "setRingGroup": {
+      "caller_announcement": {
+        "doc": "Recording Code (Values from getRecordings)",
+        "required": false
+      },
+      "language": {
+        "doc": "Code for Language (Values from getLanguages)",
+        "required": false
+      },
+      "members": {
+        "doc": "Members for the Ring Group, separated by `;`. Each is a routing `header:record_id` whose header is `account` (an account or sub-account), `fwd` (a forwarding) or `sip` (a SIP URI), optionally followed by its ring time in seconds (1 to 60, default 25) and whether it must press 1 to take the call (1 or 0, default 0), separated by commas (Example: 'account:100001,25,0;fwd:16006,10,1') (required)",
+        "required": true
+      },
+      "music_on_hold": {
+        "doc": "Music on Hold Code (Values from getMusicOnHold)",
+        "required": false
+      },
+      "name": {
+        "doc": "Name for the Ring Group (required)",
+        "required": true
+      },
+      "ring_group": {
+        "doc": "ID for a specific Ring Group (Example: 4768 / Leave empty to create a new one)",
+        "required": false
+      },
+      "voicemail": {
+        "doc": "Voicemail for the Ring Group (Values from getVoicemails) (required)",
+        "required": true
+      }
+    },
+    "setSIPURI": {
+      "callerid_e164": {
+        "doc": "If this option is Enabled, then your CallerID will be E164 compliant.",
+        "required": false
+      },
+      "callerid_override": {
+        "doc": "This setting is optional. You can configure a 'CallerID Number Override'. Your default CallerID number will be changed to the override you have configured here when using this SIP URI.",
+        "required": false
+      },
+      "description": {
+        "doc": "Description for the SIP URI",
+        "required": false
+      },
+      "sipuri": {
+        "doc": "ID for a specific SIP URI (Example: 6199 / Leave empty to create a new one)",
+        "required": false
+      },
+      "uri": {
+        "doc": "SIP URI (Example: '[email protected]') (required)",
+        "required": true
+      }
+    },
+    "setSMS": {
+      "did": {
+        "doc": "DID to be Updated (Example: 5551234567) (required)",
+        "required": true
+      },
+      "email_address": {
+        "doc": "SMS Messages received by your DID will be sent to the email address provided",
+        "required": false
+      },
+      "email_enabled": {
+        "doc": "If Enable, SMS Messages received by your DID will be sent to the email address provided",
+        "required": false
+      },
+      "enable": {
+        "doc": "Enable/Disable the DID to receive SMS Messages (required)",
+        "required": true
+      },
+      "sms_forward": {
+        "doc": "SMS Messages received by your DID will be forwarded to the phone number provided (Example: 5551234567)",
+        "required": false
+      },
+      "sms_forward_enable": {
+        "doc": "If Enable, SMS Messages received by your DID will be forwarded to the phone number provided",
+        "required": false
+      },
+      "sms_sipaccount": {
+        "doc": "SIP account or sub-account that will receive the SMS Messages",
+        "required": false
+      },
+      "sms_sipaccount_enabled": {
+        "doc": "If Enable, SMS Messages received by your DID will be sent to the specified SIP account or sub-account",
+        "required": false
+      },
+      "url_callback": {
+        "doc": "SMS Messages received by your DID will be send a GET request to the URL callback provided Available Variables for your URL {FROM} The phone number that sent you the message. {TO} The DID number that received the message. {MESSAGE} The content of the message. Example: http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}",
+        "required": false
+      },
+      "url_callback_enable": {
+        "doc": "If Enable, SMS Messages received by your DID will be send a GET request to the URL callback provided",
+        "required": false
+      },
+      "url_callback_retry": {
+        "doc": "Enable URL callback Retry we will be expecting an 'ok' output (without quotes) from your URL callback page as an indicator that you have received the message correctly. If we don't receive the 'ok' letters (wihtout quotes) from your callback page, we will keep sending you the same message every 30 minutes.",
+        "required": false
+      }
+    },
+    "setStaticMember": {
+      "account": {
+        "doc": "Static Member Routing to receive calls - You can get all sub accounts using the getSubAccounts function",
+        "required": false
+      },
+      "member": {
+        "doc": "ID for a specific Member (Example: 619 / Leave empty to create a new one)",
+        "required": false
+      },
+      "member_name": {
+        "doc": "Member Description (required)",
+        "required": true
+      },
+      "priority": {
+        "doc": "Values for get calls first (Example: 0) (required)",
+        "required": true
+      },
+      "queue": {
+        "doc": "ID for a specific Queue (required)",
+        "required": true
+      }
+    },
+    "setSubAccount": {
+      "allowed_codecs": {
+        "doc": "List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated by semicolon (Example: ulaw;g729;gsm) (required)",
+        "required": true
+      },
+      "auth_type": {
+        "doc": "Authorization Type Code (Values from getAuthTypes) (required)",
+        "required": true
+      },
+      "callerid_number": {
+        "doc": "Caller ID Override",
+        "required": false
+      },
+      "canada_routing": {
+        "doc": "Route Code (Values from getRoutes)",
+        "required": false
+      },
+      "default_e911": {
+        "doc": "e911 Default CallerID",
+        "required": false
+      },
+      "description": {
+        "doc": "Sub Account Description (Example: 'VoIP Account')",
+        "required": false
+      },
+      "device_type": {
+        "doc": "Device Type Code (Values from getDeviceTypes) (required)",
+        "required": true
+      },
+      "dialing_mode": {
+        "doc": "Allows you to dial outgoing calls using either the NANPA configuration or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 = E164, 2 = NANPA)",
+        "required": false
+      },
+      "dtmf_mode": {
+        "doc": "DTMF Mode Code (Values from getDTMFModes) (required)",
+        "required": true
+      },
+      "enable_ip_restriction": {
+        "doc": "Enable IP Restriction",
+        "required": false
+      },
+      "enable_pop_restriction": {
+        "doc": "Enable POP Restriction",
+        "required": false
+      },
+      "id": {
+        "doc": "Sub Account ID (Example: 10236) (required)",
+        "required": true
+      },
+      "internal_dialtime": {
+        "doc": "Sub Account Internal Dialtime (Example: 60 -> seconds)",
+        "required": false
+      },
+      "internal_extension": {
+        "doc": "Sub Account Internal Extension (Example: 1 -> Creates 101)",
+        "required": false
+      },
+      "internal_extension_location": {
+        "doc": "Location group for the internal extension (Values from getLocations)",
+        "required": false
+      },
+      "internal_voicemail": {
+        "doc": "Sub Account Internal Voicemail (Example: 101)",
+        "required": false
+      },
+      "international_route": {
+        "doc": "Route Code (Values from getRoutes) (required)",
+        "required": true
+      },
+      "ip": {
+        "doc": "Sub Account IP (For IP Authentication)",
+        "required": false
+      },
+      "ip_restriction": {
+        "doc": "List of IP Addresses, IP Addresses/Netmask, or Fully Qualified Domain Names to allow outgoing calls separated by commas (Example: 123.45.3.21,10.255.12.0/22,device.mydomain.com)",
+        "required": false
+      },
+      "language": {
+        "doc": "Language for system messages, such as \"Invalid Option\" (Values from getLanguages)",
+        "required": false
+      },
+      "lock_international": {
+        "doc": "Lock International Code (Values from getLockInternational) (required)",
+        "required": true
+      },
+      "max_expiry": {
+        "doc": "Max Expiry between 60 and 3600 (Example: 3000)",
+        "required": false
+      },
+      "music_on_hold": {
+        "doc": "Music on Hold Code (Values from getMusicOnHold) (required)",
+        "required": true
+      },
+      "nat": {
+        "doc": "NAT Mode Code (Values from getNAT) (required)",
+        "required": true
+      },
+      "password": {
+        "doc": "Sub Account Password (For Password Authentication)",
+        "required": false
+      },
+      "pop_restriction": {
+        "doc": "List of POP Servers to allow outgoing calls separated by commas (values from getServersInfo. Example: 10,23,45)",
+        "required": false
+      },
+      "record_calls": {
+        "doc": "Record Calls",
+        "required": false
+      },
+      "reseller_chargesetup": {
+        "doc": "True if you want to charge Package Setup Fee after Save",
+        "required": false
+      },
+      "reseller_client": {
+        "doc": "Reseller Account ID (Example: 561115)",
+        "required": false
+      },
+      "reseller_nextbilling": {
+        "doc": "Reseller Next Billing Date (Example: '2012-12-31')",
+        "required": false
+      },
+      "reseller_package": {
+        "doc": "Reseller Package (Example: 92364)",
+        "required": false
+      },
+      "rtp_hold_timeout": {
+        "doc": "RTP Hold Time Out between 1 and 3600 (Example: 600)",
+        "required": false
+      },
+      "rtp_timeout": {
+        "doc": "RTP Time Out between 1 and 3600 (Example: 60)",
+        "required": false
+      },
+      "send_bye": {
+        "doc": "Send BYE on successful transfer",
+        "required": false
+      },
+      "sip_traffic": {
+        "doc": "Encrypted SIP Traffic",
+        "required": false
+      },
+      "tfcarrier": {
+        "doc": "This allows you to select the carrier to be used for outgoing calls to toll-free numbers. (Values: -1 = Use main account settings, 0 = Default server setting, 1 = US carrier, 2 = Canadian carrier)",
+        "required": false
+      },
+      "transcription_start_delay": {
+        "doc": "Call Transcription Delay Seconds between 0 and 60, Increments of 5 (Example: 10 -> seconds)",
+        "required": false
+      }
+    },
+    "setTimeCondition": {
+      "endhour": {
+        "doc": "All the End Hour Conditions (Example: '16;12') (required)",
+        "required": true
+      },
+      "endminute": {
+        "doc": "All the End Minute Conditions (Example: '0;0') (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Name for the Time Condition (required)",
+        "required": true
+      },
+      "routing_match": {
+        "doc": "Routing for the Call when condition matches (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "required": true
+      },
+      "routing_nomatch": {
+        "doc": "Routing for the Call when condition does not matche (required). Same format as `routing_match`.",
+        "required": true
+      },
+      "starthour": {
+        "doc": "All the Start Hour Conditions (Example: '8;8') (required)",
+        "required": true
+      },
+      "startminute": {
+        "doc": "All the Start Minute Conditions (Example: '0;0') (required)",
+        "required": true
+      },
+      "timecondition": {
+        "doc": "ID for a specific Time Condition (Example: 1830 / Leave empty to create a new one)",
+        "required": false
+      },
+      "weekdayend": {
+        "doc": "All the Week Day End Conditions (Example: 'fri;sat') (required)",
+        "required": true
+      },
+      "weekdaystart": {
+        "doc": "All the Week Day Start Conditions (Example: 'mon;sat') (required)",
+        "required": true
+      }
+    },
+    "setVoicemail": {
+      "attach_message": {
+        "doc": "True for Attaching WAV files to Message (required)",
+        "required": true
+      },
+      "delete_message": {
+        "doc": "True for Deleting Messages (required)",
+        "required": true
+      },
+      "email": {
+        "doc": "Email address for receiving messages, multiple email addresses are allowed if separated by a comma",
+        "required": false
+      },
+      "email_attachment_format": {
+        "doc": "Code for Email Attachment format (Values from getVoicemailAttachmentFormats)",
+        "required": false
+      },
+      "language": {
+        "doc": "Code for Language (Values from getLanguages) (required)",
+        "required": true
+      },
+      "mailbox": {
+        "doc": "ID for a specific Mailbox (Example: 1001) (required)",
+        "required": true
+      },
+      "name": {
+        "doc": "Name for the Mailbox (required)",
+        "required": true
+      },
+      "password": {
+        "doc": "Password for the Mailbox (required)",
+        "required": true
+      },
+      "play_instructions": {
+        "doc": "Code for Play Instructions Setting (Values from getPlayInstructions) (required)",
+        "required": true
+      },
+      "say_callerid": {
+        "doc": "True for Saying the Caller ID (required)",
+        "required": true
+      },
+      "say_time": {
+        "doc": "True for Saying Time Stamp (required)",
+        "required": true
+      },
+      "skip_password": {
+        "doc": "True if Skipping Password (required)",
+        "required": true
+      },
+      "timezone": {
+        "doc": "Time Zone for Mailbox (Values from getTimeZones) (required)",
+        "required": true
+      },
+      "transcription": {
+        "doc": "true to enable Voicemail Transcription",
+        "required": false
+      },
+      "transcription_format": {
+        "doc": "Transcription format ( Values: 'html'/'text')",
+        "required": false
+      },
+      "transcription_locale": {
+        "doc": "Transcription locale code (values from getLocales, comma separated for more than one locale up to 10 locales)",
+        "required": false
+      },
+      "transcription_redaction": {
+        "doc": "True for Transcription redaction",
+        "required": false
+      },
+      "transcription_sentiment": {
+        "doc": "True for Transcription sentiment",
+        "required": false
+      },
+      "transcription_summary": {
+        "doc": "True for Transcription summary",
+        "required": false
+      },
+      "unavailable_message_recording": {
+        "doc": "Recording for the Unavailable Message (values from getRecordings)",
+        "required": false
+      }
+    },
+    "signupClient": {
+      "activate": {
+        "doc": "Activates Client",
+        "required": false
+      },
+      "address": {
+        "doc": "Client's Address (required)",
+        "required": true
+      },
+      "balance_management": {
+        "doc": "Balance Management for Client (Values from getBalanceManagement)",
+        "required": false
+      },
+      "city": {
+        "doc": "Client's City (required)",
+        "required": true
+      },
+      "company": {
+        "doc": "Client's Company",
+        "required": false
+      },
+      "confirm_email": {
+        "doc": "Client's Confirmation e-mail (required)",
+        "required": true
+      },
+      "confirm_password": {
+        "doc": "Client's Confirmation Password (required)",
+        "required": true
+      },
+      "country": {
+        "doc": "Client's Country (Values from getCountries) (required)",
+        "required": true
+      },
+      "email": {
+        "doc": "Client's e-mail (required)",
+        "required": true
+      },
+      "firstname": {
+        "doc": "Client's Firstname (required)",
+        "required": true
+      },
+      "lastname": {
+        "doc": "Client's Lastname (required)",
+        "required": true
+      },
+      "password": {
+        "doc": "Client's Password (required)",
+        "required": true
+      },
+      "phone_number": {
+        "doc": "Client's Phone Number (required)",
+        "required": true
+      },
+      "state": {
+        "doc": "Client's State (required)",
+        "required": true
+      },
+      "zip": {
+        "doc": "Client's Zip Code (required)",
+        "required": true
+      }
+    },
+    "unconnectDID": {
+      "did": {
+        "doc": "DID to be Unconnected from Reseller Sub Account(Example: 5551234567) (required)",
+        "required": true
+      }
+    },
+    "unconnectFAX": {
+      "did": {
+        "doc": "FAX DID to be Unconnected from Reseller Sub Account (Example: 5551234567) (required)",
+        "required": true
+      }
+    }
+  }
+}

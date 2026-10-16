@@ -324,7 +324,7 @@ async fn order_fixture_did(ctx: &AreaCtx<'_>, report: &mut Report) {
             did: Some(did.clone()),
             routing: Some(Routing::None),
             pop: Some(pop),
-            dialtime: Some(60),
+            dial_time: Some(60),
             cnam: Some(false),
             billing_type: Some(DidBillingType::PerMinute),
             ..Default::default()
@@ -368,7 +368,7 @@ async fn order_fixture_did(ctx: &AreaCtx<'_>, report: &mut Report) {
     if let Err(error) = client
         .set_sms(&SetSMSParams {
             did: Some(did.clone()),
-            enable: Some(true),
+            enabled: Some(true),
             ..Default::default()
         })
         .await
