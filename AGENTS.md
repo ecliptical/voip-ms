@@ -140,8 +140,12 @@ it in three places rather than render it verbatim:
 The same text, before rustdoc wrapping and escaping, is written to
 `tools/param-docs.json` (keyed by wire method, then wire field, under
 `param_docs`), so a consumer that reads descriptions from JSON rather than
-rustdoc gets the corrected text too. It describes each field in its Rust
-type's terms: a `bool` flag says `true` / `false`. Only `cargo xtask gen`
+rustdoc gets the corrected text too. Each entry is the `doc` and whether a
+caller must set the field (`required`), as data because an override can
+replace the text that carried the `(required)` marker. Both are in the crate's
+terms: a `bool` flag says `true` / `false`, and the offset ops' `timezone` is
+not required although voip.ms needs it on the wire, since the typed method
+sends UTC in its place. Only `cargo xtask gen`
 writes it; the mined `param_docs` in `tools/api-responses.json` stay the
 docs' own text.
 
@@ -293,9 +297,10 @@ leaving every other at its `Default`. Two bounds keep it honest:
   better but not perfect, so the constructor is a convenience and never a
   contract. A field it asks for may be optional in practice, and one it omits
   may turn out to be needed. Where the crate deliberately contradicts a marker
-  it needs an entry in `REQUIRED_CTOR_SKIP` (`xtask/src/main.rs`): the offset
+  it needs an entry in `REQUIRED_OVERRULED` (`xtask/src/main.rs`): the offset
   ops' `timezone` is marked required and defaulted to UTC by decision 5a, so a
-  constructor demanding it would contradict the method it builds for.
+  constructor demanding it would contradict the method it builds for. The same
+  rule (`is_required`) sets `required` in `tools/param-docs.json`.
 * **A long positional argument list reads worse than a struct literal.**
   `MAX_CTOR_FIELDS` caps it at six; `AddLNPPortParams` (12 required) and
   `CreateVoicemailParams` (11) get no `new` at all.

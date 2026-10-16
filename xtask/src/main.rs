@@ -650,13 +650,13 @@ fn documents_base64(doc: &str) -> bool {
     squished.contains("base64")
 }
 
-/// Params fields the docs mark `(required)` that a `new` constructor must not
-/// ask for, keyed `"wireMethod.field"`.
+/// Params fields the docs mark `(required)` that a crate caller need not set,
+/// keyed `"wireMethod.field"`.
 ///
-/// The offset ops' `timezone` is the only case: the docs mark it required, and
-/// the crate sends UTC when a caller names no zone, so a constructor demanding
-/// one would contradict the method it builds for.
-const REQUIRED_CTOR_SKIP: &[&str] = &[
+/// The offset ops' `timezone` is the only case: voip.ms needs it on the wire,
+/// and the typed method sends UTC when the field is `None`, so a constructor or
+/// a `required` flag demanding one would contradict the method it builds for.
+const REQUIRED_OVERRULED: &[&str] = &[
     "getCDR.timezone",
     "getMMS.timezone",
     "getResellerCDR.timezone",
@@ -664,6 +664,17 @@ const REQUIRED_CTOR_SKIP: &[&str] = &[
     "getResellerSMS.timezone",
     "getSMS.timezone",
 ];
+
+/// Whether a crate caller must set params field `fname` of wire method `op`: the
+/// mined docs mark it `(required)` and [`REQUIRED_OVERRULED`] does not overrule
+/// them. The `new` constructor asks for exactly these fields.
+fn is_required(op: &str, fname: &str, param_docs: &ParamDocs) -> bool {
+    !REQUIRED_OVERRULED.contains(&format!("{op}.{fname}").as_str())
+        && param_docs
+            .get(op)
+            .and_then(|d| d.get(fname))
+            .is_some_and(|doc| doc.contains("(required)"))
+}
 
 /// The most required fields a positional constructor stays readable at.
 /// `addLNPPort` has 12 and `createVoicemail` 11; past this bound an unlabeled
@@ -684,16 +695,10 @@ fn emit_params_constructor(
     resolver: &field_overrides::Resolver,
     acronyms: &[&'static str],
 ) -> String {
-    let docs = param_docs.get(op);
     let required: Vec<(String, String, bool)> = body_fields
         .iter()
         .copied()
-        .filter(|(fname, _)| {
-            !REQUIRED_CTOR_SKIP.contains(&format!("{op}.{fname}").as_str())
-                && docs
-                    .and_then(|d| d.get(fname))
-                    .is_some_and(|doc| doc.contains("(required)"))
-        })
+        .filter(|(fname, _)| is_required(op, fname, param_docs))
         .map(|(fname, ftype)| {
             let override_ = resolver.resolve(struct_name, fname, true);
             let ty = match override_ {
@@ -1496,7 +1501,7 @@ fn emit(
     zoned_timestamps: &BTreeMap<String, Vec<String>>,
     zone_timestamps: &BTreeMap<String, Vec<String>>,
     base64_file_params: &BTreeMap<String, Vec<String>>,
-    rendered_docs: &mut ParamDocs,
+    rendered_docs: &mut RenderedDocs,
 ) -> Result<String, String> {
     let acronyms = acronyms_sorted();
     // Which side each declared enum lands on, collected while the structs are
@@ -1569,7 +1574,7 @@ fn emit(
             let mut paragraphs = if offset_op(op).is_some() && fname == "timezone" {
                 // The mined doc describes the numeric wire form the public
                 // `Tz` field is not, and its `(required)` marker is the one
-                // `REQUIRED_CTOR_SKIP` overrules: the field defaults to UTC.
+                // `REQUIRED_OVERRULED` overrules: the field defaults to UTC.
                 vec![OFFSET_TIMEZONE_DOC.to_string()]
             } else {
                 param_doc(
@@ -1597,11 +1602,15 @@ fn emit(
                 render_doc(&mut body, "    ", paragraph);
             }
 
-            if !paragraphs.is_empty() {
-                rendered_docs
-                    .entry(op.clone())
-                    .or_default()
-                    .insert(fname.clone(), paragraphs.join("\n\n"));
+            let required = is_required(op, fname, param_docs);
+            if !paragraphs.is_empty() || required {
+                rendered_docs.entry(op.clone()).or_default().insert(
+                    fname.clone(),
+                    RenderedDoc {
+                        doc: paragraphs.join("\n\n"),
+                        required,
+                    },
+                );
             }
 
             // A `param_skip_if` override emits the field unwrapped (plain `T`,
@@ -2754,7 +2763,7 @@ fn cmd_gen() -> Result<(), String> {
         eprintln!("warning: {warning}");
     }
 
-    let mut rendered_docs = ParamDocs::new();
+    let mut rendered_docs = RenderedDocs::new();
     let rendered = emit(
         &wsdl,
         &responses,
@@ -2902,13 +2911,24 @@ fn load_param_notes(responses_path: &Path) -> Result<BTreeMap<String, String>, S
 /// Where [`write_param_docs`] writes, relative to the repository root.
 const PARAM_DOCS_REL: &str = "tools/param-docs.json";
 
+/// One params field's entry in `tools/param-docs.json`.
+#[derive(serde::Serialize)]
+struct RenderedDoc {
+    /// The description as `src/generated.rs` renders it, paragraphs separated by
+    /// a blank line, before rustdoc wrapping and escaping.
+    doc: String,
+    /// [`is_required`]: whether a crate caller must set the field.
+    required: bool,
+}
+
+/// [`RenderedDoc`]s keyed by wire method, then wire field.
+type RenderedDocs = BTreeMap<String, BTreeMap<String, RenderedDoc>>;
+
 /// Write the description of every params field as `src/generated.rs` renders
 /// it -- mined text, `param_docs` overrides, flag rewording, the routing format
-/// and zone notes applied -- keyed by wire method then wire field, under
-/// `param_docs` like the mined section of `tools/api-responses.json`.
-/// Paragraphs are separated by a blank line. The text is the one before
-/// rustdoc wrapping and escaping, so it reads the same outside rustdoc.
-fn write_param_docs(docs: &ParamDocs) -> Result<(), String> {
+/// and zone notes applied -- with whether a caller must set it, keyed by wire
+/// method then wire field under `param_docs`.
+fn write_param_docs(docs: &RenderedDocs) -> Result<(), String> {
     let doc = serde_json::json!({ "version": 1, "param_docs": docs });
     let pretty = serde_json::to_string_pretty(&doc).map_err(|e| format!("serialize JSON: {e}"))?;
     let out_path = repo_root().join(PARAM_DOCS_REL);
@@ -2925,8 +2945,10 @@ fn write_param_docs(docs: &ParamDocs) -> Result<(), String> {
 /// Check the parameter descriptions against the overrides that correct them.
 ///
 /// Fails on a `param_docs` override that names a param the WSDL does not
-/// declare, or that repeats the mined text (the docs caught up and the entry is
-/// stale). Returns as warnings, since each wants a reading of mined prose:
+/// declare, that repeats the mined text (the docs caught up and the entry is
+/// stale), or that drops or adds the mined `(required)` marker, which would make
+/// the rendered text disagree with [`is_required`]. Returns as warnings, since
+/// each wants a reading of mined prose:
 ///
 /// * a mined method note no field renders -- the method takes no routing
 ///   field, which renders the routing format, and has no override, which is
@@ -2958,6 +2980,17 @@ fn check_param_docs(
         if param_docs.get(op).and_then(|d| d.get(field)) == Some(text) {
             return Err(format!(
                 "param_docs override `{path}` repeats the mined description; delete it"
+            ));
+        }
+
+        let mined_required = param_docs
+            .get(op)
+            .and_then(|d| d.get(field))
+            .is_some_and(|doc| doc.contains("(required)"));
+        if text.contains("(required)") != mined_required {
+            return Err(format!(
+                "param_docs override `{path}` and the mined description disagree on \
+                 `(required)`, which sets the constructor and `required`; match the docs"
             ));
         }
     }
@@ -3601,6 +3634,18 @@ mod tests {
         assert!(stale.contains("repeats the mined description"), "{stale}");
         assert_eq!(
             check(&mined, &[], &[("addLNPPort.isMobile", "true if mobile")]),
+            Ok(vec![])
+        );
+        let required = docs(&[("addLNPPort", "isMobile", "Mobile (required)")]);
+        let dropped =
+            check(&required, &[], &[("addLNPPort.isMobile", "true if mobile")]).unwrap_err();
+        assert!(dropped.contains("disagree on `(required)`"), "{dropped}");
+        assert_eq!(
+            check(
+                &required,
+                &[],
+                &[("addLNPPort.isMobile", "true if mobile (required)")]
+            ),
             Ok(vec![])
         );
     }

@@ -71,7 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as accepting the same values as `CreateSubAccountParams::ip_restriction`.
 - The corrected request-field docs are also written to `tools/param-docs.json`
   in the repository, keyed by wire method and wire field, for tools that read
-  descriptions from JSON rather than rustdoc.
+  descriptions from JSON rather than rustdoc. Each entry carries the text and
+  whether a caller must set the field.
 
 ## [0.17.0] - 2026-10-16
 
