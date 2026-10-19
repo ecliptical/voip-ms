@@ -146,6 +146,18 @@ const CORRECTIONS: &[Correction] = &[
             before: "sms_sipaccount",
         },
     },
+    // Neither the docs nor the PHP client name it, but `getFaxNumbersInfo`
+    // reports it and the server reads it. Confirmed live on a fax number: 1, 3,
+    // 11 and 99 each read back as sent, 0 and `abc` left the value as it was,
+    // and a call without it set it to 10 whatever it was before.
+    Correction {
+        op: "setFaxNumberInfo",
+        fix: Fix::Add {
+            name: "max_attempts",
+            xsd_type: "xsd:integer",
+            before: "test",
+        },
+    },
 ];
 
 const ALLOW_225: Fix = Fix::Add {

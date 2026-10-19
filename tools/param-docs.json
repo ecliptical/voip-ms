@@ -83,7 +83,7 @@
         "required": false
       },
       "portType": {
-        "doc": "Digits from 1 to 4: 1: United States Local numbers 2: Canadian Local Numbers 3: US/CA Toll Free Numbers 4: United States Fax numbers 5: Canadian Fax Numbers (required)",
+        "doc": "Kind of numbers to port (Values: 1 = United States local numbers, 2 = Canadian local numbers, 3 = US/CA toll-free numbers, 4 = United States fax numbers, 5 = Canadian fax numbers) (required)",
         "required": true
       },
       "providerAccount": {
@@ -107,7 +107,7 @@
         "required": true
       },
       "tfType": {
-        "doc": "[Required If portType = 3] Values: 1 - American Carrier, American Callers Only, 2 - American Carrier, American and Canadian Callers allowed, 3 - Canadian Carrier",
+        "doc": "Required if `port_type` is 3. Which carrier the toll-free numbers are with (Values: 1 = an American carrier, American callers only; 2 = an American carrier, American and Canadian callers; 3 = a Canadian carrier)",
         "required": false
       },
       "zip": {
@@ -145,7 +145,7 @@
     },
     "assignDIDvPRI": {
       "did": {
-        "doc": "DID Number to be assign into our Vpri (Example: 561115) (required)",
+        "doc": "DID to assign to the vPRI (Example: 5551234567) (required)",
         "required": true
       },
       "vpri": {
@@ -203,7 +203,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "test": {
@@ -261,7 +261,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "state": {
@@ -311,7 +311,7 @@
         "required": true
       },
       "did": {
-        "doc": "DID to be Connected to Reseler Sub Account (Example: 5551234567) (required)",
+        "doc": "DID to connect to the reseller sub-account (Example: 5551234567) (required)",
         "required": true
       },
       "dont_charge_monthly": {
@@ -327,7 +327,7 @@
         "required": true
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50) (required)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50) (required)",
         "required": true
       },
       "next_billing": {
@@ -361,7 +361,7 @@
         "required": true
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50) (required)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50) (required)",
         "required": true
       },
       "next_billing": {
@@ -1754,6 +1754,10 @@
         "doc": "Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only need SMS, important: the sms ID must be 0",
         "required": false
       },
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
+      },
       "contact": {
         "doc": "Contact number for Filtering MMSs (Example: 5551234567)",
         "required": false
@@ -1775,7 +1779,7 @@
         "required": false
       },
       "to": {
-        "doc": "End Date for Filtering MMSs (Example: '2014-03-30') - Default value: Todayclient => [Required] ID for a specific Reseller Client (Example: 561115)",
+        "doc": "End Date for Filtering MMSs (Example: '2014-03-30') - Default value: Today",
         "required": false
       },
       "type": {
@@ -1787,6 +1791,10 @@
       "all_messages": {
         "doc": "Filter to recive all SMSs and MMSs, 1 recive all SMS and MMS, 0 if only need SMS, important: the sms ID must be 0",
         "required": false
+      },
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (required)",
+        "required": true
       },
       "contact": {
         "doc": "Contact number for Filtering SMSs (Example: 5551234567)",
@@ -1813,7 +1821,7 @@
         "required": false
       },
       "to": {
-        "doc": "End Date for Filtering SMSs (Example: '2014-03-30') - Default value: Todayclient => [Required] ID for a specific Reseller Client (Example: 561115)",
+        "doc": "End Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
         "required": false
       },
       "type": {
@@ -2013,7 +2021,7 @@
     },
     "mailFaxMessagePDF": {
       "email": {
-        "doc": "Destination email adreess (example: yourname@company.com) (required)",
+        "doc": "Destination email address (Example: yourname@company.com) (required)",
         "required": true
       },
       "id": {
@@ -2131,7 +2139,7 @@
         "required": false
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50)",
         "required": false
       },
       "note": {
@@ -2143,7 +2151,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "setup": {
@@ -2201,7 +2209,7 @@
         "required": false
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50)",
         "required": false
       },
       "note": {
@@ -2217,7 +2225,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "setup": {
@@ -2275,7 +2283,7 @@
         "required": false
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50)",
         "required": false
       },
       "note": {
@@ -2291,7 +2299,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "setup": {
@@ -2345,7 +2353,7 @@
         "required": false
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50)",
         "required": false
       },
       "note": {
@@ -2361,7 +2369,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "setup": {
@@ -2415,7 +2423,7 @@
         "required": false
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50)",
         "required": false
       },
       "note": {
@@ -2427,7 +2435,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "setup": {
@@ -2519,7 +2527,7 @@
         "required": false
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50)",
         "required": false
       },
       "note": {
@@ -2531,7 +2539,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "setup": {
@@ -2589,7 +2597,7 @@
         "required": false
       },
       "monthly": {
-        "doc": "Montly Fee for Reseller Client (Example: 3.50)",
+        "doc": "Monthly fee for the reseller client (Example: 3.50)",
         "required": false
       },
       "note": {
@@ -2601,7 +2609,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "setup": {
@@ -2619,7 +2627,7 @@
     },
     "removeDIDvPRI": {
       "did": {
-        "doc": "DID Number to be remove from our Vpri (Example: 561115) (required)",
+        "doc": "DID to remove from the vPRI (Example: 5551234567) (required)",
         "required": true
       },
       "vpri": {
@@ -2935,7 +2943,7 @@
         "required": false
       },
       "routing": {
-        "doc": "Route the call follows when filter is triggered (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Route the call follows when filter is triggered (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       }
     },
@@ -3251,7 +3259,7 @@
         "required": false
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "transcribe": {
@@ -3307,7 +3315,7 @@
         "required": true
       },
       "routing": {
-        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Main Routing for the DID (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       }
     },
@@ -3393,7 +3401,7 @@
     },
     "setFaxNumberEmail": {
       "did": {
-        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "doc": "Fax number to update (Example: 5552341234) (required)",
         "required": true
       },
       "email": {
@@ -3401,7 +3409,7 @@
         "required": false
       },
       "email_attach_file": {
-        "doc": "Flag to enable attach the Fax Message as a PDF file in the notifications. Default: false",
+        "doc": "true to attach the fax message to the email notification as a PDF file; getFaxNumbersInfo reports it as `attach_file`. Default: false",
         "required": false
       },
       "email_enable": {
@@ -3415,7 +3423,7 @@
     },
     "setFaxNumberInfo": {
       "did": {
-        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "doc": "Fax number to update (Example: 5552341234) (required)",
         "required": true
       },
       "email": {
@@ -3423,11 +3431,15 @@
         "required": false
       },
       "email_attach_file": {
-        "doc": "Flag to enable attach the Fax Message as a PDF file in the notifications. Default: false",
+        "doc": "true to attach the fax message to the email notification as a PDF file; getFaxNumbersInfo reports it as `attach_file`. Default: false",
         "required": false
       },
       "email_enable": {
         "doc": "Flag to enable the email notifications. Default: false",
+        "required": false
+      },
+      "max_attempts": {
+        "doc": "The fax number's maximum number of attempts, which getFaxNumbersInfo reports as `max_attempts` (Example: 5). A call without it sets it to 10, and 0 leaves it as it is",
         "required": false
       },
       "test": {
@@ -3435,21 +3447,21 @@
         "required": false
       },
       "url_callback": {
-        "doc": "URL where make a POST when you receive a Fax Message.",
+        "doc": "URL a POST request is sent to when a fax message arrives; getFaxNumbersInfo reports it as `url`",
         "required": false
       },
       "url_callback_enable": {
-        "doc": "Flag to enable the URL Callback functionality. Default: false",
+        "doc": "true to send the POST request to `url_callback`; getFaxNumbersInfo reports it as `url_enabled`. Default: false",
         "required": false
       },
       "url_callback_retry": {
-        "doc": "Flag to enable retry the POST action in case we don't receive \"ok\".",
+        "doc": "true to repeat the POST request until the page answers `ok`; getFaxNumbersInfo reports it as `retry`",
         "required": false
       }
     },
     "setFaxNumberURLCallback": {
       "did": {
-        "doc": "DID Number to be ported into our network (Example: 5552341234) (required)",
+        "doc": "Fax number to update (Example: 5552341234) (required)",
         "required": true
       },
       "test": {
@@ -3457,15 +3469,15 @@
         "required": false
       },
       "url_callback": {
-        "doc": "URL where make a POST when you receive a Fax Message.",
+        "doc": "URL a POST request is sent to when a fax message arrives; getFaxNumbersInfo reports it as `url`",
         "required": false
       },
       "url_callback_enable": {
-        "doc": "Flag to enable the URL Callback functionality. Default: false",
+        "doc": "true to send the POST request to `url_callback`; getFaxNumbersInfo reports it as `url_enabled`. Default: false",
         "required": false
       },
       "url_callback_retry": {
-        "doc": "Flag to enable retry the POST action in case we don't receive \"ok\".",
+        "doc": "true to repeat the POST request until the page answers `ok`; getFaxNumbersInfo reports it as `retry`",
         "required": false
       }
     },
@@ -3643,7 +3655,7 @@
         "required": false
       },
       "fail_over_routing_timeout": {
-        "doc": "Failover routing to Maximum wait time reached\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Failover routing to Maximum wait time reached\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": false
       },
       "frequency_announcement": {
@@ -3811,15 +3823,15 @@
         "required": true
       },
       "email_address": {
-        "doc": "SMS Messages received by your DID will be sent to the email address provided",
+        "doc": "Email address the SMS messages the DID receives are sent to; getDIDsInfo reports it as `sms_email`",
         "required": false
       },
       "email_enabled": {
-        "doc": "If Enable, SMS Messages received by your DID will be sent to the email address provided",
+        "doc": "true to send the SMS messages the DID receives to `email_address`; getDIDsInfo reports it as `sms_email_enabled`",
         "required": false
       },
       "enable": {
-        "doc": "Enable/Disable the DID to receive SMS Messages (required)",
+        "doc": "true to let the DID receive SMS messages; getDIDsInfo reports it as `sms_enabled` (required)",
         "required": true
       },
       "sms_forward": {
@@ -3839,15 +3851,15 @@
         "required": false
       },
       "url_callback": {
-        "doc": "SMS Messages received by your DID will be send a GET request to the URL callback provided Available Variables for your URL {FROM} The phone number that sent you the message. {TO} The DID number that received the message. {MESSAGE} The content of the message. Example: http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}",
+        "doc": "URL the SMS messages the DID receives are sent to as a GET request, with {FROM} replaced by the number that sent the message, {TO} by the DID that received it and {MESSAGE} by its content (Example: http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}); getDIDsInfo reports it as `sms_url_callback`",
         "required": false
       },
       "url_callback_enable": {
-        "doc": "If Enable, SMS Messages received by your DID will be send a GET request to the URL callback provided",
+        "doc": "true to send the SMS messages the DID receives to `url_callback`; getDIDsInfo reports it as `sms_url_callback_enabled`",
         "required": false
       },
       "url_callback_retry": {
-        "doc": "Enable URL callback Retry we will be expecting an 'ok' output (without quotes) from your URL callback page as an indicator that you have received the message correctly. If we don't receive the 'ok' letters (wihtout quotes) from your callback page, we will keep sending you the same message every 30 minutes.",
+        "doc": "true to resend a message to `url_callback` every 30 minutes until the page answers `ok`; getDIDsInfo reports it as `sms_url_callback_retry`",
         "required": false
       },
       "webhook": {
@@ -4049,11 +4061,11 @@
         "required": true
       },
       "routing_match": {
-        "doc": "Routing for the Call when condition matches (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
+        "doc": "Routing for the Call when condition matches (required)\n\nFormat `header:record_id`, where `header` is `account` (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy tone), `noservice` (number not in service recording), `disconnected` (number disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, `none:`.",
         "required": true
       },
       "routing_nomatch": {
-        "doc": "Routing for the Call when condition does not matche (required). Same format as `routing_match`.",
+        "doc": "Routing for the call when the condition does not match (required). Same format as `routing_match`.",
         "required": true
       },
       "starthour": {

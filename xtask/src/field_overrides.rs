@@ -154,6 +154,10 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     // `getSubAccounts` as sent.
     "allow225",
     "answered",
+    // `getFaxNumbersInfo`'s names for the `email_attach_file` and
+    // `url_callback_retry` a fax number is set with. Confirmed live: setting
+    // each to `1` and `0` reads back as sent.
+    "attach_file",
     "burst_enabled",
     "busy",
     "cnam",
@@ -175,6 +179,7 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "noanswer",
     "portout",
     "record_calls",
+    "retry",
     "security_code_enabled",
     "send_bye",
     "send_email_enabled",
@@ -272,9 +277,14 @@ pub(crate) const NAMED_ZONE_TZ_RESPONSE_PATHS: &[&str] = &[
 /// confirmed live, a location created with `setLocation` is keyed `1713` in
 /// `getLocations` and `delLocation` deletes it by that number, and the built-in
 /// location is `0`, which is what a sub-account's `internal_extension_location`
-/// reports. Keyed `"StructName.field"`.
-pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] =
-    &["DelLocationParams.id", "GetBackOrdersParams.id"];
+/// reports. `setCallerIDFiltering`'s `filter` is the caller ID filter id the
+/// rest of its family calls `filtering` and types `u64`. Keyed
+/// `"StructName.field"`.
+pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] = &[
+    "DelLocationParams.id",
+    "GetBackOrdersParams.id",
+    "SetCallerIDFilteringParams.filter",
+];
 
 /// Response maps keyed by a numeric record id, typed `HashMap<u64, String>`
 /// rather than the `HashMap<String, _>` every other map gets, so an id read

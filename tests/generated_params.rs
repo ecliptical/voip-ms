@@ -2496,12 +2496,14 @@ fn set_caller_id_filtering_params_roundtrips() {
     let v = serde_json::to_value(&p).unwrap();
     assert!(v.is_object());
 
+    // The id `getCallerIDFiltering` reports as `filtering` goes out under the
+    // `filter` key this method reads.
     let p2 = SetCallerIDFilteringParams {
-        filter: Some("x".into()),
+        filtering: Some(18915),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "filter": 18915 }));
 }
 
 #[test]

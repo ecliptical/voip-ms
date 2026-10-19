@@ -71,6 +71,10 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `internal_extension_location` takes, so it carries that name.
     // `location_id` is taken by the international DID locations.
     ("DelLocationParams", "id", "internal_extension_location"),
+    // `setCallerIDFiltering` names the filter's id `filter` while
+    // `getCallerIDFiltering` and `delCallerIDFiltering` take it, and the
+    // set reports it, as `filtering`.
+    ("SetCallerIDFilteringParams", "filter", "filtering"),
     // The reference-data lookups: `type` narrows the catalog to one entry, and
     // the docs call the value a code ("Code for a specific Address Type").
     ("E911AddressTypesParams", "type", "code"),
@@ -818,12 +822,16 @@ const OFFSET_TIMEZONE_DOC: &str = "IANA time zone whose days the date range mean
 /// field of each params struct (its `routing`, when it has one). The docs print
 /// it once under a method's parameter table rather than on a parameter, in
 /// three versions of differing completeness, and on no method that takes
-/// `routing_match` or a caller-ID filter's routing; this is the fullest one,
-/// from the DID order methods.
+/// `routing_match` or a caller-ID filter's routing. This is the fullest one,
+/// from the DID order methods, with the headers it lists but does not explain
+/// glossed after the record each one names.
 const ROUTING_FORMAT_DOC: &str = "Format `header:record_id`, where `header` is `account` \
      (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` \
-     (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, \
-     `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy \
+     (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring \
+     group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), \
+     `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), \
+     `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), \
+     `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy \
      tone), `noservice` (number not in service recording), `disconnected` (number \
      disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` \
      takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, \

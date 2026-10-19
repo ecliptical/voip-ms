@@ -4221,9 +4221,9 @@ impl AddLNPFileParams {
 /// Parameters for [`Client::add_lnp_port`] (wire method `addLNPPort`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct AddLNPPortParams {
-    /// Digits from 1 to 4: 1: United States Local numbers 2: Canadian Local
-    /// Numbers 3: US/CA Toll Free Numbers 4: United States Fax numbers 5:
-    /// Canadian Fax Numbers (required)
+    /// Kind of numbers to port (Values: 1 = United States local numbers, 2 =
+    /// Canadian local numbers, 3 = US/CA toll-free numbers, 4 = United States
+    /// fax numbers, 5 = Canadian fax numbers) (required)
     #[serde(skip_serializing_if = "Option::is_none", rename = "portType")]
     pub port_type: Option<u64>,
     /// DID(s) to port into VoIP.ms network (Example: 5552341234,5552341233). If
@@ -4265,9 +4265,9 @@ pub struct AddLNPPortParams {
     /// not listed may be disconnected when the port completes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub services: Option<String>,
-    /// \[Required If portType = 3\] Values: 1 - American Carrier, American
-    /// Callers Only, 2 - American Carrier, American and Canadian Callers
-    /// allowed, 3 - Canadian Carrier
+    /// Required if `port_type` is 3. Which carrier the toll-free numbers are
+    /// with (Values: 1 = an American carrier, American callers only; 2 = an
+    /// American carrier, American and Canadian callers; 3 = a Canadian carrier)
     #[serde(skip_serializing_if = "Option::is_none", rename = "tfType")]
     pub toll_free_type: Option<u64>,
     /// This is for Business numbers only. Please type your Company Name if
@@ -4398,7 +4398,7 @@ pub struct AssignDIDvPRIParams {
     /// Id for specific Vpri (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vpri: Option<u64>,
-    /// DID Number to be assign into our Vpri (Example: 561115) (required)
+    /// DID to assign to the vPRI (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -4436,8 +4436,12 @@ pub struct BackOrderDIDCANParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -4505,8 +4509,12 @@ pub struct BackOrderDIDUSAParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -4636,14 +4644,14 @@ impl CancelFAXNumberParams {
 /// Parameters for [`Client::connect_did`] (wire method `connectDID`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct ConnectDIDParams {
-    /// DID to be Connected to Reseler Sub Account (Example: 5551234567)
+    /// DID to connect to the reseller sub-account (Example: 5551234567)
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     /// Reseller Sub Account (Example: '100001_VoIP') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50) (required)
+    /// Monthly fee for the reseller client (Example: 3.50) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99) (required)
@@ -4708,7 +4716,7 @@ pub struct ConnectFAXParams {
     /// Reseller Sub Account (Example: '100001_VoIP') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50) (required)
+    /// Monthly fee for the reseller client (Example: 3.50) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99) (required)
@@ -7844,6 +7852,7 @@ impl TryFrom<&GetResellerCDRParams> for GetResellerCDRParamsWire {
 pub struct GetResellerMMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mms: Option<u64>,
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<u64>,
     /// Start Date for Filtering SMSs (Example: '2014-03-30') - Default value:
@@ -7851,8 +7860,7 @@ pub struct GetResellerMMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
     /// End Date for Filtering MMSs (Example: '2014-03-30') - Default value:
-    /// Todayclient => \[Required\] ID for a specific Reseller Client (Example:
-    /// 561115)
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
     /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
@@ -7882,6 +7890,22 @@ pub struct GetResellerMMSParams {
     /// need SMS, important: the sms ID must be 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all_messages: Option<u64>,
+}
+
+impl GetResellerMMSParams {
+    /// A `GetResellerMMSParams` with the parameters the VoIP.ms docs mark as
+    /// required: `client`. Every other field keeps its default, so
+    /// struct-update syntax still fills in the rest.
+    ///
+    /// The marking is the docs' word, not the API's: a field asked for here may
+    /// still be optional in practice, and one left out may turn out to be
+    /// needed.
+    pub fn new(client: u64) -> Self {
+        Self {
+            client: Some(client),
+            ..Default::default()
+        }
+    }
 }
 
 /// Wire form of [`GetResellerMMSParams`]: `timezone` resolved to the number
@@ -7952,6 +7976,7 @@ pub struct GetResellerSMSParams {
     /// ID for a specific SMS (Example: 5853)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms: Option<u64>,
+    /// ID for a specific Reseller Client (Example: 561115) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<u64>,
     /// Start Date for Filtering SMSs (Example: '2014-03-30') - Default value:
@@ -7959,8 +7984,7 @@ pub struct GetResellerSMSParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
     /// End Date for Filtering SMSs (Example: '2014-03-30') - Default value:
-    /// Todayclient => \[Required\] ID for a specific Reseller Client (Example:
-    /// 561115)
+    /// Today
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
     /// Filter SMSs by Type (Boolean: 1 = received / 0 = sent)
@@ -7990,6 +8014,22 @@ pub struct GetResellerSMSParams {
     /// need SMS, important: the sms ID must be 0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all_messages: Option<u64>,
+}
+
+impl GetResellerSMSParams {
+    /// A `GetResellerSMSParams` with the parameters the VoIP.ms docs mark as
+    /// required: `client`. Every other field keeps its default, so
+    /// struct-update syntax still fills in the rest.
+    ///
+    /// The marking is the docs' word, not the API's: a field asked for here may
+    /// still be optional in practice, and one left out may turn out to be
+    /// needed.
+    pub fn new(client: u64) -> Self {
+        Self {
+            client: Some(client),
+            ..Default::default()
+        }
+    }
 }
 
 /// Wire form of [`GetResellerSMSParams`]: `timezone` resolved to the number
@@ -8530,7 +8570,7 @@ pub struct MailFAXMessagePDFParams {
     /// ID of the Fax Message requested (Values from getFaxMessages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,
-    /// Destination email adreess (example: yourname@company.com) (required)
+    /// Destination email address (Example: yourname@company.com) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
@@ -8731,8 +8771,12 @@ pub struct OrderDIDParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -8776,7 +8820,7 @@ pub struct OrderDIDParams {
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50)
+    /// Monthly fee for the reseller client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
@@ -8839,8 +8883,12 @@ pub struct OrderDIDInternationalGeographicParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -8884,7 +8932,7 @@ pub struct OrderDIDInternationalGeographicParams {
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50)
+    /// Monthly fee for the reseller client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
@@ -8918,8 +8966,12 @@ pub struct OrderDIDInternationalNationalParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -8963,7 +9015,7 @@ pub struct OrderDIDInternationalNationalParams {
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50)
+    /// Monthly fee for the reseller client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
@@ -8997,8 +9049,12 @@ pub struct OrderDIDInternationalTollFreeParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -9039,7 +9095,7 @@ pub struct OrderDIDInternationalTollFreeParams {
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50)
+    /// Monthly fee for the reseller client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
@@ -9098,8 +9154,12 @@ pub struct OrderDIDVirtualParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -9140,7 +9200,7 @@ pub struct OrderDIDVirtualParams {
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50)
+    /// Monthly fee for the reseller client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
@@ -9263,8 +9323,12 @@ pub struct OrderTollFreeParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -9305,7 +9369,7 @@ pub struct OrderTollFreeParams {
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50)
+    /// Monthly fee for the reseller client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
@@ -9362,8 +9426,12 @@ pub struct OrderVanityParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -9407,7 +9475,7 @@ pub struct OrderVanityParams {
     /// Reseller Sub Account (Example: '100001_VoIP')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<String>,
-    /// Montly Fee for Reseller Client (Example: 3.50)
+    /// Monthly fee for the reseller client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
@@ -9462,7 +9530,7 @@ pub struct RemoveDIDvPRIParams {
     /// Id for specific Vpri
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vpri: Option<u64>,
-    /// DID Number to be remove from our Vpri (Example: 561115) (required)
+    /// DID to remove from the vPRI (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
 }
@@ -10025,8 +10093,8 @@ impl SetCallbackParams {
 pub struct SetCallerIDFilteringParams {
     /// ID for a specific Caller ID Filtering (Example: 18915 / Leave empty to
     /// create a new one)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub filter: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "filter")]
+    pub filtering: Option<u64>,
     /// Caller ID that triggers the Filter (i = Not North American format, 0 =
     /// Anonymous, NPANXXXXXX, s or sb or sc = STIR/SHAKEN Attestation Level, p
     /// = All Phone Book, p:XXXX = Specific Phone Book Group) (required)
@@ -10039,8 +10107,12 @@ pub struct SetCallerIDFilteringParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -10487,8 +10559,12 @@ pub struct SetDIDInfoParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -10658,8 +10734,12 @@ pub struct SetDIDRoutingParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -10864,8 +10944,7 @@ impl SetFAXFolderParams {
 /// Parameters for [`Client::set_fax_number_email`] (wire method `setFaxNumberEmail`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct SetFAXNumberEmailParams {
-    /// DID Number to be ported into our network (Example: 5552341234)
-    /// (required)
+    /// Fax number to update (Example: 5552341234) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
@@ -10879,8 +10958,8 @@ pub struct SetFAXNumberEmailParams {
         rename = "email_enable"
     )]
     pub email_enabled: Option<bool>,
-    /// Flag to enable attach the Fax Message as a PDF file in the
-    /// notifications. Default: false
+    /// true to attach the fax message to the email notification as a PDF file;
+    /// getFaxNumbersInfo reports it as `attach_file`. Default: false
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01"
@@ -10915,8 +10994,7 @@ impl SetFAXNumberEmailParams {
 /// Parameters for [`Client::set_fax_number_info`] (wire method `setFaxNumberInfo`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct SetFAXNumberInfoParams {
-    /// DID Number to be ported into our network (Example: 5552341234)
-    /// (required)
+    /// Fax number to update (Example: 5552341234) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
@@ -10930,29 +11008,37 @@ pub struct SetFAXNumberInfoParams {
         rename = "email_enable"
     )]
     pub email_enabled: Option<bool>,
-    /// Flag to enable attach the Fax Message as a PDF file in the
-    /// notifications. Default: false
+    /// true to attach the fax message to the email notification as a PDF file;
+    /// getFaxNumbersInfo reports it as `attach_file`. Default: false
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub email_attach_file: Option<bool>,
-    /// URL where make a POST when you receive a Fax Message.
+    /// URL a POST request is sent to when a fax message arrives;
+    /// getFaxNumbersInfo reports it as `url`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
-    /// Flag to enable the URL Callback functionality. Default: false
+    /// true to send the POST request to `url_callback`; getFaxNumbersInfo
+    /// reports it as `url_enabled`. Default: false
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
         rename = "url_callback_enable"
     )]
     pub url_callback_enabled: Option<bool>,
-    /// Flag to enable retry the POST action in case we don't receive "ok".
+    /// true to repeat the POST request until the page answers `ok`;
+    /// getFaxNumbersInfo reports it as `retry`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub url_callback_retry: Option<bool>,
+    /// The fax number's maximum number of attempts, which getFaxNumbersInfo
+    /// reports as `max_attempts` (Example: 5). A call without it sets it to 10,
+    /// and 0 leaves it as it is
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_attempts: Option<u64>,
     /// Set to true if testing how to update the information of a Fax Number
     #[serde(
         skip_serializing_if = "crate::responses::is_false",
@@ -10982,21 +11068,23 @@ impl SetFAXNumberInfoParams {
 /// Parameters for [`Client::set_fax_number_url_callback`] (wire method `setFaxNumberURLCallback`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct SetFAXNumberURLCallbackParams {
-    /// DID Number to be ported into our network (Example: 5552341234)
-    /// (required)
+    /// Fax number to update (Example: 5552341234) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
-    /// URL where make a POST when you receive a Fax Message.
+    /// URL a POST request is sent to when a fax message arrives;
+    /// getFaxNumbersInfo reports it as `url`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
-    /// Flag to enable the URL Callback functionality. Default: false
+    /// true to send the POST request to `url_callback`; getFaxNumbersInfo
+    /// reports it as `url_enabled`. Default: false
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
         rename = "url_callback_enable"
     )]
     pub url_callback_enabled: Option<bool>,
-    /// Flag to enable retry the POST action in case we don't receive "ok".
+    /// true to repeat the POST request until the page answers `ok`;
+    /// getFaxNumbersInfo reports it as `retry`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01"
@@ -11403,8 +11491,12 @@ pub struct SetQueueParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -11599,22 +11691,23 @@ pub struct SetSMSParams {
     /// DID to be Updated (Example: 5551234567) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
-    /// Enable/Disable the DID to receive SMS Messages (required)
+    /// true to let the DID receive SMS messages; getDIDsInfo reports it as
+    /// `sms_enabled` (required)
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
         rename = "enable"
     )]
     pub enabled: Option<bool>,
-    /// If Enable, SMS Messages received by your DID will be sent to the email
-    /// address provided
+    /// true to send the SMS messages the DID receives to `email_address`;
+    /// getDIDsInfo reports it as `sms_email_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub email_enabled: Option<bool>,
-    /// SMS Messages received by your DID will be sent to the email address
-    /// provided
+    /// Email address the SMS messages the DID receives are sent to; getDIDsInfo
+    /// reports it as `sms_email`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
     /// If Enable, SMS Messages received by your DID will be forwarded to the
@@ -11629,26 +11722,23 @@ pub struct SetSMSParams {
     /// provided (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sms_forward: Option<String>,
-    /// If Enable, SMS Messages received by your DID will be send a GET request
-    /// to the URL callback provided
+    /// true to send the SMS messages the DID receives to `url_callback`;
+    /// getDIDsInfo reports it as `sms_url_callback_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
         rename = "url_callback_enable"
     )]
     pub url_callback_enabled: Option<bool>,
-    /// SMS Messages received by your DID will be send a GET request to the URL
-    /// callback provided Available Variables for your URL {FROM} The phone
-    /// number that sent you the message. {TO} The DID number that received the
-    /// message. {MESSAGE} The content of the message. Example:
-    /// <http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}>
+    /// URL the SMS messages the DID receives are sent to as a GET request, with
+    /// {FROM} replaced by the number that sent the message, {TO} by the DID
+    /// that received it and {MESSAGE} by its content (Example:
+    /// <http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}>);
+    /// getDIDsInfo reports it as `sms_url_callback`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_callback: Option<String>,
-    /// Enable URL callback Retry we will be expecting an 'ok' output (without
-    /// quotes) from your URL callback page as an indicator that you have
-    /// received the message correctly. If we don't receive the 'ok' letters
-    /// (wihtout quotes) from your callback page, we will keep sending you the
-    /// same message every 30 minutes.
+    /// true to resend a message to `url_callback` every 30 minutes until the
+    /// page answers `ok`; getDIDsInfo reports it as `sms_url_callback_retry`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01"
@@ -11926,8 +12016,12 @@ pub struct SetTimeConditionParams {
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
     /// from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` (a
-    /// voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`,
-    /// `queue`, `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the
+    /// voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs),
+    /// `grp` (a ring group, from getRingGroups), `ivr` (an IVR, from getIVRs),
+    /// `sys` (a system action), `recording` (a recording, from getRecordings),
+    /// `queue` (a call queue, from getQueues), `cb` (a callback, from
+    /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
+    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
     /// call), `busy` (busy tone), `noservice` (number not in service
     /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
     /// test) or `echo` (sound quality test), and `none` takes no record id.
@@ -11935,7 +12029,7 @@ pub struct SetTimeConditionParams {
     /// `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing_match: Option<crate::Routing>,
-    /// Routing for the Call when condition does not matche (required). Same
+    /// Routing for the call when the condition does not match (required). Same
     /// format as `routing_match`.
     #[serde(skip_serializing_if = "Option::is_none", rename = "routing_nomatch")]
     pub routing_no_match: Option<crate::Routing>,
@@ -15197,14 +15291,14 @@ pub struct GetFAXNumbersInfoResponseNumber {
     pub url: Option<String>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
-    pub retry: Option<u64>,
+    pub retry: Option<bool>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
     )]
-    pub attach_file: Option<u64>,
+    pub attach_file: Option<bool>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -15245,6 +15339,11 @@ pub struct GetFAXNumbersInfoResponseNumber {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub fax_to_sip_enabled_account: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub max_attempts: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]

@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: `SetCallerIDFilteringParams::filter: Option<String>` is
+  `filtering: Option<u64>`, the name and type `getCallerIDFiltering` and
+  `delCallerIDFiltering` use for the same id. The wire key is still `filter`.
+- **Breaking**: `GetFAXNumbersInfoResponseNumber::retry` and `attach_file` are
+  `Option<bool>` (were `u64`), the type of the `url_callback_retry` and
+  `email_attach_file` a fax number is set with. Confirmed live: each reads
+  back `1` / `0` as set.
+
+### Added
+
+- **Breaking**: `Routing::Recording`, for the documented `recording:ID` header,
+  which read as `Routing::Unknown`. Confirmed live: `setDIDRouting` stores
+  `recording:` followed by a `getRecordings` id.
+- **Breaking**: `SetFAXNumberInfoParams::max_attempts` and
+  `GetFAXNumbersInfoResponseNumber::max_attempts` (`u64`), which neither the
+  docs nor the WSDL list. Confirmed live: `getFaxNumbersInfo` reports it,
+  `setFaxNumberInfo` stores the value sent, and a `setFaxNumberInfo` call
+  without it sets it to 10, so a caller that read a fax number and writes it
+  back unchanged needs to send it.
+
+- `GetResellerSMSParams::new` and `GetResellerMMSParams::new` take the reseller
+  `client`, which the docs mark required, and `tools/param-docs.json` marks it
+  `required`. The marker was lost because the docs run the `client` row into
+  the end of `to`'s description, which now ends at "Default value: Today".
+  Confirmed live for `getResellerMMS`, which answers `invalid_client` without
+  one.
+
+### Fixed
+
+- Parameter docs, in rustdoc and `tools/param-docs.json`: the fax-number
+  setters' `did` (was the porting text), `assignDIDvPRI` / `removeDIDvPRI`'s
+  `did`, `connectDID`'s `did`, `addLNPPort`'s `port_type` (lists five values)
+  and `toll_free_type` (names `port_type`), every `monthly`,
+  `mailFaxMessagePDF`'s `email` and `setTimeCondition`'s `routing_no_match`.
+- The routing format on every routing field says what each header names and
+  which method lists its records (`grp`, a ring group, from `getRingGroups`;
+  `tc`, a time condition, from `getTimeConditions`; ...).
+- `Routing::Sip` holds a SIP URI's id from `getSIPURIs`, not a URI. Confirmed
+  live: `setDIDRouting` stores `sip:` followed by an id and answers
+  `invalid_sipuri` to `sip:user@example.com`.
+- `SetSMSParams` and the three fax-number setters name the field the matching
+  read reports each value as where the names differ (`email_address` is
+  `getDIDsInfo`'s `sms_email`; `url_callback` is `getFaxNumbersInfo`'s `url`).
+
 ## [0.19.0] - 2026-10-18
 
 ### Changed

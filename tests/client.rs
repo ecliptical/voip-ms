@@ -1427,6 +1427,46 @@ fn fax_numbers_info_did_accepts_dotted_string() {
 }
 
 #[test]
+fn fax_number_settings_read_as_the_types_they_are_written_with() {
+    use voip_ms::{GetFAXNumbersInfoResponse, SetFAXNumberInfoParams};
+
+    // A live row: `retry` and `attach_file` are the `url_callback_retry` and
+    // `email_attach_file` switches, and `max_attempts` is undocumented.
+    let resp: GetFAXNumbersInfoResponse = serde_json::from_value(json!({
+        "status": "success",
+        "numbers": [{
+            "id": "33204",
+            "did": "647.945.9597",
+            "retry": "1",
+            "attach_file": "0",
+            "max_attempts": "5"
+        }]
+    }))
+    .unwrap();
+    let number = &resp.numbers[0];
+    assert_eq!(number.retry, Some(true));
+    assert_eq!(number.attach_file, Some(false));
+    assert_eq!(number.max_attempts, Some(5));
+
+    let params = SetFAXNumberInfoParams {
+        did: number.did.clone(),
+        url_callback_retry: number.retry,
+        email_attach_file: number.attach_file,
+        max_attempts: number.max_attempts,
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&params).unwrap(),
+        json!({
+            "did": "647.945.9597",
+            "email_attach_file": "0",
+            "url_callback_retry": "1",
+            "max_attempts": 5
+        })
+    );
+}
+
+#[test]
 fn conference_members_and_phonebook_groups_read_the_list_key_sent() {
     use voip_ms::{GetConferenceMembersResponse, GetPhonebookGroupsResponse};
 

@@ -119,7 +119,11 @@ each method's `Parameters` cell, including `[Required]` markers,
 examples, and value constraints) and `method_docs` (each method's
 one-line summary). `cargo xtask gen` renders these as `///` comments on
 the `*Params` fields and on the `*Params` struct + `Client` method,
-respectively.
+respectively. The docs sometimes lose the line break before a row, gluing it
+onto the previous description (`getResellerSMS`'s `to` ends `- Default value:
+Todayclient => [Required] ...`); the extractor splits such a row off when the
+word before its arrow ends with an input the method declares and has not
+listed yet, so the row's `(required)` marker reaches its own field.
 
 **A param doc describes the field a caller writes, in the field's terms.** The
 mined text is voip.ms's, written for its wire form, so the generator corrects
@@ -409,9 +413,12 @@ in `xtask/src/field_overrides.rs`:
   `fail_over_routing_*` variants used by queues) map to
   [`crate::Routing`], a tagged enum hand-written in `src/types.rs`
   that parses VoIP.ms's `kind:value` strings (`account:100001_VoIP`,
-  `fwd:5551234567`, `sip:user@host:port`, `none:`, …). Routing
-  changes shape rarely and benefits from a custom `FromStr` (e.g.
-  SIP URIs may contain `:`, so only the first `:` is the separator).
+  `fwd:1026`, `sip:87149`, `recording:289572`, `none:`, …). Routing
+  changes shape rarely and benefits from a custom `FromStr` (only the
+  first `:` is the separator, so a value containing `:` survives). Every
+  header but `sys` and `none` names a record by its id, `sip` included:
+  confirmed live, `setDIDRouting` stores `sip:` followed by a `getSIPURIs`
+  id and answers `invalid_sipuri` to `sip:user@example.com`.
 * **Seconds-or-sentinel durations** map to [`crate::Seconds`] (six queue /
   announcement fields in `SECONDS_FIELDS`) or [`crate::WaitTime`]
   (`maximum_wait_time`), hand-written enums that hold a `u64` count *or* an
@@ -577,7 +584,10 @@ in `xtask/src/field_overrides.rs`:
   `setLocation` was `1713`, the built-in one is `0`), and its ident is
   `internal_extension_location` (`FIELD_IDENT_OVERRIDE`), the sub-account
   field that takes the same value; `location_id` already names an
-  international DID location.
+  international DID location. `setCallerIDFiltering`'s `filter` is listed
+  there too: it is the caller ID filter id the rest of the family takes and
+  reports as `filtering`, so it is `u64` and its ident is `filtering`
+  (`FIELD_IDENT_OVERRIDE`).
 
   The lookup codes (`protocol`, `device_type`, `lock_international`, `route`,
   `balance_management`, `carrier`, `voicemail_setup`) are in the same table

@@ -27,8 +27,9 @@ use std::str::FromStr;
 /// * `account:100001_VoIP` → [`Routing::Account`]
 /// * `fwd:15555` → [`Routing::Forward`]
 /// * `vm:101` → [`Routing::Voicemail`]
-/// * `sip:user@host` → [`Routing::Sip`]
-/// * `sys:5` → [`Routing::System`]
+/// * `sip:87149` → [`Routing::Sip`]
+/// * `sys:hangup` → [`Routing::System`]
+/// * `recording:289572` → [`Routing::Recording`]
 /// * `grp:42` → [`Routing::Group`]
 /// * `queue:7` → [`Routing::Queue`]
 /// * `ivr:3` → [`Routing::Ivr`]
@@ -48,10 +49,13 @@ pub enum Routing {
     Forward(String),
     /// Voicemail box (wire: `vm:MAILBOX`).
     Voicemail(String),
-    /// External SIP URI (wire: `sip:user@host`).
+    /// SIP URI by id, from `getSIPURIs` (wire: `sip:ID`). voip.ms refuses a
+    /// URI written out here (`invalid_sipuri`).
     Sip(String),
     /// System recording / system action (wire: `sys:ID`).
     System(String),
+    /// Recording by id, from `getRecordings` (wire: `recording:ID`).
+    Recording(String),
     /// Ring group by id (wire: `grp:ID`).
     Group(String),
     /// Queue by id (wire: `queue:ID`).
@@ -83,6 +87,7 @@ impl Routing {
             Routing::Voicemail(_) => "vm",
             Routing::Sip(_) => "sip",
             Routing::System(_) => "sys",
+            Routing::Recording(_) => "recording",
             Routing::Group(_) => "grp",
             Routing::Queue(_) => "queue",
             Routing::Ivr(_) => "ivr",
@@ -104,6 +109,7 @@ impl Routing {
             | Routing::Voicemail(v)
             | Routing::Sip(v)
             | Routing::System(v)
+            | Routing::Recording(v)
             | Routing::Group(v)
             | Routing::Queue(v)
             | Routing::Ivr(v)
@@ -172,6 +178,7 @@ impl FromStr for Routing {
             "vm" => Routing::Voicemail(value.into()),
             "sip" => Routing::Sip(value.into()),
             "sys" => Routing::System(value.into()),
+            "recording" => Routing::Recording(value.into()),
             "grp" => Routing::Group(value.into()),
             "queue" => Routing::Queue(value.into()),
             "ivr" => Routing::Ivr(value.into()),
@@ -1040,6 +1047,13 @@ mod tests {
             Routing::from_str("cb:2359").unwrap(),
             Routing::Callback("2359".into()),
         );
+        assert_eq!(
+            Routing::from_str("sip:87149").unwrap(),
+            Routing::Sip("87149".into()),
+        );
+        let recording = Routing::from_str("recording:289572").unwrap();
+        assert_eq!(recording, Routing::Recording("289572".into()));
+        assert_eq!(recording.to_wire(), "recording:289572");
     }
 
     #[test]
@@ -1057,7 +1071,7 @@ mod tests {
 
     #[test]
     fn sip_value_can_contain_colons() {
-        // Split is on the FIRST colon so sip URIs survive intact.
+        // Split is on the FIRST colon so a value containing one survives.
         let r = Routing::from_str("sip:5552223333@sip.voip.ms:5060").unwrap();
         assert_eq!(r, Routing::Sip("5552223333@sip.voip.ms:5060".into()));
         assert_eq!(r.to_wire(), "sip:5552223333@sip.voip.ms:5060");
