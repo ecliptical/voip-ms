@@ -789,6 +789,33 @@ async fn empty_collection_status_yields_empty_response() {
 }
 
 #[tokio::test]
+async fn an_empty_port_list_nested_under_invalid_yields_empty_response() {
+    // The live answer for an account with no port requests: `invalid`, with
+    // the empty-list code nested under `error`. The typed call reads it as
+    // `no_ports` and succeeds empty; the raw call reports `no_ports`.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getLNPList"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "invalid",
+            "error": [{ "code": "no_ports", "description": "Theres no ports to show." }],
+            "message": "invalid"
+        })))
+        .mount(&server)
+        .await;
+
+    let params = voip_ms::GetLNPListParams::default();
+    let envelope = client.get_lnp_list(&params).await.unwrap();
+    assert_eq!(envelope.status, ApiStatus::NoPorts);
+    assert!(envelope.list.is_empty());
+
+    let err = client.get_lnp_list_raw(&params).await.unwrap_err();
+    assert!(matches!(err, Error::Api(ApiStatus::NoPorts)), "got {err:?}");
+}
+
+#[tokio::test]
 async fn real_error_no_status_still_errors() {
     // `no_*` codes that signal a genuine failure (rather than an empty list)
     // are still surfaced as `Error::Api`.
@@ -1424,6 +1451,46 @@ fn fax_numbers_info_did_accepts_dotted_string() {
     .unwrap();
 
     assert_eq!(resp.numbers[0].did.as_deref(), Some("647.948.4755"));
+}
+
+#[test]
+fn fax_number_settings_read_as_the_types_they_are_written_with() {
+    use voip_ms::{GetFAXNumbersInfoResponse, SetFAXNumberInfoParams};
+
+    // A live row: `retry` and `attach_file` are the `url_callback_retry` and
+    // `email_attach_file` switches, and `max_attempts` is undocumented.
+    let resp: GetFAXNumbersInfoResponse = serde_json::from_value(json!({
+        "status": "success",
+        "numbers": [{
+            "id": "33204",
+            "did": "647.945.9597",
+            "retry": "1",
+            "attach_file": "0",
+            "max_attempts": "5"
+        }]
+    }))
+    .unwrap();
+    let number = &resp.numbers[0];
+    assert_eq!(number.retry, Some(true));
+    assert_eq!(number.attach_file, Some(false));
+    assert_eq!(number.max_attempts, Some(5));
+
+    let params = SetFAXNumberInfoParams {
+        did: number.did.clone(),
+        url_callback_retry: number.retry,
+        email_attach_file: number.attach_file,
+        max_attempts: number.max_attempts,
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&params).unwrap(),
+        json!({
+            "did": "647.945.9597",
+            "email_attach_file": "0",
+            "url_callback_retry": "1",
+            "max_attempts": 5
+        })
+    );
 }
 
 #[test]

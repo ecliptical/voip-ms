@@ -487,7 +487,14 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
                 if params_covered.contains(name) {
                     continue;
                 }
-                let ParamCell { params: docs, note } = parse_param_docs(&block.body);
+                let inputs: Vec<&str> = wsdl
+                    .types
+                    .get(&format!("{name}Input"))
+                    .into_iter()
+                    .flatten()
+                    .map(|(field, _)| field.as_str())
+                    .collect();
+                let ParamCell { params: docs, note } = parse_param_docs(&block.body, &inputs);
                 if let Some(note) = note {
                     param_notes.insert(name.clone(), JsonValue::String(note));
                 }
@@ -819,10 +826,16 @@ struct ParamCell {
 /// (present on most methods) are dropped -- they come from the `Client`, not
 /// the request struct.
 ///
+/// A continuation line can also carry a whole row the docs lost the line
+/// break before (`- Default value: Todayclient => [Required] ...` on
+/// `getResellerSMS`), so one that names an unlisted input of the method just
+/// before an arrow is split there; see [`split_glued_row`]. `inputs` are the
+/// method's WSDL input names.
+///
 /// `raw` is the still-HTML-encoded cell body. Inline tags (e.g. the
 /// Cloudflare email-obfuscation `<a>`) are stripped, entities decoded,
 /// and whitespace collapsed before light normalization.
-fn parse_param_docs(raw: &str) -> ParamCell {
+fn parse_param_docs(raw: &str, inputs: &[&str]) -> ParamCell {
     let mut out: Vec<(String, String)> = Vec::new();
     let mut note: Vec<String> = Vec::new();
     for line in raw.lines() {
@@ -845,12 +858,24 @@ fn parse_param_docs(raw: &str) -> ParamCell {
                 note.push(cleaned)
             }
             None => {
-                // Continuation of the previous parameter's description.
+                let unlisted: Vec<&str> = inputs
+                    .iter()
+                    .copied()
+                    .filter(|input| !out.iter().any(|(name, _)| name == input))
+                    .collect();
+                let (continuation, row) = match split_glued_row(&cleaned, &unlisted) {
+                    Some((head, name, desc)) => (head, Some((name, desc))),
+                    None => (cleaned.as_str(), None),
+                };
                 if let Some(last) = out.last_mut() {
-                    if !last.1.is_empty() && !cleaned.is_empty() {
+                    if !last.1.is_empty() && !continuation.is_empty() {
                         last.1.push(' ');
                     }
-                    last.1.push_str(&cleaned);
+                    last.1.push_str(continuation);
+                }
+
+                if let Some((name, desc)) = row {
+                    out.push((name.to_string(), desc.to_string()));
                 }
             }
         }
@@ -884,6 +909,29 @@ fn split_param_line(line: &str) -> Option<(&str, &str)> {
     }
 
     Some((name, rhs.trim()))
+}
+
+/// Split a continuation line that carries a parameter row after its text:
+/// `(text before the row, param name, description)`. The word before the
+/// first `=>` must end with one of `names`, and some text must come before the
+/// name, glued to it or not. Only a name the method declares and has not
+/// listed yet qualifies, so an arrow in prose is left alone; the longest such
+/// name wins.
+fn split_glued_row<'a>(line: &'a str, names: &[&'a str]) -> Option<(&'a str, &'a str, &'a str)> {
+    let (lhs, rhs) = line.split_once("=>")?;
+    let lhs = lhs.trim_end();
+    let name = names
+        .iter()
+        .copied()
+        .filter(|name| lhs.ends_with(name) && lhs.len() > name.len())
+        .filter(|name| {
+            // After a `_` the name is the tail of a longer identifier
+            // (`account` in `sub_account`), not a row of its own.
+            !lhs[..lhs.len() - name.len()].ends_with('_')
+        })
+        .max_by_key(|name| name.len())?;
+    let head = lhs[..lhs.len() - name.len()].trim_end();
+    Some((head, name, rhs.trim()))
 }
 
 /// Undo stray backslash escapes that leaked from the source's PHP/JS
@@ -1336,7 +1384,7 @@ mod tests {
             "    vm          Used for routing calls to a Voicemail",
         ]
         .join("\n");
-        let cell = parse_param_docs(&raw);
+        let cell = parse_param_docs(&raw, &[]);
         assert_eq!(
             pairs(&cell),
             [
@@ -1368,7 +1416,7 @@ mod tests {
             "id   =>  Id",
         ]
         .join("\n");
-        let cell = parse_param_docs(&raw);
+        let cell = parse_param_docs(&raw, &[]);
         assert_eq!(
             pairs(&cell),
             [("name", "Name more about name"), ("id", "Id")]
@@ -1384,7 +1432,7 @@ mod tests {
             "(Values from getBalanceManagement)",
         ]
         .join("\n");
-        let cell = parse_param_docs(&raw);
+        let cell = parse_param_docs(&raw, &[]);
         assert_eq!(
             pairs(&cell),
             [
@@ -1396,6 +1444,38 @@ mod tests {
             ]
         );
         assert_eq!(cell.note, None);
+    }
+
+    #[test]
+    fn a_row_glued_onto_a_continuation_line_is_split_off() {
+        let raw = [
+            "sms     =>          ID for a specific SMS (Example: 5853)",
+            "to      =>          End Date for Filtering SMSs (Example: '2014-03-30')",
+            "                    - Default value: Todayclient      => [Required] ID for a specific Reseller Client (Example: 561115)",
+            "type    =>          Filter SMSs by Type",
+            "                    see sub_account => not a row",
+            "                    the sms => is already listed",
+        ]
+        .join("\n");
+        let cell = parse_param_docs(&raw, &["sms", "client", "to", "type", "account"]);
+        assert_eq!(
+            pairs(&cell),
+            [
+                ("sms", "ID for a specific SMS (Example: 5853)"),
+                (
+                    "to",
+                    "End Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today"
+                ),
+                (
+                    "client",
+                    "ID for a specific Reseller Client (Example: 561115) (required)"
+                ),
+                (
+                    "type",
+                    "Filter SMSs by Type see sub_account => not a row the sms => is already listed"
+                ),
+            ]
+        );
     }
 
     #[test]

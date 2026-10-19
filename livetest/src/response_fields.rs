@@ -693,6 +693,7 @@ pub const RESPONSE_FIELDS: &[(&str, &[&str])] = &[
             "numbers[].fax_to_sip_enabled",
             "numbers[].fax_to_sip_enabled_account",
             "numbers[].id",
+            "numbers[].max_attempts",
             "numbers[].note",
             "numbers[].reseller_account",
             "numbers[].reseller_minute",

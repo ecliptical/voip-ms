@@ -10759,7 +10759,8 @@
     "getResellerSMS": {
       "sms": "ID for a specific SMS (Example: 5853)",
       "from": "Start Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
-      "to": "End Date for Filtering SMSs (Example: '2014-03-30') - Default value: Todayclient => [Required] ID for a specific Reseller Client (Example: 561115)",
+      "to": "End Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
+      "client": "ID for a specific Reseller Client (Example: 561115) (required)",
       "type": "Filter SMSs by Type (Boolean: 1 = received / 0 = sent)",
       "did": "DID number for Filtering SMSs (Example: 5551234567)",
       "contact": "Contact number for Filtering SMSs (Example: 5551234567)",
@@ -10770,7 +10771,8 @@
     "getResellerMMS": {
       "sms": "ID for a specific MMS (Example: 5853)",
       "from": "Start Date for Filtering SMSs (Example: '2014-03-30') - Default value: Today",
-      "to": "End Date for Filtering MMSs (Example: '2014-03-30') - Default value: Todayclient => [Required] ID for a specific Reseller Client (Example: 561115)",
+      "to": "End Date for Filtering MMSs (Example: '2014-03-30') - Default value: Today",
+      "client": "ID for a specific Reseller Client (Example: 561115) (required)",
       "type": "Filter SMSs by Type (Boolean: 1 = received / 0 = sent)",
       "did": "DID number for Filtering MMSs (Example: 5551234567)",
       "contact": "Contact number for Filtering MMSs (Example: 5551234567)",
@@ -12132,5 +12134,5 @@
     "sendVoicemailEmail": "- Send a Voicemail Message File to an Email Address.",
     "setVoicemail": "- Updates the information from a specific Voicemail."
   },
-  "digest": "0aae0864eb322fa2"
+  "digest": "ef47c94f9d0f1936"
 }

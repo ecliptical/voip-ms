@@ -71,6 +71,10 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `internal_extension_location` takes, so it carries that name.
     // `location_id` is taken by the international DID locations.
     ("DelLocationParams", "id", "internal_extension_location"),
+    // `setCallerIDFiltering` names the filter's id `filter` while
+    // `getCallerIDFiltering` and `delCallerIDFiltering` take it, and the
+    // set reports it, as `filtering`.
+    ("SetCallerIDFilteringParams", "filter", "filtering"),
     // The reference-data lookups: `type` narrows the catalog to one entry, and
     // the docs call the value a code ("Code for a specific Address Type").
     ("E911AddressTypesParams", "type", "code"),
@@ -667,10 +671,16 @@ fn documents_base64(doc: &str) -> bool {
 /// Params fields the docs mark `(required)` that a crate caller need not set,
 /// keyed `"wireMethod.field"`.
 ///
-/// The offset ops' `timezone` is the only case: voip.ms needs it on the wire,
-/// and the typed method sends UTC when the field is `None`, so a constructor or
-/// a `required` flag demanding one would contradict the method it builds for.
+/// The offset ops' `timezone`: voip.ms needs it on the wire, and the typed
+/// method sends UTC when the field is `None`, so a constructor or a `required`
+/// flag demanding one would contradict the method it builds for.
+///
+/// `getLNPList`'s `portid`, whose marker came with the `getLNPDetails` text
+/// pasted onto it. Confirmed live: without it, and with an id that matches no
+/// port, `getLNPList` answers `no_ports`, while `getLNPDetails` answers a call
+/// without one with `invalid_portingid`.
 const REQUIRED_OVERRULED: &[&str] = &[
+    "getLNPList.portid",
     "getCDR.timezone",
     "getMMS.timezone",
     "getResellerCDR.timezone",
@@ -818,12 +828,16 @@ const OFFSET_TIMEZONE_DOC: &str = "IANA time zone whose days the date range mean
 /// field of each params struct (its `routing`, when it has one). The docs print
 /// it once under a method's parameter table rather than on a parameter, in
 /// three versions of differing completeness, and on no method that takes
-/// `routing_match` or a caller-ID filter's routing; this is the fullest one,
-/// from the DID order methods.
+/// `routing_match` or a caller-ID filter's routing. This is the fullest one,
+/// from the DID order methods, with the headers it lists but does not explain
+/// glossed after the record each one names.
 const ROUTING_FORMAT_DOC: &str = "Format `header:record_id`, where `header` is `account` \
      (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` \
-     (a voicemail, from getVoicemails), `sip`, `grp`, `ivr`, `sys`, `recording`, `queue`, \
-     `cb`, `tc`, `disa` or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy \
+     (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring \
+     group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), \
+     `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), \
+     `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), \
+     `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy \
      tone), `noservice` (number not in service recording), `disconnected` (number \
      disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` \
      takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, \
@@ -890,7 +904,12 @@ fn bool_param_doc(doc: &str) -> String {
         }
     }
 
-    text.split_whitespace().collect::<Vec<_>>().join(" ")
+    // A note dropped from just before a period (`or not (yes/no).`) leaves
+    // the space that preceded it.
+    text.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .replace(" .", ".")
 }
 
 /// Whether a `bool` field's description still spells a wire value after
@@ -2944,8 +2963,8 @@ fn write_param_docs(docs: &RenderedDocs) -> Result<(), String> {
 ///
 /// Fails on a `param_docs` override that names a param the WSDL does not
 /// declare, that repeats the mined text (the docs caught up and the entry is
-/// stale), or that drops or adds the mined `(required)` marker, which would make
-/// the rendered text disagree with [`is_required`]. Returns as warnings, since
+/// stale), or whose `(required)` marker disagrees with [`is_required`], which
+/// sets the constructor and the `required` flag. Returns as warnings, since
 /// each wants a reading of mined prose:
 ///
 /// * a mined method note no field renders -- the method takes no routing
@@ -2981,14 +3000,11 @@ fn check_param_docs(
             ));
         }
 
-        let mined_required = param_docs
-            .get(op)
-            .and_then(|d| d.get(field))
-            .is_some_and(|doc| doc.contains("(required)"));
-        if text.contains("(required)") != mined_required {
+        if text.contains("(required)") != is_required(op, field, param_docs) {
             return Err(format!(
-                "param_docs override `{path}` and the mined description disagree on \
-                 `(required)`, which sets the constructor and `required`; match the docs"
+                "param_docs override `{path}` and `is_required` disagree on `(required)`, \
+                 which sets the constructor and `required`; match the docs, or list the \
+                 field in REQUIRED_OVERRULED"
             ));
         }
     }
@@ -3500,6 +3516,10 @@ mod tests {
             bool_param_doc("'yes' to enable Voicemail Transcription"),
             "true to enable Voicemail Transcription"
         );
+        assert_eq!(
+            bool_param_doc("Sets if the member is an admin or not (yes/no)."),
+            "Sets if the member is an admin or not."
+        );
         assert!(!names_flag_wire_value("CNAM for the DID (required)"));
         assert!(names_flag_wire_value(
             "(Values: 1 = All the numbers are mobile numbers, 0 = false)"
@@ -3523,11 +3543,13 @@ mod tests {
             "setRingGroupInput".to_string(),
             vec![field("members"), field("language")],
         );
+        types.insert("getLNPListInput".to_string(), vec![field("portid")]);
         Wsdl {
             operations: vec![
                 "setDIDInfo".to_string(),
                 "addLNPPort".to_string(),
                 "setRingGroup".to_string(),
+                "getLNPList".to_string(),
             ],
             types,
         }
@@ -3666,6 +3688,22 @@ mod tests {
             ),
             Ok(vec![])
         );
+    }
+
+    #[test]
+    fn an_override_of_an_overruled_param_drops_the_marker() {
+        let mined = docs(&[("getLNPList", "portid", "ID of the port (required)")]);
+        assert_eq!(
+            check(&mined, &[], &[("getLNPList.portid", "ID of one port")]),
+            Ok(vec![])
+        );
+        let kept = check(
+            &mined,
+            &[],
+            &[("getLNPList.portid", "ID of one port (required)")],
+        )
+        .unwrap_err();
+        assert!(kept.contains("disagree on `(required)`"), "{kept}");
     }
 
     #[test]
