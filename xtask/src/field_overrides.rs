@@ -149,6 +149,10 @@ const ROUTING_FIELDS: &[&str] = &[
 pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "activate",
     "advanced",
+    // Whether a call to *225 reads the account balance or is rejected. The
+    // docs give no value list; confirmed live, `1` and `0` each read back on
+    // `getSubAccounts` as sent.
+    "allow225",
     "answered",
     "burst_enabled",
     "busy",
@@ -187,6 +191,8 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "url_callback_enable",
     "url_callback_retry",
     "url_enabled",
+    "webhook_enable",
+    "webhook_enabled",
     // `setMusicOnHold`'s "quiet volume" toggle. Confirmed live: `1` stores
     // the quiet rendition and `0` (or anything else) the normal one. The
     // response field of the same name is *not* this flag -- it reports the
@@ -262,10 +268,29 @@ pub(crate) const NAMED_ZONE_TZ_RESPONSE_PATHS: &[&str] = &[
 /// struct for the reason [`NAMED_ZONE_TZ_PARAM_PATHS`] is: `id` names a
 /// different record in every method, not every one a number, so [`U64_FIELDS`]
 /// cannot list it. `getBackOrders` filters by the back order `id` its response
-/// reports as a number. `delLocation`'s `id` stays `String`: `getLocations`
-/// reports only location names, so no response says what form the id takes.
-/// Keyed `"StructName.field"`.
-pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] = &["GetBackOrdersParams.id"];
+/// reports as a number. `delLocation`'s `id` is an internal extension location:
+/// confirmed live, a location created with `setLocation` is keyed `1713` in
+/// `getLocations` and `delLocation` deletes it by that number, and the built-in
+/// location is `0`, which is what a sub-account's `internal_extension_location`
+/// reports. Keyed `"StructName.field"`.
+pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] =
+    &["DelLocationParams.id", "GetBackOrdersParams.id"];
+
+/// Response maps keyed by a numeric record id, typed `HashMap<u64, String>`
+/// rather than the `HashMap<String, _>` every other map gets, so an id read
+/// from one sends unconverted to the param that takes it. `getLocations` maps
+/// each internal extension location's id to its name; `delLocation` takes that
+/// id. Keyed `"StructName.field"`.
+pub(crate) const ID_KEYED_NAME_MAP_RESPONSE_PATHS: &[&str] = &["GetLocationsResponse.locations"];
+
+/// The [`FieldOverride`] for a map from a numeric record id to a name.
+pub(crate) fn id_keyed_name_map_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "std::collections::HashMap<u64, String>".into(),
+        response_deserializer: Some("crate::responses::deserialize_map".into()),
+        ..Default::default()
+    }
+}
 
 /// The [`FieldOverride`] for a numeric id. Its wire form is a bare number
 /// either way, so the param side needs no serializer; only the response side
@@ -456,14 +481,25 @@ const DATE_FIELDS: &[&str] = &["date_from", "date_to", "reseller_nextbilling"];
 /// `createVoicemail` documents its `digits` as "Example: 01". Confirmed live:
 /// creating a box with `digits=01` yields mailbox `1`, so voip.ms normalizes
 /// the leading zero away and there is none to preserve.
+///
+/// The lookup codes (`balance_management`, `carrier`, `device_type`,
+/// `lock_international`, `protocol`, `route`, `voicemailsetup`) disagree the
+/// other way round: the WSDL declares the write side `xsd:integer` and the
+/// `get*` lookup's filter `xsd:string`. The lookup documents its filter as "Code
+/// for a specific X (Example: 3)" and reports each code as a number in `value`,
+/// and the write side documents "Values from getX", so one code is one type
+/// from the lookup to the method that takes it.
 const U64_FIELDS: &[&str] = &[
     "agent_announcement",
+    "balance_management",
     "call_hunting",
     "callback",
     "caller_announcement",
     "canada_routing",
+    "carrier",
     "client",
     "conference",
+    "device_type",
     "disa",
     "filtering",
     "forwarding",
@@ -473,21 +509,25 @@ const U64_FIELDS: &[&str] = &[
     "internal_voicemail",
     "international_route",
     "ivr",
+    "lock_international",
     "mailbox",
     "member",
     "phonebook",
     "priority_weight",
+    "protocol",
     "queue",
     "recording",
     "reseller_client",
     "reseller_package",
     "ring_group",
     "ringgroup",
+    "route",
     "sipuri",
     "timecondition",
     "unavailable_message_recording",
     "voice_announcement",
     "voicemail",
+    "voicemailsetup",
     "vpri",
 ];
 
@@ -548,10 +588,19 @@ const IDENTIFIER_STRING_FIELDS: &[&str] = &[
     "zip",
 ];
 
-/// Fractional-second durations. `setForwarding`'s `pause` is documented
-/// "Example: 1.5 / Values: 0 to 10 in increments of 0.5", which the WSDL
-/// declares `xsd:string` while the response sample infers `decimal`.
-const DECIMAL_FIELDS: &[&str] = &["pause"];
+/// Fields that hold a fraction, which the WSDL or a whole-number doc sample
+/// under-types:
+///
+/// * `pause` -- `setForwarding` documents "Example: 1.5 / Values: 0 to 10 in
+///   increments of 0.5", which the WSDL declares `xsd:string` while the
+///   response sample infers `decimal`;
+/// * `minute`, `monthly`, `setup` -- a reseller client's per-minute rate,
+///   monthly fee and setup fee, documented alike on every method that takes
+///   them ("Example: 0.03", "3.50", "1.99"). The WSDL declares them
+///   `xsd:decimal` on `connectDID` / `connectFAX` and `xsd:string` on the seven
+///   orders, and a whole-dollar sample (`setup` `11`) made the extractor infer
+///   `integer` on some responses, which a fee of `11.50` would fail.
+const DECIMAL_FIELDS: &[&str] = &["minute", "monthly", "pause", "setup"];
 
 /// Counts documented as a number *or* the word `unlimited`, which is
 /// `voip_ms::WaitTime`'s exact wire contract -- the type is selected by that

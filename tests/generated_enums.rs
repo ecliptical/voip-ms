@@ -36,9 +36,9 @@ fn call_pickup_behavior_unknown_preserved() {
 fn dialing_mode_wire_roundtrips() {
     for w in ["0", "1", "2"] {
         assert_eq!(DialingMode::from_wire(w).as_wire(), w);
-        // Write-only enum: no `*Response` field reads one, so it carries
-        // `Serialize` alone and the wire string is checked where it lands.
-        assert_eq!(serde_json::to_value(DialingMode::from_wire(w)).unwrap(), w);
+        let v = serde_json::to_value(DialingMode::from_wire(w)).unwrap();
+        let back: DialingMode = serde_json::from_value(v).unwrap();
+        assert_eq!(back, DialingMode::from_wire(w));
     }
 
     assert_eq!(DialingMode::from_wire("0").to_string(), "0");
@@ -48,7 +48,43 @@ fn dialing_mode_wire_roundtrips() {
 fn dialing_mode_unknown_preserved() {
     let u = DialingMode::from_wire("zzz_unknown");
     assert_eq!(u.as_wire(), "zzz_unknown");
-    assert_eq!(serde_json::to_value(&u).unwrap(), "zzz_unknown");
+    let v = serde_json::to_value(&u).unwrap();
+    let back: DialingMode = serde_json::from_value(v).unwrap();
+    assert_eq!(back, u);
+}
+
+#[test]
+fn inbound_dialing_mode_wire_roundtrips() {
+    assert_eq!(
+        InboundDialingMode::from_wire("0"),
+        InboundDialingMode::Nanpa
+    );
+    assert_eq!(InboundDialingMode::from_wire("1"), InboundDialingMode::E164);
+    for w in ["0", "1"] {
+        assert_eq!(InboundDialingMode::from_wire(w).as_wire(), w);
+        let v = serde_json::to_value(InboundDialingMode::from_wire(w)).unwrap();
+        let back: InboundDialingMode = serde_json::from_value(v).unwrap();
+        assert_eq!(back, InboundDialingMode::from_wire(w));
+    }
+
+    let u = InboundDialingMode::from_wire("zzz_unknown");
+    assert_eq!(u.as_wire(), "zzz_unknown");
+}
+
+#[test]
+fn sms_dialing_mode_wire_roundtrips() {
+    assert_eq!(SmsDialingMode::from_wire("0"), SmsDialingMode::Unset);
+    assert_eq!(SmsDialingMode::from_wire("1"), SmsDialingMode::Nanpa);
+    assert_eq!(SmsDialingMode::from_wire("2"), SmsDialingMode::E164);
+    for w in ["0", "1", "2"] {
+        assert_eq!(SmsDialingMode::from_wire(w).as_wire(), w);
+        let v = serde_json::to_value(SmsDialingMode::from_wire(w)).unwrap();
+        let back: SmsDialingMode = serde_json::from_value(v).unwrap();
+        assert_eq!(back, SmsDialingMode::from_wire(w));
+    }
+
+    let u = SmsDialingMode::from_wire("zzz_unknown");
+    assert_eq!(u.as_wire(), "zzz_unknown");
 }
 
 #[test]

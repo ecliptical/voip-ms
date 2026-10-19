@@ -572,32 +572,51 @@ in `xtask/src/field_overrides.rs`:
   (`delRingGroup` spells it `ringgroup`). `id` names a different record in
   every method and is not always a number, so it is typed per struct instead
   (`NUMERIC_ID_PARAM_PATHS`): `getBackOrders` filters by the back order id its
-  response reports as a number. `delLocation`'s `id` stays `String`, because
-  `getLocations` reports only location names and so nothing shows what form
-  the id takes.
+  response reports as a number. `delLocation`'s `id` is an internal extension
+  location, confirmed live to be a number (a location created with
+  `setLocation` was `1713`, the built-in one is `0`), and its ident is
+  `internal_extension_location` (`FIELD_IDENT_OVERRIDE`), the sub-account
+  field that takes the same value; `location_id` already names an
+  international DID location.
+
+  The lookup codes (`protocol`, `device_type`, `lock_international`, `route`,
+  `balance_management`, `carrier`, `voicemail_setup`) are in the same table
+  for the opposite disagreement: the WSDL types the field that takes the code
+  `xsd:integer` and the `get*` lookup's filter `xsd:string`. Both sides
+  document the same code ("Code for a specific Protocol (Example: 3)" against
+  "Values from getProtocols"), and the lookup reports it as a number in
+  `value`, so a code read from the lookup is sent on without a conversion.
 * **Identifiers an all-digit sample made look numeric** (`zip`, `password`,
   `security_code`, `dtmf_digits`, `callerid_prefix` in
   `IDENTIFIER_STRING_FIELDS`) map to `String`, the same reasoning as
   `PHONE_STRING_FIELDS`: a ZIP of `02134`, a PIN of `0123`, a dial string with
   `*` or `#`, and a prefix voip.ms reports as `MIA [555]` all lose information
   as a number. Here the *response* side moves, and only toward tolerance.
-* **`pause`** (`DECIMAL_FIELDS`) maps to [`rust_decimal::Decimal`]:
-  `setForwarding` documents "0 to 10 in increments of 0.5", which `u64` cannot
-  hold and the response already reported as a decimal.
+* **`pause` and the reseller fees** (`DECIMAL_FIELDS`) map to
+  [`rust_decimal::Decimal`]. `setForwarding` documents `pause` as "0 to 10 in
+  increments of 0.5", which `u64` cannot hold and the response already
+  reported as a decimal. `minute`, `monthly` and `setup` are a reseller
+  client's rate and fees, documented alike on `connectDID`, `connectFAX` and
+  the seven orders ("Example: 3.50"); the WSDL declared them `xsd:decimal` on
+  the first two and `xsd:string` on the orders, and a whole-dollar doc sample
+  made three response fields `u64`, which a fee with cents would fail.
 * **`maximum_callers`** joins `maximum_wait_time` in `WAIT_TIME_FIELDS` as
   [`crate::WaitTime`]. The type is selected by its sentinel's wire spelling,
   not by its name: the queue's caller cap is documented "1 to 60 or
   'unlimited'", which is `WaitTime`'s exact wire form, where `Seconds` writes
   `none` and `MaxMembers` a capitalized `Unlimited`.
 
-  Three fields resist this alignment and are recorded in `check-types`'s
-  `DELIBERATE` list rather than forced. `client` is `u64` except on
-  `getClients` and `getDIDsInfo`, whose parameter is documented to accept an
-  e-mail address or a sub-account name as well as the id. `recording` is `u64`
-  except on the call-hunting pair, whose response reports the system recording
-  name `default`. Both use `field_type_skip` for the exceptions.
-  `music_on_hold`'s `volume` is two different things sharing a name: the param
-  is the documented `1`/`0` quiet toggle, the response reports the rendition it
+  Some fields resist this alignment. `client` is `u64` except on `getClients`
+  and `getDIDsInfo`, whose parameter is documented to accept an e-mail address
+  or a sub-account name as well as the id; there it stays `String` and its
+  ident is `client_filter`, since it holds a different set of values.
+  `recording` is `u64` except on the call-hunting pair, which takes the system
+  recording `default` as well as a recording id and reports either back
+  verbatim (confirmed live by creating one of each), so it stays `String` and
+  is in `check-types`'s `DELIBERATE_PARAMS`. Both use `field_type_skip` for the
+  exceptions. `music_on_hold`'s `volume` is two different things sharing a
+  name and is recorded in `check-types`'s `DELIBERATE` list: the param is the
+  documented `1`/`0` quiet toggle, the response reports the rendition it
   produced (`mp3` / `quietmp3`).
 
   Four questions the documents could not settle were answered against the
@@ -687,13 +706,21 @@ deserializer to `src/responses.rs`.
 
 `cargo xtask check-types` is the complementary audit: it parses
 `src/generated.rs` and reports a field a method family types one way on the
-`set`/`create` side and another on the `get` side. Both audits print and exit
-zero by default, since a finding wants human judgment about which of the two
-types is right; both take `--deny`, which turns a finding into a non-zero exit,
-and CI runs them that way. So "it reports nothing" is a rule rather than a
-note here. A pair whose two types are meant to differ goes in its `DELIBERATE`
-list with the reason, which is the record of *why* rather than a way to
-silence it. A
+`set`/`create` side and another on the `get` side. It also reports a `*Params`
+field ident typed one way in one struct and another way in the next, which the
+family comparison cannot see when a code is looked up in one family and taken
+in another (`getProtocols` and `createSubAccount`); a consumer that derives
+one parameter schema per ident sees such a field with two types. A pair meant
+to differ there goes in `DELIBERATE_PARAMS` (`folder`: a `VoicemailFolder`
+everywhere but `getFaxMessages`, whose fax folders include ones the caller
+named; `recording`: an id everywhere but `setCallHunting`, which also takes
+`default`), and a field that holds a different set of values gets its own ident
+instead. Both audits print and exit zero by default, since a finding wants
+human judgment about which of the two types is right; both take `--deny`, which
+turns a finding into a non-zero exit, and CI runs them that way. So "it reports
+nothing" is a rule rather than a note here. A pair whose two types are meant to
+differ goes in its `DELIBERATE` list with the reason, which is the record of
+*why* rather than a way to silence it. A
 collection type is excluded from the comparison: a root response's payload
 list often shares its name with the record id it holds
 (`GetDISAsResponse::disa` against `SetDISAParams::disa`), and no override

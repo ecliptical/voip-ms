@@ -130,6 +130,13 @@ impl serde::Serialize for DialingMode {
     }
 }
 
+impl<'de> serde::Deserialize<'de> for DialingMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(DialingMode::from_wire(&s))
+    }
+}
+
 /// DID billing model.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DidBillingType {
@@ -370,6 +377,62 @@ impl<'de> serde::Deserialize<'de> for EstimatedHoldTimeAnnounce {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
         Ok(EstimatedHoldTimeAnnounce::from_wire(&s))
+    }
+}
+
+/// How a DID presents the caller of an inbound call.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InboundDialingMode {
+    Nanpa,
+    E164,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl InboundDialingMode {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            InboundDialingMode::Nanpa => "0",
+            InboundDialingMode::E164 => "1",
+            InboundDialingMode::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "0" => InboundDialingMode::Nanpa,
+            "1" => InboundDialingMode::E164,
+            other => InboundDialingMode::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for InboundDialingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl std::str::FromStr for InboundDialingMode {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(InboundDialingMode::from_wire(s))
+    }
+}
+
+impl serde::Serialize for InboundDialingMode {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for InboundDialingMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(InboundDialingMode::from_wire(&s))
     }
 }
 
@@ -894,6 +957,68 @@ impl std::str::FromStr for SearchType {
 impl serde::Serialize for SearchType {
     fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
         s.serialize_str(self.as_wire())
+    }
+}
+
+/// How a DID addresses the messages it sends through the API.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SmsDialingMode {
+    /// No mode chosen: what a DID reports until one is set. `setSMS` accepts it.
+    Unset,
+    /// 10 digits, without the `+1` prefix.
+    Nanpa,
+    /// Country code first, with the `+1` prefix.
+    E164,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl SmsDialingMode {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            SmsDialingMode::Unset => "0",
+            SmsDialingMode::Nanpa => "1",
+            SmsDialingMode::E164 => "2",
+            SmsDialingMode::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "0" => SmsDialingMode::Unset,
+            "1" => SmsDialingMode::Nanpa,
+            "2" => SmsDialingMode::E164,
+            other => SmsDialingMode::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for SmsDialingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl std::str::FromStr for SmsDialingMode {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(SmsDialingMode::from_wire(s))
+    }
+}
+
+impl serde::Serialize for SmsDialingMode {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for SmsDialingMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(SmsDialingMode::from_wire(&s))
     }
 }
 
@@ -2131,6 +2256,10 @@ pub enum ApiStatus {
     UsedUsername,
     /// `weak_password` -- This Password is too weak or too common
     WeakPassword,
+    /// `invalid_dialmode` -- This is not a valid SMS dialing mode
+    InvalidDialmode,
+    /// `invalid_inbound_dialing_mode` -- This is not a valid inbound dialing mode
+    InvalidInboundDialingMode,
     /// `no_emailtofax` -- There are no Email to Fax entries
     NoEmailtofax,
     /// `no_folder` -- There are no Fax Folders
@@ -2643,6 +2772,8 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => "used_speed_dial",
             ApiStatus::UsedUsername => "used_username",
             ApiStatus::WeakPassword => "weak_password",
+            ApiStatus::InvalidDialmode => "invalid_dialmode",
+            ApiStatus::InvalidInboundDialingMode => "invalid_inbound_dialing_mode",
             ApiStatus::NoEmailtofax => "no_emailtofax",
             ApiStatus::NoFolder => "no_folder",
             ApiStatus::NoPhonebookGroup => "no_phonebook_group",
@@ -3149,6 +3280,8 @@ impl ApiStatus {
             "used_speed_dial" => ApiStatus::UsedSpeedDial,
             "used_username" => ApiStatus::UsedUsername,
             "weak_password" => ApiStatus::WeakPassword,
+            "invalid_dialmode" => ApiStatus::InvalidDialmode,
+            "invalid_inbound_dialing_mode" => ApiStatus::InvalidInboundDialingMode,
             "no_emailtofax" => ApiStatus::NoEmailtofax,
             "no_folder" => ApiStatus::NoFolder,
             "no_phonebook_group" => ApiStatus::NoPhonebookGroup,
@@ -3869,6 +4002,10 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => Some("You have an entry with this Speed Dial"),
             ApiStatus::UsedUsername => Some("You already have a subaccount using this Username."),
             ApiStatus::WeakPassword => Some("This Password is too weak or too common"),
+            ApiStatus::InvalidDialmode => Some("This is not a valid SMS dialing mode"),
+            ApiStatus::InvalidInboundDialingMode => {
+                Some("This is not a valid inbound dialing mode")
+            }
             ApiStatus::NoEmailtofax => Some("There are no Email to Fax entries"),
             ApiStatus::NoFolder => Some("There are no Fax Folders"),
             ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
@@ -4659,6 +4796,13 @@ pub struct CreateSubAccountParams {
     /// Lock International Code (Values from getLockInternational) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_international: Option<u64>,
+    /// true if a call placed to *225 hears the account's current balance, false
+    /// if it is rejected
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
+    pub allow225: Option<bool>,
     /// Route Code (Values from getRoutes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub international_route: Option<u64>,
@@ -5219,22 +5363,22 @@ pub struct DelLocationParams {
     /// Internal Extension Location name (Value from getLocations) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// Internal Extension Location id (Value from getLocations") (required)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
+    /// Internal Extension Location id (Values from getLocations) (required)
+    #[serde(skip_serializing_if = "Option::is_none", rename = "id")]
+    pub internal_extension_location: Option<u64>,
 }
 
 impl DelLocationParams {
     /// A `DelLocationParams` with the parameters the VoIP.ms docs mark as
-    /// required: `name` and `id`.
+    /// required: `name` and `internal_extension_location`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(name: impl Into<String>, id: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>, internal_extension_location: u64) -> Self {
         Self {
             name: Some(name.into()),
-            id: Some(id.into()),
+            internal_extension_location: Some(internal_extension_location),
         }
     }
 }
@@ -5939,7 +6083,7 @@ pub struct GetBalanceParams {
 pub struct GetBalanceManagementParams {
     /// Code for a specific Balance Management Setting (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub balance_management: Option<String>,
+    pub balance_management: Option<u64>,
 }
 
 /// \- Retrieves the Call Detail Records of all your calls.
@@ -6265,7 +6409,7 @@ pub struct GetCallerIDFilteringParams {
 pub struct GetCarriersParams {
     /// Code for a specific Carrier (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub carrier: Option<String>,
+    pub carrier: Option<u64>,
 }
 
 /// \- Retrieves Charges made to a specific Reseller Client.
@@ -6350,9 +6494,9 @@ impl GetClientThresholdParams {
 pub struct GetClientsParams {
     /// Parameter could have the following values: * Empty Value \[Not
     /// Required\] * Specific Reseller Client ID (Example: 561115) * Specific
-    /// Reseller Client e-mail (Example: '\[email protected\]')
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client: Option<String>,
+    /// Reseller Client e-mail (Example: 'john.doe@mydomain.com')
+    #[serde(skip_serializing_if = "Option::is_none", rename = "client")]
+    pub client_filter: Option<String>,
 }
 
 /// \- Retrieves a list of Conferences if no additional parameter is provided.
@@ -6524,8 +6668,8 @@ pub struct GetDIDsInfoParams {
     /// Parameter could have the following values: * Empty Value \[Not
     /// Required\] * Specific Reseller Client ID (Example: 561115) * Specific
     /// Sub Account (Example: '100001_VoIP')
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "client")]
+    pub client_filter: Option<String>,
     /// DID from Client or Sub Account (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
@@ -6708,7 +6852,7 @@ impl GetDepositsParams {
 pub struct GetDeviceTypesParams {
     /// Code for a specific Device Type (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub device_type: Option<String>,
+    pub device_type: Option<u64>,
 }
 
 /// \- Retrieves a list of "Email to Fax configurations" from your account if no
@@ -7122,7 +7266,7 @@ pub struct GetLocalesParams {
 pub struct GetLockInternationalParams {
     /// Code for a specific Lock International Mode (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub lock_international: Option<String>,
+    pub lock_international: Option<u64>,
 }
 
 /// \- Retrieves a list of MMS messages by: date range, mms type, DID number, and
@@ -7364,7 +7508,7 @@ impl GetPortabilityParams {
 pub struct GetProtocolsParams {
     /// Code for a specific Protocol (Example: 3)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol: Option<String>,
+    pub protocol: Option<u64>,
 }
 
 /// \- Retrieves a list of Queue entries if no additional parameter is provided.
@@ -7938,7 +8082,7 @@ pub struct GetRingStrategiesParams {
 pub struct GetRoutesParams {
     /// Code for a specific Route (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub route: Option<String>,
+    pub route: Option<u64>,
 }
 
 /// \- Retrieves a list of SIP URIs if no additional parameter is provided.
@@ -8316,7 +8460,7 @@ impl GetVoicemailMessagesParams {
 pub struct GetVoicemailSetupsParams {
     /// ID for a specific Voicemail Setup (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none", rename = "voicemailsetup")]
-    pub voicemail_setup: Option<String>,
+    pub voicemail_setup: Option<u64>,
 }
 
 /// \- Retrieves all Voicemail Transcriptions if no additional parameter is
@@ -8386,7 +8530,7 @@ pub struct MailFAXMessagePDFParams {
     /// ID of the Fax Message requested (Values from getFaxMessages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,
-    /// Destination email adreess (example: \[email protected\]) (required)
+    /// Destination email adreess (example: yourname@company.com) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
@@ -8634,13 +8778,13 @@ pub struct OrderDIDParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8742,13 +8886,13 @@ pub struct OrderDIDInternationalGeographicParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8821,13 +8965,13 @@ pub struct OrderDIDInternationalNationalParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8897,13 +9041,13 @@ pub struct OrderDIDInternationalTollFreeParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8998,13 +9142,13 @@ pub struct OrderDIDVirtualParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -9048,7 +9192,7 @@ pub struct OrderFAXNumberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<u64>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: \[email protected\])
+    /// (Example: yourname@company.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. Default: false
@@ -9163,13 +9307,13 @@ pub struct OrderTollFreeParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -9265,13 +9409,13 @@ pub struct OrderVanityParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -9710,7 +9854,7 @@ pub struct SendVoicemailEmailParams {
     /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<u64>,
-    /// Destination Email address (Example: \[email protected\]) (required)
+    /// Destination Email address (Example: john.doe@my-domain.com) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
 }
@@ -9753,7 +9897,8 @@ pub struct SetCallHuntingParams {
     /// Music on Hold Code (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music: Option<String>,
-    /// Recording for the Call Hunting (values from getRecordings) (required)
+    /// Recording for the Call Hunting: a recording id from getRecordings, or
+    /// `default` for the system recording (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<String>,
     /// Language for the Call Hunting (values from getLanguages) (required)
@@ -10379,6 +10524,10 @@ pub struct SetDIDInfoParams {
     /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none", rename = "callerid_prefix")]
     pub caller_id_prefix: Option<String>,
+    /// How the DID presents the caller of an inbound call (Values: 0 = NANPA,
+    /// 10 digits; 1 = E.164, with the country code)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inbound_dialing_mode: Option<InboundDialingMode>,
     /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
@@ -10405,6 +10554,27 @@ pub struct SetDIDInfoParams {
     /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
+    /// true to redact sensitive information from call transcriptions. Stored
+    /// only while `transcribe` is true
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_yes_no"
+    )]
+    pub transcription_redaction: Option<bool>,
+    /// true to add a summary to call transcriptions. Stored only while
+    /// `transcribe` is true
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_yes_no"
+    )]
+    pub transcription_summary: Option<bool>,
+    /// true to add a sentiment analysis to call transcriptions. Stored only
+    /// while `transcribe` is true
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_yes_no"
+    )]
+    pub transcription_sentiment: Option<bool>,
     /// Call Transcription Email
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_email: Option<String>,
@@ -10699,7 +10869,7 @@ pub struct SetFAXNumberEmailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: \[email protected\])
+    /// (Example: yourname@company.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. Default: false
@@ -10750,7 +10920,7 @@ pub struct SetFAXNumberInfoParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: \[email protected\])
+    /// (Example: yourname@company.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. Default: false
@@ -11292,8 +11462,8 @@ pub struct SetQueueParams {
 /// Parameters for [`Client::set_recording`] (wire method `setRecording`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct SetRecordingParams {
-    /// ID for a specific Phonebook entry (Example: 33221 / Leave empty to
-    /// create a new one)
+    /// ID for a specific Recording (Example: 33221 / Leave empty to create a
+    /// new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<u64>,
     /// Base64 encoded file (Provide Recording ID and file if you want update
@@ -11388,7 +11558,7 @@ pub struct SetSIPURIParams {
     /// one)
     #[serde(skip_serializing_if = "Option::is_none", rename = "sipuri")]
     pub sip_uri: Option<u64>,
-    /// SIP URI (Example: '\[email protected\]') (required)
+    /// SIP URI (Example: '5552223333@sip.voip.ms') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uri: Option<String>,
     /// Description for the SIP URI
@@ -11484,6 +11654,23 @@ pub struct SetSMSParams {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub url_callback_retry: Option<bool>,
+    /// true to send the SMS and MMS messages the DID receives to `webhook`
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01",
+        rename = "webhook_enable"
+    )]
+    pub webhook_enabled: Option<bool>,
+    /// Webhook URL: SMS and MMS messages the DID receives are sent as a POST
+    /// request to it (for a 3CX or PortSIP PBX)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub webhook: Option<String>,
+    /// How messages sent through the API from this DID are addressed (Values: 0
+    /// = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10
+    /// digits without the +1 prefix; 2 = E.164, the country code first with the
+    /// +1 prefix)
+    #[serde(skip_serializing_if = "Option::is_none", rename = "dialmode")]
+    pub sms_dialing_mode: Option<SmsDialingMode>,
     /// SIP account or sub-account that will receive the SMS Messages
     #[serde(skip_serializing_if = "Option::is_none", rename = "sms_sipaccount")]
     pub sms_sip_account: Option<String>,
@@ -11589,6 +11776,13 @@ pub struct SetSubAccountParams {
     /// Lock International Code (Values from getLockInternational) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_international: Option<u64>,
+    /// true if a call placed to *225 hears the account's current balance, false
+    /// if it is rejected
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
+    pub allow225: Option<bool>,
     /// Route Code (Values from getRoutes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub international_route: Option<u64>,
@@ -11710,7 +11904,7 @@ pub struct SetSubAccountParams {
     /// Location group for the internal extension (Values from getLocations)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension_location: Option<u64>,
-    /// e911 Default CallerID
+    /// The caller ID sent on emergency (911) calls from this sub-account
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_e911: Option<String>,
 }
@@ -13845,7 +14039,8 @@ pub struct GetConferenceMembersResponse {
     pub status: ApiStatus,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq",
+        rename = "member"
     )]
     pub members: Vec<GetConferenceMembersResponseMember>,
 }
@@ -14265,6 +14460,59 @@ pub struct GetDIDsInfoResponseDID {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub transcription_email: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<SmsDialingMode, _>",
+        rename = "dialmode"
+    )]
+    pub sms_dialing_mode: Option<SmsDialingMode>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<InboundDialingMode, _>"
+    )]
+    pub inbound_dialing_mode: Option<InboundDialingMode>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub mms_available: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub record_calls: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "sms_sipaccount"
+    )]
+    pub sms_sip_account: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn",
+        rename = "sms_sipaccount_enabled"
+    )]
+    pub sms_sip_account_enabled: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub transcription_start_delay: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub voicemail_threshold: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub webhook: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub webhook_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -14388,14 +14636,14 @@ pub struct GetDIDsInternationalNationalResponseLocation {
     pub monthly: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
-    pub setup: Option<u64>,
+    pub setup: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
-    pub minute: Option<u64>,
+    pub minute: Option<rust_decimal::Decimal>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -15693,10 +15941,7 @@ pub struct GetLNPListStatusResponse {
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_map_from_object"
-    )]
+    #[serde(default, deserialize_with = "crate::responses::deserialize_map")]
     pub list_status: std::collections::HashMap<String, String>,
 }
 
@@ -15815,11 +16060,8 @@ pub struct GetLocationsResponse {
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
-    )]
-    pub locations: Vec<String>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_map")]
+    pub locations: std::collections::HashMap<u64, String>,
 }
 
 /// Response body for [`Client::get_lock_international`] (wire method `getLockInternational`).
@@ -15941,10 +16183,7 @@ pub struct GetMediaMMSResponse {
         deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_map_from_object"
-    )]
+    #[serde(default, deserialize_with = "crate::responses::deserialize_map")]
     pub media: std::collections::HashMap<String, String>,
 }
 
@@ -16158,7 +16397,7 @@ pub struct GetPhonebookResponse {
 
 /// Response body for [`Client::get_phonebook_groups`] (wire method `getPhonebookGroups`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
-pub struct GetPhonebookGroupsResponsePhonebook {
+pub struct GetPhonebookGroupsResponsePhonebookGroup {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -16186,7 +16425,7 @@ pub struct GetPhonebookGroupsResponse {
         default,
         deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub phonebooks: Vec<GetPhonebookGroupsResponsePhonebook>,
+    pub phonebook_groups: Vec<GetPhonebookGroupsResponsePhonebookGroup>,
 }
 
 /// Response body for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
@@ -17590,6 +17829,26 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<CallPickupBehavior, _>"
     )]
     pub call_pickup_behavior: Option<CallPickupBehavior>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub allow225: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<DialingMode, _>"
+    )]
+    pub dialing_mode: Option<DialingMode>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub internal_extension_location: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub transcription_start_delay: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -18221,6 +18480,11 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub transcription_delay: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub client: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -18680,9 +18944,14 @@ pub struct SearchTollFreeUSAResponseDID {
     pub minute_alaska: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
-    pub setup: Option<u64>,
+    pub setup: Option<rust_decimal::Decimal>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub sms: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]

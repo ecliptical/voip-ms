@@ -105,8 +105,7 @@ cargo xtask check-flags
 
 # 5. Apply any corrections to tools/api-response-overrides.json (NOT the
 #    generated files), then regenerate src/generated.rs. Heed its warnings:
-#    an addition shadowed by a field-name override needs its type fixed, and a
-#    parameter documented as base64 but absent from BASE64_FILE_PARAM_PATHS
+#    a parameter documented as base64 but absent from BASE64_FILE_PARAM_PATHS
 #    in xtask/src/field_overrides.rs is a method that needs the multipart
 #    transport (design decision #7) and will not work over GET.
 cargo xtask gen
@@ -118,10 +117,12 @@ cargo xtask gen
 cargo xtask dump-methods
 
 # 5c. Audit the emitted surface for a field typed one way to read and another
-#     to write. A real finding gets a field-name entry in
-#     xtask/src/field_overrides.rs and a regen; a pair meant to differ goes in
-#     the command's DELIBERATE list with the reason. CI runs this and
-#     check-flags with --deny, so a finding left here fails the build.
+#     to write, and for a params field ident typed two ways across methods. A
+#     real finding gets a field-name entry in xtask/src/field_overrides.rs (or,
+#     for a field holding a different set of values, its own ident in
+#     FIELD_IDENT_OVERRIDE) and a regen; a pair meant to differ goes in the
+#     command's DELIBERATE or DELIBERATE_PARAMS list with the reason. CI runs
+#     this and check-flags with --deny, so a finding left here fails the build.
 cargo xtask check-types
 
 # 6. Run the full quality gate — the same selection CI uses, plus the doc
@@ -195,7 +196,15 @@ refresh needs eyes on the diff, not just a green build:
 * **Mis-structured responses** -- the docs print a list as a single object
   (`getTerminationRates`'s `route`), or a map whose keys are data
   (`getLNPListStatus`'s `list_status`). Patches only retype scalars, so these
-  take a full `shape` replacement for the method.
+  take a full `shape` replacement for the method. A `map` also reads a JSON
+  array as the map keyed `0` to `n - 1`, which is how PHP's `json_encode`
+  writes one with exactly those keys: `getLocations` documents a list of names
+  and sends one while the built-in location `0` is the only one, but sends
+  `{"0": ..., "1713": ...}` once another exists. A doc sample that is a bare
+  list of names is worth that check against an account with more than one
+  entry. A map's keys are `String` unless `ID_KEYED_NAME_MAP_RESPONSE_PATHS`
+  in `xtask/src/field_overrides.rs` types them `u64` for a map keyed by a
+  record id.
 * **Undocumented status codes** -- a code the live API returns that the
   docs' Error Codes table omits goes in `undocumented_statuses`. If the docs
   later list it, `cargo xtask gen` fails until the entry is deleted.

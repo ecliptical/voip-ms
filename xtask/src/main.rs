@@ -59,6 +59,18 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `setRingGroup` use `ring_group`; align the delete with the family so a
     // caller who just listed or configured a group reuses the same field.
     ("DelRingGroupParams", "ringgroup", "ring_group"),
+    // `getConferenceMembers` sends its list under `member`, the same key each
+    // row's id uses; the list keeps the plural.
+    ("GetConferenceMembersResponse", "member", "members"),
+    // These two filters also accept a client's e-mail address (`getClients`)
+    // or a sub-account name (`getDIDsInfo`), so they are text where every other
+    // `client` is a reseller client id.
+    ("GetClientsParams", "client", "client_filter"),
+    ("GetDIDsInfoParams", "client", "client_filter"),
+    // An internal extension location's id: the value a sub-account's
+    // `internal_extension_location` takes, so it carries that name.
+    // `location_id` is taken by the international DID locations.
+    ("DelLocationParams", "id", "internal_extension_location"),
     // The reference-data lookups: `type` narrows the catalog to one entry, and
     // the docs call the value a code ("Code for a specific Address Type").
     ("E911AddressTypesParams", "type", "code"),
@@ -129,6 +141,7 @@ const FIELD_IDENT_RENAME: &[(&str, &str)] = &[
     ("callrecording", "call_recording"),
     ("calltype", "call_type"),
     ("cancelcomment", "cancel_comment"),
+    ("dialmode", "sms_dialing_mode"),
     ("dialtime", "dial_time"),
     ("email_enable", "email_enabled"),
     ("enable", "enabled"),
@@ -187,6 +200,7 @@ const FIELD_IDENT_RENAME: &[(&str, &str)] = &[
     ("useragent", "user_agent"),
     ("voicemailsetup", "voicemail_setup"),
     ("voicemailsetups", "voicemail_setups"),
+    ("webhook_enable", "webhook_enabled"),
     ("weekdayend", "weekday_end"),
     ("weekdaystart", "weekday_start"),
     ("zip", "zip_code"),
@@ -2508,28 +2522,6 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
-    // An addition whose leaf field has a field-name override keeps its field,
-    // but the override supplies both the Rust type and the deserializer, so the
-    // declared scalar type is never consulted. Warn so the type gets fixed
-    // (unless a `field_type_skip` on that field name keeps some struct on the
-    // declared type). A patch under such an override is not warned about: its
-    // type and sample still correct the shapes for readers of the JSON.
-    let skipped_fields: BTreeSet<&str> = field_type_skip
-        .iter()
-        .filter_map(|entry| entry.rsplit_once('.').map(|(_, f)| f))
-        .collect();
-    for (method, mo) in &overrides_doc.methods {
-        for path in mo.additions.iter().map(|add| &add.path) {
-            let leaf = path.rsplit('.').next().unwrap_or(path);
-            if table.get(leaf).is_some() && !skipped_fields.contains(leaf) {
-                eprintln!(
-                    "warning: {method}: addition `{path}` is shadowed by the \
-                     field-name override for `{leaf}`; its declared type is ignored",
-                );
-            }
-        }
-    }
-
     // `"StructName.field" -> EnumName`: assign one struct's field a specific
     // enum type, overriding the inferred type and any name-based `field_types`.
     let mut field_type_override: BTreeMap<String, field_overrides::FieldOverride> = BTreeMap::new();
@@ -2588,6 +2580,14 @@ fn cmd_gen() -> Result<(), String> {
             &mut field_type_override,
             (*path).to_string(),
             field_overrides::numeric_id_override(),
+        )?;
+    }
+
+    for path in field_overrides::ID_KEYED_NAME_MAP_RESPONSE_PATHS {
+        assign_field_type(
+            &mut field_type_override,
+            (*path).to_string(),
+            field_overrides::id_keyed_name_map_override(),
         )?;
     }
 

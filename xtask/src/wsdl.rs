@@ -69,7 +69,90 @@ const CORRECTIONS: &[Correction] = &[
             before: "attachid",
         },
     },
+    // The docs list `allow225` after `lock_international` on both methods.
+    // Confirmed live: `createSubAccount` with `allow225=1` and `setSubAccount`
+    // flipping it to `1` and back each read back on `getSubAccounts`.
+    Correction {
+        op: "createSubAccount",
+        fix: ALLOW_225,
+    },
+    Correction {
+        op: "setSubAccount",
+        fix: ALLOW_225,
+    },
+    // The docs list these on `setDIDInfo` and `setSMS`. Confirmed live on a
+    // DID: each value sent read back on `getDIDsInfo`, `inbound_dialing_mode=2`
+    // answered `invalid_inbound_dialing_mode` and `dialmode=3`
+    // `invalid_dialmode`. The transcription switches are stored only while
+    // `transcribe` is on. The docs also list `sms_sipaccount` and
+    // `sms_sipaccount_enabled` on `setDIDInfo`, which sets them but ignores
+    // `sms_sipaccount_enabled=0`; `setSMS` declares both and turns the routing
+    // off. Neither clears `sms_sipaccount` with an empty value. The docs' SMPP
+    // parameters on `setSMS` are left out: the test account answers
+    // `sms_apply_regulations`, so no value could be read back.
+    Correction {
+        op: "setDIDInfo",
+        fix: Fix::Add {
+            name: "inbound_dialing_mode",
+            xsd_type: "xsd:integer",
+            before: "note",
+        },
+    },
+    Correction {
+        op: "setDIDInfo",
+        fix: Fix::Add {
+            name: "transcription_redaction",
+            xsd_type: "xsd:string",
+            before: "transcription_email",
+        },
+    },
+    Correction {
+        op: "setDIDInfo",
+        fix: Fix::Add {
+            name: "transcription_summary",
+            xsd_type: "xsd:string",
+            before: "transcription_email",
+        },
+    },
+    Correction {
+        op: "setDIDInfo",
+        fix: Fix::Add {
+            name: "transcription_sentiment",
+            xsd_type: "xsd:string",
+            before: "transcription_email",
+        },
+    },
+    Correction {
+        op: "setSMS",
+        fix: Fix::Add {
+            name: "webhook_enable",
+            xsd_type: "xsd:integer",
+            before: "sms_sipaccount",
+        },
+    },
+    Correction {
+        op: "setSMS",
+        fix: Fix::Add {
+            name: "webhook",
+            xsd_type: "xsd:string",
+            before: "sms_sipaccount",
+        },
+    },
+    Correction {
+        op: "setSMS",
+        fix: Fix::Add {
+            name: "dialmode",
+            xsd_type: "xsd:integer",
+            before: "sms_sipaccount",
+        },
+    },
 ];
+
+const ALLOW_225: Fix = Fix::Add {
+    name: "allow225",
+    xsd_type: "xsd:integer",
+    before: "international_route",
+};
 
 const ZIP_CODE: Fix = Fix::Rename {
     from: "zip",

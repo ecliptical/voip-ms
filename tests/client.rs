@@ -1427,6 +1427,197 @@ fn fax_numbers_info_did_accepts_dotted_string() {
 }
 
 #[test]
+fn conference_members_and_phonebook_groups_read_the_list_key_sent() {
+    use voip_ms::{GetConferenceMembersResponse, GetPhonebookGroupsResponse};
+
+    // Live envelopes: the lists arrive under `member` and `phonebook_groups`,
+    // where the docs print `members` and `phonebooks`.
+    let members: GetConferenceMembersResponse = serde_json::from_value(json!({
+        "status": "success",
+        "member": [{
+            "admin": "no",
+            "announce_join_leave": "no",
+            "announce_only_user": "yes",
+            "announce_user_count": "no",
+            "announcement": "0",
+            "description": "issue51-delete-me",
+            "drop_silence": "yes",
+            "jitter_buffer": "yes",
+            "member": "7197",
+            "moh_when_empty": "default",
+            "name": "issue51-member",
+            "pin": "4321",
+            "quiet": "no",
+            "silence_threshold": "2500",
+            "start_muted": "no",
+            "talk_detection": "yes",
+            "talking_threshold": "160"
+        }]
+    }))
+    .unwrap();
+    assert_eq!(members.members.len(), 1);
+    assert_eq!(members.members[0].member, Some(7197));
+    assert_eq!(members.members[0].pin.as_deref(), Some("4321"));
+
+    let groups: GetPhonebookGroupsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "phonebook_groups": [{
+            "members": "",
+            "name": "issue51-group",
+            "phonebook_group": "17582"
+        }]
+    }))
+    .unwrap();
+    assert_eq!(groups.phonebook_groups.len(), 1);
+    assert_eq!(groups.phonebook_groups[0].phonebook_group, Some(17582));
+}
+
+#[test]
+fn a_did_reads_back_the_fields_the_docs_omit() {
+    use voip_ms::{GetDIDsInfoResponse, InboundDialingMode, SmsDialingMode};
+
+    let resp: GetDIDsInfoResponse = serde_json::from_value(json!({
+        "status": "success",
+        "dids": [{
+            "did": "6474781287",
+            "dialmode": "2",
+            "inbound_dialing_mode": "1",
+            "mms_available": 1,
+            "record_calls": "1",
+            "sms_sipaccount": "552036_demo",
+            "sms_sipaccount_enabled": "1",
+            "transcription_start_delay": "10",
+            "voicemail_threshold": "15",
+            "webhook": "https://example.com/hook",
+            "webhook_enabled": "1"
+        }]
+    }))
+    .unwrap();
+
+    let did = &resp.dids[0];
+    assert_eq!(did.sms_dialing_mode, Some(SmsDialingMode::E164));
+    assert_eq!(did.inbound_dialing_mode, Some(InboundDialingMode::E164));
+    assert_eq!(did.mms_available, Some(true));
+    assert_eq!(did.record_calls, Some(true));
+    assert_eq!(did.sms_sip_account.as_deref(), Some("552036_demo"));
+    assert_eq!(did.sms_sip_account_enabled, Some(true));
+    assert_eq!(did.transcription_start_delay, Some(10));
+    assert_eq!(did.voicemail_threshold, Some(15));
+    assert_eq!(did.webhook.as_deref(), Some("https://example.com/hook"));
+    assert_eq!(did.webhook_enabled, Some(true));
+}
+
+#[test]
+fn did_and_sms_settings_the_wsdl_omits_are_sent_under_their_wire_names() {
+    use voip_ms::{InboundDialingMode, SetDIDInfoParams, SetSMSParams, SmsDialingMode};
+
+    // Each wire form below was sent live and read back on `getDIDsInfo`.
+    let info = SetDIDInfoParams {
+        inbound_dialing_mode: Some(InboundDialingMode::E164),
+        transcription_summary: Some(true),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&info).unwrap(),
+        json!({ "inbound_dialing_mode": "1", "transcription_summary": "yes" })
+    );
+
+    let sms = SetSMSParams {
+        sms_dialing_mode: Some(SmsDialingMode::E164),
+        webhook_enabled: Some(true),
+        webhook: Some("https://example.com/hook".into()),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&sms).unwrap(),
+        json!({
+            "dialmode": "2",
+            "webhook_enable": "1",
+            "webhook": "https://example.com/hook"
+        })
+    );
+}
+
+#[test]
+fn an_international_location_reads_fees_with_cents() {
+    use voip_ms::{GetDIDsInternationalNationalResponse, rust_decimal::Decimal};
+
+    // A live row (Belgium). A `u64` fee failed the whole response on `4.50`.
+    let resp: GetDIDsInternationalNationalResponse = serde_json::from_value(json!({
+        "status": "success",
+        "locations": [{
+            "area_code": "78",
+            "channels": 2,
+            "country": "BELGIUM",
+            "location_id": "a8368",
+            "location_name": "NATIONAL",
+            "minute": "0.009000",
+            "monthly": "4.50",
+            "monthly_per_minute": "3.00",
+            "setup": "4.50",
+            "setup_per_minute": "0.00",
+            "stock": 378
+        }]
+    }))
+    .unwrap();
+
+    let location = &resp.locations[0];
+    assert_eq!(location.setup, Some(Decimal::new(450, 2)));
+    assert_eq!(location.minute, Some(Decimal::new(9, 3)));
+    assert_eq!(location.monthly, Some(Decimal::new(450, 2)));
+}
+
+#[test]
+fn allow225_is_sent_as_one_or_zero() {
+    use voip_ms::{CreateSubAccountParams, SetSubAccountParams};
+
+    // Measured live: `allow225=1` and `allow225=0` each read back as sent.
+    let on = SetSubAccountParams {
+        id: Some(829236),
+        allow225: Some(true),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&on).unwrap(),
+        json!({ "id": 829236, "allow225": "1" })
+    );
+
+    let off = CreateSubAccountParams {
+        allow225: Some(false),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&off).unwrap(),
+        json!({ "allow225": "0" })
+    );
+}
+
+#[test]
+fn a_sub_account_reads_back_the_fields_the_docs_omit() {
+    use voip_ms::DialingMode;
+
+    // A live row carries these as strings; the docs' Output block lists none
+    // of them.
+    let resp: GetSubAccountsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "accounts": [{
+            "id": "829236",
+            "allow225": "1",
+            "dialing_mode": "2",
+            "internal_extension_location": "1713",
+            "transcription_start_delay": "10"
+        }]
+    }))
+    .unwrap();
+
+    let account = &resp.accounts[0];
+    assert_eq!(account.allow225, Some(true));
+    assert_eq!(account.dialing_mode, Some(DialingMode::Nanpa));
+    assert_eq!(account.internal_extension_location, Some(1713));
+    assert_eq!(account.transcription_start_delay, Some(10));
+}
+
+#[test]
 fn lnp_list_status_is_a_string_keyed_map() {
     use voip_ms::GetLNPListStatusResponse;
 
@@ -1455,6 +1646,49 @@ fn lnp_list_status_is_a_string_keyed_map() {
         Some("Port cancel upon customer request")
     );
     assert_eq!(resp.list_status.len(), 4);
+}
+
+#[test]
+fn locations_map_each_id_to_its_name_in_either_wire_form() {
+    use std::collections::HashMap;
+    use voip_ms::{DelLocationParams, GetLocationsResponse};
+
+    // Both envelopes were read live: a list while the built-in location is the
+    // only one, an object keyed by id once another exists.
+    let only_built_in: GetLocationsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "locations": ["Reachable by everyone"]
+    }))
+    .unwrap();
+    assert_eq!(
+        only_built_in.locations,
+        HashMap::from([(0, "Reachable by everyone".to_string())])
+    );
+
+    let with_custom: GetLocationsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "locations": { "0": "Reachable by everyone", "1713": "Office" }
+    }))
+    .unwrap();
+    assert_eq!(
+        with_custom.locations,
+        HashMap::from([
+            (0, "Reachable by everyone".to_string()),
+            (1713, "Office".to_string()),
+        ])
+    );
+
+    // The key is the id `delLocation` takes, with no conversion between.
+    let (&id, name) = with_custom
+        .locations
+        .iter()
+        .find(|(_, name)| *name == "Office")
+        .unwrap();
+    let params = DelLocationParams::new(name.clone(), id);
+    assert_eq!(
+        serde_json::to_value(&params).unwrap(),
+        json!({ "name": "Office", "id": 1713 })
+    );
 }
 
 #[test]
@@ -2791,7 +3025,7 @@ async fn the_polymorphic_client_filters_still_take_a_string() {
 
     client
         .get_clients_raw(&GetClientsParams {
-            client: Some("john@example.com".into()),
+            client_filter: Some("john@example.com".into()),
         })
         .await
         .unwrap();

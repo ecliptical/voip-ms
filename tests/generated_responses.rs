@@ -1627,9 +1627,9 @@ fn get_phonebook_response_deserializes() {
 }
 
 #[test]
-fn get_phonebook_groups_response_phonebook_deserializes() {
+fn get_phonebook_groups_response_phonebook_group_deserializes() {
     assert!(
-        serde_json::from_value::<GetPhonebookGroupsResponsePhonebook>(
+        serde_json::from_value::<GetPhonebookGroupsResponsePhonebookGroup>(
             json!({ "status": "success" })
         )
         .is_ok()

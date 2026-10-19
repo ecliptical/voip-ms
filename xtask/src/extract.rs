@@ -249,7 +249,7 @@ fn content_digest(value: &JsonValue) -> Result<String, String> {
 /// individual methods), so the output is a single ordered list.
 pub fn cmd_extract_statuses(html_path: &Path, out_path: &Path) -> Result<(), String> {
     let bytes = fs::read(html_path).map_err(|e| format!("read {}: {e}", html_path.display()))?;
-    let html = String::from_utf8_lossy(&bytes).into_owned();
+    let html = reveal_cf_emails(&String::from_utf8_lossy(&bytes));
 
     let statuses = scan_status_table(&html);
     if statuses.is_empty() {
@@ -442,7 +442,7 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
     // (smart quotes inside example text), so decode lossily rather than
     // failing the whole extract.
     let bytes = fs::read(html_path).map_err(|e| format!("read {}: {e}", html_path.display()))?;
-    let html = String::from_utf8_lossy(&bytes).into_owned();
+    let html = reveal_cf_emails(&String::from_utf8_lossy(&bytes));
 
     // Cross-check method names against the WSDL so we ignore TOC entries
     // and section headers like "General"/"Accounts" naturally.
@@ -722,6 +722,60 @@ fn scan_html(html: &str) -> Vec<Block> {
     }
 
     out
+}
+
+/// Replace each element Cloudflare's email obfuscation wrote with the address
+/// it hides.
+///
+/// A page saved from the browser carries every email-shaped string as
+/// `<a|span ... data-cfemail="HEX">[email&#160;protected]</a|span>`, where the
+/// first hex byte is a key and each byte after it, XORed with the key, is the
+/// next byte of the address. Left alone, the docs' examples read
+/// `[email protected]` -- including `setSIPURI`'s example URI. An element
+/// whose hex does not decode to UTF-8 is left as it is.
+fn reveal_cf_emails(html: &str) -> String {
+    const ATTR: &str = "data-cfemail=\"";
+
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    while let Some(attr) = rest.find(ATTR) {
+        let revealed = (|| {
+            let open = rest[..attr].rfind('<')?;
+            let hex_start = attr + ATTR.len();
+            let hex_end = hex_start + rest[hex_start..].find('"')?;
+            let name_end = rest[open + 1..].find(|c: char| c.is_whitespace())? + open + 1;
+            let closing = format!("</{}>", &rest[open + 1..name_end]);
+            let end = hex_end + rest[hex_end..].find(&closing)? + closing.len();
+            let address = decode_cf_email(&rest[hex_start..hex_end])?;
+            Some((open, end, address))
+        })();
+
+        match revealed {
+            Some((open, end, address)) => {
+                out.push_str(&rest[..open]);
+                out.push_str(&address);
+                rest = &rest[end..];
+            }
+
+            None => {
+                let skip = attr + ATTR.len();
+                out.push_str(&rest[..skip]);
+                rest = &rest[skip..];
+            }
+        }
+    }
+
+    out.push_str(rest);
+    out
+}
+
+fn decode_cf_email(hex: &str) -> Option<String> {
+    let bytes: Vec<u8> = (0..hex.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(hex.get(i..i + 2)?, 16).ok())
+        .collect::<Option<_>>()?;
+    let (&key, encoded) = bytes.split_first()?;
+    String::from_utf8(encoded.iter().map(|b| b ^ key).collect()).ok()
 }
 
 fn html_decode(s: &str) -> String {
@@ -1234,6 +1288,32 @@ fn shape_to_json(shape: &Shape) -> JsonValue {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_cloudflare_obfuscated_address_is_revealed() {
+        // Verbatim from the saved docs page (`getClients`' example).
+        let html = "Reseller Client e-mail  (Example: '<a href=\"/cdn-cgi/l/email-protection\" \
+                    class=\"__cf_email__\" data-cfemail=\"1c76737472327873795c71657873717d7572327f7371\">\
+                    [email&#160;protected]</a>')";
+        assert_eq!(
+            reveal_cf_emails(html),
+            "Reseller Client e-mail  (Example: 'john.doe@mydomain.com')"
+        );
+
+        // Nested in a mailto link: the span goes, the outer tag is left for
+        // `strip_tags`.
+        let nested = "<a href=\"mailto:x\"><span class=\"__cf_email__\" \
+                      data-cfemail=\"1c76737472327873795c71657873717d7572327f7371\">\
+                      [email&#160;protected]</span></a> to start";
+        assert_eq!(
+            reveal_cf_emails(nested),
+            "<a href=\"mailto:x\">john.doe@mydomain.com</a> to start"
+        );
+
+        // Hex that is not a whole number of bytes is left as it arrived.
+        let broken = "<span data-cfemail=\"1c7\">[email&#160;protected]</span>";
+        assert_eq!(reveal_cf_emails(broken), broken);
+    }
 
     fn pairs(cell: &ParamCell) -> Vec<(&str, &str)> {
         cell.params

@@ -331,7 +331,7 @@ impl<'a> Emitter<'a> {
                 let map_ty = self.field_type(name, "entries", shape);
                 let body = format!(
                     "{RESPONSE_DERIVES}pub struct {name} {{\n    \
-                         #[serde(default, deserialize_with = \"crate::responses::deserialize_map_from_object\")]\n    \
+                         #[serde(default, deserialize_with = \"crate::responses::deserialize_map\")]\n    \
                          pub entries: {map_ty},\n\
                      }}\n",
                 );
@@ -402,11 +402,11 @@ impl<'a> Emitter<'a> {
             // `HashMap<K, V>`, defaulting to empty: VoIP.ms signals an empty
             // collection by omitting the field (or via an `is_empty` status that
             // strips the subtree), so absent and empty carry the same meaning --
-            // an `Option` would only add a never-actionable `None`. A
-            // `field_type` override always retypes to a scalar, so it keeps the
-            // `Option<T>` form.
-            let bare_collection =
-                override_.is_none() && matches!(sub, Shape::List(_) | Shape::Map(_));
+            // an `Option` would only add a never-actionable `None`. The
+            // name-based table only retypes scalars, so an override on a
+            // collection field is a per-struct one that retypes the collection
+            // itself and stays bare too.
+            let bare_collection = matches!(sub, Shape::List(_) | Shape::Map(_));
             let field_ty = if bare_collection {
                 rust_ty
             } else {
@@ -482,7 +482,7 @@ impl<'a> Emitter<'a> {
     /// `voip_ms::Reported<T>`, whose only job is to hold a value the field
     /// deserializer could not parse, so it carries no `Deserialize` of its
     /// own -- and `deserialize_vec_from_single_or_seq` and
-    /// `deserialize_map_from_object` both require the element to have one.
+    /// `deserialize_map` both require the element to have one.
     /// Emitting it anyway writes a `src/generated.rs` that does not compile,
     /// which reaches the next person as a build error in a file they are told
     /// not to hand-edit.
@@ -533,7 +533,7 @@ fn render_field_attrs(deser: Option<&str>) -> String {
 fn field_deserializer(shape: &Shape) -> Option<&'static str> {
     match shape {
         Shape::List(_) => Some("crate::responses::deserialize_vec_from_single_or_seq"),
-        Shape::Map(_) => Some("crate::responses::deserialize_map_from_object"),
+        Shape::Map(_) => Some("crate::responses::deserialize_map"),
         _ => scalar_deserializer(shape),
     }
 }

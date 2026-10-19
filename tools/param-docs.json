@@ -374,6 +374,10 @@
       }
     },
     "createSubAccount": {
+      "allow225": {
+        "doc": "true if a call placed to *225 hears the account's current balance, false if it is rejected",
+        "required": false
+      },
       "allowed_codecs": {
         "doc": "List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated by semicolon (Example: ulaw;g729;gsm) (required)",
         "required": true
@@ -717,7 +721,7 @@
     },
     "delLocation": {
       "id": {
-        "doc": "Internal Extension Location id (Value from getLocations\") (required)",
+        "doc": "Internal Extension Location id (Values from getLocations) (required)",
         "required": true
       },
       "name": {
@@ -1241,7 +1245,7 @@
     },
     "getClients": {
       "client": {
-        "doc": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Reseller Client e-mail (Example: '[email protected]')",
+        "doc": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Reseller Client e-mail (Example: 'john.doe@mydomain.com')",
         "required": false
       }
     },
@@ -2009,7 +2013,7 @@
     },
     "mailFaxMessagePDF": {
       "email": {
-        "doc": "Destination email adreess (example: [email protected]) (required)",
+        "doc": "Destination email adreess (example: yourname@company.com) (required)",
         "required": true
       },
       "id": {
@@ -2441,7 +2445,7 @@
     },
     "orderFaxNumber": {
       "email": {
-        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
         "required": false
       },
       "email_attach_file": {
@@ -2783,7 +2787,7 @@
     },
     "sendVoicemailEmail": {
       "email_address": {
-        "doc": "Destination Email address (Example: [email protected]) (required)",
+        "doc": "Destination Email address (Example: john.doe@my-domain.com) (required)",
         "required": true
       },
       "folder": {
@@ -2829,7 +2833,7 @@
         "required": true
       },
       "recording": {
-        "doc": "Recording for the Call Hunting (values from getRecordings) (required)",
+        "doc": "Recording for the Call Hunting: a recording id from getRecordings, or `default` for the system recording (required)",
         "required": true
       },
       "ring_time": {
@@ -3226,6 +3230,10 @@
         "doc": "Unreachable Routing for the DID. Same format as `routing`.",
         "required": false
       },
+      "inbound_dialing_mode": {
+        "doc": "How the DID presents the caller of an inbound call (Values: 0 = NANPA, 10 digits; 1 = E.164, with the country code)",
+        "required": false
+      },
       "note": {
         "doc": "Note for the DID",
         "required": false
@@ -3258,8 +3266,20 @@
         "doc": "Transcription locale code (values from getLocales, comma separated for more than one locale up to 10 locales)",
         "required": false
       },
+      "transcription_redaction": {
+        "doc": "true to redact sensitive information from call transcriptions. Stored only while `transcribe` is true",
+        "required": false
+      },
+      "transcription_sentiment": {
+        "doc": "true to add a sentiment analysis to call transcriptions. Stored only while `transcribe` is true",
+        "required": false
+      },
       "transcription_start_delay": {
         "doc": "Call Transcription Delay Seconds between 0 and 60, Increments of 5 (Example: 10 -> seconds)",
+        "required": false
+      },
+      "transcription_summary": {
+        "doc": "true to add a summary to call transcriptions. Stored only while `transcribe` is true",
         "required": false
       },
       "voicemail": {
@@ -3377,7 +3397,7 @@
         "required": true
       },
       "email": {
-        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
         "required": false
       },
       "email_attach_file": {
@@ -3399,7 +3419,7 @@
         "required": true
       },
       "email": {
-        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
         "required": false
       },
       "email_attach_file": {
@@ -3725,7 +3745,7 @@
         "required": true
       },
       "recording": {
-        "doc": "ID for a specific Phonebook entry (Example: 33221 / Leave empty to create a new one)",
+        "doc": "ID for a specific Recording (Example: 33221 / Leave empty to create a new one)",
         "required": false
       }
     },
@@ -3777,11 +3797,15 @@
         "required": false
       },
       "uri": {
-        "doc": "SIP URI (Example: '[email protected]') (required)",
+        "doc": "SIP URI (Example: '5552223333@sip.voip.ms') (required)",
         "required": true
       }
     },
     "setSMS": {
+      "dialmode": {
+        "doc": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix)",
+        "required": false
+      },
       "did": {
         "doc": "DID to be Updated (Example: 5551234567) (required)",
         "required": true
@@ -3825,6 +3849,14 @@
       "url_callback_retry": {
         "doc": "Enable URL callback Retry we will be expecting an 'ok' output (without quotes) from your URL callback page as an indicator that you have received the message correctly. If we don't receive the 'ok' letters (wihtout quotes) from your callback page, we will keep sending you the same message every 30 minutes.",
         "required": false
+      },
+      "webhook": {
+        "doc": "Webhook URL: SMS and MMS messages the DID receives are sent as a POST request to it (for a 3CX or PortSIP PBX)",
+        "required": false
+      },
+      "webhook_enable": {
+        "doc": "true to send the SMS and MMS messages the DID receives to `webhook`",
+        "required": false
       }
     },
     "setStaticMember": {
@@ -3850,6 +3882,10 @@
       }
     },
     "setSubAccount": {
+      "allow225": {
+        "doc": "true if a call placed to *225 hears the account's current balance, false if it is rejected",
+        "required": false
+      },
       "allowed_codecs": {
         "doc": "List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated by semicolon (Example: ulaw;g729;gsm) (required)",
         "required": true
@@ -3867,7 +3903,7 @@
         "required": false
       },
       "default_e911": {
-        "doc": "e911 Default CallerID",
+        "doc": "The caller ID sent on emergency (911) calls from this sub-account",
         "required": false
       },
       "description": {
