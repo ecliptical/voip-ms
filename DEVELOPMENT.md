@@ -267,7 +267,8 @@ Update the class-string constants if VoIP.ms reskins the docs.
 
 Publishing is automated via [.github/workflows/release.yaml](.github/workflows/release.yaml).
 
-1. Ensure Cargo.toml has the target version.
+1. Ensure Cargo.toml has the target version, and that both `voip-ms` install
+   snippets in README.md name the same `MAJOR.MINOR`.
 2. Move release notes from Unreleased into a versioned section in CHANGELOG.md.
    **Insert a new heading above the newest existing one; never rename an
    existing heading in place.** Renaming files the outgoing release's notes
