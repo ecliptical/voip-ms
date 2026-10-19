@@ -671,10 +671,16 @@ fn documents_base64(doc: &str) -> bool {
 /// Params fields the docs mark `(required)` that a crate caller need not set,
 /// keyed `"wireMethod.field"`.
 ///
-/// The offset ops' `timezone` is the only case: voip.ms needs it on the wire,
-/// and the typed method sends UTC when the field is `None`, so a constructor or
-/// a `required` flag demanding one would contradict the method it builds for.
+/// The offset ops' `timezone`: voip.ms needs it on the wire, and the typed
+/// method sends UTC when the field is `None`, so a constructor or a `required`
+/// flag demanding one would contradict the method it builds for.
+///
+/// `getLNPList`'s `portid`, whose marker came with the `getLNPDetails` text
+/// pasted onto it. Confirmed live: without it, and with an id that matches no
+/// port, `getLNPList` answers `no_ports`, while `getLNPDetails` answers a call
+/// without one with `invalid_portingid`.
 const REQUIRED_OVERRULED: &[&str] = &[
+    "getLNPList.portid",
     "getCDR.timezone",
     "getMMS.timezone",
     "getResellerCDR.timezone",
@@ -2952,8 +2958,8 @@ fn write_param_docs(docs: &RenderedDocs) -> Result<(), String> {
 ///
 /// Fails on a `param_docs` override that names a param the WSDL does not
 /// declare, that repeats the mined text (the docs caught up and the entry is
-/// stale), or that drops or adds the mined `(required)` marker, which would make
-/// the rendered text disagree with [`is_required`]. Returns as warnings, since
+/// stale), or whose `(required)` marker disagrees with [`is_required`], which
+/// sets the constructor and the `required` flag. Returns as warnings, since
 /// each wants a reading of mined prose:
 ///
 /// * a mined method note no field renders -- the method takes no routing
@@ -2989,14 +2995,11 @@ fn check_param_docs(
             ));
         }
 
-        let mined_required = param_docs
-            .get(op)
-            .and_then(|d| d.get(field))
-            .is_some_and(|doc| doc.contains("(required)"));
-        if text.contains("(required)") != mined_required {
+        if text.contains("(required)") != is_required(op, field, param_docs) {
             return Err(format!(
-                "param_docs override `{path}` and the mined description disagree on \
-                 `(required)`, which sets the constructor and `required`; match the docs"
+                "param_docs override `{path}` and `is_required` disagree on `(required)`, \
+                 which sets the constructor and `required`; match the docs, or list the \
+                 field in REQUIRED_OVERRULED"
             ));
         }
     }
@@ -3531,11 +3534,13 @@ mod tests {
             "setRingGroupInput".to_string(),
             vec![field("members"), field("language")],
         );
+        types.insert("getLNPListInput".to_string(), vec![field("portid")]);
         Wsdl {
             operations: vec![
                 "setDIDInfo".to_string(),
                 "addLNPPort".to_string(),
                 "setRingGroup".to_string(),
+                "getLNPList".to_string(),
             ],
             types,
         }
@@ -3674,6 +3679,22 @@ mod tests {
             ),
             Ok(vec![])
         );
+    }
+
+    #[test]
+    fn an_override_of_an_overruled_param_drops_the_marker() {
+        let mined = docs(&[("getLNPList", "portid", "ID of the port (required)")]);
+        assert_eq!(
+            check(&mined, &[], &[("getLNPList.portid", "ID of one port")]),
+            Ok(vec![])
+        );
+        let kept = check(
+            &mined,
+            &[],
+            &[("getLNPList.portid", "ID of one port (required)")],
+        )
+        .unwrap_err();
+        assert!(kept.contains("disagree on `(required)`"), "{kept}");
     }
 
     #[test]

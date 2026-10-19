@@ -361,9 +361,15 @@ impl Client {
         P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let (mut body, _empty) = self
+        let (mut body, empty) = self
             .fetch(method, params, Transport::for_method(method))
             .await?;
+        // A nested empty-collection code (`no_ports` under `invalid`) is the
+        // status the typed response reports.
+        if let Some(status) = empty {
+            body["status"] = Value::from(status.as_wire());
+        }
+
         qualify(&mut body);
         serde_json::from_value(body)
             .map_err(|e| Error::InvalidResponse(format!("failed to deserialize response: {e}")))
@@ -750,7 +756,34 @@ impl fmt::Debug for ClientBuilder {
     }
 }
 
-/// Classify a response's `status` field.
+/// The status a response reports.
+///
+/// The port-request methods answer every failure, an empty list included, as
+/// `status: invalid` with the code that says which nested under it:
+/// `{"status": "invalid", "error": [{"code": "no_ports", "description": ...}]}`.
+/// `invalid` alone names no failure, so when `error` holds exactly one code,
+/// that code is the status. Anything else reports its own `status`.
+fn reported_status(body: &Value) -> Result<&str> {
+    let status = body
+        .get("status")
+        .and_then(Value::as_str)
+        .ok_or_else(|| Error::InvalidResponse("response missing `status` field".into()))?;
+    if status != "invalid" {
+        return Ok(status);
+    }
+
+    let nested = match body
+        .get("error")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+    {
+        Some([only]) => only.get("code").and_then(Value::as_str),
+        _ => None,
+    };
+    Ok(nested.unwrap_or(status))
+}
+
+/// Classify a response's status, as [`reported_status`] reads it.
 ///
 /// Returns `Ok(None)` for a success status ([`ApiStatus::is_success`]:
 /// `success`, or `success_test` for a call made with `test` set),
@@ -761,11 +794,7 @@ impl fmt::Debug for ClientBuilder {
 /// [`Client::call_raw`] surfaces it verbatim, while the typed
 /// [`Client::call`] folds it into an empty response.
 fn check_status(body: &Value) -> Result<Option<ApiStatus>> {
-    let status = body
-        .get("status")
-        .and_then(Value::as_str)
-        .ok_or_else(|| Error::InvalidResponse("response missing `status` field".into()))?;
-    let status = ApiStatus::from_wire(status);
+    let status = ApiStatus::from_wire(reported_status(body)?);
     if status.is_success() {
         Ok(None)
     } else if status.is_empty_collection() {
@@ -869,6 +898,51 @@ mod tests {
         assert!(matches!(
             check_status(&serde_json::json!({})),
             Err(Error::InvalidResponse(_))
+        ));
+    }
+
+    #[test]
+    fn a_single_nested_error_code_is_the_status() {
+        // The envelopes live `getLNPList` and `getLNPDetails` answered with no
+        // port requests on the account.
+        let error = |code: &str| {
+            serde_json::json!({
+                "status": "invalid",
+                "error": [{ "code": code, "description": "..." }],
+                "message": "invalid"
+            })
+        };
+        assert_eq!(
+            check_status(&error("no_ports")).unwrap(),
+            Some(ApiStatus::NoPorts)
+        );
+        assert!(matches!(
+            check_status(&error("invalid_portingid")),
+            Err(Error::Api(ApiStatus::InvalidPortingid))
+        ));
+
+        // With no single code to read, `invalid` is the status.
+        let two = serde_json::json!({
+            "status": "invalid",
+            "error": [{ "code": "no_ports" }, { "code": "invalid_portingid" }]
+        });
+        assert!(matches!(
+            check_status(&two),
+            Err(Error::Api(ApiStatus::Unknown(code))) if code == "invalid"
+        ));
+        assert!(matches!(
+            check_status(&serde_json::json!({ "status": "invalid" })),
+            Err(Error::Api(ApiStatus::Unknown(code))) if code == "invalid"
+        ));
+
+        // Only `invalid` defers to a nested code.
+        let other = serde_json::json!({
+            "status": "invalid_credentials",
+            "error": [{ "code": "no_ports" }]
+        });
+        assert!(matches!(
+            check_status(&other),
+            Err(Error::Api(ApiStatus::InvalidCredentials))
         ));
     }
 

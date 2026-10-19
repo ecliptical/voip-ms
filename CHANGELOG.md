@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Option<bool>` (were `u64`), the type of the `url_callback_retry` and
   `email_attach_file` a fax number is set with. Confirmed live: each reads
   back `1` / `0` as set.
+- **Breaking**: `getLNPList`'s `port_id` is optional, and
+  `GetLNPListParams::new` is gone. The docs' `[Required]` came with the
+  `getLNPDetails` text pasted onto it. Confirmed live: without a port id, and
+  with one that matches no port, `getLNPList` answers `no_ports`, while
+  `getLNPDetails` answers a call without one with `invalid_portingid`.
+- **Breaking**: a response of `status: invalid` with one code nested under
+  `error` reports that code as its status. The port-request methods answer
+  every failure this way, so `Error::Api` carried `Unknown("invalid")` for a
+  bad port id and for an empty list alike. Now `getLNPDetails` with an unknown
+  id is `Error::Api(ApiStatus::InvalidPortingid)`, and `getLNPList` on an
+  account with no port requests (`no_ports`, a new empty-collection
+  `ApiStatus::NoPorts`) is an empty response from `get_lnp_list` instead of an
+  error.
 
 ### Added
 

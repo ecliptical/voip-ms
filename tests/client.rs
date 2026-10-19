@@ -789,6 +789,33 @@ async fn empty_collection_status_yields_empty_response() {
 }
 
 #[tokio::test]
+async fn an_empty_port_list_nested_under_invalid_yields_empty_response() {
+    // The live answer for an account with no port requests: `invalid`, with
+    // the empty-list code nested under `error`. The typed call reads it as
+    // `no_ports` and succeeds empty; the raw call reports `no_ports`.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getLNPList"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "invalid",
+            "error": [{ "code": "no_ports", "description": "Theres no ports to show." }],
+            "message": "invalid"
+        })))
+        .mount(&server)
+        .await;
+
+    let params = voip_ms::GetLNPListParams::default();
+    let envelope = client.get_lnp_list(&params).await.unwrap();
+    assert_eq!(envelope.status, ApiStatus::NoPorts);
+    assert!(envelope.list.is_empty());
+
+    let err = client.get_lnp_list_raw(&params).await.unwrap_err();
+    assert!(matches!(err, Error::Api(ApiStatus::NoPorts)), "got {err:?}");
+}
+
+#[tokio::test]
 async fn real_error_no_status_still_errors() {
     // `no_*` codes that signal a genuine failure (rather than an empty list)
     // are still surfaced as `Error::Api`.

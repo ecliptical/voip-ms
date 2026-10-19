@@ -2266,6 +2266,8 @@ pub enum ApiStatus {
     NoFolder,
     /// `no_phonebook_group` -- There are no Phonebook Groups
     NoPhonebookGroup,
+    /// `no_ports` -- There are no ports to show
+    NoPorts,
     /// `no_transactions` -- There are no transactions
     NoTransactions,
     /// `no_vpri` -- There are no vPRIs
@@ -2777,6 +2779,7 @@ impl ApiStatus {
             ApiStatus::NoEmailtofax => "no_emailtofax",
             ApiStatus::NoFolder => "no_folder",
             ApiStatus::NoPhonebookGroup => "no_phonebook_group",
+            ApiStatus::NoPorts => "no_ports",
             ApiStatus::NoTransactions => "no_transactions",
             ApiStatus::NoVPRI => "no_vpri",
             ApiStatus::Unknown(s) => s.as_str(),
@@ -3285,6 +3288,7 @@ impl ApiStatus {
             "no_emailtofax" => ApiStatus::NoEmailtofax,
             "no_folder" => ApiStatus::NoFolder,
             "no_phonebook_group" => ApiStatus::NoPhonebookGroup,
+            "no_ports" => ApiStatus::NoPorts,
             "no_transactions" => ApiStatus::NoTransactions,
             "no_vpri" => ApiStatus::NoVPRI,
             other => ApiStatus::Unknown(other.to_string()),
@@ -4009,6 +4013,7 @@ impl ApiStatus {
             ApiStatus::NoEmailtofax => Some("There are no Email to Fax entries"),
             ApiStatus::NoFolder => Some("There are no Fax Folders"),
             ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
+            ApiStatus::NoPorts => Some("There are no ports to show"),
             ApiStatus::NoTransactions => Some("There are no transactions"),
             ApiStatus::NoVPRI => Some("There are no vPRIs"),
             ApiStatus::Unknown(_) => None,
@@ -4069,6 +4074,7 @@ impl ApiStatus {
                 | ApiStatus::NoEmailtofax
                 | ApiStatus::NoFolder
                 | ApiStatus::NoPhonebookGroup
+                | ApiStatus::NoPorts
                 | ApiStatus::NoTransactions
                 | ApiStatus::NoVPRI
         )
@@ -7165,7 +7171,7 @@ impl GetLNPDetailsParams {
 /// Parameters for [`Client::get_lnp_list`] (wire method `getLNPList`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct GetLNPListParams {
-    /// ID of the port previously created. (required)
+    /// ID of one port request to list. Omit to list all
     #[serde(skip_serializing_if = "Option::is_none", rename = "portid")]
     pub port_id: Option<u64>,
     /// Status code to filtering Ports. Example: precessing. (You can use the
@@ -7178,22 +7184,6 @@ pub struct GetLNPListParams {
     /// End Date for filtering Ports. (Example: '2014-03-30')
     #[serde(skip_serializing_if = "Option::is_none", rename = "endDate")]
     pub end_date: Option<String>,
-}
-
-impl GetLNPListParams {
-    /// A `GetLNPListParams` with the parameters the VoIP.ms docs mark as
-    /// required: `port_id`. Every other field keeps its default, so
-    /// struct-update syntax still fills in the rest.
-    ///
-    /// The marking is the docs' word, not the API's: a field asked for here may
-    /// still be optional in practice, and one left out may turn out to be
-    /// needed.
-    pub fn new(port_id: u64) -> Self {
-        Self {
-            port_id: Some(port_id),
-            ..Default::default()
-        }
-    }
 }
 
 /// \- Retrieve the list of notes from the given portability process.

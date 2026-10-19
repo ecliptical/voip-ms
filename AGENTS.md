@@ -311,8 +311,12 @@ leaving every other at its `Default`. Two bounds keep it honest:
   may turn out to be needed. Where the crate deliberately contradicts a marker
   it needs an entry in `REQUIRED_OVERRULED` (`xtask/src/main.rs`): the offset
   ops' `timezone` is marked required and defaulted to UTC by decision 5a, so a
-  constructor demanding it would contradict the method it builds for. The same
-  rule (`is_required`) sets `required` in `tools/param-docs.json`.
+  constructor demanding it would contradict the method it builds for.
+  `getLNPList`'s `portid` carries a marker pasted from `getLNPDetails`, and a
+  live call without it lists the ports (`no_ports` on an account with none)
+  where `getLNPDetails` answers `invalid_portingid`. The same rule
+  (`is_required`) sets `required` in `tools/param-docs.json`, and a
+  `param_docs` override must carry `(required)` exactly when it is true.
 * **A long positional argument list reads worse than a struct literal.**
   `MAX_CTOR_FIELDS` caps it at six; `AddLNPPortParams` (12 required) and
   `CreateVoicemailParams` (11) get no `new` at all.
@@ -1209,6 +1213,16 @@ Four variants, no more:
   `no_sequences`) are deliberately excluded. To reclassify, edit that array
   and regenerate -- an entry naming a status code absent from both
   `tools/api-statuses.json` and `undocumented_statuses` fails the codegen.
+  **A single nested error code is the status.** The port-request methods
+  answer every failure as `status: invalid` with the code that says which
+  under `error` (`{"status": "invalid", "error": [{"code": "no_ports", ...}]}`),
+  so `invalid` alone would hide both an empty list and a bad port id.
+  `reported_status` in `src/client.rs` reads that one code as the status, for
+  the raw and typed paths alike, and the typed path writes it back into the
+  envelope's `status` so the response reports it. `invalid` with no code, or
+  with several, stays `ApiStatus::Unknown("invalid")`. `no_ports` is in
+  `undocumented_statuses` and `empty_statuses`, so an account that has never
+  ported a number gets an empty `getLNPList` rather than an error.
 * `Error::InvalidResponse(String)` -- the response was 2xx and JSON but
   didn't contain a `status` field. Should be rare; if it happens
   systematically for a method, that's a VoIP.ms-side break.

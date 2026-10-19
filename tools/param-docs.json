@@ -1495,8 +1495,8 @@
         "required": false
       },
       "portid": {
-        "doc": "ID of the port previously created. (required)",
-        "required": true
+        "doc": "ID of one port request to list. Omit to list all",
+        "required": false
       },
       "startDate": {
         "doc": "Start Date for filtering Ports. (Example: '2014-03-30')",

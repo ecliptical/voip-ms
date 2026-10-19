@@ -249,8 +249,8 @@ pub struct Cli {
     pub portability_did: Option<String>,
 
     /// An existing LNP port id for the id-scoped porting reads (`getLNPDetails`,
-    /// `getLNPStatus`, `getLNPNotes`, `getLNPList`, `getLNPAttachList`). Absent:
-    /// those record skip (no input).
+    /// `getLNPStatus`, `getLNPNotes`, `getLNPAttachList`, and `getLNPList`
+    /// filtered to that port). Absent: those record skip (no input).
     #[arg(long)]
     pub port_id: Option<u64>,
 

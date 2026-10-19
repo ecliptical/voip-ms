@@ -1,10 +1,10 @@
 //! The `porting` area: local number portability (LNP) port requests, their
 //! details, notes, attachments, and status. Costly-by-nature because a port
 //! submission commits to moving a number between carriers, so it is excluded
-//! from the default set until named. Only the account-wide port-status summary
-//! probes cleanly; every other read needs a port id, attachment id, or DID, so
-//! they are skipped at probe depth. `addLNPPort`/`addLNPFile` are owned but run
-//! only at costly depth.
+//! from the default set until named. The port-request list and the port-status
+//! catalog probe with no input; every other read needs a port id, attachment
+//! id, or DID, so they are skipped at probe depth. `addLNPPort`/`addLNPFile`
+//! are owned but run only at costly depth.
 //!
 //! At `Depth::Costly` the read side runs whenever its id/DID input is supplied:
 //! `getPortability` (a non-committing portability check for a DID) and the
@@ -16,7 +16,7 @@
 
 use async_trait::async_trait;
 
-use crate::areas::probe_macros::{probe_scalar, skip_needs_input};
+use crate::areas::probe_macros::{probe_list, probe_scalar, skip_needs_input};
 use crate::config::{Depth, PortingConfig};
 use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::read_back;
@@ -56,7 +56,15 @@ impl Area for Porting {
         skip_needs_input!(report, AREA, "getLNPAttach", "requires an attachment id");
         skip_needs_input!(report, AREA, "getLNPAttachList", "requires a port id");
         skip_needs_input!(report, AREA, "getLNPDetails", "requires a port id");
-        skip_needs_input!(report, AREA, "getLNPList", "requires a port id");
+        probe_list!(
+            ctx,
+            report,
+            AREA,
+            "getLNPList",
+            GetLNPListParams,
+            GetLNPListResponse,
+            list
+        );
         probe_scalar!(
             ctx,
             report,
