@@ -3230,6 +3230,10 @@
         "doc": "Unreachable Routing for the DID. Same format as `routing`.",
         "required": false
       },
+      "inbound_dialing_mode": {
+        "doc": "How the DID presents the caller of an inbound call: NANPA (10 digits) or E.164 (with the country code)",
+        "required": false
+      },
       "note": {
         "doc": "Note for the DID",
         "required": false
@@ -3262,8 +3266,20 @@
         "doc": "Transcription locale code (values from getLocales, comma separated for more than one locale up to 10 locales)",
         "required": false
       },
+      "transcription_redaction": {
+        "doc": "true to redact sensitive information from call transcriptions. Stored only while `transcribe` is true",
+        "required": false
+      },
+      "transcription_sentiment": {
+        "doc": "true to add a sentiment analysis to call transcriptions. Stored only while `transcribe` is true",
+        "required": false
+      },
       "transcription_start_delay": {
         "doc": "Call Transcription Delay Seconds between 0 and 60, Increments of 5 (Example: 10 -> seconds)",
+        "required": false
+      },
+      "transcription_summary": {
+        "doc": "true to add a summary to call transcriptions. Stored only while `transcribe` is true",
         "required": false
       },
       "voicemail": {
@@ -3786,6 +3802,10 @@
       }
     },
     "setSMS": {
+      "dialmode": {
+        "doc": "How messages sent through the API from this DID are addressed: NANPA sends 10 digits without the +1 prefix, E.164 sends the country code first with the +1 prefix",
+        "required": false
+      },
       "did": {
         "doc": "DID to be Updated (Example: 5551234567) (required)",
         "required": true
@@ -3828,6 +3848,14 @@
       },
       "url_callback_retry": {
         "doc": "Enable URL callback Retry we will be expecting an 'ok' output (without quotes) from your URL callback page as an indicator that you have received the message correctly. If we don't receive the 'ok' letters (wihtout quotes) from your callback page, we will keep sending you the same message every 30 minutes.",
+        "required": false
+      },
+      "webhook": {
+        "doc": "Webhook URL: SMS and MMS messages the DID receives are sent as a POST request to it (for a 3CX or PortSIP PBX)",
+        "required": false
+      },
+      "webhook_enable": {
+        "doc": "true to send the SMS and MMS messages the DID receives to `webhook`",
         "required": false
       }
     },

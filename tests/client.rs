@@ -1427,6 +1427,118 @@ fn fax_numbers_info_did_accepts_dotted_string() {
 }
 
 #[test]
+fn conference_members_and_phonebook_groups_read_the_list_key_sent() {
+    use voip_ms::{GetConferenceMembersResponse, GetPhonebookGroupsResponse};
+
+    // Live envelopes: the lists arrive under `member` and `phonebook_groups`,
+    // where the docs print `members` and `phonebooks`.
+    let members: GetConferenceMembersResponse = serde_json::from_value(json!({
+        "status": "success",
+        "member": [{
+            "admin": "no",
+            "announce_join_leave": "no",
+            "announce_only_user": "yes",
+            "announce_user_count": "no",
+            "announcement": "0",
+            "description": "issue51-delete-me",
+            "drop_silence": "yes",
+            "jitter_buffer": "yes",
+            "member": "7197",
+            "moh_when_empty": "default",
+            "name": "issue51-member",
+            "pin": "4321",
+            "quiet": "no",
+            "silence_threshold": "2500",
+            "start_muted": "no",
+            "talk_detection": "yes",
+            "talking_threshold": "160"
+        }]
+    }))
+    .unwrap();
+    assert_eq!(members.members.len(), 1);
+    assert_eq!(members.members[0].member, Some(7197));
+    assert_eq!(members.members[0].pin.as_deref(), Some("4321"));
+
+    let groups: GetPhonebookGroupsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "phonebook_groups": [{
+            "members": "",
+            "name": "issue51-group",
+            "phonebook_group": "17582"
+        }]
+    }))
+    .unwrap();
+    assert_eq!(groups.phonebook_groups.len(), 1);
+    assert_eq!(groups.phonebook_groups[0].phonebook_group, Some(17582));
+}
+
+#[test]
+fn a_did_reads_back_the_fields_the_docs_omit() {
+    use voip_ms::{GetDIDsInfoResponse, InboundDialingMode, SmsDialingMode};
+
+    let resp: GetDIDsInfoResponse = serde_json::from_value(json!({
+        "status": "success",
+        "dids": [{
+            "did": "6474781287",
+            "dialmode": "2",
+            "inbound_dialing_mode": "1",
+            "mms_available": 1,
+            "record_calls": "1",
+            "sms_sipaccount": "552036_demo",
+            "sms_sipaccount_enabled": "1",
+            "transcription_start_delay": "10",
+            "voicemail_threshold": "15",
+            "webhook": "https://example.com/hook",
+            "webhook_enabled": "1"
+        }]
+    }))
+    .unwrap();
+
+    let did = &resp.dids[0];
+    assert_eq!(did.sms_dialing_mode, Some(SmsDialingMode::E164));
+    assert_eq!(did.inbound_dialing_mode, Some(InboundDialingMode::E164));
+    assert_eq!(did.mms_available, Some(true));
+    assert_eq!(did.record_calls, Some(true));
+    assert_eq!(did.sms_sip_account.as_deref(), Some("552036_demo"));
+    assert_eq!(did.sms_sip_account_enabled, Some(true));
+    assert_eq!(did.transcription_start_delay, Some(10));
+    assert_eq!(did.voicemail_threshold, Some(15));
+    assert_eq!(did.webhook.as_deref(), Some("https://example.com/hook"));
+    assert_eq!(did.webhook_enabled, Some(true));
+}
+
+#[test]
+fn did_and_sms_settings_the_wsdl_omits_are_sent_under_their_wire_names() {
+    use voip_ms::{InboundDialingMode, SetDIDInfoParams, SetSMSParams, SmsDialingMode};
+
+    // Each wire form below was sent live and read back on `getDIDsInfo`.
+    let info = SetDIDInfoParams {
+        inbound_dialing_mode: Some(InboundDialingMode::E164),
+        transcription_summary: Some(true),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&info).unwrap(),
+        json!({ "inbound_dialing_mode": "1", "transcription_summary": "yes" })
+    );
+
+    let sms = SetSMSParams {
+        sms_dialing_mode: Some(SmsDialingMode::E164),
+        webhook_enabled: Some(true),
+        webhook: Some("https://example.com/hook".into()),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&sms).unwrap(),
+        json!({
+            "dialmode": "2",
+            "webhook_enable": "1",
+            "webhook": "https://example.com/hook"
+        })
+    );
+}
+
+#[test]
 fn an_international_location_reads_fees_with_cents() {
     use voip_ms::{GetDIDsInternationalNationalResponse, rust_decimal::Decimal};
 

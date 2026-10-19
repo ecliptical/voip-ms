@@ -42,9 +42,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `CreateSubAccountParams` and `SetSubAccountParams` take
   `allow225: Option<bool>`, which the WSDL omits. Confirmed live: each method
   stores the value sent.
+- **Breaking**: `SetDIDInfoParams` takes `inbound_dialing_mode`
+  (`InboundDialingMode`: `Nanpa` / `E164`) and `transcription_redaction`,
+  `transcription_summary`, `transcription_sentiment` (`bool`, sent as
+  `yes` / `no`); `SetSMSParams` takes `sms_dialing_mode` (`SmsDialingMode`:
+  `Unset` / `Nanpa` / `E164`, wire `dialmode`), `webhook_enabled` (wire
+  `webhook_enable`) and `webhook`. The docs list them and the WSDL omits them;
+  each was set live and read back. The transcription switches are stored only
+  while `transcribe` is on.
+- **Breaking**: `GetDIDsInfoResponseDID` reads the ten fields voip.ms returns
+  but does not document: `sms_dialing_mode`, `inbound_dialing_mode`,
+  `mms_available`, `record_calls`, `sms_sip_account`,
+  `sms_sip_account_enabled`, `transcription_start_delay`,
+  `voicemail_threshold`, `webhook` and `webhook_enabled`.
+  `SearchTollFreeUSAResponseDID` reads `sms` and
+  `GetVoicemailsResponseVoicemail` reads `client`.
+- `ApiStatus::InvalidDialmode` and `ApiStatus::InvalidInboundDialingMode`, the
+  codes `setSMS` and `setDIDInfo` answer for a mode outside the documented
+  values.
 
 ### Fixed
 
+- **Breaking**: `get_conference_members` and `get_phonebook_groups` returned
+  an empty list on every call. voip.ms sends the lists under `member` and
+  `phonebook_groups`, where the docs print `members` and `phonebooks`.
+  `GetConferenceMembersResponse::members` keeps its name;
+  `GetPhonebookGroupsResponse::phonebooks` is `phonebook_groups`, and its
+  element type `GetPhonebookGroupsResponsePhonebook` is
+  `GetPhonebookGroupsResponsePhonebookGroup`.
 - **Breaking**: `get_locations` no longer fails on an account that has created
   a location. VoIP.ms sends `locations` as a list of names while the built-in
   location `0` is the only one and as an object keyed by location id once

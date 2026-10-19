@@ -380,6 +380,62 @@ impl<'de> serde::Deserialize<'de> for EstimatedHoldTimeAnnounce {
     }
 }
 
+/// How a DID presents the caller of an inbound call.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InboundDialingMode {
+    Nanpa,
+    E164,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl InboundDialingMode {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            InboundDialingMode::Nanpa => "0",
+            InboundDialingMode::E164 => "1",
+            InboundDialingMode::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "0" => InboundDialingMode::Nanpa,
+            "1" => InboundDialingMode::E164,
+            other => InboundDialingMode::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for InboundDialingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl std::str::FromStr for InboundDialingMode {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(InboundDialingMode::from_wire(s))
+    }
+}
+
+impl serde::Serialize for InboundDialingMode {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for InboundDialingMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(InboundDialingMode::from_wire(&s))
+    }
+}
+
 /// Type of service location for an LNP port.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LocationType {
@@ -901,6 +957,68 @@ impl std::str::FromStr for SearchType {
 impl serde::Serialize for SearchType {
     fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
         s.serialize_str(self.as_wire())
+    }
+}
+
+/// How a DID addresses the messages it sends through the API.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SmsDialingMode {
+    /// No mode chosen: what a DID reports until one is set. `setSMS` accepts it.
+    Unset,
+    /// 10 digits, without the `+1` prefix.
+    Nanpa,
+    /// Country code first, with the `+1` prefix.
+    E164,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl SmsDialingMode {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            SmsDialingMode::Unset => "0",
+            SmsDialingMode::Nanpa => "1",
+            SmsDialingMode::E164 => "2",
+            SmsDialingMode::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "0" => SmsDialingMode::Unset,
+            "1" => SmsDialingMode::Nanpa,
+            "2" => SmsDialingMode::E164,
+            other => SmsDialingMode::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for SmsDialingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl std::str::FromStr for SmsDialingMode {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(SmsDialingMode::from_wire(s))
+    }
+}
+
+impl serde::Serialize for SmsDialingMode {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for SmsDialingMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(SmsDialingMode::from_wire(&s))
     }
 }
 
@@ -2138,6 +2256,10 @@ pub enum ApiStatus {
     UsedUsername,
     /// `weak_password` -- This Password is too weak or too common
     WeakPassword,
+    /// `invalid_dialmode` -- This is not a valid SMS dialing mode
+    InvalidDialmode,
+    /// `invalid_inbound_dialing_mode` -- This is not a valid inbound dialing mode
+    InvalidInboundDialingMode,
     /// `no_emailtofax` -- There are no Email to Fax entries
     NoEmailtofax,
     /// `no_folder` -- There are no Fax Folders
@@ -2650,6 +2772,8 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => "used_speed_dial",
             ApiStatus::UsedUsername => "used_username",
             ApiStatus::WeakPassword => "weak_password",
+            ApiStatus::InvalidDialmode => "invalid_dialmode",
+            ApiStatus::InvalidInboundDialingMode => "invalid_inbound_dialing_mode",
             ApiStatus::NoEmailtofax => "no_emailtofax",
             ApiStatus::NoFolder => "no_folder",
             ApiStatus::NoPhonebookGroup => "no_phonebook_group",
@@ -3156,6 +3280,8 @@ impl ApiStatus {
             "used_speed_dial" => ApiStatus::UsedSpeedDial,
             "used_username" => ApiStatus::UsedUsername,
             "weak_password" => ApiStatus::WeakPassword,
+            "invalid_dialmode" => ApiStatus::InvalidDialmode,
+            "invalid_inbound_dialing_mode" => ApiStatus::InvalidInboundDialingMode,
             "no_emailtofax" => ApiStatus::NoEmailtofax,
             "no_folder" => ApiStatus::NoFolder,
             "no_phonebook_group" => ApiStatus::NoPhonebookGroup,
@@ -3876,6 +4002,10 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => Some("You have an entry with this Speed Dial"),
             ApiStatus::UsedUsername => Some("You already have a subaccount using this Username."),
             ApiStatus::WeakPassword => Some("This Password is too weak or too common"),
+            ApiStatus::InvalidDialmode => Some("This is not a valid SMS dialing mode"),
+            ApiStatus::InvalidInboundDialingMode => {
+                Some("This is not a valid inbound dialing mode")
+            }
             ApiStatus::NoEmailtofax => Some("There are no Email to Fax entries"),
             ApiStatus::NoFolder => Some("There are no Fax Folders"),
             ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
@@ -10394,6 +10524,10 @@ pub struct SetDIDInfoParams {
     /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none", rename = "callerid_prefix")]
     pub caller_id_prefix: Option<String>,
+    /// How the DID presents the caller of an inbound call: NANPA (10 digits) or
+    /// E.164 (with the country code)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inbound_dialing_mode: Option<InboundDialingMode>,
     /// Note for the DID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
@@ -10420,6 +10554,27 @@ pub struct SetDIDInfoParams {
     /// more than one locale up to 10 locales)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_locale: Option<String>,
+    /// true to redact sensitive information from call transcriptions. Stored
+    /// only while `transcribe` is true
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_yes_no"
+    )]
+    pub transcription_redaction: Option<bool>,
+    /// true to add a summary to call transcriptions. Stored only while
+    /// `transcribe` is true
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_yes_no"
+    )]
+    pub transcription_summary: Option<bool>,
+    /// true to add a sentiment analysis to call transcriptions. Stored only
+    /// while `transcribe` is true
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_yes_no"
+    )]
+    pub transcription_sentiment: Option<bool>,
     /// Call Transcription Email
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_email: Option<String>,
@@ -11499,6 +11654,22 @@ pub struct SetSMSParams {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub url_callback_retry: Option<bool>,
+    /// true to send the SMS and MMS messages the DID receives to `webhook`
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01",
+        rename = "webhook_enable"
+    )]
+    pub webhook_enabled: Option<bool>,
+    /// Webhook URL: SMS and MMS messages the DID receives are sent as a POST
+    /// request to it (for a 3CX or PortSIP PBX)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub webhook: Option<String>,
+    /// How messages sent through the API from this DID are addressed: NANPA
+    /// sends 10 digits without the +1 prefix, E.164 sends the country code
+    /// first with the +1 prefix
+    #[serde(skip_serializing_if = "Option::is_none", rename = "dialmode")]
+    pub sms_dialing_mode: Option<SmsDialingMode>,
     /// SIP account or sub-account that will receive the SMS Messages
     #[serde(skip_serializing_if = "Option::is_none", rename = "sms_sipaccount")]
     pub sms_sip_account: Option<String>,
@@ -13867,7 +14038,8 @@ pub struct GetConferenceMembersResponse {
     pub status: ApiStatus,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq",
+        rename = "member"
     )]
     pub members: Vec<GetConferenceMembersResponseMember>,
 }
@@ -14287,6 +14459,59 @@ pub struct GetDIDsInfoResponseDID {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub transcription_email: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<SmsDialingMode, _>",
+        rename = "dialmode"
+    )]
+    pub sms_dialing_mode: Option<SmsDialingMode>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<InboundDialingMode, _>"
+    )]
+    pub inbound_dialing_mode: Option<InboundDialingMode>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub mms_available: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub record_calls: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool",
+        rename = "sms_sipaccount"
+    )]
+    pub sms_sip_account: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn",
+        rename = "sms_sipaccount_enabled"
+    )]
+    pub sms_sip_account_enabled: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub transcription_start_delay: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub voicemail_threshold: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub webhook: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub webhook_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -16171,7 +16396,7 @@ pub struct GetPhonebookResponse {
 
 /// Response body for [`Client::get_phonebook_groups`] (wire method `getPhonebookGroups`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
-pub struct GetPhonebookGroupsResponsePhonebook {
+pub struct GetPhonebookGroupsResponsePhonebookGroup {
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
@@ -16199,7 +16424,7 @@ pub struct GetPhonebookGroupsResponse {
         default,
         deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
     )]
-    pub phonebooks: Vec<GetPhonebookGroupsResponsePhonebook>,
+    pub phonebook_groups: Vec<GetPhonebookGroupsResponsePhonebookGroup>,
 }
 
 /// Response body for [`Client::get_play_instructions`] (wire method `getPlayInstructions`).
@@ -18254,6 +18479,11 @@ pub struct GetVoicemailsResponseVoicemail {
         deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
     )]
     pub transcription_delay: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub client: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -18716,6 +18946,11 @@ pub struct SearchTollFreeUSAResponseDID {
         deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
     pub setup: Option<rust_decimal::Decimal>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
+    )]
+    pub sms: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]

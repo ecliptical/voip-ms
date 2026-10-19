@@ -59,6 +59,9 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `setRingGroup` use `ring_group`; align the delete with the family so a
     // caller who just listed or configured a group reuses the same field.
     ("DelRingGroupParams", "ringgroup", "ring_group"),
+    // `getConferenceMembers` sends its list under `member`, the same key each
+    // row's id uses; the list keeps the plural.
+    ("GetConferenceMembersResponse", "member", "members"),
     // These two filters also accept a client's e-mail address (`getClients`)
     // or a sub-account name (`getDIDsInfo`), so they are text where every other
     // `client` is a reseller client id.
@@ -138,6 +141,7 @@ const FIELD_IDENT_RENAME: &[(&str, &str)] = &[
     ("callrecording", "call_recording"),
     ("calltype", "call_type"),
     ("cancelcomment", "cancel_comment"),
+    ("dialmode", "sms_dialing_mode"),
     ("dialtime", "dial_time"),
     ("email_enable", "email_enabled"),
     ("enable", "enabled"),
@@ -196,6 +200,7 @@ const FIELD_IDENT_RENAME: &[(&str, &str)] = &[
     ("useragent", "user_agent"),
     ("voicemailsetup", "voicemail_setup"),
     ("voicemailsetups", "voicemail_setups"),
+    ("webhook_enable", "webhook_enabled"),
     ("weekdayend", "weekday_end"),
     ("weekdaystart", "weekday_start"),
     ("zip", "zip_code"),

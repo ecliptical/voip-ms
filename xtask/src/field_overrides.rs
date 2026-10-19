@@ -191,6 +191,8 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "url_callback_enable",
     "url_callback_retry",
     "url_enabled",
+    "webhook_enable",
+    "webhook_enabled",
     // `setMusicOnHold`'s "quiet volume" toggle. Confirmed live: `1` stores
     // the quiet rendition and `0` (or anything else) the normal one. The
     // response field of the same name is *not* this flag -- it reports the

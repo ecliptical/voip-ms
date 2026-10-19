@@ -139,6 +139,21 @@
         { "name": "Nanpa",       "wire": "2" }
       ]
     },
+    "InboundDialingMode": {
+      "doc": "How a DID presents the caller of an inbound call.",
+      "variants": [
+        { "name": "Nanpa", "wire": "0" },
+        { "name": "E164",  "wire": "1" }
+      ]
+    },
+    "SmsDialingMode": {
+      "doc": "How a DID addresses the messages it sends through the API.",
+      "variants": [
+        { "name": "Unset", "wire": "0", "doc": "No mode chosen: what a DID reports until one is set. `setSMS` accepts it." },
+        { "name": "Nanpa", "wire": "1", "doc": "10 digits, without the `+1` prefix." },
+        { "name": "E164",  "wire": "2", "doc": "Country code first, with the `+1` prefix." }
+      ]
+    },
     "TollFreeCarrier": {
       "doc": "Carrier for outgoing calls to toll-free numbers.",
       "variants": [
@@ -178,6 +193,8 @@
     "call_pickup_behavior":    "CallPickupBehavior",
     "sort":                    "RecordingSort",
     "dialing_mode":            "DialingMode",
+    "dialmode":                "SmsDialingMode",
+    "inbound_dialing_mode":    "InboundDialingMode",
     "tfcarrier":               "TollFreeCarrier",
     "billing_type":            "DidBillingType",
     "locationType":            "LocationType",
@@ -219,6 +236,13 @@
     "setCallHunting.press": "Whether the member must press 1 to take the call, one item per member in `members` (required)",
     "setCallHunting.recording": "Recording for the Call Hunting: a recording id from getRecordings, or `default` for the system recording (required)",
     "setCallHunting.ring_time": "The maximum time the call rings the member, one item per member in `members` (required)",
+    "setDIDInfo.inbound_dialing_mode": "How the DID presents the caller of an inbound call: NANPA (10 digits) or E.164 (with the country code)",
+    "setDIDInfo.transcription_redaction": "true to redact sensitive information from call transcriptions. Stored only while `transcribe` is true",
+    "setDIDInfo.transcription_sentiment": "true to add a sentiment analysis to call transcriptions. Stored only while `transcribe` is true",
+    "setDIDInfo.transcription_summary": "true to add a summary to call transcriptions. Stored only while `transcribe` is true",
+    "setSMS.dialmode": "How messages sent through the API from this DID are addressed: NANPA sends 10 digits without the +1 prefix, E.164 sends the country code first with the +1 prefix",
+    "setSMS.webhook": "Webhook URL: SMS and MMS messages the DID receives are sent as a POST request to it (for a 3CX or PortSIP PBX)",
+    "setSMS.webhook_enable": "true to send the SMS and MMS messages the DID receives to `webhook`",
     "setQueue.fail_over_routing_join_unavail": "Same as `failover_routing_join_empty`, except that there were still queue members, but all were status unavailable",
     "setQueue.fail_over_routing_leave_unavail": "Same as `failover_routing_leave_empty`, except that there were still queue members, but all were status unavailable",
     "setRecording.recording": "ID for a specific Recording (Example: 33221 / Leave empty to create a new one)",
@@ -261,6 +285,8 @@
     "no_vpri"
   ],
   "undocumented_statuses": [
+    { "code": "invalid_dialmode",             "description": "This is not a valid SMS dialing mode" },
+    { "code": "invalid_inbound_dialing_mode", "description": "This is not a valid inbound dialing mode" },
     { "code": "no_emailtofax",      "description": "There are no Email to Fax entries" },
     { "code": "no_folder",          "description": "There are no Fax Folders" },
     { "code": "no_phonebook_group", "description": "There are no Phonebook Groups" },
@@ -280,6 +306,18 @@
       ]
     },
     "getDIDsInfo": {
+      "additions": [
+        { "path": "dids[].dialmode",                  "type": "integer" },
+        { "path": "dids[].inbound_dialing_mode",      "type": "integer" },
+        { "path": "dids[].mms_available",             "type": "bool_01" },
+        { "path": "dids[].record_calls",              "type": "bool_01" },
+        { "path": "dids[].sms_sipaccount",            "type": "string" },
+        { "path": "dids[].sms_sipaccount_enabled",    "type": "bool_01" },
+        { "path": "dids[].transcription_start_delay", "type": "integer" },
+        { "path": "dids[].voicemail_threshold",       "type": "integer" },
+        { "path": "dids[].webhook",                   "type": "string" },
+        { "path": "dids[].webhook_enabled",           "type": "bool_01" }
+      ],
       "patches": [
         { "path": "dids[].sms_available", "type": "bool_01", "sample": "1" },
         { "path": "dids[].sms_enabled",   "type": "bool_01", "sample": "1" }
@@ -360,6 +398,46 @@
         ]
       }
     },
+    "getConferenceMembers": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "member", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "member",              "shape": { "kind": "scalar", "type": "integer", "sample": "1599" } },
+            { "name": "name",                "shape": { "kind": "scalar", "type": "string",  "sample": "testing" } },
+            { "name": "description",         "shape": { "kind": "scalar", "type": "string",  "sample": "testing description" } },
+            { "name": "pin",                 "shape": { "kind": "scalar", "type": "integer", "sample": "1234" } },
+            { "name": "announce_join_leave", "shape": { "kind": "scalar", "type": "bool_yn", "sample": "no" } },
+            { "name": "admin",               "shape": { "kind": "scalar", "type": "bool_yn", "sample": "no" } },
+            { "name": "start_muted",         "shape": { "kind": "scalar", "type": "bool_yn", "sample": "no" } },
+            { "name": "announce_user_count", "shape": { "kind": "scalar", "type": "bool_yn", "sample": "no" } },
+            { "name": "announce_only_user",  "shape": { "kind": "scalar", "type": "bool_yn", "sample": "yes" } },
+            { "name": "moh_when_empty",      "shape": { "kind": "scalar", "type": "string",  "sample": "guitar_alchemy" } },
+            { "name": "quiet",               "shape": { "kind": "scalar", "type": "bool_yn", "sample": "no" } },
+            { "name": "announcement",        "shape": { "kind": "scalar", "type": "integer", "sample": "0" } },
+            { "name": "drop_silence",        "shape": { "kind": "scalar", "type": "bool_yn", "sample": "yes" } },
+            { "name": "talking_threshold",   "shape": { "kind": "scalar", "type": "integer", "sample": "140" } },
+            { "name": "silence_threshold",   "shape": { "kind": "scalar", "type": "integer", "sample": "2500" } },
+            { "name": "talk_detection",      "shape": { "kind": "scalar", "type": "bool_yn", "sample": "yes" } },
+            { "name": "jitter_buffer",       "shape": { "kind": "scalar", "type": "bool_yn", "sample": "yes" } }
+          ] } } }
+        ]
+      }
+    },
+    "getPhonebookGroups": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "phonebook_groups", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "phonebook_group", "shape": { "kind": "scalar", "type": "integer", "sample": "32207" } },
+            { "name": "name",            "shape": { "kind": "scalar", "type": "string",  "sample": "Work" } },
+            { "name": "members",         "shape": { "kind": "scalar", "type": "string",  "sample": "123456;654321" } }
+          ] } } }
+        ]
+      }
+    },
     "getCDR": {
       "additions": [
         { "path": "cdr[].ip",        "type": "string" },
@@ -372,6 +450,16 @@
         { "path": "accounts[].dialing_mode",                "type": "integer" },
         { "path": "accounts[].internal_extension_location", "type": "integer" },
         { "path": "accounts[].transcription_start_delay",   "type": "integer" }
+      ]
+    },
+    "getVoicemails": {
+      "additions": [
+        { "path": "voicemails[].client", "type": "integer" }
+      ]
+    },
+    "searchTollFreeUSA": {
+      "additions": [
+        { "path": "dids[].sms", "type": "string" }
       ]
     },
     "setEmailToFax": {

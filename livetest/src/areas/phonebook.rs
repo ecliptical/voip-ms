@@ -55,7 +55,7 @@ impl Area for Phonebook {
             "getPhonebookGroups",
             GetPhonebookGroupsParams,
             GetPhonebookGroupsResponse,
-            phonebooks
+            phonebook_groups
         );
     }
 
@@ -145,7 +145,7 @@ async fn group_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope
         AREA,
         "fixture:getPhonebookGroups",
         &GetPhonebookGroupsParams::default(),
-        |r| Some(r.phonebooks.len()),
+        |r| Some(r.phonebook_groups.len()),
     )
     .await;
 }
@@ -228,7 +228,7 @@ async fn list_group_orphans(client: &Client) -> anyhow::Result<Vec<Orphan>> {
         .get_phonebook_groups(&GetPhonebookGroupsParams::default())
         .await?;
     Ok(owned_orphans(
-        resp.phonebooks,
+        resp.phonebook_groups,
         "phonebookgroup",
         |g| &g.name,
         |g| g.phonebook_group,
