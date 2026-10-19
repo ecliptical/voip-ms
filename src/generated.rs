@@ -15694,10 +15694,7 @@ pub struct GetLNPListStatusResponse {
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_map_from_object"
-    )]
+    #[serde(default, deserialize_with = "crate::responses::deserialize_map")]
     pub list_status: std::collections::HashMap<String, String>,
 }
 
@@ -15816,11 +15813,8 @@ pub struct GetLocationsResponse {
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
-    )]
-    pub locations: Vec<String>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_map")]
+    pub locations: std::collections::HashMap<u64, String>,
 }
 
 /// Response body for [`Client::get_lock_international`] (wire method `getLockInternational`).
@@ -15942,10 +15936,7 @@ pub struct GetMediaMMSResponse {
         deserialize_with = "crate::responses::deserialize_opt_reported_wall_clock"
     )]
     pub date: Option<crate::Reported<crate::WallClock>>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_map_from_object"
-    )]
+    #[serde(default, deserialize_with = "crate::responses::deserialize_map")]
     pub media: std::collections::HashMap<String, String>,
 }
 

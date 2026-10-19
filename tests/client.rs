@@ -1458,6 +1458,49 @@ fn lnp_list_status_is_a_string_keyed_map() {
 }
 
 #[test]
+fn locations_map_each_id_to_its_name_in_either_wire_form() {
+    use std::collections::HashMap;
+    use voip_ms::{DelLocationParams, GetLocationsResponse};
+
+    // Both envelopes were read live: a list while the built-in location is the
+    // only one, an object keyed by id once another exists.
+    let only_built_in: GetLocationsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "locations": ["Reachable by everyone"]
+    }))
+    .unwrap();
+    assert_eq!(
+        only_built_in.locations,
+        HashMap::from([(0, "Reachable by everyone".to_string())])
+    );
+
+    let with_custom: GetLocationsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "locations": { "0": "Reachable by everyone", "1713": "Office" }
+    }))
+    .unwrap();
+    assert_eq!(
+        with_custom.locations,
+        HashMap::from([
+            (0, "Reachable by everyone".to_string()),
+            (1713, "Office".to_string()),
+        ])
+    );
+
+    // The key is the id `delLocation` takes, with no conversion between.
+    let (&id, name) = with_custom
+        .locations
+        .iter()
+        .find(|(_, name)| *name == "Office")
+        .unwrap();
+    let params = DelLocationParams::new(name.clone(), id);
+    assert_eq!(
+        serde_json::to_value(&params).unwrap(),
+        json!({ "name": "Office", "id": 1713 })
+    );
+}
+
+#[test]
 fn report_estimated_hold_time_values_are_strings() {
     use voip_ms::GetReportEstimatedHoldTimeResponse;
 

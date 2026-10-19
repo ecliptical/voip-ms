@@ -349,6 +349,15 @@
         ]
       }
     },
+    "getLocations": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "locations", "shape": { "kind": "map", "value": { "kind": "scalar", "type": "string", "sample": "Reachable by everyone" } } }
+        ]
+      }
+    },
     "getCDR": {
       "additions": [
         { "path": "cdr[].ip",        "type": "string" },

@@ -270,6 +270,22 @@ pub(crate) const NAMED_ZONE_TZ_RESPONSE_PATHS: &[&str] = &[
 pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] =
     &["DelLocationParams.id", "GetBackOrdersParams.id"];
 
+/// Response maps keyed by a numeric record id, typed `HashMap<u64, String>`
+/// rather than the `HashMap<String, _>` every other map gets, so an id read
+/// from one sends unconverted to the param that takes it. `getLocations` maps
+/// each internal extension location's id to its name; `delLocation` takes that
+/// id. Keyed `"StructName.field"`.
+pub(crate) const ID_KEYED_NAME_MAP_RESPONSE_PATHS: &[&str] = &["GetLocationsResponse.locations"];
+
+/// The [`FieldOverride`] for a map from a numeric record id to a name.
+pub(crate) fn id_keyed_name_map_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "std::collections::HashMap<u64, String>".into(),
+        response_deserializer: Some("crate::responses::deserialize_map".into()),
+        ..Default::default()
+    }
+}
+
 /// The [`FieldOverride`] for a numeric id. Its wire form is a bare number
 /// either way, so the param side needs no serializer; only the response side
 /// has to tolerate the numeric string voip.ms may send instead.

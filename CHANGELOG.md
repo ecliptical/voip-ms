@@ -31,6 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Breaking**: `get_locations` no longer fails on an account that has created
+  a location. VoIP.ms sends `locations` as a list of names while the built-in
+  location `0` is the only one and as an object keyed by location id once
+  another exists, which the `Vec<String>` could not read.
+  `GetLocationsResponse::locations` is a `HashMap<u64, String>` from each
+  location's id to its name, read from either form; the id is the one
+  `DelLocationParams::internal_extension_location` takes.
+- A map-shaped response field (`GetLNPListStatusResponse::list_status`,
+  `GetMediaMMSResponse::media`) reads a JSON array as the map keyed by
+  position, which is how VoIP.ms sends a map whose keys are `0` to `n - 1`.
 - `SetRecordingParams::recording` is documented as a recording id, not a
   phonebook entry.
 - `SetCallHuntingParams::recording` is documented as taking `default` as well

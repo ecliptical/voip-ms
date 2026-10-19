@@ -2600,6 +2600,14 @@ fn cmd_gen() -> Result<(), String> {
         )?;
     }
 
+    for path in field_overrides::ID_KEYED_NAME_MAP_RESPONSE_PATHS {
+        assign_field_type(
+            &mut field_type_override,
+            (*path).to_string(),
+            field_overrides::id_keyed_name_map_override(),
+        )?;
+    }
+
     // A transaction-history row's `date` is a point in time or the window the
     // row summarizes, so it is typed per struct here for the same reason -- the
     // JSON section takes declared enums only.

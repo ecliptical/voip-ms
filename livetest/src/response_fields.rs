@@ -883,7 +883,7 @@ pub const RESPONSE_FIELDS: &[(&str, &[&str])] = &[
             "status",
         ],
     ),
-    ("getLocations", &["locations", "status"]),
+    ("getLocations", &["locations", "locations.*", "status"]),
     (
         "getLockInternational",
         &[

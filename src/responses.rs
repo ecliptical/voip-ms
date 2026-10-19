@@ -711,14 +711,18 @@ where
     }
 }
 
-/// Deserialize a string-keyed map from a JSON object, tolerating absence.
+/// Deserialize a map whose keys are data, not schema, tolerating absence.
 ///
-/// VoIP.ms returns a `code => description` catalog (e.g. `getLNPListStatus`'s
-/// `list_status`) as a JSON object whose keys are data, not schema. Absent,
-/// `null`, and an empty string all yield an empty map -- the same
-/// absent-is-empty convention the list helper follows. A non-object, non-empty
-/// value is an error.
-pub(crate) fn deserialize_map_from_object<'de, K, V, D>(
+/// VoIP.ms returns such a catalog (`getLNPListStatus`'s `code => description`
+/// `list_status`, `getLocations`' `id => name` `locations`) as a JSON object --
+/// unless its keys are exactly `0` to `n - 1`, which PHP's `json_encode` writes
+/// as a JSON array. So an array is the map keyed by position: `getLocations`
+/// sends `["Reachable by everyone"]` while the built-in location `0` is the
+/// only one, and `{"0": ..., "1713": ...}` once another exists. A numeric key
+/// type reads the key text as a number. Absent, `null`, and an empty string all
+/// yield an empty map -- the same absent-is-empty convention the list helper
+/// follows. Any other value is an error.
+pub(crate) fn deserialize_map<'de, K, V, D>(
     deserializer: D,
 ) -> Result<std::collections::HashMap<K, V>, D::Error>
 where
@@ -726,23 +730,27 @@ where
     V: Deserialize<'de>,
     D: Deserializer<'de>,
 {
-    use serde::de::IntoDeserializer as _;
-
     let value = Option::<Value>::deserialize(deserializer)?;
-    match value {
-        None | Some(Value::Null) => Ok(std::collections::HashMap::new()),
-        Some(Value::String(s)) if s.trim().is_empty() => Ok(std::collections::HashMap::new()),
-        Some(Value::Object(entries)) => entries
+    let entries = match value {
+        None | Some(Value::Null) => return Ok(std::collections::HashMap::new()),
+        Some(Value::String(s)) if s.trim().is_empty() => {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        Some(Value::Object(entries)) => entries,
+        Some(Value::Array(items)) => items
             .into_iter()
-            .map(|(k, v)| {
-                let key = K::deserialize(k.into_deserializer())
-                    .map_err(|e: serde::de::value::Error| D::Error::custom(e))?;
-                let val = V::deserialize(v).map_err(D::Error::custom)?;
-                Ok((key, val))
-            })
+            .enumerate()
+            .map(|(position, v)| (position.to_string(), v))
             .collect(),
-        Some(other) => Err(D::Error::custom(format!("expected object, got {other}"))),
-    }
+        Some(other) => {
+            return Err(D::Error::custom(format!(
+                "expected object or array, got {other}"
+            )));
+        }
+    };
+
+    std::collections::HashMap::<K, V>::deserialize(Value::Object(entries)).map_err(D::Error::custom)
 }
 
 /// `skip_serializing_if` predicate for true-only flag params (`test`): a
@@ -1443,12 +1451,18 @@ mod tests {
 
     #[derive(Deserialize)]
     struct MapWrap {
-        #[serde(default, deserialize_with = "deserialize_map_from_object")]
+        #[serde(default, deserialize_with = "deserialize_map")]
         entries: HashMap<String, String>,
     }
 
+    #[derive(Deserialize)]
+    struct IdMapWrap {
+        #[serde(default, deserialize_with = "deserialize_map")]
+        entries: HashMap<u64, String>,
+    }
+
     #[test]
-    fn map_from_object_tolerates_absence_and_rejects_non_object() {
+    fn map_tolerates_absence_and_rejects_a_scalar() {
         let empty: MapWrap = serde_json::from_value(json!({})).unwrap();
         assert!(empty.entries.is_empty());
         let null: MapWrap = serde_json::from_value(json!({"entries": null})).unwrap();
@@ -1458,7 +1472,35 @@ mod tests {
         let full: MapWrap =
             serde_json::from_value(json!({"entries": {"1": "New", "2": "Old"}})).unwrap();
         assert_eq!(full.entries.get("1").map(String::as_str), Some("New"));
-        assert!(serde_json::from_value::<MapWrap>(json!({"entries": [1, 2]})).is_err());
+        assert!(serde_json::from_value::<MapWrap>(json!({"entries": 5})).is_err());
+    }
+
+    #[test]
+    fn an_array_is_the_map_keyed_by_position() {
+        let listed: IdMapWrap =
+            serde_json::from_value(json!({"entries": ["Reachable by everyone", "Office"]}))
+                .unwrap();
+        assert_eq!(
+            listed.entries,
+            HashMap::from([
+                (0, "Reachable by everyone".to_string()),
+                (1, "Office".to_string()),
+            ])
+        );
+
+        let keyed: IdMapWrap = serde_json::from_value(
+            json!({"entries": {"0": "Reachable by everyone", "1713": "Office"}}),
+        )
+        .unwrap();
+        assert_eq!(
+            keyed.entries,
+            HashMap::from([
+                (0, "Reachable by everyone".to_string()),
+                (1713, "Office".to_string()),
+            ])
+        );
+
+        assert!(serde_json::from_value::<IdMapWrap>(json!({"entries": {"x": "Office"}})).is_err());
     }
 
     #[derive(serde::Serialize)]

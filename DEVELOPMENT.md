@@ -197,7 +197,15 @@ refresh needs eyes on the diff, not just a green build:
 * **Mis-structured responses** -- the docs print a list as a single object
   (`getTerminationRates`'s `route`), or a map whose keys are data
   (`getLNPListStatus`'s `list_status`). Patches only retype scalars, so these
-  take a full `shape` replacement for the method.
+  take a full `shape` replacement for the method. A `map` also reads a JSON
+  array as the map keyed `0` to `n - 1`, which is how PHP's `json_encode`
+  writes one with exactly those keys: `getLocations` documents a list of names
+  and sends one while the built-in location `0` is the only one, but sends
+  `{"0": ..., "1713": ...}` once another exists. A doc sample that is a bare
+  list of names is worth that check against an account with more than one
+  entry. A map's keys are `String` unless `ID_KEYED_NAME_MAP_RESPONSE_PATHS`
+  in `xtask/src/field_overrides.rs` types them `u64` for a map keyed by a
+  record id.
 * **Undocumented status codes** -- a code the live API returns that the
   docs' Error Codes table omits goes in `undocumented_statuses`. If the docs
   later list it, `cargo xtask gen` fails until the entry is deleted.
