@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: a lookup's code has one type from the lookup to the method that
+  takes it. The `get*` lookup filters are `Option<u64>`, matching the
+  `value` the lookup reports and the field the code is sent in:
+  `GetBalanceManagementParams::balance_management`,
+  `GetCarriersParams::carrier`, `GetDeviceTypesParams::device_type`,
+  `GetLockInternationalParams::lock_international`,
+  `GetProtocolsParams::protocol`, `GetRoutesParams::route` and
+  `GetVoicemailSetupsParams::voicemail_setup`. The wire form is unchanged.
+- **Breaking**: a reseller client's `minute`, `monthly` and `setup` are
+  `rust_decimal::Decimal` on every method: the seven `order*` params (were
+  `String`), and `GetDIDsInternationalNationalResponseLocation::minute` /
+  `setup` and `SearchTollFreeUSAResponseDID::setup` (were `u64`, which a fee
+  with cents failed to read).
+- **Breaking**: `GetClientsParams::client` and `GetDIDsInfoParams::client` are
+  `client_filter`, since they also take an e-mail address or a sub-account
+  name and stay `String` where every other `client` is a `u64` id.
+  `DelLocationParams::id` is `location_id` (still `String`), and
+  `DelLocationParams::new` names its argument the same. The wire names are
+  unchanged.
+
+### Fixed
+
+- `SetRecordingParams::recording` is documented as a recording id, not a
+  phonebook entry.
+- `SetCallHuntingParams::recording` is documented as taking `default` as well
+  as a recording id, which is why it is a `String` where every other
+  `recording` is a `u64`.
+
 ## [0.18.0] - 2026-10-16
 
 ### Changed

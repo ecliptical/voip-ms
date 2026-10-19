@@ -2829,7 +2829,7 @@
         "required": true
       },
       "recording": {
-        "doc": "Recording for the Call Hunting (values from getRecordings) (required)",
+        "doc": "Recording for the Call Hunting: a recording id from getRecordings, or `default` for the system recording (required)",
         "required": true
       },
       "ring_time": {
@@ -3725,7 +3725,7 @@
         "required": true
       },
       "recording": {
-        "doc": "ID for a specific Phonebook entry (Example: 33221 / Leave empty to create a new one)",
+        "doc": "ID for a specific Recording (Example: 33221 / Leave empty to create a new one)",
         "required": false
       }
     },

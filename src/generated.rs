@@ -5220,21 +5220,21 @@ pub struct DelLocationParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Internal Extension Location id (Value from getLocations") (required)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "id")]
+    pub location_id: Option<String>,
 }
 
 impl DelLocationParams {
     /// A `DelLocationParams` with the parameters the VoIP.ms docs mark as
-    /// required: `name` and `id`.
+    /// required: `name` and `location_id`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(name: impl Into<String>, id: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>, location_id: impl Into<String>) -> Self {
         Self {
             name: Some(name.into()),
-            id: Some(id.into()),
+            location_id: Some(location_id.into()),
         }
     }
 }
@@ -5939,7 +5939,7 @@ pub struct GetBalanceParams {
 pub struct GetBalanceManagementParams {
     /// Code for a specific Balance Management Setting (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub balance_management: Option<String>,
+    pub balance_management: Option<u64>,
 }
 
 /// \- Retrieves the Call Detail Records of all your calls.
@@ -6265,7 +6265,7 @@ pub struct GetCallerIDFilteringParams {
 pub struct GetCarriersParams {
     /// Code for a specific Carrier (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub carrier: Option<String>,
+    pub carrier: Option<u64>,
 }
 
 /// \- Retrieves Charges made to a specific Reseller Client.
@@ -6351,8 +6351,8 @@ pub struct GetClientsParams {
     /// Parameter could have the following values: * Empty Value \[Not
     /// Required\] * Specific Reseller Client ID (Example: 561115) * Specific
     /// Reseller Client e-mail (Example: '\[email protected\]')
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "client")]
+    pub client_filter: Option<String>,
 }
 
 /// \- Retrieves a list of Conferences if no additional parameter is provided.
@@ -6524,8 +6524,8 @@ pub struct GetDIDsInfoParams {
     /// Parameter could have the following values: * Empty Value \[Not
     /// Required\] * Specific Reseller Client ID (Example: 561115) * Specific
     /// Sub Account (Example: '100001_VoIP')
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "client")]
+    pub client_filter: Option<String>,
     /// DID from Client or Sub Account (Example: 5551234567)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
@@ -6708,7 +6708,7 @@ impl GetDepositsParams {
 pub struct GetDeviceTypesParams {
     /// Code for a specific Device Type (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub device_type: Option<String>,
+    pub device_type: Option<u64>,
 }
 
 /// \- Retrieves a list of "Email to Fax configurations" from your account if no
@@ -7122,7 +7122,7 @@ pub struct GetLocalesParams {
 pub struct GetLockInternationalParams {
     /// Code for a specific Lock International Mode (Example: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub lock_international: Option<String>,
+    pub lock_international: Option<u64>,
 }
 
 /// \- Retrieves a list of MMS messages by: date range, mms type, DID number, and
@@ -7364,7 +7364,7 @@ impl GetPortabilityParams {
 pub struct GetProtocolsParams {
     /// Code for a specific Protocol (Example: 3)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol: Option<String>,
+    pub protocol: Option<u64>,
 }
 
 /// \- Retrieves a list of Queue entries if no additional parameter is provided.
@@ -7938,7 +7938,7 @@ pub struct GetRingStrategiesParams {
 pub struct GetRoutesParams {
     /// Code for a specific Route (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub route: Option<String>,
+    pub route: Option<u64>,
 }
 
 /// \- Retrieves a list of SIP URIs if no additional parameter is provided.
@@ -8316,7 +8316,7 @@ impl GetVoicemailMessagesParams {
 pub struct GetVoicemailSetupsParams {
     /// ID for a specific Voicemail Setup (Example: 2)
     #[serde(skip_serializing_if = "Option::is_none", rename = "voicemailsetup")]
-    pub voicemail_setup: Option<String>,
+    pub voicemail_setup: Option<u64>,
 }
 
 /// \- Retrieves all Voicemail Transcriptions if no additional parameter is
@@ -8634,13 +8634,13 @@ pub struct OrderDIDParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8742,13 +8742,13 @@ pub struct OrderDIDInternationalGeographicParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8821,13 +8821,13 @@ pub struct OrderDIDInternationalNationalParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8897,13 +8897,13 @@ pub struct OrderDIDInternationalTollFreeParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -8998,13 +8998,13 @@ pub struct OrderDIDVirtualParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -9163,13 +9163,13 @@ pub struct OrderTollFreeParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -9265,13 +9265,13 @@ pub struct OrderVanityParams {
     pub account: Option<String>,
     /// Montly Fee for Reseller Client (Example: 3.50)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub monthly: Option<String>,
+    pub monthly: Option<rust_decimal::Decimal>,
     /// Setup Fee for Reseller Client (Example: 1.99)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup: Option<String>,
+    pub setup: Option<rust_decimal::Decimal>,
     /// Minute Rate for Reseller Client (Example: 0.03)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minute: Option<String>,
+    pub minute: Option<rust_decimal::Decimal>,
     /// Set to true if testing how Orders work - Orders can not be undone - When
     /// testing, no Orders are made
     #[serde(
@@ -9753,7 +9753,8 @@ pub struct SetCallHuntingParams {
     /// Music on Hold Code (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music: Option<String>,
-    /// Recording for the Call Hunting (values from getRecordings) (required)
+    /// Recording for the Call Hunting: a recording id from getRecordings, or
+    /// `default` for the system recording (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<String>,
     /// Language for the Call Hunting (values from getLanguages) (required)
@@ -11292,8 +11293,8 @@ pub struct SetQueueParams {
 /// Parameters for [`Client::set_recording`] (wire method `setRecording`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct SetRecordingParams {
-    /// ID for a specific Phonebook entry (Example: 33221 / Leave empty to
-    /// create a new one)
+    /// ID for a specific Recording (Example: 33221 / Leave empty to create a
+    /// new one)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recording: Option<u64>,
     /// Base64 encoded file (Provide Recording ID and file if you want update
@@ -14388,14 +14389,14 @@ pub struct GetDIDsInternationalNationalResponseLocation {
     pub monthly: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
-    pub setup: Option<u64>,
+    pub setup: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
-    pub minute: Option<u64>,
+    pub minute: Option<rust_decimal::Decimal>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
@@ -18680,9 +18681,9 @@ pub struct SearchTollFreeUSAResponseDID {
     pub minute_alaska: Option<rust_decimal::Decimal>,
     #[serde(
         default,
-        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+        deserialize_with = "crate::responses::deserialize_opt_decimal_from_string_or_number"
     )]
-    pub setup: Option<u64>,
+    pub setup: Option<rust_decimal::Decimal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]

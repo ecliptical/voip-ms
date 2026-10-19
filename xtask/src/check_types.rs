@@ -1,5 +1,6 @@
 //! `cargo xtask check-types`: report a field that a method family types one
-//! way to read and another way to write.
+//! way to read and another way to write, and a request field ident typed one
+//! way in one `*Params` struct and another way in the next.
 //!
 //! The response side is inferred from the docs' sample output and the param
 //! side is declared by the WSDL, and the two disagreed on seven `subAccount`
@@ -12,6 +13,13 @@
 //! `Update*Params` field against the same-named field on the `Get*Response`
 //! structs of the same family. A family is the method name minus its leading
 //! verb, singularized, so `setSubAccount` and `getSubAccounts` share one.
+//!
+//! The family comparison cannot see a code that one method looks up and
+//! another takes (`getProtocols` and `createSubAccount`), since the two are in
+//! different families. So it also compares every `*Params` field against every
+//! other `*Params` field of the same ident: a consumer that derives one
+//! parameter schema per ident, or a caller passing a value from one method to
+//! the next, sees each ident as one type.
 //!
 //! Reports and exits successfully by default, since a finding wants human
 //! judgment about which of the two types is right. `--deny` makes any finding
@@ -35,17 +43,22 @@ const READ_VERB: &str = "get";
 /// * `voicemail.timezone` -- strict `chrono_tz::Tz` to write and the tolerant
 ///   `TimezoneName` to read, because voip.ms still reports legacy zone names
 ///   the IANA database dropped while the crate must never send one.
-/// * `client.client` -- a reseller client id (`u64`) everywhere except
-///   `getClients` and `getDIDsInfo`, whose parameter is documented to accept an
-///   e-mail address or a sub-account name instead, so those two stay `String`.
 /// * `music_on_hold.volume` -- the param is the documented `1`/`0` quiet
 ///   toggle, while the response reports the rendition that resulted (`mp3` /
 ///   `quietmp3`). Two different things sharing a name, confirmed live.
-const DELIBERATE: &[&str] = &[
-    "client.client",
-    "music_on_hold.volume",
-    "voicemail.timezone",
-];
+const DELIBERATE: &[&str] = &["music_on_hold.volume", "voicemail.timezone"];
+
+/// `*Params` field idents meant to carry more than one type across methods.
+///
+/// * `folder` -- a `voip_ms::VoicemailFolder` everywhere except
+///   `getFaxMessages`, whose folder is a fax folder: `SENT`, `ALL` or one a
+///   caller created with `setFaxFolder`, which no fixed set of variants can
+///   hold.
+/// * `recording` -- a recording id everywhere except `setCallHunting`, which
+///   also takes the system recording `default` and reports it back verbatim.
+///   Confirmed live: a call hunting created with `recording=default` read back
+///   `default`, one created with a recording id read back the id.
+const DELIBERATE_PARAMS: &[&str] = &["folder", "recording"];
 
 /// The type a field carries for comparison, with a response's
 /// `voip_ms::Reported<T>` wrapper removed.
@@ -78,12 +91,40 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
 
     let mut writes: BTreeMap<(String, String), BTreeSet<Field>> = BTreeMap::new();
     let mut reads: BTreeMap<(String, String), BTreeSet<Field>> = BTreeMap::new();
+    let mut params: BTreeMap<String, BTreeSet<Field>> = BTreeMap::new();
     for item in &file.items {
         let Item::Struct(s) = item else {
             continue;
         };
 
         let name = s.ident.to_string();
+        let Fields::Named(named) = &s.fields else {
+            continue;
+        };
+
+        let fields: Vec<(String, String)> = named
+            .named
+            .iter()
+            .filter_map(|f| {
+                let ident = f.ident.as_ref()?.to_string();
+                Some((ident, unwrap_option(&render_type(&f.ty))))
+            })
+            // A root response's payload list often shares its name with the
+            // record id it holds (`GetDISAsResponse::disa` against
+            // `SetDISAParams::disa`). They are not the same field, and no
+            // override could make them one type.
+            .filter(|(_, rust_type)| !is_collection(rust_type))
+            .collect();
+
+        if name.ends_with("Params") {
+            for (ident, rust_type) in &fields {
+                params.entry(ident.clone()).or_default().insert(Field {
+                    struct_name: name.clone(),
+                    rust_type: rust_type.clone(),
+                });
+            }
+        }
+
         let Some((verb, family)) = split_family(&name) else {
             continue;
         };
@@ -96,25 +137,8 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
             continue;
         };
 
-        let Fields::Named(named) = &s.fields else {
-            continue;
-        };
-
-        for f in &named.named {
-            let Some(ident) = &f.ident else {
-                continue;
-            };
-
-            let rust_type = unwrap_option(&render_type(&f.ty));
-            // A root response's payload list often shares its name with the
-            // record id it holds (`GetDISAsResponse::disa` against
-            // `SetDISAParams::disa`). They are not the same field, and no
-            // override could make them one type.
-            if is_collection(&rust_type) {
-                continue;
-            }
-
-            side.entry((family.clone(), ident.to_string()))
+        for (ident, rust_type) in fields {
+            side.entry((family.clone(), ident))
                 .or_default()
                 .insert(Field {
                     struct_name: name.clone(),
@@ -124,6 +148,23 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
     }
 
     let mut findings = 0usize;
+    for (field, typed) in &params {
+        if DELIBERATE_PARAMS.contains(&field.as_str()) {
+            continue;
+        }
+
+        let types: BTreeSet<&str> = typed.iter().map(|f| f.rust_type.as_str()).collect();
+        if types.len() < 2 {
+            continue;
+        }
+
+        findings += 1;
+        println!("params.{field}:");
+        for f in typed {
+            println!("  {} -> {}", f.struct_name, f.rust_type);
+        }
+    }
+
     for ((family, field), written) in &writes {
         let Some(read) = reads.get(&(family.clone(), field.clone())) else {
             continue;
@@ -150,15 +191,20 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
     }
 
     if findings == 0 {
-        println!("ok: every get/set field pair agrees on its type");
+        println!(
+            "ok: every get/set field pair agrees on its type, and so does every params \
+             field sharing an ident"
+        );
         return Ok(());
     }
 
     let summary = format!(
-        "{findings} field(s) typed differently to read than to write. Each forces a \
-         caller who listed a record and then updated it to convert by hand; fix with a \
-         field-name entry in xtask/src/field_overrides.rs, or record why the two differ \
-         in this command's DELIBERATE list."
+        "{findings} field(s) typed two ways: `family.field` to read and to write, \
+         `params.field` in two params structs. Each forces a caller to convert a value \
+         by hand on its way from one method to another; fix with a field-name entry in \
+         xtask/src/field_overrides.rs or a FIELD_IDENT_OVERRIDE rename in \
+         xtask/src/main.rs, or record why the two differ in this command's DELIBERATE \
+         or DELIBERATE_PARAMS list."
     );
     if deny {
         return Err(summary);

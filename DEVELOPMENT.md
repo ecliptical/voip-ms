@@ -118,9 +118,11 @@ cargo xtask gen
 cargo xtask dump-methods
 
 # 5c. Audit the emitted surface for a field typed one way to read and another
-#     to write. A real finding gets a field-name entry in
-#     xtask/src/field_overrides.rs and a regen; a pair meant to differ goes in
-#     the command's DELIBERATE list with the reason. CI runs this and
+#     to write, and for a params field ident typed two ways across methods. A
+#     real finding gets a field-name entry in xtask/src/field_overrides.rs (or,
+#     for a field holding a different set of values, its own ident in
+#     FIELD_IDENT_OVERRIDE) and a regen; a pair meant to differ goes in the
+#     command's DELIBERATE or DELIBERATE_PARAMS list with the reason. CI runs this and
 #     check-flags with --deny, so a finding left here fails the build.
 cargo xtask check-types
 

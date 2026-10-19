@@ -2791,7 +2791,7 @@ async fn the_polymorphic_client_filters_still_take_a_string() {
 
     client
         .get_clients_raw(&GetClientsParams {
-            client: Some("john@example.com".into()),
+            client_filter: Some("john@example.com".into()),
         })
         .await
         .unwrap();

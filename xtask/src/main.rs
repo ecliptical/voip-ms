@@ -59,6 +59,14 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `setRingGroup` use `ring_group`; align the delete with the family so a
     // caller who just listed or configured a group reuses the same field.
     ("DelRingGroupParams", "ringgroup", "ring_group"),
+    // These two filters also accept a client's e-mail address (`getClients`)
+    // or a sub-account name (`getDIDsInfo`), so they are text where every other
+    // `client` is a reseller client id.
+    ("GetClientsParams", "client", "client_filter"),
+    ("GetDIDsInfoParams", "client", "client_filter"),
+    // `getLocations` reports only location names, so nothing shows whether
+    // this id is a number; it stays text under a name no numeric `id` shares.
+    ("DelLocationParams", "id", "location_id"),
     // The reference-data lookups: `type` narrows the catalog to one entry, and
     // the docs call the value a code ("Code for a specific Address Type").
     ("E911AddressTypesParams", "type", "code"),

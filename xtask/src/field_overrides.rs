@@ -456,14 +456,25 @@ const DATE_FIELDS: &[&str] = &["date_from", "date_to", "reseller_nextbilling"];
 /// `createVoicemail` documents its `digits` as "Example: 01". Confirmed live:
 /// creating a box with `digits=01` yields mailbox `1`, so voip.ms normalizes
 /// the leading zero away and there is none to preserve.
+///
+/// The lookup codes (`balance_management`, `carrier`, `device_type`,
+/// `lock_international`, `protocol`, `route`, `voicemailsetup`) disagree the
+/// other way round: the WSDL declares the write side `xsd:integer` and the
+/// `get*` lookup's filter `xsd:string`. The lookup documents its filter as "Code
+/// for a specific X (Example: 3)" and reports each code as a number in `value`,
+/// and the write side documents "Values from getX", so one code is one type
+/// from the lookup to the method that takes it.
 const U64_FIELDS: &[&str] = &[
     "agent_announcement",
+    "balance_management",
     "call_hunting",
     "callback",
     "caller_announcement",
     "canada_routing",
+    "carrier",
     "client",
     "conference",
+    "device_type",
     "disa",
     "filtering",
     "forwarding",
@@ -473,21 +484,25 @@ const U64_FIELDS: &[&str] = &[
     "internal_voicemail",
     "international_route",
     "ivr",
+    "lock_international",
     "mailbox",
     "member",
     "phonebook",
     "priority_weight",
+    "protocol",
     "queue",
     "recording",
     "reseller_client",
     "reseller_package",
     "ring_group",
     "ringgroup",
+    "route",
     "sipuri",
     "timecondition",
     "unavailable_message_recording",
     "voice_announcement",
     "voicemail",
+    "voicemailsetup",
     "vpri",
 ];
 
@@ -548,10 +563,19 @@ const IDENTIFIER_STRING_FIELDS: &[&str] = &[
     "zip",
 ];
 
-/// Fractional-second durations. `setForwarding`'s `pause` is documented
-/// "Example: 1.5 / Values: 0 to 10 in increments of 0.5", which the WSDL
-/// declares `xsd:string` while the response sample infers `decimal`.
-const DECIMAL_FIELDS: &[&str] = &["pause"];
+/// Fields that hold a fraction, which the WSDL or a whole-number doc sample
+/// under-types:
+///
+/// * `pause` -- `setForwarding` documents "Example: 1.5 / Values: 0 to 10 in
+///   increments of 0.5", which the WSDL declares `xsd:string` while the
+///   response sample infers `decimal`;
+/// * `minute`, `monthly`, `setup` -- a reseller client's per-minute rate,
+///   monthly fee and setup fee, documented alike on every method that takes
+///   them ("Example: 0.03", "3.50", "1.99"). The WSDL declares them
+///   `xsd:decimal` on `connectDID` / `connectFAX` and `xsd:string` on the seven
+///   orders, and a whole-dollar sample (`setup` `11`) made the extractor infer
+///   `integer` on some responses, which a fee of `11.50` would fail.
+const DECIMAL_FIELDS: &[&str] = &["minute", "monthly", "pause", "setup"];
 
 /// Counts documented as a number *or* the word `unlimited`, which is
 /// `voip_ms::WaitTime`'s exact wire contract -- the type is selected by that
