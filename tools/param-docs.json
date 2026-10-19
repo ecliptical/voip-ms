@@ -1245,7 +1245,7 @@
     },
     "getClients": {
       "client": {
-        "doc": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Reseller Client e-mail (Example: '[email protected]')",
+        "doc": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Reseller Client e-mail (Example: 'john.doe@mydomain.com')",
         "required": false
       }
     },
@@ -2013,7 +2013,7 @@
     },
     "mailFaxMessagePDF": {
       "email": {
-        "doc": "Destination email adreess (example: [email protected]) (required)",
+        "doc": "Destination email adreess (example: yourname@company.com) (required)",
         "required": true
       },
       "id": {
@@ -2445,7 +2445,7 @@
     },
     "orderFaxNumber": {
       "email": {
-        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
         "required": false
       },
       "email_attach_file": {
@@ -2787,7 +2787,7 @@
     },
     "sendVoicemailEmail": {
       "email_address": {
-        "doc": "Destination Email address (Example: [email protected]) (required)",
+        "doc": "Destination Email address (Example: john.doe@my-domain.com) (required)",
         "required": true
       },
       "folder": {
@@ -3231,7 +3231,7 @@
         "required": false
       },
       "inbound_dialing_mode": {
-        "doc": "How the DID presents the caller of an inbound call: NANPA (10 digits) or E.164 (with the country code)",
+        "doc": "How the DID presents the caller of an inbound call (Values: 0 = NANPA, 10 digits; 1 = E.164, with the country code)",
         "required": false
       },
       "note": {
@@ -3397,7 +3397,7 @@
         "required": true
       },
       "email": {
-        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
         "required": false
       },
       "email_attach_file": {
@@ -3419,7 +3419,7 @@
         "required": true
       },
       "email": {
-        "doc": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+        "doc": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
         "required": false
       },
       "email_attach_file": {
@@ -3797,13 +3797,13 @@
         "required": false
       },
       "uri": {
-        "doc": "SIP URI (Example: '[email protected]') (required)",
+        "doc": "SIP URI (Example: '5552223333@sip.voip.ms') (required)",
         "required": true
       }
     },
     "setSMS": {
       "dialmode": {
-        "doc": "How messages sent through the API from this DID are addressed: NANPA sends 10 digits without the +1 prefix, E.164 sends the country code first with the +1 prefix",
+        "doc": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix)",
         "required": false
       },
       "did": {
@@ -3903,7 +3903,7 @@
         "required": false
       },
       "default_e911": {
-        "doc": "e911 Default CallerID",
+        "doc": "The caller ID sent on emergency (911) calls from this sub-account",
         "required": false
       },
       "description": {

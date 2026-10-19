@@ -1859,7 +1859,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"532736202713362b323e233f367d303c3e\">[email protected]</a>"
+                    "sample": "test@example.com"
                   }
                 },
                 {
@@ -2440,7 +2440,7 @@
           "shape": {
             "kind": "scalar",
             "type": "string",
-            "sample": "Email sent to <a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"1d707c74715d6e72736d7c7364337e7270\">[email protected]</a>"
+            "sample": "Email sent to mail@sonpany.com"
           }
         }
       ]
@@ -3352,7 +3352,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"89e3e6e1e7a7ede6ecc9e4f0a4ede6e4e8e0e7a7eae6e4\">[email protected]</a>"
+                    "sample": "john.doe@my-domain.com"
                   }
                 },
                 {
@@ -3478,7 +3478,7 @@
                 "shape": {
                   "kind": "scalar",
                   "type": "string",
-                  "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"22484d4a4c0c464d47624f5b0f464d4f434b4c0c414d4f\">[email protected]</a>"
+                  "sample": "john.doe@my-domain.com"
                 }
               }
             ]
@@ -4782,7 +4782,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"2943464147074d464c694c51484459454c074a4644\">[email protected]</a>"
+                    "sample": "john.doe@example.com"
                   }
                 },
                 {
@@ -4910,7 +4910,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"f480918780b4918c9599849891da979b99\">[email protected]</a>"
+                    "sample": "test@example.com"
                   }
                 }
               ]
@@ -6118,7 +6118,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"063333333434343535353546756f762870696f76286b75\">[email protected]</a>"
+                    "sample": "5552223333@sip.voip.ms"
                   }
                 },
                 {
@@ -8586,7 +8586,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"6d0c09091f081e1e2d08000c0401430e0200\">[email protected]</a>"
+                    "sample": "address@email.com"
                   }
                 },
                 {
@@ -8940,7 +8940,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"daa3b5afa89abfb7bbb3b6f4b9b5b7\">[email protected]</a>"
+                    "sample": "your@email.com"
                   }
                 },
                 {
@@ -9422,7 +9422,7 @@
           "shape": {
             "kind": "scalar",
             "type": "string",
-            "sample": "\"<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"157f7a7d7b3b717a7055786c38717a78747c7b3b767a78\">[email protected]</a>\","
+            "sample": "\"john.doe@my-domain.com\","
           }
         },
         {
@@ -9978,7 +9978,7 @@
                   "shape": {
                     "kind": "scalar",
                     "type": "string",
-                    "sample": "<a href=\"/cdn-cgi/l/email-protection\" class=\"__cf_email__\" data-cfemail=\"563c393e3878323933163b2f7b32393b373f387835393b\">[email protected]</a>"
+                    "sample": "john.doe@my-domain.com"
                   }
                 },
                 {
@@ -10804,7 +10804,7 @@
       "client": "ID for a specific Reseller Client (Example: 561115) (required)"
     },
     "getClients": {
-      "client": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Reseller Client e-mail (Example: '[email protected]')"
+      "client": "Parameter could have the following values: * Empty Value [Not Required] * Specific Reseller Client ID (Example: 561115) * Specific Reseller Client e-mail (Example: 'john.doe@mydomain.com')"
     },
     "getClientThreshold": {
       "client": "ID for a specific Reseller Client (Example: 561115) (required)"
@@ -11480,7 +11480,7 @@
     },
     "setSIPURI": {
       "sipuri": "ID for a specific SIP URI (Example: 6199 / Leave empty to create a new one)",
-      "uri": "SIP URI (Example: '[email protected]') (required)",
+      "uri": "SIP URI (Example: '5552223333@sip.voip.ms') (required)",
       "description": "Description for the SIP URI",
       "callerid_override": "This setting is optional. You can configure a 'CallerID Number Override'. Your default CallerID number will be changed to the override you have configured here when using this SIP URI.",
       "callerid_e164": "If this option is Enabled, then your CallerID will be E164 compliant."
@@ -11588,7 +11588,7 @@
     },
     "mailFaxMessagePDF": {
       "id": "ID of the Fax Message requested (Values from getFaxMessages) (required)",
-      "email": "Destination email adreess (example: [email protected]) (required)"
+      "email": "Destination email adreess (example: yourname@company.com) (required)"
     },
     "moveFaxMessage": {
       "fax_id": "ID of the Fax Message requested (Values from getFaxMessages) (required)",
@@ -11598,7 +11598,7 @@
     "orderFaxNumber": {
       "location": "Location ID of the Fax Number (Values from getFaxRateCentersCAN/getFaxRateCentersUSA) (required)",
       "quantity": "Quantity of Fax Numbers to order (Example: 3) (required)",
-      "email": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+      "email": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
       "email_enable": "Flag to enable the email notifications. - (Values: 1 = true, 0 = false) - Default: 0",
       "email_attach_file": "Flag to enable attach the Fax Message as a PDF file in the notifications. - (Values: 1 = true, 0 = false) - Default: 0",
       "url_callback": "URL where make a POST when you receive a Fax Message.",
@@ -11628,7 +11628,7 @@
     },
     "setFaxNumberInfo": {
       "did": "DID Number to be ported into our network (Example: 5552341234) (required)",
-      "email": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+      "email": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
       "email_enable": "Flag to enable the email notifications. - (Values: 1 = true, 0 = false) - Default: 0",
       "email_attach_file": "Flag to enable attach the Fax Message as a PDF file in the notifications. - (Values: 1 = true, 0 = false) - Default: 0",
       "url_callback": "URL where make a POST when you receive a Fax Message.",
@@ -11641,7 +11641,7 @@
     },
     "setFaxNumberEmail": {
       "did": "DID Number to be ported into our network (Example: 5552341234) (required)",
-      "email": "Email address where send notifications when receive Fax Messages - (Example: [email protected])",
+      "email": "Email address where send notifications when receive Fax Messages - (Example: yourname@company.com)",
       "email_enable": "Flag to enable the email notifications. - (Values: 1 = true, 0 = false) - Default: 0",
       "email_attach_file": "Flag to enable attach the Fax Message as a PDF file in the notifications. - (Values: 1 = true, 0 = false) - Default: 0",
       "test": "Set to true if testing how to set the email of a Fax Number"
@@ -11869,7 +11869,7 @@
       "mailbox": "ID for specific Mailbox (Example: 1001) (required)",
       "folder": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
       "message_num": "ID for specific Voicemail Message (Example: 1) (required)",
-      "email_address": "Destination Email address (Example: [email protected]) (required)"
+      "email_address": "Destination Email address (Example: john.doe@my-domain.com) (required)"
     },
     "setVoicemail": {
       "mailbox": "ID for a specific Mailbox (Example: 1001) (required)",
@@ -12132,5 +12132,5 @@
     "sendVoicemailEmail": "- Send a Voicemail Message File to an Email Address.",
     "setVoicemail": "- Updates the information from a specific Voicemail."
   },
-  "digest": "66b5b5d1fdf27cc1"
+  "digest": "0aae0864eb322fa2"
 }

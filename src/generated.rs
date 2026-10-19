@@ -6494,7 +6494,7 @@ impl GetClientThresholdParams {
 pub struct GetClientsParams {
     /// Parameter could have the following values: * Empty Value \[Not
     /// Required\] * Specific Reseller Client ID (Example: 561115) * Specific
-    /// Reseller Client e-mail (Example: '\[email protected\]')
+    /// Reseller Client e-mail (Example: 'john.doe@mydomain.com')
     #[serde(skip_serializing_if = "Option::is_none", rename = "client")]
     pub client_filter: Option<String>,
 }
@@ -8530,7 +8530,7 @@ pub struct MailFAXMessagePDFParams {
     /// ID of the Fax Message requested (Values from getFaxMessages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,
-    /// Destination email adreess (example: \[email protected\]) (required)
+    /// Destination email adreess (example: yourname@company.com) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
@@ -9192,7 +9192,7 @@ pub struct OrderFAXNumberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<u64>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: \[email protected\])
+    /// (Example: yourname@company.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. Default: false
@@ -9854,7 +9854,7 @@ pub struct SendVoicemailEmailParams {
     /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<u64>,
-    /// Destination Email address (Example: \[email protected\]) (required)
+    /// Destination Email address (Example: john.doe@my-domain.com) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
 }
@@ -10524,8 +10524,8 @@ pub struct SetDIDInfoParams {
     /// Caller ID Prefix for the DID
     #[serde(skip_serializing_if = "Option::is_none", rename = "callerid_prefix")]
     pub caller_id_prefix: Option<String>,
-    /// How the DID presents the caller of an inbound call: NANPA (10 digits) or
-    /// E.164 (with the country code)
+    /// How the DID presents the caller of an inbound call (Values: 0 = NANPA,
+    /// 10 digits; 1 = E.164, with the country code)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inbound_dialing_mode: Option<InboundDialingMode>,
     /// Note for the DID
@@ -10869,7 +10869,7 @@ pub struct SetFAXNumberEmailParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: \[email protected\])
+    /// (Example: yourname@company.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. Default: false
@@ -10920,7 +10920,7 @@ pub struct SetFAXNumberInfoParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub did: Option<String>,
     /// Email address where send notifications when receive Fax Messages -
-    /// (Example: \[email protected\])
+    /// (Example: yourname@company.com)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Flag to enable the email notifications. Default: false
@@ -11558,7 +11558,7 @@ pub struct SetSIPURIParams {
     /// one)
     #[serde(skip_serializing_if = "Option::is_none", rename = "sipuri")]
     pub sip_uri: Option<u64>,
-    /// SIP URI (Example: '\[email protected\]') (required)
+    /// SIP URI (Example: '5552223333@sip.voip.ms') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uri: Option<String>,
     /// Description for the SIP URI
@@ -11665,9 +11665,10 @@ pub struct SetSMSParams {
     /// request to it (for a 3CX or PortSIP PBX)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub webhook: Option<String>,
-    /// How messages sent through the API from this DID are addressed: NANPA
-    /// sends 10 digits without the +1 prefix, E.164 sends the country code
-    /// first with the +1 prefix
+    /// How messages sent through the API from this DID are addressed (Values: 0
+    /// = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10
+    /// digits without the +1 prefix; 2 = E.164, the country code first with the
+    /// +1 prefix)
     #[serde(skip_serializing_if = "Option::is_none", rename = "dialmode")]
     pub sms_dialing_mode: Option<SmsDialingMode>,
     /// SIP account or sub-account that will receive the SMS Messages
@@ -11903,7 +11904,7 @@ pub struct SetSubAccountParams {
     /// Location group for the internal extension (Values from getLocations)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_extension_location: Option<u64>,
-    /// e911 Default CallerID
+    /// The caller ID sent on emergency (911) calls from this sub-account
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_e911: Option<String>,
 }

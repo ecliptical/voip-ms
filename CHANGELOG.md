@@ -82,6 +82,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   position, which is how VoIP.ms sends a map whose keys are `0` to `n - 1`.
 - `SetRecordingParams::recording` is documented as a recording id, not a
   phonebook entry.
+- Seven param docs showed `[email protected]` where the docs give an example
+  address (`setSIPURI`'s `uri` lost its whole example). The extractor decodes
+  the saved page's Cloudflare email obfuscation, so they read
+  `john.doe@mydomain.com`, `5552223333@sip.voip.ms` and so on.
+- `SetSubAccountParams::default_e911`, `SetDIDInfoParams::inbound_dialing_mode`
+  and `SetSMSParams::sms_dialing_mode` say what each wire value means.
 - `SetCallHuntingParams::recording` is documented as taking `default` as well
   as a recording id, which is why it is a `String` where every other
   `recording` is a `u64`.
