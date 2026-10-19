@@ -91,40 +91,7 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
 
     let mut writes: BTreeMap<(String, String), BTreeSet<Field>> = BTreeMap::new();
     let mut reads: BTreeMap<(String, String), BTreeSet<Field>> = BTreeMap::new();
-    let mut params: BTreeMap<String, BTreeSet<Field>> = BTreeMap::new();
-    for item in &file.items {
-        let Item::Struct(s) = item else {
-            continue;
-        };
-
-        let name = s.ident.to_string();
-        let Fields::Named(named) = &s.fields else {
-            continue;
-        };
-
-        let fields: Vec<(String, String)> = named
-            .named
-            .iter()
-            .filter_map(|f| {
-                let ident = f.ident.as_ref()?.to_string();
-                Some((ident, unwrap_option(&render_type(&f.ty))))
-            })
-            // A root response's payload list often shares its name with the
-            // record id it holds (`GetDISAsResponse::disa` against
-            // `SetDISAParams::disa`). They are not the same field, and no
-            // override could make them one type.
-            .filter(|(_, rust_type)| !is_collection(rust_type))
-            .collect();
-
-        if name.ends_with("Params") {
-            for (ident, rust_type) in &fields {
-                params.entry(ident.clone()).or_default().insert(Field {
-                    struct_name: name.clone(),
-                    rust_type: rust_type.clone(),
-                });
-            }
-        }
-
+    for (name, fields) in structs(&file) {
         let Some((verb, family)) = split_family(&name) else {
             continue;
         };
@@ -147,17 +114,9 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
         }
     }
 
+    let params = params_by_ident(&file);
     let mut findings = 0usize;
-    for (field, typed) in &params {
-        if DELIBERATE_PARAMS.contains(&field.as_str()) {
-            continue;
-        }
-
-        let types: BTreeSet<&str> = typed.iter().map(|f| f.rust_type.as_str()).collect();
-        if types.len() < 2 {
-            continue;
-        }
-
+    for (field, typed) in mixed_params(&params, DELIBERATE_PARAMS) {
         findings += 1;
         println!("params.{field}:");
         for f in typed {
@@ -212,6 +171,78 @@ pub fn cmd_check_types(args: &[String]) -> Result<(), String> {
 
     println!("\n{summary}");
     Ok(())
+}
+
+/// Every struct with named fields, as its name and its `(ident, type)` pairs
+/// with `Option` removed and collection-typed fields left out.
+///
+/// A collection is left out because a root response's payload list often
+/// shares its name with the record id it holds (`GetDISAsResponse::disa`
+/// against `SetDISAParams::disa`). They are not the same field, and no
+/// override could make them one type.
+fn structs(file: &syn::File) -> Vec<(String, Vec<(String, String)>)> {
+    file.items
+        .iter()
+        .filter_map(|item| {
+            let Item::Struct(s) = item else {
+                return None;
+            };
+
+            let Fields::Named(named) = &s.fields else {
+                return None;
+            };
+
+            let fields = named
+                .named
+                .iter()
+                .filter_map(|f| {
+                    let ident = f.ident.as_ref()?.to_string();
+                    Some((ident, unwrap_option(&render_type(&f.ty))))
+                })
+                .filter(|(_, rust_type)| !is_collection(rust_type))
+                .collect();
+            Some((s.ident.to_string(), fields))
+        })
+        .collect()
+}
+
+/// Every `*Params` field, grouped by ident.
+fn params_by_ident(file: &syn::File) -> BTreeMap<String, BTreeSet<Field>> {
+    let mut params: BTreeMap<String, BTreeSet<Field>> = BTreeMap::new();
+    for (name, fields) in structs(file) {
+        if !name.ends_with("Params") {
+            continue;
+        }
+
+        for (ident, rust_type) in fields {
+            params.entry(ident).or_default().insert(Field {
+                struct_name: name.clone(),
+                rust_type,
+            });
+        }
+    }
+
+    params
+}
+
+/// The idents in `params` typed more than one way, less those in `deliberate`.
+fn mixed_params<'a>(
+    params: &'a BTreeMap<String, BTreeSet<Field>>,
+    deliberate: &[&str],
+) -> Vec<(&'a str, &'a BTreeSet<Field>)> {
+    params
+        .iter()
+        .filter(|(field, _)| !deliberate.contains(&field.as_str()))
+        .filter(|(_, typed)| {
+            typed
+                .iter()
+                .map(|f| f.rust_type.as_str())
+                .collect::<BTreeSet<_>>()
+                .len()
+                > 1
+        })
+        .map(|(field, typed)| (field.as_str(), typed))
+        .collect()
 }
 
 /// Split an emitted struct name into `(leading verb, family)`, where the
@@ -336,6 +367,31 @@ mod tests {
     fn a_struct_that_is_neither_is_skipped() {
         assert_eq!(split_family("NoParams"), None);
         assert_eq!(split_family("ApiStatus"), None);
+    }
+
+    #[test]
+    fn a_params_ident_typed_two_ways_is_reported_unless_deliberate() {
+        let file: syn::File = syn::parse_str(
+            "pub struct GetCodesParams { pub code: Option<String>, pub id: Option<u64>, \
+                 pub note: Option<String>, pub kind: Option<String> }
+             pub struct SetThingParams { pub code: Option<u64>, pub id: Option<u64>, \
+                 pub note: Option<u64>, pub kind: Option<String> }
+             pub struct GetThingsResponseThing { pub id: Option<String> }",
+        )
+        .unwrap();
+        let params = params_by_ident(&file);
+
+        let reported: Vec<&str> = mixed_params(&params, &["note"])
+            .into_iter()
+            .map(|(field, _)| field)
+            .collect();
+        assert_eq!(reported, ["code"]);
+
+        let reported: Vec<&str> = mixed_params(&params, &[])
+            .into_iter()
+            .map(|(field, _)| field)
+            .collect();
+        assert_eq!(reported, ["code", "note"]);
     }
 
     #[test]

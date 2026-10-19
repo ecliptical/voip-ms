@@ -399,10 +399,10 @@ fn del_location_params_roundtrips() {
 
     let p2 = DelLocationParams {
         name: Some("x".into()),
-        location_id: Some("y".into()),
+        internal_extension_location: Some(1713),
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert_eq!(v2, serde_json::json!({ "name": "x", "id": "y" }));
+    assert_eq!(v2, serde_json::json!({ "name": "x", "id": 1713 }));
 }
 
 #[test]
@@ -798,7 +798,7 @@ fn get_balance_management_params_roundtrips() {
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "balance_management": 1 }));
 }
 
 #[test]
@@ -934,11 +934,11 @@ fn get_carriers_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetCarriersParams {
-        carrier: Some(1),
+        carrier: Some(2),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "carrier": 2 }));
 }
 
 #[test]
@@ -1218,7 +1218,7 @@ fn get_device_types_params_roundtrips() {
         device_type: Some(1),
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "device_type": 1 }));
 }
 
 #[test]
@@ -1507,7 +1507,7 @@ fn get_lock_international_params_roundtrips() {
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "lock_international": 1 }));
 }
 
 #[test]
@@ -1643,11 +1643,11 @@ fn get_protocols_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetProtocolsParams {
-        protocol: Some(1),
+        protocol: Some(3),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "protocol": 3 }));
 }
 
 #[test]
@@ -1853,11 +1853,11 @@ fn get_routes_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetRoutesParams {
-        route: Some(1),
+        route: Some(2),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "route": 2 }));
 }
 
 #[test]
@@ -2049,11 +2049,11 @@ fn get_voicemail_setups_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = GetVoicemailSetupsParams {
-        voicemail_setup: Some(1),
+        voicemail_setup: Some(2),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
-    assert!(v2.is_object());
+    assert_eq!(v2, serde_json::json!({ "voicemailsetup": 2 }));
 }
 
 #[test]

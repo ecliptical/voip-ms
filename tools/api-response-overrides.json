@@ -214,6 +214,7 @@
     "addLNPPort.isPartial": "true if you have more than one number with your current carrier and are not porting them all, false if you are porting all of them. Either way, list every number you want to port in `numbers`. Default: false",
     "addLNPPort.locationType": "Whether the numbers are a business's or a residence's. Default: residential",
     "addLNPPort.services": "Required if `is_mobile` is true. Describe every service you keep with the current carrier, such as DSL/data or hunt group services. A service not listed may be disconnected when the port completes.",
+    "delLocation.id": "Internal Extension Location id (Values from getLocations) (required)",
     "setCallHunting.press": "Whether the member must press 1 to take the call, one item per member in `members` (required)",
     "setCallHunting.recording": "Recording for the Call Hunting: a recording id from getRecordings, or `default` for the system recording (required)",
     "setCallHunting.ring_time": "The maximum time the call rings the member, one item per member in `members` (required)",

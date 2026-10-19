@@ -262,10 +262,13 @@ pub(crate) const NAMED_ZONE_TZ_RESPONSE_PATHS: &[&str] = &[
 /// struct for the reason [`NAMED_ZONE_TZ_PARAM_PATHS`] is: `id` names a
 /// different record in every method, not every one a number, so [`U64_FIELDS`]
 /// cannot list it. `getBackOrders` filters by the back order `id` its response
-/// reports as a number. `delLocation`'s `id` stays `String`: `getLocations`
-/// reports only location names, so no response says what form the id takes.
-/// Keyed `"StructName.field"`.
-pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] = &["GetBackOrdersParams.id"];
+/// reports as a number. `delLocation`'s `id` is an internal extension location:
+/// confirmed live, a location created with `setLocation` is keyed `1713` in
+/// `getLocations` and `delLocation` deletes it by that number, and the built-in
+/// location is `0`, which is what a sub-account's `internal_extension_location`
+/// reports. Keyed `"StructName.field"`.
+pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] =
+    &["DelLocationParams.id", "GetBackOrdersParams.id"];
 
 /// The [`FieldOverride`] for a numeric id. Its wire form is a bare number
 /// either way, so the param side needs no serializer; only the response side

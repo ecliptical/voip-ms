@@ -122,8 +122,8 @@ cargo xtask dump-methods
 #     real finding gets a field-name entry in xtask/src/field_overrides.rs (or,
 #     for a field holding a different set of values, its own ident in
 #     FIELD_IDENT_OVERRIDE) and a regen; a pair meant to differ goes in the
-#     command's DELIBERATE or DELIBERATE_PARAMS list with the reason. CI runs this and
-#     check-flags with --deny, so a finding left here fails the build.
+#     command's DELIBERATE or DELIBERATE_PARAMS list with the reason. CI runs
+#     this and check-flags with --deny, so a finding left here fails the build.
 cargo xtask check-types
 
 # 6. Run the full quality gate — the same selection CI uses, plus the doc

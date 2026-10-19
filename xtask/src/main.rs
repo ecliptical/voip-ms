@@ -64,9 +64,10 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `client` is a reseller client id.
     ("GetClientsParams", "client", "client_filter"),
     ("GetDIDsInfoParams", "client", "client_filter"),
-    // `getLocations` reports only location names, so nothing shows whether
-    // this id is a number; it stays text under a name no numeric `id` shares.
-    ("DelLocationParams", "id", "location_id"),
+    // An internal extension location's id: the value a sub-account's
+    // `internal_extension_location` takes, so it carries that name.
+    // `location_id` is taken by the international DID locations.
+    ("DelLocationParams", "id", "internal_extension_location"),
     // The reference-data lookups: `type` narrows the catalog to one entry, and
     // the docs call the value a code ("Code for a specific Address Type").
     ("E911AddressTypesParams", "type", "code"),

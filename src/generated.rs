@@ -5219,22 +5219,22 @@ pub struct DelLocationParams {
     /// Internal Extension Location name (Value from getLocations) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// Internal Extension Location id (Value from getLocations") (required)
+    /// Internal Extension Location id (Values from getLocations) (required)
     #[serde(skip_serializing_if = "Option::is_none", rename = "id")]
-    pub location_id: Option<String>,
+    pub internal_extension_location: Option<u64>,
 }
 
 impl DelLocationParams {
     /// A `DelLocationParams` with the parameters the VoIP.ms docs mark as
-    /// required: `name` and `location_id`.
+    /// required: `name` and `internal_extension_location`.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(name: impl Into<String>, location_id: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>, internal_extension_location: u64) -> Self {
         Self {
             name: Some(name.into()),
-            location_id: Some(location_id.into()),
+            internal_extension_location: Some(internal_extension_location),
         }
     }
 }

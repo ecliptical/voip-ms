@@ -717,7 +717,7 @@
     },
     "delLocation": {
       "id": {
-        "doc": "Internal Extension Location id (Value from getLocations\") (required)",
+        "doc": "Internal Extension Location id (Values from getLocations) (required)",
         "required": true
       },
       "name": {

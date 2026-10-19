@@ -572,10 +572,12 @@ in `xtask/src/field_overrides.rs`:
   (`delRingGroup` spells it `ringgroup`). `id` names a different record in
   every method and is not always a number, so it is typed per struct instead
   (`NUMERIC_ID_PARAM_PATHS`): `getBackOrders` filters by the back order id its
-  response reports as a number. `delLocation`'s `id` stays `String`, because
-  `getLocations` reports only location names and so nothing shows what form
-  the id takes; its ident is `location_id` (`FIELD_IDENT_OVERRIDE`), so every
-  param named `id` is a `u64`.
+  response reports as a number. `delLocation`'s `id` is an internal extension
+  location, confirmed live to be a number (a location created with
+  `setLocation` was `1713`, the built-in one is `0`), and its ident is
+  `internal_extension_location` (`FIELD_IDENT_OVERRIDE`), the sub-account
+  field that takes the same value; `location_id` already names an
+  international DID location.
 
   The lookup codes (`protocol`, `device_type`, `lock_international`, `route`,
   `balance_management`, `carrier`, `voicemail_setup`) are in the same table
@@ -610,9 +612,9 @@ in `xtask/src/field_overrides.rs`:
   ident is `client_filter`, since it holds a different set of values.
   `recording` is `u64` except on the call-hunting pair, which takes the system
   recording `default` as well as a recording id and reports either back
-  verbatim (measured on 2026-10-18 by creating one of each), so it stays
-  `String` and is in `check-types`'s `DELIBERATE_PARAMS`. Both use
-  `field_type_skip` for the exceptions. `music_on_hold`'s `volume` is two different things sharing a
+  verbatim (confirmed live by creating one of each), so it stays `String` and
+  is in `check-types`'s `DELIBERATE_PARAMS`. Both use `field_type_skip` for the
+  exceptions. `music_on_hold`'s `volume` is two different things sharing a
   name and is recorded in `check-types`'s `DELIBERATE` list: the param is the
   documented `1`/`0` quiet toggle, the response reports the rendition it
   produced (`mp3` / `quietmp3`).
@@ -713,13 +715,12 @@ to differ there goes in `DELIBERATE_PARAMS` (`folder`: a `VoicemailFolder`
 everywhere but `getFaxMessages`, whose fax folders include ones the caller
 named; `recording`: an id everywhere but `setCallHunting`, which also takes
 `default`), and a field that holds a different set of values gets its own ident
-instead. Both audits print and exit
-zero by default, since a finding wants human judgment about which of the two
-types is right; both take `--deny`, which turns a finding into a non-zero exit,
-and CI runs them that way. So "it reports nothing" is a rule rather than a
-note here. A pair whose two types are meant to differ goes in its `DELIBERATE`
-list with the reason, which is the record of *why* rather than a way to
-silence it. A
+instead. Both audits print and exit zero by default, since a finding wants
+human judgment about which of the two types is right; both take `--deny`, which
+turns a finding into a non-zero exit, and CI runs them that way. So "it reports
+nothing" is a rule rather than a note here. A pair whose two types are meant to
+differ goes in its `DELIBERATE` list with the reason, which is the record of
+*why* rather than a way to silence it. A
 collection type is excluded from the comparison: a root response's payload
 list often shares its name with the record id it holds
 (`GetDISAsResponse::disa` against `SetDISAParams::disa`), and no override

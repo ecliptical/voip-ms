@@ -25,9 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `GetClientsParams::client` and `GetDIDsInfoParams::client` are
   `client_filter`, since they also take an e-mail address or a sub-account
   name and stay `String` where every other `client` is a `u64` id.
-  `DelLocationParams::id` is `location_id` (still `String`), and
-  `DelLocationParams::new` names its argument the same. The wire names are
-  unchanged.
+  `DelLocationParams::id` is `internal_extension_location: Option<u64>`, the
+  name and type of the sub-account field that takes the same location id, and
+  `DelLocationParams::new` takes it as a `u64`. The wire names are unchanged.
 
 ### Fixed
 
