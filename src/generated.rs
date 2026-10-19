@@ -4666,6 +4666,13 @@ pub struct CreateSubAccountParams {
     /// Lock International Code (Values from getLockInternational) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_international: Option<u64>,
+    /// true if a call placed to *225 hears the account's current balance, false
+    /// if it is rejected
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
+    pub allow225: Option<bool>,
     /// Route Code (Values from getRoutes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub international_route: Option<u64>,
@@ -11597,6 +11604,13 @@ pub struct SetSubAccountParams {
     /// Lock International Code (Values from getLockInternational) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_international: Option<u64>,
+    /// true if a call placed to *225 hears the account's current balance, false
+    /// if it is rejected
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
+    pub allow225: Option<bool>,
     /// Route Code (Values from getRoutes) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub international_route: Option<u64>,

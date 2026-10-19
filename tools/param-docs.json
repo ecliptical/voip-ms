@@ -374,6 +374,10 @@
       }
     },
     "createSubAccount": {
+      "allow225": {
+        "doc": "true if a call placed to *225 hears the account's current balance, false if it is rejected",
+        "required": false
+      },
       "allowed_codecs": {
         "doc": "List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated by semicolon (Example: ulaw;g729;gsm) (required)",
         "required": true
@@ -3850,6 +3854,10 @@
       }
     },
     "setSubAccount": {
+      "allow225": {
+        "doc": "true if a call placed to *225 hears the account's current balance, false if it is rejected",
+        "required": false
+      },
       "allowed_codecs": {
         "doc": "List of Allowed Codecs (Values from getAllowedCodecs) Codecs separated by semicolon (Example: ulaw;g729;gsm) (required)",
         "required": true

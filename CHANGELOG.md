@@ -20,8 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: a reseller client's `minute`, `monthly` and `setup` are
   `rust_decimal::Decimal` on every method: the seven `order*` params (were
   `String`), and `GetDIDsInternationalNationalResponseLocation::minute` /
-  `setup` and `SearchTollFreeUSAResponseDID::setup` (were `u64`, which a fee
-  with cents failed to read).
+  `setup` and `SearchTollFreeUSAResponseDID::setup` (were `u64`). Live,
+  `getDIDsInternationalNational` reports fees such as `setup` `4.50` and
+  `minute` `0.009000`, so `get_dids_international_national` failed for any
+  country with a fee in cents.
 - **Breaking**: `GetClientsParams::client` and `GetDIDsInfoParams::client` are
   `client_filter`, since they also take an e-mail address or a sub-account
   name and stay `String` where every other `client` is a `u64` id.
@@ -37,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `internal_extension_location` (`u64`, a location id from `getLocations`) and
   `transcription_start_delay` (`u64` seconds). The last three are the types
   `createSubAccount` / `setSubAccount` already write.
+- **Breaking**: `CreateSubAccountParams` and `SetSubAccountParams` take
+  `allow225: Option<bool>`, which the WSDL omits. Confirmed live: each method
+  stores the value sent.
 
 ### Fixed
 

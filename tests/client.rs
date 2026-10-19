@@ -1427,6 +1427,60 @@ fn fax_numbers_info_did_accepts_dotted_string() {
 }
 
 #[test]
+fn an_international_location_reads_fees_with_cents() {
+    use voip_ms::{GetDIDsInternationalNationalResponse, rust_decimal::Decimal};
+
+    // A live row (Belgium). A `u64` fee failed the whole response on `4.50`.
+    let resp: GetDIDsInternationalNationalResponse = serde_json::from_value(json!({
+        "status": "success",
+        "locations": [{
+            "area_code": "78",
+            "channels": 2,
+            "country": "BELGIUM",
+            "location_id": "a8368",
+            "location_name": "NATIONAL",
+            "minute": "0.009000",
+            "monthly": "4.50",
+            "monthly_per_minute": "3.00",
+            "setup": "4.50",
+            "setup_per_minute": "0.00",
+            "stock": 378
+        }]
+    }))
+    .unwrap();
+
+    let location = &resp.locations[0];
+    assert_eq!(location.setup, Some(Decimal::new(450, 2)));
+    assert_eq!(location.minute, Some(Decimal::new(9, 3)));
+    assert_eq!(location.monthly, Some(Decimal::new(450, 2)));
+}
+
+#[test]
+fn allow225_is_sent_as_one_or_zero() {
+    use voip_ms::{CreateSubAccountParams, SetSubAccountParams};
+
+    // Measured live: `allow225=1` and `allow225=0` each read back as sent.
+    let on = SetSubAccountParams {
+        id: Some(829236),
+        allow225: Some(true),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&on).unwrap(),
+        json!({ "id": 829236, "allow225": "1" })
+    );
+
+    let off = CreateSubAccountParams {
+        allow225: Some(false),
+        ..Default::default()
+    };
+    assert_eq!(
+        serde_json::to_value(&off).unwrap(),
+        json!({ "allow225": "0" })
+    );
+}
+
+#[test]
 fn a_sub_account_reads_back_the_fields_the_docs_omit() {
     use voip_ms::DialingMode;
 

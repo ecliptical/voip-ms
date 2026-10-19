@@ -214,6 +214,7 @@
     "addLNPPort.isPartial": "true if you have more than one number with your current carrier and are not porting them all, false if you are porting all of them. Either way, list every number you want to port in `numbers`. Default: false",
     "addLNPPort.locationType": "Whether the numbers are a business's or a residence's. Default: residential",
     "addLNPPort.services": "Required if `is_mobile` is true. Describe every service you keep with the current carrier, such as DSL/data or hunt group services. A service not listed may be disconnected when the port completes.",
+    "createSubAccount.allow225": "true if a call placed to *225 hears the account's current balance, false if it is rejected",
     "delLocation.id": "Internal Extension Location id (Values from getLocations) (required)",
     "setCallHunting.press": "Whether the member must press 1 to take the call, one item per member in `members` (required)",
     "setCallHunting.recording": "Recording for the Call Hunting: a recording id from getRecordings, or `default` for the system recording (required)",
@@ -222,6 +223,7 @@
     "setQueue.fail_over_routing_leave_unavail": "Same as `failover_routing_leave_empty`, except that there were still queue members, but all were status unavailable",
     "setRecording.recording": "ID for a specific Recording (Example: 33221 / Leave empty to create a new one)",
     "setRingGroup.members": "Members for the Ring Group, separated by `;`. Each is a routing `header:record_id` whose header is `account` (an account or sub-account), `fwd` (a forwarding) or `sip` (a SIP URI), optionally followed by its ring time in seconds (1 to 60, default 25) and whether it must press 1 to take the call (1 or 0, default 0), separated by commas (Example: 'account:100001,25,0;fwd:16006,10,1') (required)",
+    "setSubAccount.allow225": "true if a call placed to *225 hears the account's current balance, false if it is rejected",
     "setSubAccount.ip_restriction": "List of IP Addresses, IP Addresses/Netmask, or Fully Qualified Domain Names to allow outgoing calls separated by commas (Example: 123.45.3.21,10.255.12.0/22,device.mydomain.com)"
   },
   "empty_statuses": [

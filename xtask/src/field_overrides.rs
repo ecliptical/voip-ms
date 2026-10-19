@@ -150,9 +150,8 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     "activate",
     "advanced",
     // Whether a call to *225 reads the account balance or is rejected. The
-    // docs describe it on `createSubAccount` / `setSubAccount` without a
-    // value list and the WSDL does not declare it; `getSubAccounts` reports
-    // `0`.
+    // docs give no value list; confirmed live, `1` and `0` each read back on
+    // `getSubAccounts` as sent.
     "allow225",
     "answered",
     "burst_enabled",

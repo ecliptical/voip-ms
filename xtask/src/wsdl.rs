@@ -69,7 +69,24 @@ const CORRECTIONS: &[Correction] = &[
             before: "attachid",
         },
     },
+    // The docs list `allow225` after `lock_international` on both methods.
+    // Confirmed live: `createSubAccount` with `allow225=1` and `setSubAccount`
+    // flipping it to `1` and back each read back on `getSubAccounts`.
+    Correction {
+        op: "createSubAccount",
+        fix: ALLOW_225,
+    },
+    Correction {
+        op: "setSubAccount",
+        fix: ALLOW_225,
+    },
 ];
+
+const ALLOW_225: Fix = Fix::Add {
+    name: "allow225",
+    xsd_type: "xsd:integer",
+    before: "international_route",
+};
 
 const ZIP_CODE: Fix = Fix::Rename {
     from: "zip",
