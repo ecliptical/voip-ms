@@ -2517,28 +2517,6 @@ fn cmd_gen() -> Result<(), String> {
         }
     }
 
-    // An addition whose leaf field has a field-name override keeps its field,
-    // but the override supplies both the Rust type and the deserializer, so the
-    // declared scalar type is never consulted. Warn so the type gets fixed
-    // (unless a `field_type_skip` on that field name keeps some struct on the
-    // declared type). A patch under such an override is not warned about: its
-    // type and sample still correct the shapes for readers of the JSON.
-    let skipped_fields: BTreeSet<&str> = field_type_skip
-        .iter()
-        .filter_map(|entry| entry.rsplit_once('.').map(|(_, f)| f))
-        .collect();
-    for (method, mo) in &overrides_doc.methods {
-        for path in mo.additions.iter().map(|add| &add.path) {
-            let leaf = path.rsplit('.').next().unwrap_or(path);
-            if table.get(leaf).is_some() && !skipped_fields.contains(leaf) {
-                eprintln!(
-                    "warning: {method}: addition `{path}` is shadowed by the \
-                     field-name override for `{leaf}`; its declared type is ignored",
-                );
-            }
-        }
-    }
-
     // `"StructName.field" -> EnumName`: assign one struct's field a specific
     // enum type, overriding the inferred type and any name-based `field_types`.
     let mut field_type_override: BTreeMap<String, field_overrides::FieldOverride> = BTreeMap::new();

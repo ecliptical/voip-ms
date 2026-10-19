@@ -364,6 +364,14 @@
         { "path": "cdr[].useragent", "type": "string" }
       ]
     },
+    "getSubAccounts": {
+      "additions": [
+        { "path": "accounts[].allow225",                    "type": "integer" },
+        { "path": "accounts[].dialing_mode",                "type": "integer" },
+        { "path": "accounts[].internal_extension_location", "type": "integer" },
+        { "path": "accounts[].transcription_start_delay",   "type": "integer" }
+      ]
+    },
     "setEmailToFax": {
       "additions": [
         { "path": "id", "type": "integer" }

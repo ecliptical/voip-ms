@@ -105,8 +105,7 @@ cargo xtask check-flags
 
 # 5. Apply any corrections to tools/api-response-overrides.json (NOT the
 #    generated files), then regenerate src/generated.rs. Heed its warnings:
-#    an addition shadowed by a field-name override needs its type fixed, and a
-#    parameter documented as base64 but absent from BASE64_FILE_PARAM_PATHS
+#    a parameter documented as base64 but absent from BASE64_FILE_PARAM_PATHS
 #    in xtask/src/field_overrides.rs is a method that needs the multipart
 #    transport (design decision #7) and will not work over GET.
 cargo xtask gen

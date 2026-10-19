@@ -130,6 +130,13 @@ impl serde::Serialize for DialingMode {
     }
 }
 
+impl<'de> serde::Deserialize<'de> for DialingMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
+        let s = crate::responses::deserialize_enum_wire_string(d)?;
+        Ok(DialingMode::from_wire(&s))
+    }
+}
+
 /// DID billing model.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DidBillingType {
@@ -17582,6 +17589,26 @@ pub struct GetSubAccountsResponseAccount {
         deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<CallPickupBehavior, _>"
     )]
     pub call_pickup_behavior: Option<CallPickupBehavior>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_bool_from_string_number_or_yn"
+    )]
+    pub allow225: Option<bool>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_from_wire_text::<DialingMode, _>"
+    )]
+    pub dialing_mode: Option<DialingMode>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub internal_extension_location: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_opt_u64_from_string_or_number"
+    )]
+    pub transcription_start_delay: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]

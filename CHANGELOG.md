@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   name and type of the sub-account field that takes the same location id, and
   `DelLocationParams::new` takes it as a `u64`. The wire names are unchanged.
 
+### Added
+
+- **Breaking**: `GetSubAccountsResponseAccount` reads four fields voip.ms
+  returns but does not document: `allow225` (`bool`, whether a call to *225
+  reads the account balance), `dialing_mode` (`DialingMode`),
+  `internal_extension_location` (`u64`, a location id from `getLocations`) and
+  `transcription_start_delay` (`u64` seconds). The last three are the types
+  `createSubAccount` / `setSubAccount` already write.
+
 ### Fixed
 
 - **Breaking**: `get_locations` no longer fails on an account that has created

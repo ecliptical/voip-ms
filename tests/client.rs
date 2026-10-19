@@ -1427,6 +1427,31 @@ fn fax_numbers_info_did_accepts_dotted_string() {
 }
 
 #[test]
+fn a_sub_account_reads_back_the_fields_the_docs_omit() {
+    use voip_ms::DialingMode;
+
+    // A live row carries these as strings; the docs' Output block lists none
+    // of them.
+    let resp: GetSubAccountsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "accounts": [{
+            "id": "829236",
+            "allow225": "1",
+            "dialing_mode": "2",
+            "internal_extension_location": "1713",
+            "transcription_start_delay": "10"
+        }]
+    }))
+    .unwrap();
+
+    let account = &resp.accounts[0];
+    assert_eq!(account.allow225, Some(true));
+    assert_eq!(account.dialing_mode, Some(DialingMode::Nanpa));
+    assert_eq!(account.internal_extension_location, Some(1713));
+    assert_eq!(account.transcription_start_delay, Some(10));
+}
+
+#[test]
 fn lnp_list_status_is_a_string_keyed_map() {
     use voip_ms::GetLNPListStatusResponse;
 
