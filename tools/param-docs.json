@@ -3123,19 +3123,19 @@
     },
     "setConferenceMember": {
       "admin": {
-        "doc": "Sets if the member is an admin or not .",
+        "doc": "Sets if the member is an admin or not.",
         "required": false
       },
       "announce_join_leave": {
-        "doc": "Sets if the conference recording when a member joins or leaves will be played .",
+        "doc": "Sets if the conference recording when a member joins or leaves will be played.",
         "required": false
       },
       "announce_only_user": {
-        "doc": "Sets if the \"only user\" announcement should be played when a caller enters an empty conference .",
+        "doc": "Sets if the \"only user\" announcement should be played when a caller enters an empty conference.",
         "required": false
       },
       "announce_user_count": {
-        "doc": "Sets if the number of members in the conference should be announced to the caller as he joins .",
+        "doc": "Sets if the number of members in the conference should be announced to the caller as he joins.",
         "required": false
       },
       "announcement": {
@@ -3151,11 +3151,11 @@
         "required": false
       },
       "drop_silence": {
-        "doc": "The system will drop what is detected as silence from entering into the conference .",
+        "doc": "The system will drop what is detected as silence from entering into the conference.",
         "required": false
       },
       "jitter_buffer": {
-        "doc": "When set to YES, the system will place a jitter buffer on the caller's audio stream before any audio mixing is performed .",
+        "doc": "When set to YES, the system will place a jitter buffer on the caller's audio stream before any audio mixing is performed.",
         "required": false
       },
       "member": {
@@ -3175,7 +3175,7 @@
         "required": false
       },
       "quiet": {
-        "doc": "When set to \"yes\", enter/leave prompts and user introductions are not played .",
+        "doc": "When set to \"yes\", enter/leave prompts and user introductions are not played.",
         "required": false
       },
       "silence_threshold": {
@@ -3183,11 +3183,11 @@
         "required": false
       },
       "start_muted": {
-        "doc": "Sets if the member should start out muted after entering the conference .",
+        "doc": "Sets if the member should start out muted after entering the conference.",
         "required": false
       },
       "talk_detection": {
-        "doc": "If set to YES, the conference dashboard will display a notification when a participant starts and stops talking .",
+        "doc": "If set to YES, the conference dashboard will display a notification when a participant starts and stops talking.",
         "required": false
       },
       "talking_threshold": {

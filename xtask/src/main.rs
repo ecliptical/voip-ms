@@ -904,7 +904,12 @@ fn bool_param_doc(doc: &str) -> String {
         }
     }
 
-    text.split_whitespace().collect::<Vec<_>>().join(" ")
+    // A note dropped from just before a period (`or not (yes/no).`) leaves
+    // the space that preceded it.
+    text.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .replace(" .", ".")
 }
 
 /// Whether a `bool` field's description still spells a wire value after
@@ -3510,6 +3515,10 @@ mod tests {
         assert_eq!(
             bool_param_doc("'yes' to enable Voicemail Transcription"),
             "true to enable Voicemail Transcription"
+        );
+        assert_eq!(
+            bool_param_doc("Sets if the member is an admin or not (yes/no)."),
+            "Sets if the member is an admin or not."
         );
         assert!(!names_flag_wire_value("CNAM for the DID (required)"));
         assert!(names_flag_wire_value(

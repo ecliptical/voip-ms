@@ -10409,34 +10409,33 @@ pub struct SetConferenceMemberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<String>,
     /// Sets if the conference recording when a member joins or leaves will be
-    /// played .
+    /// played.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
     )]
     pub announce_join_leave: Option<bool>,
-    /// Sets if the member is an admin or not .
+    /// Sets if the member is an admin or not.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
     )]
     pub admin: Option<bool>,
-    /// Sets if the member should start out muted after entering the conference
-    /// .
+    /// Sets if the member should start out muted after entering the conference.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
     )]
     pub start_muted: Option<bool>,
     /// Sets if the number of members in the conference should be announced to
-    /// the caller as he joins .
+    /// the caller as he joins.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
     )]
     pub announce_user_count: Option<bool>,
     /// Sets if the "only user" announcement should be played when a caller
-    /// enters an empty conference .
+    /// enters an empty conference.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
@@ -10447,7 +10446,7 @@ pub struct SetConferenceMemberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub moh_when_empty: Option<String>,
     /// When set to "yes", enter/leave prompts and user introductions are not
-    /// played .
+    /// played.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
@@ -10458,7 +10457,7 @@ pub struct SetConferenceMemberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub announcement: Option<u64>,
     /// The system will drop what is detected as silence from entering into the
-    /// conference .
+    /// conference.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
@@ -10476,14 +10475,14 @@ pub struct SetConferenceMemberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub silence_threshold: Option<u64>,
     /// If set to YES, the conference dashboard will display a notification when
-    /// a participant starts and stops talking .
+    /// a participant starts and stops talking.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
     )]
     pub talk_detection: Option<bool>,
     /// When set to YES, the system will place a jitter buffer on the caller's
-    /// audio stream before any audio mixing is performed .
+    /// audio stream before any audio mixing is performed.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_yes_no"
