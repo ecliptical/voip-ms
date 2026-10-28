@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-10-28
+
+### Changed
+
+- The `reseller_nextbilling` docs on `CreateSubAccountParams` and
+  `SetSubAccountParams` say the date is required when `reseller_package` is set,
+  even for a package with no fee, and must not be in the past. Confirmed live:
+  `createSubAccount` and `setSubAccount` answer `invalid_resellernextbilling`
+  without it or with a past date. The field stays optional, since it is needed
+  only with a package.
+
 ## [0.20.0] - 2026-10-19
 
 ### Changed
@@ -1535,6 +1546,7 @@ a real failed request and asserts nothing it exposes carries the password.
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
+[0.20.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.20.1
 [0.20.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.20.0
 [0.19.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.19.0
 [0.18.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.18.0
