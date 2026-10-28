@@ -4888,7 +4888,9 @@ pub struct CreateSubAccountParams {
     /// Reseller Package (Example: 92364)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_package: Option<u64>,
-    /// Reseller Next Billing Date (Example: '2012-12-31')
+    /// Required if `reseller_package` is set, even for a package with no
+    /// monthly or setup fee. Reseller Next Billing Date, which must not be in
+    /// the past (Example: '2012-12-31')
     #[serde(
         skip_serializing_if = "Option::is_none",
         rename = "reseller_nextbilling"
@@ -11933,7 +11935,9 @@ pub struct SetSubAccountParams {
     /// Reseller Package (Example: 92364)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reseller_package: Option<u64>,
-    /// Reseller Next Billing Date (Example: '2012-12-31')
+    /// Required if `reseller_package` is set, even for a package with no
+    /// monthly or setup fee. Reseller Next Billing Date, which must not be in
+    /// the past (Example: '2012-12-31')
     #[serde(
         skip_serializing_if = "Option::is_none",
         rename = "reseller_nextbilling"
