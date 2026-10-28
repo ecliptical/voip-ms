@@ -499,7 +499,7 @@
         "required": false
       },
       "reseller_nextbilling": {
-        "doc": "Reseller Next Billing Date (Example: '2012-12-31')",
+        "doc": "Required if `reseller_package` is set, even for a package with no monthly or setup fee. Reseller Next Billing Date, which must not be in the past (Example: '2012-12-31')",
         "required": false
       },
       "reseller_package": {
@@ -4015,7 +4015,7 @@
         "required": false
       },
       "reseller_nextbilling": {
-        "doc": "Reseller Next Billing Date (Example: '2012-12-31')",
+        "doc": "Required if `reseller_package` is set, even for a package with no monthly or setup fee. Reseller Next Billing Date, which must not be in the past (Example: '2012-12-31')",
         "required": false
       },
       "reseller_package": {
