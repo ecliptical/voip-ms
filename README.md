@@ -28,7 +28,7 @@ picks the transport per method, so nothing about the call site changes.
 
 ```toml
 [dependencies]
-voip-ms = "0.20"
+voip-ms = "0.21"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -36,7 +36,7 @@ By default the crate enables `rustls` verifying against the OS trust store. To
 use the platform's native TLS stack instead:
 
 ```toml
-voip-ms = { version = "0.20", default-features = false, features = ["native-tls"] }
+voip-ms = { version = "0.21", default-features = false, features = ["native-tls"] }
 ```
 
 `chrono`, `chrono_tz`, `reqwest`, `rust_decimal`, `serde`, and `serde_json`
