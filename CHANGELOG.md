@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: `getSubAccounts` with an `account` that matches no
+  sub-account answers `no_subaccount`, which the docs' error-code table leaves
+  out. It is a new empty-collection `ApiStatus::NoSubaccount`, so
+  `get_sub_accounts` returns an empty `accounts` instead of
+  `Error::Api(ApiStatus::Unknown("no_subaccount"))`.
+
 ## [0.20.1] - 2026-10-28
 
 ### Changed

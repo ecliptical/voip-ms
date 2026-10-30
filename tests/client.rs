@@ -816,6 +816,36 @@ async fn an_empty_port_list_nested_under_invalid_yields_empty_response() {
 }
 
 #[tokio::test]
+async fn a_sub_account_lookup_that_matches_none_yields_empty_response() {
+    // `getSubAccounts` with `account` set to a name the account does not have
+    // answers `no_subaccount` (confirmed live).
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getSubAccounts"))
+        .and(query_param("account", "100000_alice"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({ "status": "no_subaccount" })),
+        )
+        .mount(&server)
+        .await;
+
+    let params = voip_ms::GetSubAccountsParams {
+        account: Some("100000_alice".to_string()),
+    };
+    let envelope = client.get_sub_accounts(&params).await.unwrap();
+    assert_eq!(envelope.status, ApiStatus::NoSubaccount);
+    assert!(envelope.accounts.is_empty());
+
+    let err = client.get_sub_accounts_raw(&params).await.unwrap_err();
+    assert!(
+        matches!(err, Error::Api(ApiStatus::NoSubaccount)),
+        "got {err:?}"
+    );
+}
+
+#[tokio::test]
 async fn real_error_no_status_still_errors() {
     // `no_*` codes that signal a genuine failure (rather than an empty list)
     // are still surfaced as `Error::Api`.
