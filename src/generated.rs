@@ -2268,6 +2268,8 @@ pub enum ApiStatus {
     NoPhonebookGroup,
     /// `no_ports` -- There are no ports to show
     NoPorts,
+    /// `no_subaccount` -- There are no sub-accounts
+    NoSubaccount,
     /// `no_transactions` -- There are no transactions
     NoTransactions,
     /// `no_vpri` -- There are no vPRIs
@@ -2780,6 +2782,7 @@ impl ApiStatus {
             ApiStatus::NoFolder => "no_folder",
             ApiStatus::NoPhonebookGroup => "no_phonebook_group",
             ApiStatus::NoPorts => "no_ports",
+            ApiStatus::NoSubaccount => "no_subaccount",
             ApiStatus::NoTransactions => "no_transactions",
             ApiStatus::NoVPRI => "no_vpri",
             ApiStatus::Unknown(s) => s.as_str(),
@@ -3289,6 +3292,7 @@ impl ApiStatus {
             "no_folder" => ApiStatus::NoFolder,
             "no_phonebook_group" => ApiStatus::NoPhonebookGroup,
             "no_ports" => ApiStatus::NoPorts,
+            "no_subaccount" => ApiStatus::NoSubaccount,
             "no_transactions" => ApiStatus::NoTransactions,
             "no_vpri" => ApiStatus::NoVPRI,
             other => ApiStatus::Unknown(other.to_string()),
@@ -4014,6 +4018,7 @@ impl ApiStatus {
             ApiStatus::NoFolder => Some("There are no Fax Folders"),
             ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
             ApiStatus::NoPorts => Some("There are no ports to show"),
+            ApiStatus::NoSubaccount => Some("There are no sub-accounts"),
             ApiStatus::NoTransactions => Some("There are no transactions"),
             ApiStatus::NoVPRI => Some("There are no vPRIs"),
             ApiStatus::Unknown(_) => None,
@@ -4075,6 +4080,7 @@ impl ApiStatus {
                 | ApiStatus::NoFolder
                 | ApiStatus::NoPhonebookGroup
                 | ApiStatus::NoPorts
+                | ApiStatus::NoSubaccount
                 | ApiStatus::NoTransactions
                 | ApiStatus::NoVPRI
         )

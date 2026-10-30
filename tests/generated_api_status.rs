@@ -444,6 +444,7 @@ const KNOWN_CODES: &[&str] = &[
     "no_sequences",
     "no_sipuri",
     "no_sms",
+    "no_subaccount",
     "no_timecondition",
     "no_transactions",
     "no_vpri",

@@ -319,6 +319,7 @@
     "no_ringgroup",
     "no_sipuri",
     "no_sms",
+    "no_subaccount",
     "no_timecondition",
     "no_transactions",
     "no_vpri"
@@ -330,6 +331,7 @@
     { "code": "no_folder",          "description": "There are no Fax Folders" },
     { "code": "no_phonebook_group", "description": "There are no Phonebook Groups" },
     { "code": "no_ports",           "description": "There are no ports to show" },
+    { "code": "no_subaccount",      "description": "There are no sub-accounts" },
     { "code": "no_transactions",    "description": "There are no transactions" },
     { "code": "no_vpri",            "description": "There are no vPRIs" }
   ],
