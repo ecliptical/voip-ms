@@ -13,9 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sub-account answers `no_subaccount`, which the docs' error-code table leaves
   out. It is a new empty-collection `ApiStatus::NoSubaccount`, so
   `get_sub_accounts` returns an empty `accounts` instead of
-  `Error::Api(ApiStatus::Unknown("no_subaccount"))`. Confirmed live;
-  `delSubAccount` and `setSubAccount` answer an unknown id with `invalid_id`,
-  so neither write can read as a success this way.
+  `Error::Api(ApiStatus::Unknown("no_subaccount"))`.
 
 ## [0.20.1] - 2026-10-28
 

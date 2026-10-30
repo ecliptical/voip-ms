@@ -2268,7 +2268,7 @@ pub enum ApiStatus {
     NoPhonebookGroup,
     /// `no_ports` -- There are no ports to show
     NoPorts,
-    /// `no_subaccount` -- There are no sub-accounts
+    /// `no_subaccount` -- No sub-account matches
     NoSubaccount,
     /// `no_transactions` -- There are no transactions
     NoTransactions,
@@ -4018,7 +4018,7 @@ impl ApiStatus {
             ApiStatus::NoFolder => Some("There are no Fax Folders"),
             ApiStatus::NoPhonebookGroup => Some("There are no Phonebook Groups"),
             ApiStatus::NoPorts => Some("There are no ports to show"),
-            ApiStatus::NoSubaccount => Some("There are no sub-accounts"),
+            ApiStatus::NoSubaccount => Some("No sub-account matches"),
             ApiStatus::NoTransactions => Some("There are no transactions"),
             ApiStatus::NoVPRI => Some("There are no vPRIs"),
             ApiStatus::Unknown(_) => None,
