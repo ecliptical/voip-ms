@@ -4,7 +4,7 @@
 //! depth), so it is excluded from the default set until named. The read surface
 //! is free: balance and server enumerations probe cleanly; the charge/deposit,
 //! transaction-history and call-transcription reports are skipped at probe
-//! depth because they require a client id, a sub-account or a date window.
+//! depth because they require a client id, an account or a date window.
 //!
 //! At `Depth::Costly`, the input-gated reads run when their id/date-window is
 //! supplied. `addCharge`/`addPayment` fire only with an explicit amount plus a
@@ -72,7 +72,7 @@ impl Area for Account {
             report,
             AREA,
             "getCallTranscriptions",
-            "requires a sub-account and a date window"
+            "requires an account and a date window"
         );
         skip_needs_input!(report, AREA, "getCharges", "requires a client id");
         skip_needs_input!(report, AREA, "getDeposits", "requires a client id");

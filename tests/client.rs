@@ -1794,8 +1794,7 @@ fn transcription_speakers_map_each_speaker_number_to_a_phone_number() {
     use voip_ms::GetCallTranscriptionsResponse;
 
     // The docs' sample, as `json_encode` sends it: the speakers are numbered
-    // from 1, so they arrive as an object rather than a list. Typed as a list,
-    // this failed with "invalid type: map, expected a string".
+    // from 1, so they arrive as an object rather than a list.
     let resp: GetCallTranscriptionsResponse = serde_json::from_value(json!({
         "status": "success",
         "transcriptions": [{

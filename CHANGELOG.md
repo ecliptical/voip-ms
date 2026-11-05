@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+### Changed
 
 - **Breaking**: `GetCallTranscriptionsResponseTranscription::speakers` is
   `HashMap<u64, String>` (was `Vec<String>`), mapping each speaker's number to

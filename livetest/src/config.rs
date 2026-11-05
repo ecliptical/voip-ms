@@ -242,7 +242,7 @@ pub struct Cli {
     #[arg(long)]
     pub transaction_date_to: Option<NaiveDate>,
 
-    /// Sub-account (`100001_VoIP`) for `getCallTranscriptions`; required
+    /// Account or sub-account (`100001_VoIP`) for `getCallTranscriptions`; required
     /// together with `--transcription-date-from` and `--transcription-date-to`
     /// for that read to run.
     #[arg(long)]

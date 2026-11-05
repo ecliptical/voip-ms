@@ -139,6 +139,10 @@ RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
 git diff src/generated.rs
 ```
 
+A CHANGELOG entry that breaks the public API is marked **Breaking** and goes
+under `### Changed`, even when it fixes a bug, so each release lists its
+breaking changes in one section.
+
 Both `cargo xtask gen` and `extract-*` print summary counts (methods covered,
 status codes, method descriptions, methods missing output blocks). Compare
 them against the previous run — a sudden drop usually means the HTML layout
