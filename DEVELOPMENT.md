@@ -139,6 +139,10 @@ RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
 git diff src/generated.rs
 ```
 
+A CHANGELOG entry that breaks the public API is marked **Breaking** and goes
+under `### Changed`, even when it fixes a bug, so each release lists its
+breaking changes in one section.
+
 Both `cargo xtask gen` and `extract-*` print summary counts (methods covered,
 status codes, method descriptions, methods missing output blocks). Compare
 them against the previous run — a sudden drop usually means the HTML layout
@@ -202,9 +206,12 @@ refresh needs eyes on the diff, not just a green build:
   and sends one while the built-in location `0` is the only one, but sends
   `{"0": ..., "1713": ...}` once another exists. A doc sample that is a bare
   list of names is worth that check against an account with more than one
-  entry. A map's keys are `String` unless `ID_KEYED_NAME_MAP_RESPONSE_PATHS`
-  in `xtask/src/field_overrides.rs` types them `u64` for a map keyed by a
-  record id.
+  entry. A map's keys are `String` unless
+  `NUMBER_KEYED_STRING_MAP_RESPONSE_PATHS` in `xtask/src/field_overrides.rs`
+  types them `u64` for a map keyed by a number (a record id, a speaker
+  number). A PHP array that numbers its entries from anything but `0` is
+  always an object on the wire: `getCallTranscriptions` numbers its
+  `speakers` from 1, so the docs' list is `{"1": ..., "2": ...}`.
 * **Undocumented status codes** -- a code the live API returns that the
   docs' Error Codes table omits goes in `undocumented_statuses`. If the docs
   later list it, `cargo xtask gen` fails until the entry is deleted.

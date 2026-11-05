@@ -286,15 +286,20 @@ pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] = &[
     "SetCallerIDFilteringParams.filter",
 ];
 
-/// Response maps keyed by a numeric record id, typed `HashMap<u64, String>`
-/// rather than the `HashMap<String, _>` every other map gets, so an id read
-/// from one sends unconverted to the param that takes it. `getLocations` maps
-/// each internal extension location's id to its name; `delLocation` takes that
-/// id. Keyed `"StructName.field"`.
-pub(crate) const ID_KEYED_NAME_MAP_RESPONSE_PATHS: &[&str] = &["GetLocationsResponse.locations"];
+/// Response maps of strings keyed by a number, typed `HashMap<u64, String>`
+/// rather than the `HashMap<String, _>` every other map gets, so a key compares
+/// unconverted with the `u64` field elsewhere that names it. `getLocations`
+/// maps each internal extension location's id to its name, and `delLocation`
+/// takes that id. `getCallTranscriptions` maps each speaker's number, counted
+/// from 1, to the speaker's phone number, and a recognized phrase's `speaker`
+/// is that number. Keyed `"StructName.field"`.
+pub(crate) const NUMBER_KEYED_STRING_MAP_RESPONSE_PATHS: &[&str] = &[
+    "GetCallTranscriptionsResponseTranscription.speakers",
+    "GetLocationsResponse.locations",
+];
 
-/// The [`FieldOverride`] for a map from a numeric record id to a name.
-pub(crate) fn id_keyed_name_map_override() -> FieldOverride {
+/// The [`FieldOverride`] for a map of strings keyed by a number.
+pub(crate) fn number_keyed_string_map_override() -> FieldOverride {
     FieldOverride {
         rust_type: "std::collections::HashMap<u64, String>".into(),
         response_deserializer: Some("crate::responses::deserialize_map".into()),

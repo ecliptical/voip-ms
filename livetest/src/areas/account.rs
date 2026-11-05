@@ -2,9 +2,9 @@
 //! info, and the account's egress IP. Costly-by-nature because it owns the
 //! money-moving `addCharge`/`addPayment` methods (reachable only at costly
 //! depth), so it is excluded from the default set until named. The read surface
-//! is free: balance and server enumerations probe cleanly; the charge/deposit
-//! and transaction-history reports are skipped at probe depth because they
-//! require a client id or a date window.
+//! is free: balance and server enumerations probe cleanly; the charge/deposit,
+//! transaction-history and call-transcription reports are skipped at probe
+//! depth because they require a client id, an account or a date window.
 //!
 //! At `Depth::Costly`, the input-gated reads run when their id/date-window is
 //! supplied. `addCharge`/`addPayment` fire only with an explicit amount plus a
@@ -72,7 +72,7 @@ impl Area for Account {
             report,
             AREA,
             "getCallTranscriptions",
-            "requires a date window"
+            "requires an account and a date window"
         );
         skip_needs_input!(report, AREA, "getCharges", "requires a client id");
         skip_needs_input!(report, AREA, "getDeposits", "requires a client id");
@@ -159,9 +159,24 @@ impl Area for Account {
             _ => skip_no_input(report, "fixture:getTransactionHistory"),
         }
 
-        // getCallTranscriptions needs a sub-account name plus a date window,
-        // neither of which the harness supplies here.
-        skip_no_input(report, "fixture:getCallTranscriptions");
+        match (
+            &cfg.transcription_account,
+            &cfg.transcription_date_from,
+            &cfg.transcription_date_to,
+        ) {
+            (Some(account), Some(from), Some(to)) => {
+                read_back::<_, GetCallTranscriptionsResponse>(
+                    ctx.client,
+                    report,
+                    AREA,
+                    "fixture:getCallTranscriptions",
+                    &GetCallTranscriptionsParams::new(account.clone(), *to, *from),
+                    |r| Some(r.transcriptions.len()),
+                )
+                .await;
+            }
+            _ => skip_no_input(report, "fixture:getCallTranscriptions"),
+        }
 
         // Money-movers: an explicit amount plus a client id, always in the
         // API's dry-run (`test`) mode so no real money moves.

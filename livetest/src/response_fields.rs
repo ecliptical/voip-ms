@@ -259,6 +259,7 @@ pub const RESPONSE_FIELDS: &[(&str, &[&str])] = &[
             "transcriptions[].recognized_phrases[].speaker",
             "transcriptions[].recognized_phrases[].time",
             "transcriptions[].speakers",
+            "transcriptions[].speakers.*",
         ],
     ),
     (
