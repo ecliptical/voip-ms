@@ -242,6 +242,20 @@ pub struct Cli {
     #[arg(long)]
     pub transaction_date_to: Option<NaiveDate>,
 
+    /// Sub-account (`100001_VoIP`) for `getCallTranscriptions`; required
+    /// together with `--transcription-date-from` and `--transcription-date-to`
+    /// for that read to run.
+    #[arg(long)]
+    pub transcription_account: Option<String>,
+
+    /// Start date (`YYYY-MM-DD`) for `getCallTranscriptions`.
+    #[arg(long)]
+    pub transcription_date_from: Option<NaiveDate>,
+
+    /// End date (`YYYY-MM-DD`) for `getCallTranscriptions`.
+    #[arg(long)]
+    pub transcription_date_to: Option<NaiveDate>,
+
     // --- porting (costly) --------------------------------------------------
     /// A DID to probe `getPortability` against (the read-side, non-committing
     /// portability check). Absent: `getPortability` records skip (no input).
@@ -428,6 +442,9 @@ pub struct AccountConfig {
     pub charge_amount: Option<Decimal>,
     pub transaction_date_from: Option<NaiveDate>,
     pub transaction_date_to: Option<NaiveDate>,
+    pub transcription_account: Option<String>,
+    pub transcription_date_from: Option<NaiveDate>,
+    pub transcription_date_to: Option<NaiveDate>,
 }
 
 /// porting costly-depth inputs. `getPortability`/`getLNP*` fire with their id
@@ -578,6 +595,9 @@ impl Config {
             charge_amount: cli.charge_amount,
             transaction_date_from: cli.transaction_date_from,
             transaction_date_to: cli.transaction_date_to,
+            transcription_account: cli.transcription_account.filter(|s| !s.trim().is_empty()),
+            transcription_date_from: cli.transcription_date_from,
+            transcription_date_to: cli.transcription_date_to,
         };
 
         let porting = PortingConfig {

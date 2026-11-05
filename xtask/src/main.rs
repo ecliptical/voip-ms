@@ -2602,11 +2602,11 @@ fn cmd_gen() -> Result<(), String> {
         )?;
     }
 
-    for path in field_overrides::ID_KEYED_NAME_MAP_RESPONSE_PATHS {
+    for path in field_overrides::NUMBER_KEYED_STRING_MAP_RESPONSE_PATHS {
         assign_field_type(
             &mut field_type_override,
             (*path).to_string(),
-            field_overrides::id_keyed_name_map_override(),
+            field_overrides::number_keyed_string_map_override(),
         )?;
     }
 

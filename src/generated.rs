@@ -13504,11 +13504,8 @@ pub struct GetCallTranscriptionsResponseTranscription {
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"
     )]
     pub duration: Option<String>,
-    #[serde(
-        default,
-        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
-    )]
-    pub speakers: Vec<String>,
+    #[serde(default, deserialize_with = "crate::responses::deserialize_map")]
+    pub speakers: std::collections::HashMap<u64, String>,
     #[serde(
         default,
         deserialize_with = "crate::responses::deserialize_opt_string_from_string_number_or_bool"

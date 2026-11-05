@@ -1789,6 +1789,49 @@ fn locations_map_each_id_to_its_name_in_either_wire_form() {
 }
 
 #[test]
+fn transcription_speakers_map_each_speaker_number_to_a_phone_number() {
+    use std::collections::HashMap;
+    use voip_ms::GetCallTranscriptionsResponse;
+
+    // The docs' sample, as `json_encode` sends it: the speakers are numbered
+    // from 1, so they arrive as an object rather than a list. Typed as a list,
+    // this failed with "invalid type: map, expected a string".
+    let resp: GetCallTranscriptionsResponse = serde_json::from_value(json!({
+        "status": "success",
+        "transcriptions": [{
+            "date": "2024-10-11 08:48:40",
+            "duration": "00:07",
+            "speakers": { "1": "3314315459", "2": "19283528012" },
+            "locale": "en-US",
+            "confidence": "94.18%",
+            "recognized_phrases": [{
+                "time": "2024-10-11 08:48:21",
+                "duration": 2.84,
+                "speaker": 2,
+                "phrase": "That number has not yet been assigned."
+            }]
+        }]
+    }))
+    .unwrap();
+
+    let transcription = &resp.transcriptions[0];
+    assert_eq!(
+        transcription.speakers,
+        HashMap::from([
+            (1, "3314315459".to_string()),
+            (2, "19283528012".to_string()),
+        ])
+    );
+
+    // A phrase's `speaker` is the key, with no conversion between.
+    let speaker = transcription.recognized_phrases[0].speaker.unwrap();
+    assert_eq!(
+        transcription.speakers.get(&speaker).map(String::as_str),
+        Some("19283528012")
+    );
+}
+
+#[test]
 fn report_estimated_hold_time_values_are_strings() {
     use voip_ms::GetReportEstimatedHoldTimeResponse;
 

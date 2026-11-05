@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Breaking**: `GetCallTranscriptionsResponseTranscription::speakers` is
+  `HashMap<u64, String>` (was `Vec<String>`), mapping each speaker's number to
+  the speaker's phone number. VoIP.ms numbers the speakers from 1, so they
+  arrive as a JSON object, and `get_call_transcriptions` failed with
+  "invalid type: map, expected a string" on any transcription that listed its
+  speakers. A recognized phrase's `speaker` is the key into the map.
+
 ## [0.21.0] - 2026-10-30
 
 ### Changed

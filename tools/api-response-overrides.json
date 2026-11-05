@@ -440,6 +440,27 @@
         ]
       }
     },
+    "getCallTranscriptions": {
+      "shape": {
+        "kind": "object",
+        "fields": [
+          { "name": "status", "shape": { "kind": "scalar", "type": "string", "sample": "success" } },
+          { "name": "transcriptions", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+            { "name": "date",       "shape": { "kind": "scalar", "type": "string", "sample": "2024-10-11 08:48:40" } },
+            { "name": "duration",   "shape": { "kind": "scalar", "type": "string", "sample": "00:07" } },
+            { "name": "speakers",   "shape": { "kind": "map", "value": { "kind": "scalar", "type": "string", "sample": "3314315459" } } },
+            { "name": "locale",     "shape": { "kind": "scalar", "type": "string", "sample": "en-US" } },
+            { "name": "confidence", "shape": { "kind": "scalar", "type": "string", "sample": "94.18%" } },
+            { "name": "recognized_phrases", "shape": { "kind": "list", "element": { "kind": "object", "fields": [
+              { "name": "time",     "shape": { "kind": "scalar", "type": "string",  "sample": "2024-10-11 08:48:21" } },
+              { "name": "duration", "shape": { "kind": "scalar", "type": "decimal", "sample": "2.84" } },
+              { "name": "speaker",  "shape": { "kind": "scalar", "type": "integer", "sample": "2" } },
+              { "name": "phrase",   "shape": { "kind": "scalar", "type": "string",  "sample": "That number has not yet been assigned." } }
+            ] } } }
+          ] } } }
+        ]
+      }
+    },
     "getConferenceMembers": {
       "shape": {
         "kind": "object",
