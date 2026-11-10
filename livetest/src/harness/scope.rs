@@ -4,8 +4,7 @@
 //! `scope.cleanup().await` run in a `finally` position (after the fixtures,
 //! whether they succeeded or not). Every create registers its teardown
 //! immediately after success, so teardown fires exactly once per acquired
-//! resource even if a later step fails -- mirroring the AGENTS.md
-//! paired-API double-invocation rule.
+//! resource even if a later step fails.
 //!
 //! A `Drop` guard catches the programming error of dropping a scope without
 //! calling `cleanup`: it warns loudly rather than silently leaking. It cannot
