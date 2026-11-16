@@ -4475,12 +4475,13 @@ pub struct BackOrderDIDCANParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -4548,12 +4549,13 @@ pub struct BackOrderDIDUSAParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -8796,12 +8798,13 @@ pub struct OrderDIDParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -8908,12 +8911,13 @@ pub struct OrderDIDInternationalGeographicParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -8991,12 +8995,13 @@ pub struct OrderDIDInternationalNationalParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9074,12 +9079,13 @@ pub struct OrderDIDInternationalTollFreeParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9179,12 +9185,13 @@ pub struct OrderDIDVirtualParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9348,12 +9355,13 @@ pub struct OrderTollFreeParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9451,12 +9459,13 @@ pub struct OrderVanityParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -10132,12 +10141,13 @@ pub struct SetCallerIDFilteringParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Route the call follows when unreachable. Same format as `routing`.
@@ -10583,12 +10593,13 @@ pub struct SetDIDInfoParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -10758,12 +10769,13 @@ pub struct SetDIDRoutingParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
 }
@@ -11515,12 +11527,13 @@ pub struct SetQueueParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(
         skip_serializing_if = "Option::is_none",
         rename = "fail_over_routing_timeout"
@@ -12042,12 +12055,13 @@ pub struct SetTimeConditionParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing_match: Option<crate::Routing>,
     /// Routing for the call when the condition does not match (required). Same

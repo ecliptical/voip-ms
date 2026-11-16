@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MissingAiAgent` (`missing_ai_agent`). These codes used to arrive as
   `ApiStatus::Unknown`. A `match` on `ApiStatus` with no wildcard arm must add
   them.
+- **Breaking**: `Routing` has two new variants, `CallHunting` (`ch:ID`, a
+  call hunting from `getCallHuntings`) and `Conference` (`cfb:ID`, a
+  conference from `getConference`). The docs' routing list names neither, but
+  `setDIDRouting` takes both, answering `invalid_callhunting` and
+  `invalid_conference` to an id that names none. These values used to parse as
+  `Routing::Unknown`. A `match` on `Routing` with no wildcard arm must add
+  them.
 - `ApiStatus::MissingUsername` and `ApiStatus::UsedFilter` carry the docs'
   reworded descriptions ("Username is required"; "You already have a Filter
   matching this CallerID Number and DID Number").
