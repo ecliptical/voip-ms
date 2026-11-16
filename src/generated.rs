@@ -1340,6 +1340,8 @@ pub enum ApiStatus {
     ExistingDID,
     /// `forwards_exceeded` -- Your account is limited to 4 forward entries
     ForwardsExceeded,
+    /// `handoff_rate_limited` -- There is a limit of 5 redirects per hour. Please try again later.
+    HandoffRateLimited,
     /// `invalid_account` -- This is not a valid account
     InvalidAccount,
     /// `invalid_address` -- Address is missing or the format is invalid.
@@ -1348,6 +1350,8 @@ pub enum ApiStatus {
     InvalidAdmin,
     /// `invalid_agent_ring_timeout` -- This is not a valid Agent ring time out value
     InvalidAgentRingTimeout,
+    /// `invalid_ai_agent` -- Invalid AI Voice Agent. Please create a new AI Voice Agent or choose a different routing option.
+    InvalidAiAgent,
     /// `invalid_allowedcodecs` -- One of the codecs provided is invalid Format and Values: ulaw;g729;gsm;all
     InvalidAllowedcodecs,
     /// `invalid_announce_join_leave` -- This is not a valid "Announce join leave"
@@ -1856,6 +1860,8 @@ pub enum ApiStatus {
     MissingAddress,
     /// `missing_agent_ring_timeout` -- Agent ring time out was not provided
     MissingAgentRingTimeout,
+    /// `missing_ai_agent` -- No AI Voice Agent is configured. Create an AI Voice Agent or choose a different routing option.
+    MissingAiAgent,
     /// `missing_allowedcodecs` -- Allowed Codecs were not provided
     MissingAllowedcodecs,
     /// `missing_attachmessage` -- AttachMessage was not provided
@@ -2104,7 +2110,7 @@ pub enum ApiStatus {
     MissingUrgent,
     /// `missing_uri` -- URI was not provided
     MissingURI,
-    /// `missing_username` -- Username was not provided
+    /// `missing_username` -- Username is required
     MissingUsername,
     /// `missing_voicemailsetup` -- Voice mail setup was not provided
     MissingVoicemailsetup,
@@ -2240,7 +2246,7 @@ pub enum ApiStatus {
     UsedExtension,
     /// `used_extension_in_location` -- You already have a subaccount using extension in this location
     UsedExtensionInLocation,
-    /// `used_filter` -- You already have a record with this Filter
+    /// `used_filter` -- You already have a Filter matching this CallerID Number and DID Number
     UsedFilter,
     /// `used_ip` -- There is already another customer using this IP Address
     UsedIP,
@@ -2302,10 +2308,12 @@ impl ApiStatus {
             ApiStatus::ExceedsFileSize => "exceeds_file_size",
             ApiStatus::ExistingDID => "existing_did",
             ApiStatus::ForwardsExceeded => "forwards_exceeded",
+            ApiStatus::HandoffRateLimited => "handoff_rate_limited",
             ApiStatus::InvalidAccount => "invalid_account",
             ApiStatus::InvalidAddress => "invalid_address",
             ApiStatus::InvalidAdmin => "invalid_admin",
             ApiStatus::InvalidAgentRingTimeout => "invalid_agent_ring_timeout",
+            ApiStatus::InvalidAiAgent => "invalid_ai_agent",
             ApiStatus::InvalidAllowedcodecs => "invalid_allowedcodecs",
             ApiStatus::InvalidAnnounceJoinLeave => "invalid_announce_join_leave",
             ApiStatus::InvalidAnnounceOnlyUser => "invalid_announce_only_user",
@@ -2572,6 +2580,7 @@ impl ApiStatus {
             ApiStatus::MissingAccount => "missing_account",
             ApiStatus::MissingAddress => "missing_address",
             ApiStatus::MissingAgentRingTimeout => "missing_agent_ring_timeout",
+            ApiStatus::MissingAiAgent => "missing_ai_agent",
             ApiStatus::MissingAllowedcodecs => "missing_allowedcodecs",
             ApiStatus::MissingAttachmessage => "missing_attachmessage",
             ApiStatus::MissingAuthtype => "missing_authtype",
@@ -2812,10 +2821,12 @@ impl ApiStatus {
             "exceeds_file_size" => ApiStatus::ExceedsFileSize,
             "existing_did" => ApiStatus::ExistingDID,
             "forwards_exceeded" => ApiStatus::ForwardsExceeded,
+            "handoff_rate_limited" => ApiStatus::HandoffRateLimited,
             "invalid_account" => ApiStatus::InvalidAccount,
             "invalid_address" => ApiStatus::InvalidAddress,
             "invalid_admin" => ApiStatus::InvalidAdmin,
             "invalid_agent_ring_timeout" => ApiStatus::InvalidAgentRingTimeout,
+            "invalid_ai_agent" => ApiStatus::InvalidAiAgent,
             "invalid_allowedcodecs" => ApiStatus::InvalidAllowedcodecs,
             "invalid_announce_join_leave" => ApiStatus::InvalidAnnounceJoinLeave,
             "invalid_announce_only_user" => ApiStatus::InvalidAnnounceOnlyUser,
@@ -3082,6 +3093,7 @@ impl ApiStatus {
             "missing_account" => ApiStatus::MissingAccount,
             "missing_address" => ApiStatus::MissingAddress,
             "missing_agent_ring_timeout" => ApiStatus::MissingAgentRingTimeout,
+            "missing_ai_agent" => ApiStatus::MissingAiAgent,
             "missing_allowedcodecs" => ApiStatus::MissingAllowedcodecs,
             "missing_attachmessage" => ApiStatus::MissingAttachmessage,
             "missing_authtype" => ApiStatus::MissingAuthtype,
@@ -3334,12 +3346,18 @@ impl ApiStatus {
                 Some("You can't set a callback to an existing VoIP.ms DID number")
             }
             ApiStatus::ForwardsExceeded => Some("Your account is limited to 4 forward entries"),
+            ApiStatus::HandoffRateLimited => {
+                Some("There is a limit of 5 redirects per hour. Please try again later.")
+            }
             ApiStatus::InvalidAccount => Some("This is not a valid account"),
             ApiStatus::InvalidAddress => Some("Address is missing or the format is invalid."),
             ApiStatus::InvalidAdmin => Some("This is not a valid admin"),
             ApiStatus::InvalidAgentRingTimeout => {
                 Some("This is not a valid Agent ring time out value")
             }
+            ApiStatus::InvalidAiAgent => Some(
+                "Invalid AI Voice Agent. Please create a new AI Voice Agent or choose a different routing option.",
+            ),
             ApiStatus::InvalidAllowedcodecs => {
                 Some("One of the codecs provided is invalid Format and Values: ulaw;g729;gsm;all")
             }
@@ -3762,6 +3780,9 @@ impl ApiStatus {
             ApiStatus::MissingAccount => Some("Account was not provided"),
             ApiStatus::MissingAddress => Some("Address was not provided"),
             ApiStatus::MissingAgentRingTimeout => Some("Agent ring time out was not provided"),
+            ApiStatus::MissingAiAgent => Some(
+                "No AI Voice Agent is configured. Create an AI Voice Agent or choose a different routing option.",
+            ),
             ApiStatus::MissingAllowedcodecs => Some("Allowed Codecs were not provided"),
             ApiStatus::MissingAttachmessage => Some("AttachMessage was not provided"),
             ApiStatus::MissingAuthtype => Some("Auth Type was not provided"),
@@ -3900,7 +3921,7 @@ impl ApiStatus {
             ApiStatus::MissingType => Some("Type was not provided"),
             ApiStatus::MissingUrgent => Some("Urgent code was not provided"),
             ApiStatus::MissingURI => Some("URI was not provided"),
-            ApiStatus::MissingUsername => Some("Username was not provided"),
+            ApiStatus::MissingUsername => Some("Username is required"),
             ApiStatus::MissingVoicemailsetup => Some("Voice mail setup was not provided"),
             ApiStatus::MissingWeekdayend => Some("Week End was not provide"),
             ApiStatus::MissingWeekdaystart => Some("Week Start was not provided"),
@@ -4000,7 +4021,9 @@ impl ApiStatus {
             ApiStatus::UsedExtensionInLocation => {
                 Some("You already have a subaccount using extension in this location")
             }
-            ApiStatus::UsedFilter => Some("You already have a record with this Filter"),
+            ApiStatus::UsedFilter => {
+                Some("You already have a Filter matching this CallerID Number and DID Number")
+            }
             ApiStatus::UsedIP => Some("There is already another customer using this IP Address"),
             ApiStatus::UsedName => Some("You already have an entry using this name"),
             ApiStatus::UsedNumber => Some("You already have a record with this Number"),
@@ -4401,8 +4424,7 @@ impl AddPaymentParams {
     }
 }
 
-/// \- Assigns a Per Minute DID to a VPRI (Flat Rate DIDs can&rsquo;t be
-/// assigned)
+/// \- Assigns a Per Minute DID to a VPRI (Flat Rate DIDs can’t be assigned)
 ///
 /// Parameters for [`Client::assign_did_vpri`] (wire method `assignDIDvPRI`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
@@ -4453,12 +4475,13 @@ pub struct BackOrderDIDCANParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -4526,12 +4549,13 @@ pub struct BackOrderDIDUSAParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -6506,8 +6530,8 @@ impl GetClientThresholdParams {
     }
 }
 
-/// \- Retrieves a list of all Clients if no additional parameter is provided.-
-/// Retrieves a specific Reseller Client if a Reseller Client ID is provided.
+/// \- Retrieves a list of all Clients if no additional parameter is provided.
+/// \- Retrieves a specific Reseller Client if a Reseller Client ID is provided.
 /// \- Retrieves a specific Reseller Client if a Reseller Client e-mail is
 /// provided.
 ///
@@ -7414,8 +7438,8 @@ pub struct GetNATParams {
     pub nat: Option<Nat>,
 }
 
-/// \- Retrieves a list of Packages if no additional parameter is provided.-
-/// Retrieves a specific Package if a package code is provided.
+/// \- Retrieves a list of Packages if no additional parameter is provided.
+/// \- Retrieves a specific Package if a package code is provided.
 ///
 /// Parameters for [`Client::get_packages`] (wire method `getPackages`).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
@@ -8774,12 +8798,13 @@ pub struct OrderDIDParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -8886,12 +8911,13 @@ pub struct OrderDIDInternationalGeographicParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -8969,12 +8995,13 @@ pub struct OrderDIDInternationalNationalParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9052,12 +9079,13 @@ pub struct OrderDIDInternationalTollFreeParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9157,12 +9185,13 @@ pub struct OrderDIDVirtualParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9326,12 +9355,13 @@ pub struct OrderTollFreeParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -9429,12 +9459,13 @@ pub struct OrderVanityParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -10007,7 +10038,7 @@ pub struct SetCallParkingParams {
     /// Music on Hold Code (Values from getMusicOnHold) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub music: Option<String>,
-    /// Final destination where the call will be forwarded if it isn&rsquo;t
+    /// Final destination where the call will be forwarded if it isn’t
     /// answered. (Values: callback, system:hangup, vm:mailbox) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failover: Option<String>,
@@ -10110,12 +10141,13 @@ pub struct SetCallerIDFilteringParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Route the call follows when unreachable. Same format as `routing`.
@@ -10477,9 +10509,9 @@ pub struct SetConferenceMemberParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub talking_threshold: Option<u64>,
     /// The time, in milliseconds, that silence needs to be present in the
-    /// user&rsquo;s sound stream before the system can consider it to be in
-    /// fact silent and close the audio (allowed values are 2000, 2100, 2200,
-    /// 2300, 2400, 2500, 2600, 2700, 2800, 2900 or 3000).
+    /// user’s sound stream before the system can consider it to be in fact
+    /// silent and close the audio (allowed values are 2000, 2100, 2200, 2300,
+    /// 2400, 2500, 2600, 2700, 2800, 2900 or 3000).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub silence_threshold: Option<u64>,
     /// If set to YES, the conference dashboard will display a notification when
@@ -10561,12 +10593,13 @@ pub struct SetDIDInfoParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
     /// Busy Routing for the DID. Same format as `routing`.
@@ -10736,12 +10769,13 @@ pub struct SetDIDRoutingParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing: Option<crate::Routing>,
 }
@@ -11493,12 +11527,13 @@ pub struct SetQueueParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(
         skip_serializing_if = "Option::is_none",
         rename = "fail_over_routing_timeout"
@@ -12020,12 +12055,13 @@ pub struct SetTimeConditionParams {
     /// `sys` (a system action), `recording` (a recording, from getRecordings),
     /// `queue` (a call queue, from getQueues), `cb` (a callback, from
     /// getCallbacks), `tc` (a time condition, from getTimeConditions), `disa`
-    /// (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the
-    /// call), `busy` (busy tone), `noservice` (number not in service
-    /// recording), `disconnected` (number disconnected recording), `dtmf` (DTMF
-    /// test) or `echo` (sound quality test), and `none` takes no record id.
-    /// Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`,
-    /// `none:`.
+    /// (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings),
+    /// `cfb` (a conference, from getConference) or `none`. `sys` takes `hangup`
+    /// (hang up the call), `busy` (busy tone), `noservice` (number not in
+    /// service recording), `disconnected` (number disconnected recording),
+    /// `dtmf` (DTMF test) or `echo` (sound quality test), and `none` takes no
+    /// record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`,
+    /// `sys:echo`, `none:`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub routing_match: Option<crate::Routing>,
     /// Routing for the call when the condition does not match (required). Same
@@ -19786,7 +19822,7 @@ impl Client {
         self.call_raw("addPayment", params).await
     }
 
-    /// \- Assigns a Per Minute DID to a VPRI (Flat Rate DIDs can&rsquo;t be
+    /// \- Assigns a Per Minute DID to a VPRI (Flat Rate DIDs can’t be
     /// assigned)
     ///
     /// Call the `assignDIDvPRI` API method and deserialize into [`AssignDIDvPRIResponse`].
@@ -20811,8 +20847,9 @@ impl Client {
     }
 
     /// \- Retrieves a list of all Clients if no additional parameter is
-    /// provided.- Retrieves a specific Reseller Client if a Reseller Client ID
-    /// is provided.
+    /// provided.
+    /// \- Retrieves a specific Reseller Client if a Reseller Client ID is
+    /// provided.
     /// \- Retrieves a specific Reseller Client if a Reseller Client e-mail is
     /// provided.
     ///
@@ -21639,8 +21676,8 @@ impl Client {
         self.call_raw("getNAT", params).await
     }
 
-    /// \- Retrieves a list of Packages if no additional parameter is provided.-
-    /// Retrieves a specific Package if a package code is provided.
+    /// \- Retrieves a list of Packages if no additional parameter is provided.
+    /// \- Retrieves a specific Package if a package code is provided.
     ///
     /// Call the `getPackages` API method and deserialize into [`GetPackagesResponse`].
     pub async fn get_packages(&self, params: &GetPackagesParams) -> Result<GetPackagesResponse> {

@@ -36,6 +36,8 @@ use std::str::FromStr;
 /// * `cb:2359` → [`Routing::Callback`]
 /// * `tc:11` → [`Routing::TimeCondition`]
 /// * `disa:1` → [`Routing::Disa`]
+/// * `ch:12` → [`Routing::CallHunting`]
+/// * `cfb:5` → [`Routing::Conference`]
 /// * `did:5551234567` → [`Routing::Did`]
 /// * `phone:5551234567` → [`Routing::Phone`]
 /// * `none:` → [`Routing::None`]
@@ -68,6 +70,14 @@ pub enum Routing {
     TimeCondition(String),
     /// DISA entry by id (wire: `disa:ID`).
     Disa(String),
+    /// Call hunting by id, from `getCallHuntings` (wire: `ch:ID`). The docs'
+    /// routing list leaves it out; `setDIDRouting` takes it and answers
+    /// `invalid_callhunting` to an id that names none.
+    CallHunting(String),
+    /// Conference by id, from `getConference` (wire: `cfb:ID`). The docs'
+    /// routing list leaves it out; `setDIDRouting` takes it and answers
+    /// `invalid_conference` to an id that names none.
+    Conference(String),
     /// DID number (wire: `did:NUMBER`).
     Did(String),
     /// Outbound phone number (wire: `phone:NUMBER`).
@@ -94,6 +104,8 @@ impl Routing {
             Routing::Callback(_) => "cb",
             Routing::TimeCondition(_) => "tc",
             Routing::Disa(_) => "disa",
+            Routing::CallHunting(_) => "ch",
+            Routing::Conference(_) => "cfb",
             Routing::Did(_) => "did",
             Routing::Phone(_) => "phone",
             Routing::Unknown { tag, .. } => tag,
@@ -116,6 +128,8 @@ impl Routing {
             | Routing::Callback(v)
             | Routing::TimeCondition(v)
             | Routing::Disa(v)
+            | Routing::CallHunting(v)
+            | Routing::Conference(v)
             | Routing::Did(v)
             | Routing::Phone(v) => v,
             Routing::Unknown { value, .. } => value,
@@ -185,6 +199,8 @@ impl FromStr for Routing {
             "cb" => Routing::Callback(value.into()),
             "tc" => Routing::TimeCondition(value.into()),
             "disa" => Routing::Disa(value.into()),
+            "ch" => Routing::CallHunting(value.into()),
+            "cfb" => Routing::Conference(value.into()),
             "did" => Routing::Did(value.into()),
             "phone" => Routing::Phone(value.into()),
             other => Routing::Unknown {
@@ -1054,6 +1070,17 @@ mod tests {
         let recording = Routing::from_str("recording:289572").unwrap();
         assert_eq!(recording, Routing::Recording("289572".into()));
         assert_eq!(recording.to_wire(), "recording:289572");
+    }
+
+    #[test]
+    fn parses_the_call_hunting_and_conference_tags() {
+        for (wire, routing) in [
+            ("ch:12", Routing::CallHunting("12".into())),
+            ("cfb:5", Routing::Conference("5".into())),
+        ] {
+            assert_eq!(Routing::from_str(wire).unwrap(), routing);
+            assert_eq!(routing.to_wire(), wire);
+        }
     }
 
     #[test]

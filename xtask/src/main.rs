@@ -830,14 +830,17 @@ const OFFSET_TIMEZONE_DOC: &str = "IANA time zone whose days the date range mean
 /// three versions of differing completeness, and on no method that takes
 /// `routing_match` or a caller-ID filter's routing. This is the fullest one,
 /// from the DID order methods, with the headers it lists but does not explain
-/// glossed after the record each one names.
+/// glossed after the record each one names. `ch` and `cfb` are in no version;
+/// `setDIDRouting` takes both, answering `invalid_callhunting` and
+/// `invalid_conference` to an id that names none.
 const ROUTING_FORMAT_DOC: &str = "Format `header:record_id`, where `header` is `account` \
      (a sub-account, from getSubAccounts), `fwd` (a forwarding, from getForwardings), `vm` \
      (a voicemail, from getVoicemails), `sip` (a SIP URI, from getSIPURIs), `grp` (a ring \
      group, from getRingGroups), `ivr` (an IVR, from getIVRs), `sys` (a system action), \
      `recording` (a recording, from getRecordings), `queue` (a call queue, from getQueues), \
      `cb` (a callback, from getCallbacks), `tc` (a time condition, from getTimeConditions), \
-     `disa` (a DISA, from getDISAs) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy \
+     `disa` (a DISA, from getDISAs), `ch` (a call hunting, from getCallHuntings), `cfb` (a \
+     conference, from getConference) or `none`. `sys` takes `hangup` (hang up the call), `busy` (busy \
      tone), `noservice` (number not in service recording), `disconnected` (number \
      disconnected recording), `dtmf` (DTMF test) or `echo` (sound quality test), and `none` \
      takes no record id. Examples: `account:100001_VoIP`, `fwd:1026`, `vm:101`, `sys:echo`, \

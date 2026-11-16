@@ -70,6 +70,10 @@
       "description": "Your account is limited to 4 forward entries"
     },
     {
+      "code": "handoff_rate_limited",
+      "description": "There is a limit of 5 redirects per hour. Please try again later."
+    },
+    {
       "code": "invalid_account",
       "description": "This is not a valid account"
     },
@@ -84,6 +88,10 @@
     {
       "code": "invalid_agent_ring_timeout",
       "description": "This is not a valid Agent ring time out value"
+    },
+    {
+      "code": "invalid_ai_agent",
+      "description": "Invalid AI Voice Agent. Please create a new AI Voice Agent or choose a different routing option."
     },
     {
       "code": "invalid_allowedcodecs",
@@ -1102,6 +1110,10 @@
       "description": "Agent ring time out was not provided"
     },
     {
+      "code": "missing_ai_agent",
+      "description": "No AI Voice Agent is configured. Create an AI Voice Agent or choose a different routing option."
+    },
+    {
       "code": "missing_allowedcodecs",
       "description": "Allowed Codecs were not provided"
     },
@@ -1599,7 +1611,7 @@
     },
     {
       "code": "missing_username",
-      "description": "Username was not provided"
+      "description": "Username is required"
     },
     {
       "code": "missing_voicemailsetup",
@@ -1871,7 +1883,7 @@
     },
     {
       "code": "used_filter",
-      "description": "You already have a record with this Filter"
+      "description": "You already have a Filter matching this CallerID Number and DID Number"
     },
     {
       "code": "used_ip",
@@ -1902,5 +1914,5 @@
       "description": "This Password is too weak or too common"
     }
   ],
-  "digest": "cd29ba98e46194dd"
+  "digest": "d9b5074987817c62"
 }

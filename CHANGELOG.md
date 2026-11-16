@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: `ApiStatus` has three new variants from the 2026-11-16 docs
+  refresh, all tied to VoIP.ms's new AI Voice Agent routing option:
+  `HandoffRateLimited` (`handoff_rate_limited`, "There is a limit of 5
+  redirects per hour"), `InvalidAiAgent` (`invalid_ai_agent`) and
+  `MissingAiAgent` (`missing_ai_agent`). These codes used to arrive as
+  `ApiStatus::Unknown`. A `match` on `ApiStatus` with no wildcard arm must add
+  them.
+- **Breaking**: `Routing` has two new variants, `CallHunting` (`ch:ID`, a
+  call hunting from `getCallHuntings`) and `Conference` (`cfb:ID`, a
+  conference from `getConference`). The docs' routing list names neither, but
+  `setDIDRouting` takes both, answering `invalid_callhunting` and
+  `invalid_conference` to an id that names none. These values used to parse as
+  `Routing::Unknown`. A `match` on `Routing` with no wildcard arm must add
+  them.
+- `ApiStatus::MissingUsername` and `ApiStatus::UsedFilter` carry the docs'
+  reworded descriptions ("Username is required"; "You already have a Filter
+  matching this CallerID Number and DID Number").
+- The doc comments on `assign_did_vpri`, `get_clients`, `get_packages`,
+  `SetCallParkingParams::failover` and
+  `SetConferenceMemberParams::silence_threshold` no longer show a raw
+  `&rsquo;` or run two bullet lines together.
+
 ## [0.22.0] - 2026-11-05
 
 ### Changed

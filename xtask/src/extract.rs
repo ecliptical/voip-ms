@@ -427,14 +427,44 @@ fn scan_method_docs(html: &str, known: &BTreeSet<&str>) -> serde_json::Map<Strin
 /// `- ` bullet markers are kept verbatim — `render_doc` escapes them so they
 /// don't render as Markdown lists.
 fn clean_method_desc(raw: &str) -> String {
-    let with_breaks = raw.replace("<br>", "\n").replace("<br/>", "\n");
-    let stripped = html_decode(&strip_tags(&with_breaks));
+    let stripped = html_decode(&strip_tags(&breaks_to_newlines(raw)));
     stripped
         .lines()
         .map(collapse_ws)
         .filter(|l| !l.is_empty())
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// Replace each `<br>` tag with a newline, in any letter case and with or
+/// without a closing slash or attributes. A page saved with the browser's
+/// "Save Page As" keeps the source's `<BR>` (`getClients`, `getPackages`),
+/// while one serialized from the DOM lowercases it, and the two must extract
+/// the same.
+fn breaks_to_newlines(raw: &str) -> String {
+    // ASCII lowercasing keeps every byte offset, so offsets found in `lower`
+    // index `raw` too.
+    let lower = raw.to_ascii_lowercase();
+    let mut out = String::with_capacity(raw.len());
+    let mut copied = 0;
+    let mut from = 0;
+    while let Some(found) = lower[from..].find("<br") {
+        let at = from + found;
+        let after = &lower[at + 3..];
+        let is_br = after.starts_with(['>', '/']) || after.starts_with(char::is_whitespace);
+        match after.find('>') {
+            Some(close) if is_br => {
+                out.push_str(&raw[copied..at]);
+                out.push('\n');
+                copied = at + 3 + close + 1;
+                from = copied;
+            }
+            _ => from = at + 3,
+        }
+    }
+
+    out.push_str(&raw[copied..]);
+    out
 }
 
 pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), String> {
@@ -793,6 +823,10 @@ fn html_decode(s: &str) -> String {
         .replace("&apos;", "'")
         .replace("&#160;", " ")
         .replace("&nbsp;", " ")
+        .replace("&lsquo;", "\u{2018}")
+        .replace("&rsquo;", "\u{2019}")
+        .replace("&ldquo;", "\u{201C}")
+        .replace("&rdquo;", "\u{201D}")
         .replace("&amp;", "&")
 }
 
@@ -1361,6 +1395,40 @@ mod tests {
         // Hex that is not a whole number of bytes is left as it arrived.
         let broken = "<span data-cfemail=\"1c7\">[email&#160;protected]</span>";
         assert_eq!(reveal_cf_emails(broken), broken);
+    }
+
+    #[test]
+    fn a_break_tag_in_any_form_separates_description_lines() {
+        // `getClients` as "Save Page As" keeps it: one `<BR>`, then `<br>`.
+        let saved =
+            "- Retrieves all Clients.<BR>- Retrieves one by ID.<br>- Retrieves one by e-mail.";
+        assert_eq!(
+            clean_method_desc(saved),
+            "- Retrieves all Clients.\n- Retrieves one by ID.\n- Retrieves one by e-mail."
+        );
+        assert_eq!(
+            clean_method_desc("a<br/>b<BR />c<br class=\"x\">d"),
+            "a\nb\nc\nd"
+        );
+
+        // A tag that only starts with the letters is not a break.
+        assert_eq!(
+            breaks_to_newlines("<bridge>x</bridge>"),
+            "<bridge>x</bridge>"
+        );
+    }
+
+    #[test]
+    fn curly_quote_entities_decode_to_the_characters() {
+        // `assignDIDvPRI`'s description as "Save Page As" keeps it.
+        assert_eq!(
+            html_decode("Flat Rate DIDs can&rsquo;t be assigned"),
+            "Flat Rate DIDs can\u{2019}t be assigned"
+        );
+        assert_eq!(
+            html_decode("&ldquo;&lsquo;x&rsquo;&rdquo; &amp;rsquo;"),
+            "\u{201C}\u{2018}x\u{2019}\u{201D} &rsquo;"
+        );
     }
 
     fn pairs(cell: &ParamCell) -> Vec<(&str, &str)> {
