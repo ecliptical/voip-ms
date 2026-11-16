@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-16
+
 ### Changed
 
 - **Breaking**: `ApiStatus` has three new variants from the 2026-11-16 docs
@@ -1591,6 +1593,7 @@ a real failed request and asserts nothing it exposes carries the password.
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
+[0.23.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.23.0
 [0.22.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.22.0
 [0.21.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.21.0
 [0.20.1]: https://github.com/ecliptical/voip-ms/releases/tag/v0.20.1
