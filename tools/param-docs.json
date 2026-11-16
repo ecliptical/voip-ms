@@ -2863,7 +2863,7 @@
         "required": true
       },
       "failover": {
-        "doc": "Final destination where the call will be forwarded if it isn&rsquo;t answered. (Values: callback, system:hangup, vm:mailbox) (required)",
+        "doc": "Final destination where the call will be forwarded if it isn’t answered. (Values: callback, system:hangup, vm:mailbox) (required)",
         "required": true
       },
       "language": {
@@ -3179,7 +3179,7 @@
         "required": false
       },
       "silence_threshold": {
-        "doc": "The time, in milliseconds, that silence needs to be present in the user&rsquo;s sound stream before the system can consider it to be in fact silent and close the audio (allowed values are 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900 or 3000).",
+        "doc": "The time, in milliseconds, that silence needs to be present in the user’s sound stream before the system can consider it to be in fact silent and close the audio (allowed values are 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900 or 3000).",
         "required": false
       },
       "start_muted": {
