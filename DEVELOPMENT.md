@@ -6,9 +6,9 @@ This document covers contributor and maintainer workflows for voip-ms.
 
 VoIP.ms periodically adds methods (WSDL) and revises its user-facing
 documentation (response shapes, parameter notes, status codes). Re-run the
-full refresh below whenever either changes — and proactively every few
+full refresh below whenever either changes -- and proactively every few
 months even absent a known change, since the docs drift silently. The whole
-process is mechanical; the judgement is in **reviewing the diffs** (see the
+process is mechanical; the judgment is in **reviewing the diffs** (see the
 checklist) before committing.
 
 ### Inputs
@@ -16,14 +16,14 @@ checklist) before committing.
 `src/generated.rs` is produced by the `xtask` workspace member from four
 committed inputs:
 
-* `tools/server.wsdl` — the source of truth for the method list, parameter
+* `tools/server.wsdl` -- the source of truth for the method list, parameter
   names, and parameter types. Drives every `*Params` struct and `Client`
   method.
-* `tools/api-responses.json` — *generated* by `cargo xtask extract-responses`
+* `tools/api-responses.json` -- *generated* by `cargo xtask extract-responses`
   from the saved HTML docs. Holds four things:
-  * `methods` — the inferred response shape per method (→ `*Response`
+  * `methods` -- the inferred response shape per method (→ `*Response`
     structs);
-  * `param_docs` — per-parameter descriptions mined from each method's
+  * `param_docs` -- per-parameter descriptions mined from each method's
     `Parameters` cell, including `[Required]` markers, examples, and value
     constraints (→ `///` comments on `*Params` fields);
   * `param_notes` -- the paragraph some methods print flush left under their
@@ -31,7 +31,7 @@ committed inputs:
     format, the `members` grammar). Not rendered as is: the generator writes
     the routing format on every routing field itself, and any other note is
     worked into a `param_docs` override;
-  * `method_docs` — each method's one-line summary (→ the lead `///` comment
+  * `method_docs` -- each method's one-line summary (→ the lead `///` comment
     on both the `*Params` struct and the `Client` method). ~218 of 222
     methods carry one; the rest are simply absent in the source.
 * `tools/param-docs.json` -- *written by* `cargo xtask gen`, not read by it: each
@@ -39,11 +39,11 @@ committed inputs:
   (mined text with the overrides, flag rewording and routing format applied)
   and whether a caller must set it (`required`), for consumers that read descriptions from JSON. Never edit it; CI fails if
   it differs from what `gen` writes.
-* `tools/api-statuses.json` — *generated* by `cargo xtask extract-statuses`
+* `tools/api-statuses.json` -- *generated* by `cargo xtask extract-statuses`
   from the same HTML. The global error-code table (`status` string →
   description), rendered as the `ApiStatus` enum (one PascalCase variant per
   code + `Unknown(String)`, with `description()`/`is_documented()` lookups).
-* `tools/api-response-overrides.json` — *hand-edited* corrections to the
+* `tools/api-response-overrides.json` -- *hand-edited* corrections to the
   above (per-path scalar retypes, added scalar fields the docs omit, a full
   shape replacement for a method the extractor can't parse or gets the
   structure of wrong, and status codes the docs' table omits).
@@ -62,9 +62,9 @@ committed inputs:
 
 | File | Source | Versioned? |
 |------|--------|------------|
-| `tools/server.wsdl` | `https://voip.ms/api/v1/server.wsdl` (public) | Yes — committed |
-| `tools/scratch/VoIP.ms - Customer Portal_ API Documentation.html` | `https://voip.ms/m/apidocs.php` (requires login) | No — gitignored |
-| `tools/scratch/API.zip` | `https://voip.ms/api/v1/API.zip` (public) | No — gitignored |
+| `tools/server.wsdl` | `https://voip.ms/api/v1/server.wsdl` (public) | Yes -- committed |
+| `tools/scratch/VoIP.ms - Customer Portal_ API Documentation.html` | `https://voip.ms/m/apidocs.php` (requires login) | No -- gitignored |
+| `tools/scratch/API.zip` | `https://voip.ms/api/v1/API.zip` (public) | No -- gitignored |
 
 Only `server.wsdl` is committed. The scratch files are not version-controlled.
 
@@ -125,14 +125,7 @@ cargo xtask dump-methods
 #     this and check-flags with --deny, so a finding left here fails the build.
 cargo xtask check-types
 
-# 6. Run the full quality gate — the same selection CI uses, plus the doc
-#    build, which CI does NOT run.
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
-cargo test --workspace --features unchecked-raw
-cargo check --no-default-features --features native-tls
-RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
-  cargo doc --no-deps --workspace
+# 6. Run the quality gate (see "Quality gate" below).
 
 # 7. Review the generated diff, update CHANGELOG.md, and commit
 #    tools/*.json + src/generated.rs together.
@@ -145,7 +138,7 @@ breaking changes in one section.
 
 Both `cargo xtask gen` and `extract-*` print summary counts (methods covered,
 status codes, method descriptions, methods missing output blocks). Compare
-them against the previous run — a sudden drop usually means the HTML layout
+them against the previous run -- a sudden drop usually means the HTML layout
 shifted and a scanner needs updating (see "Extractor internals").
 
 ### Review checklist
@@ -153,7 +146,7 @@ shifted and a scanner needs updating (see "Extractor internals").
 The extractors are regex/structure scanners over hand-authored HTML, so each
 refresh needs eyes on the diff, not just a green build:
 
-* **New WSDL methods** — `cargo xtask gen` reports the method count. New
+* **New WSDL methods** -- `cargo xtask gen` reports the method count. New
   methods get a `*Params`/`*Response`/`Client` method automatically. Confirm
   the snake_case and PascalCase names read correctly; a new acronym can
   produce a single-letter token (`getDIDsInfo` → `get_di_ds_info`). Fix by
@@ -184,11 +177,11 @@ refresh needs eyes on the diff, not just a green build:
   regenerate; `requires_multipart` then names the method, and `Client::call` /
   `call_raw` send it as a multipart POST. A stale
   entry (a parameter the WSDL dropped) fails the run outright.
-* **New status codes** — `api-statuses.json` grows; each new code becomes an
+* **New status codes** -- `api-statuses.json` grows; each new code becomes an
   `ApiStatus` variant. If two codes collapse to the same PascalCase variant,
-  `cargo xtask gen` fails loudly with a "duplicate status variant" error —
+  `cargo xtask gen` fails loudly with a "duplicate status variant" error --
   resolve by adjusting the acronym list or treating one as `Unknown`.
-* **Mis-typed response scalars** — a phone-number field parsed as `integer`,
+* **Mis-typed response scalars** -- a phone-number field parsed as `integer`,
   a `0/1` flag parsed as `integer`, a date placeholder, etc. Fix via a
   per-path retype in `api-response-overrides.json`, which also gives a
   `sample` of the value voip.ms sends: the docs' sample was written for the
@@ -222,16 +215,16 @@ refresh needs eyes on the diff, not just a green build:
   `api-response-overrides.json`. If the docs later pick the field up,
   `cargo xtask gen` fails with "already in the extracted shape" -- delete the
   now-stale addition.
-* **Unparseable Output blocks** — the extractor warns (`skipping output —
+* **Unparseable Output blocks** -- the extractor warns (`skipping output --
   parse error`). Two methods are known-unparseable and covered by full shape
   replacements in the overrides file (`setSIPURI` has no Output block;
   `getLNPDetails` uses a non-standard PHP dialect). A *newly* unparseable
   method needs the same treatment.
-* **`doc` build failures** — newly mined `param_docs`/`method_docs` text can
+* **`doc` build failures** -- newly mined `param_docs`/`method_docs` text can
   contain bare URLs or `[bracketed]` prose that rustdoc rejects. The generator
   sanitizes these (`sanitize_doc_word` in `main.rs`: URLs → `<…>` autolinks,
-  `[` / `]` → escaped), but a novel pattern can still slip through — that's
-  why step 5 runs the strict `cargo doc`, which CI now runs too. Extend
+  `[` / `]` → escaped), but a novel pattern can still slip through -- that's
+  why the quality gate runs the strict `cargo doc`, as CI does. Extend
   `sanitize_doc_word` if it does.
 * **Parameter notes and flag descriptions** -- `cargo xtask gen` warns when a
   method has a `param_notes` entry that no field renders (it takes no routing
@@ -248,7 +241,7 @@ refresh needs eyes on the diff, not just a green build:
   already names differently gets an entry in `FIELD_IDENT_RENAME` in
   [xtask/src/main.rs](xtask/src/main.rs) (design decision #5). An entry
   whose wire name no struct carries any more fails the run.
-* **Merged parameter rows** — when the source HTML lacks a clean line break
+* **Merged parameter rows** -- when the source HTML lacks a clean line break
   between two parameters, the param-doc scanner can merge them
   (e.g. a description ending `…Todayclient => [Required] …`). These are
   cosmetic doc-comment artifacts; fix the source-faithful text only if it's
@@ -270,6 +263,32 @@ strings:
 
 Update the class-string constants if VoIP.ms reskins the docs.
 
+## Quality gate
+
+Run this before a commit and before pushing a release tag. It is every check
+`rust-ci.yaml` runs, coverage aside, so a pass here means CI passes too.
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
+cargo test --workspace --features unchecked-raw,serde_json/arbitrary_precision
+cargo test --workspace --features unchecked-raw
+cargo check --no-default-features --features native-tls
+cargo xtask check-types --deny
+cargo xtask check-flags --deny
+RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
+  cargo doc --no-deps --workspace
+cargo xtask gen
+cargo xtask dump-methods
+cargo check --workspace --all-targets --features unchecked-raw
+git status --short
+```
+
+The last four lines regenerate the emitted surface and build it. CI fails on
+any diff they leave (`git diff --exit-code`), so `git status` must show no
+change to `src/generated.rs`, `tools/param-docs.json` or `livetest/src/` that
+the commit does not include.
+
 ## Releasing
 
 Publishing is automated via [.github/workflows/release.yaml](.github/workflows/release.yaml).
@@ -286,7 +305,10 @@ Publishing is automated via [.github/workflows/release.yaml](.github/workflows/r
    (`[0.13.0]: .../compare/v0.12.2...HEAD`); once the tag exists it becomes
    `[0.13.0]: .../releases/tag/v0.13.0`, like every entry below it. Left alone
    it keeps moving with `main` and stops naming the release.
-4. Push a tag in the form vX.Y.Z.
+4. Run the quality gate, push the release commit, and wait for `rust-ci.yaml`
+   to pass on it. `release.yaml` stops before publishing when the gate fails,
+   but the tag then has to be deleted and pushed again.
+5. Push a tag in the form vX.Y.Z.
 
 ```bash
 git tag v0.1.1

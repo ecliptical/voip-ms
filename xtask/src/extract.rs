@@ -6,7 +6,7 @@
 //! into a typed shape tree, and writes a machine-readable summary that
 //! `cargo xtask gen` consumes to emit response structs.
 //!
-//! The HTML itself is never committed — only this extract is.
+//! The HTML itself is never committed -- only this extract is.
 //!
 //! Run from the repository root:
 //!     cargo xtask extract-responses path/to/api-doc.html
@@ -253,7 +253,7 @@ pub fn cmd_extract_statuses(html_path: &Path, out_path: &Path) -> Result<(), Str
 
     let statuses = scan_status_table(&html);
     if statuses.is_empty() {
-        return Err("no `Error Codes` table found in HTML — \
+        return Err("no `Error Codes` table found in HTML -- \
                     has the doc layout changed?"
             .to_string());
     }
@@ -294,7 +294,7 @@ fn scan_status_table(html: &str) -> Vec<StatusEntry> {
     let mut out: Vec<StatusEntry> = Vec::new();
     let mut rest = region;
     loop {
-        // Stop at the next section title — the error table is the last one
+        // Stop at the next section title -- the error table is the last one
         // in its `<table>`, so a following `toptitlex` means we've left it.
         let next_title = rest.find(TITLE_MARK);
         let Some(code_at) = rest.find(CODE_MARK) else {
@@ -424,7 +424,7 @@ fn scan_method_docs(html: &str, known: &BTreeSet<&str>) -> serde_json::Map<Strin
 /// Clean a TOC description cell: `<br>` becomes a newline (the source uses
 /// it to separate bullet-style clauses), other tags are dropped, entities
 /// decoded, and each line's internal whitespace collapsed. Leading
-/// `- ` bullet markers are kept verbatim — `render_doc` escapes them so they
+/// `- ` bullet markers are kept verbatim -- `render_doc` escapes them so they
 /// don't render as Markdown lists.
 fn clean_method_desc(raw: &str) -> String {
     let stripped = html_decode(&strip_tags(&breaks_to_newlines(raw)));
@@ -506,7 +506,7 @@ pub fn cmd_extract_responses(html_path: &Path, out_path: &Path) -> Result<(), St
                 let shape = match parse_php_block(&decoded) {
                     Ok(s) => s,
                     Err(e) => {
-                        eprintln!("warning: {name}: skipping output — parse error: {e}");
+                        eprintln!("warning: {name}: skipping output -- parse error: {e}");
                         continue;
                     }
                 };
@@ -596,7 +596,7 @@ struct Block {
     body: String,
 }
 
-/// Walks the HTML line-by-line collecting [`Block`]s — one per
+/// Walks the HTML line-by-line collecting [`Block`]s -- one per
 /// `Parameters`/`Output` `<pre>` cell. The HTML format is regular
 /// enough that we don't need a full
 /// parser: each method appears as
@@ -927,7 +927,7 @@ fn parse_param_docs(raw: &str, inputs: &[&str]) -> ParamCell {
 
 /// If `line` begins a `name => description` parameter row, return the
 /// split. Only treats it as a new parameter when the text before the
-/// first `=>` is a single identifier-shaped token — so an arrow that
+/// first `=>` is a single identifier-shaped token -- so an arrow that
 /// appears inside prose continuation text isn't mistaken for a new row.
 fn split_param_line(line: &str) -> Option<(&str, &str)> {
     let (lhs, rhs) = line.split_once("=>")?;
@@ -1016,7 +1016,7 @@ fn collapse_ws(s: &str) -> String {
 /// * a `Values:` label gains a following space (`Values:1=Enable` →
 ///   `Values: 1=Enable`) for readability.
 ///
-/// Other punctuation — examples, `=`-laden value lists, URLs — is left
+/// Other punctuation -- examples, `=`-laden value lists, URLs -- is left
 /// untouched so the rendered text stays faithful to the source.
 fn normalize_desc(desc: &str) -> String {
     let mut text = collapse_ws(desc.trim());

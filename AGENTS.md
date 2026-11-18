@@ -10,7 +10,7 @@ order to make consistent changes.
 
 **Scope**: Every method the VoIP.ms REST endpoint exposes (222 as of the
 committed WSDL) gets a typed request struct and a `Client` method. Nothing
-more — no retry layer, no credential discovery, no configuration loading.
+more -- no retry layer, no credential discovery, no configuration loading.
 
 ## Design Decisions
 
@@ -110,7 +110,7 @@ voip-ms/
 ├── .github/
 │   ├── dependabot.yml   # Weekly cargo + actions updates
 │   └── workflows/
-│       ├── rust-ci.yaml              # fmt, clippy, TLS check, test, coverage
+│       ├── rust-ci.yaml              # the quality gate, plus coverage
 │       ├── dependabot-automerge.yaml # auto-merge safe Cargo updates
 │       └── release.yaml              # tag-validated publish + GitHub release
 ├── src/
@@ -210,13 +210,20 @@ without `--workspace` either command selects the root package alone and skips
 `livetest` and `xtask`. A renamed public field or method can then break a call
 site in `livetest` that the local run never compiles, and CI or the release
 workflow fails on it. Before a commit, and before pushing a release tag, run
-the checks the way CI does:
+the quality gate in [DEVELOPMENT.md](DEVELOPMENT.md#quality-gate), which runs
+every check CI runs.
 
-```bash
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --features unchecked-raw -- -D warnings
-cargo test --workspace --features unchecked-raw
-```
+**A pull request that changes a wire parameter name, a response field, or how
+a type in `src/types.rs` or `src/responses.rs` reads a value runs `livetest`
+for the areas it touches before it merges, and the report that it is ready
+gives the result.** The generator works from the WSDL and the docs, which lag
+the server's parameter names and leave out fields it sends, so only a live
+call shows the change matches the API. Pass the touched areas with `--areas`
+at `probe` depth, or `lifecycle` when only a fixture calls the changed method
+(most `set*` and `del*` methods). The run needs the operator's credentials
+and an allow-listed IP address (DEVELOPMENT.md, "Live API verification"), so
+it never runs in CI; when the session cannot reach them, ask the user to run
+it.
 
 ## Evolution Notes
 

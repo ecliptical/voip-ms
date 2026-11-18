@@ -3,6 +3,7 @@ Cargo.lock
 .DS_Store
 /.claude/*
 !/.claude/rules/
+!/.claude/skills/
 /tools/scratch/
 
 # livetest operator-local files -- may contain DIDs, usernames, credentials.

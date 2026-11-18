@@ -49,7 +49,7 @@ the fix (DEVELOPMENT.md lists the cases).
 
 **How to apply**: When VoIP.ms adds an API method, replace
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit
-`src/generated.rs` — the `@generated` banner reflects reality. The
+`src/generated.rs` -- the `@generated` banner reflects reality. The
 hand-maintained `tests/generated_*.rs` oracles are the tripwire for this
 step: after a regen, a failure there means the surface changed in a way the
 oracles don't yet know about; reconcile them by hand (see DEVELOPMENT.md's
@@ -66,8 +66,8 @@ testing strategy), never suppress or auto-generate them.
 The `*Response` structs are produced by the same `xtask` run that
 generates `*Params`, from three inputs:
 
-1. `tools/server.wsdl` — method list and naming.
-2. `tools/api-responses.json` — shape inferred by parsing
+1. `tools/server.wsdl` -- method list and naming.
+2. `tools/api-responses.json` -- shape inferred by parsing
    `apidocs.php`'s `print_r`-style Output blocks (extractor is
    `xtask/src/extract.rs`, invoked via `cargo xtask extract-responses`
    over a saved HTML page).
@@ -156,7 +156,7 @@ writes it; the mined `param_docs` in `tools/api-responses.json` stay the
 docs' own text.
 
 **Rationale**: The WSDL declares a single generic `arrayResponse` type
-for all 222 operations — there is no machine-readable response schema.
+for all 222 operations -- there is no machine-readable response schema.
 The HTML docs do have sample outputs in a parseable `print_r` form,
 which is enough to infer shapes for ~99 % of methods automatically; the
 overrides file covers the rest without polluting the generator.
@@ -168,7 +168,7 @@ procedure (re-extract `api-responses.json` *and* `api-statuses.json` from
 a freshly saved HTML page, review the diffs, correct only
 `api-response-overrides.json`, then `cargo xtask gen`). The exact
 commands, review checklist, and gotchas are in
-[DEVELOPMENT.md](../../DEVELOPMENT.md#regenerating-the-api-surface) — that is
+[DEVELOPMENT.md](../../DEVELOPMENT.md#regenerating-the-api-surface) -- that is
 the canonical, reproducible procedure; keep it in sync when the codegen
 inputs or steps change.
 
@@ -179,7 +179,7 @@ is `Option<T>` with `#[serde(skip_serializing_if = "Option::is_none")]`.
 
 **Rationale**: The WSDL declares every input as nominally required
 (`minOccurs="1"`), but the real VoIP.ms API treats most fields as
-optional, with server-side defaults — especially the large `set*` and
+optional, with server-side defaults -- especially the large `set*` and
 `create*` methods (`createSubAccount` has 44 fields). Mirroring WSDL's
 required-ness would force users to fill in fields they don't care about
 and would break with every VoIP.ms default tweak. `Option` + `Default` +
@@ -228,7 +228,7 @@ sorted longest-first.
 **Rationale**: The naïve `[a-z][A-Z]` split mangles VoIP.ms's
 acronym-heavy names (`getDIDsInfo` → `get_di_ds_info`,
 `getFaxMessagePDF` → `get_fax_message_p_d_f`). The acronym list yields
-`get_dids_info` and `get_fax_message_pdf` instead — names a Rust
+`get_dids_info` and `get_fax_message_pdf` instead -- names a Rust
 developer would have chosen by hand. New acronyms get added to the
 `ACRONYMS` set in the generator.
 

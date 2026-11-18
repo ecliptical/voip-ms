@@ -46,6 +46,9 @@ jobs:
         # build must not be a weaker gate than the PR that produced it.
         run: cargo test --workspace --features unchecked-raw
 
+      - name: Run the tests with serde_json's arbitrary_precision
+        run: cargo test --workspace --features unchecked-raw,serde_json/arbitrary_precision
+
       - name: Check the non-default TLS backend
         run: cargo check --no-default-features --features native-tls
 
@@ -53,6 +56,9 @@ jobs:
         run: |
           cargo xtask check-types --deny
           cargo xtask check-flags --deny
+
+      - name: Build the docs strictly
+        run: RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" cargo doc --no-deps --workspace
 
       - name: Confirm the committed surface is what the generator emits
         # A tag is the last point at which a hand-edited or stale
