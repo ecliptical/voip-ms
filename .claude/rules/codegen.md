@@ -94,6 +94,13 @@ updates, and the extracted shape stays authoritative for everything
 else. An addition naming a field the extractor already found fails the
 codegen: the docs have caught up and the entry is stale.
 
+**A generated `*Response` struct carries no `#[non_exhaustive]`, so adding a
+field to one is a breaking change.** A caller's struct literal or exhaustive
+destructure stops compiling. Its CHANGELOG entry is marked **Breaking** under
+`### Changed`, and the release takes the next breaking version. Marking every
+struct non-exhaustive would break all of them at once to spare later
+additions, so ask before adding it.
+
 Finding such a field is the live harness's job, not the extractor's.
 Because no `*Response` sets `deny_unknown_fields` (decision 2 depends on
 it), an unmodeled key cannot fail a deserialization, so the raw-vs-typed
