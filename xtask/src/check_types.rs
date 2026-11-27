@@ -50,6 +50,9 @@ const DELIBERATE: &[&str] = &["music_on_hold.volume", "voicemail.timezone"];
 
 /// `*Params` field idents meant to carry more than one type across methods.
 ///
+/// * `call_type` -- a code from `getCallTypes` everywhere except
+///   `getCallRecordings`, which takes a call direction
+///   (`voip_ms::CallRecordingType`).
 /// * `folder` -- a `voip_ms::VoicemailFolder` everywhere except
 ///   `getFaxMessages`, whose folder is a fax folder: `SENT`, `ALL` or one a
 ///   caller created with `setFaxFolder`, which no fixed set of variants can
@@ -58,7 +61,7 @@ const DELIBERATE: &[&str] = &["music_on_hold.volume", "voicemail.timezone"];
 ///   also takes the system recording `default` and reports it back verbatim.
 ///   Confirmed live: a call hunting created with `recording=default` read back
 ///   `default`, one created with a recording id read back the id.
-const DELIBERATE_PARAMS: &[&str] = &["folder", "recording"];
+const DELIBERATE_PARAMS: &[&str] = &["call_type", "folder", "recording"];
 
 /// The type a field carries for comparison, with a response's
 /// `voip_ms::Reported<T>` wrapper removed.

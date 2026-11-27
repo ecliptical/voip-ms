@@ -16,9 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: 22 more parameters the docs list and the WSDL omits are now
   fields, each confirmed against the live API. A struct literal without
   `..Default::default()` must add them.
-  - `GetVoicemailsParams::client`, `GetCallRecordingsParams::call_type`,
-    `GetVoicemailFoldersParams::mailbox` and
-    `GetVoicemailMessageFileParams::format`.
+  - `GetVoicemailsParams::client`, `GetVoicemailFoldersParams::mailbox`,
+    `GetCallRecordingsParams::call_type` (the new `CallRecordingType`: `All`,
+    `Incoming`, `Outgoing`) and `GetVoicemailMessageFileParams::format` (the
+    new `VoicemailFileFormat`: `Mp3`, `Wav`, `Wav49`, `Gsm`).
   - `SetCallParkingParams::blf_lamps` and
     `SetForwardingParams::attestation_a_enabled` (`bool`).
   - `SetFAXNumberInfoParams::fax_to_sip_enabled`,

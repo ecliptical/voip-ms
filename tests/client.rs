@@ -752,6 +752,50 @@ async fn per_struct_type_enum_serializes() {
 }
 
 #[tokio::test]
+async fn per_struct_enum_params_send_their_wire_value() {
+    // `call_type` and `format` are enums only on these two methods; elsewhere
+    // `call_type` is a `getCallTypes` code.
+    use voip_ms::{
+        CallRecordingType, GetCallRecordingsParams, GetVoicemailMessageFileParams,
+        VoicemailFileFormat,
+    };
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getCallRecordings"))
+        .and(query_param("call_type", "outgoing"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    client
+        .get_call_recordings_raw(&GetCallRecordingsParams {
+            call_type: Some(CallRecordingType::Outgoing),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "getVoicemailMessageFile"))
+        .and(query_param("format", "wav"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    client
+        .get_voicemail_message_file_raw(&GetVoicemailMessageFileParams {
+            format: Some(VoicemailFileFormat::Wav),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
 async fn message_type_response_deserializes_numeric_wire() {
     // VoIP.ms returns the SMS `type` as a bare JSON number (1 = received,
     // 0 = sent), not a string -- the enum deserializer must tolerate that.

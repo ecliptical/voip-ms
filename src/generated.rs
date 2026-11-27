@@ -83,6 +83,58 @@ impl<'de> serde::Deserialize<'de> for CallPickupBehavior {
     }
 }
 
+/// Which call recordings to list, by the direction of the call.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CallRecordingType {
+    All,
+    Incoming,
+    Outgoing,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl CallRecordingType {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            CallRecordingType::All => "all",
+            CallRecordingType::Incoming => "incoming",
+            CallRecordingType::Outgoing => "outgoing",
+            CallRecordingType::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "all" => CallRecordingType::All,
+            "incoming" => CallRecordingType::Incoming,
+            "outgoing" => CallRecordingType::Outgoing,
+            other => CallRecordingType::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for CallRecordingType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl std::str::FromStr for CallRecordingType {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(CallRecordingType::from_wire(s))
+    }
+}
+
+impl serde::Serialize for CallRecordingType {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
 /// Outgoing-call dialing mode for a sub-account.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DialingMode {
@@ -1211,6 +1263,63 @@ impl std::str::FromStr for VanityType {
 }
 
 impl serde::Serialize for VanityType {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
+/// Audio format of a voicemail message file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VoicemailFileFormat {
+    /// MP3, the default.
+    Mp3,
+    Wav,
+    /// GSM-compressed WAV.
+    Wav49,
+    Gsm,
+    /// Any wire value this crate doesn't recognize.
+    Unknown(String),
+}
+
+impl VoicemailFileFormat {
+    /// The wire string for this variant.
+    pub fn as_wire(&self) -> &str {
+        match self {
+            VoicemailFileFormat::Mp3 => "mp3",
+            VoicemailFileFormat::Wav => "wav",
+            VoicemailFileFormat::Wav49 => "wav49",
+            VoicemailFileFormat::Gsm => "gsm",
+            VoicemailFileFormat::Unknown(s) => s.as_str(),
+        }
+    }
+
+    /// Parse a wire string. Unknown values are preserved.
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "mp3" => VoicemailFileFormat::Mp3,
+            "wav" => VoicemailFileFormat::Wav,
+            "wav49" => VoicemailFileFormat::Wav49,
+            "gsm" => VoicemailFileFormat::Gsm,
+            other => VoicemailFileFormat::Unknown(other.to_string()),
+        }
+    }
+}
+
+impl std::fmt::Display for VoicemailFileFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_wire())
+    }
+}
+
+impl std::str::FromStr for VoicemailFileFormat {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(VoicemailFileFormat::from_wire(s))
+    }
+}
+
+impl serde::Serialize for VoicemailFileFormat {
     fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
         s.serialize_str(self.as_wire())
     }
@@ -6384,7 +6493,7 @@ pub struct GetCallRecordingsParams {
     /// Call Type for Filtering Call Recording (Accepted values: 'all',
     /// 'incoming' and 'outgoing')
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub call_type: Option<String>,
+    pub call_type: Option<CallRecordingType>,
 }
 
 impl GetCallRecordingsParams {
@@ -8495,7 +8604,7 @@ pub struct GetVoicemailMessageFileParams {
     pub message_num: Option<u64>,
     /// File format. Default value is mp3. Values: mp3, wav, wav49, gsm.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<String>,
+    pub format: Option<VoicemailFileFormat>,
 }
 
 impl GetVoicemailMessageFileParams {

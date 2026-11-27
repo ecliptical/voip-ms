@@ -131,6 +131,23 @@
         { "name": "Sent",     "wire": "0" }
       ]
     },
+    "CallRecordingType": {
+      "doc": "Which call recordings to list, by the direction of the call.",
+      "variants": [
+        { "name": "All",      "wire": "all" },
+        { "name": "Incoming", "wire": "incoming" },
+        { "name": "Outgoing", "wire": "outgoing" }
+      ]
+    },
+    "VoicemailFileFormat": {
+      "doc": "Audio format of a voicemail message file.",
+      "variants": [
+        { "name": "Mp3",   "wire": "mp3",   "doc": "MP3, the default." },
+        { "name": "Wav",   "wire": "wav" },
+        { "name": "Wav49", "wire": "wav49", "doc": "GSM-compressed WAV." },
+        { "name": "Gsm",   "wire": "gsm" }
+      ]
+    },
     "DialingMode": {
       "doc": "Outgoing-call dialing mode for a sub-account.",
       "variants": [
@@ -223,7 +240,9 @@
     "GetSMSResponseSMS.type":        "MessageType",
     "GetMMSResponseSMS.type":        "MessageType",
     "GetResellerSMSResponseSMS.type": "MessageType",
-    "GetResellerMMSResponseSMS.type": "MessageType"
+    "GetResellerMMSResponseSMS.type": "MessageType",
+    "GetCallRecordingsParams.call_type": "CallRecordingType",
+    "GetVoicemailMessageFileParams.format": "VoicemailFileFormat"
   },
   "param_docs": {
     "addLNPPort.btn": "Required if `is_mobile` is true. BTN (billing telephone number): the phone number all of the customer's other numbers are charged to on one consolidated bill. Look for it on your invoice, or ask the current provider for it.",
