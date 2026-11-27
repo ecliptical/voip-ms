@@ -2377,6 +2377,10 @@ pub enum ApiStatus {
     UsedUsername,
     /// `weak_password` -- This Password is too weak or too common
     WeakPassword,
+    /// `did_e911_already_canceled` -- DID e911 service is already canceled
+    DIDE911AlreadyCanceled,
+    /// `e911_disable` -- DID e911 service is not enabled
+    E911Disable,
     /// `invalid_dialmode` -- This is not a valid SMS dialing mode
     InvalidDialmode,
     /// `invalid_inbound_dialing_mode` -- This is not a valid inbound dialing mode
@@ -2900,6 +2904,8 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => "used_speed_dial",
             ApiStatus::UsedUsername => "used_username",
             ApiStatus::WeakPassword => "weak_password",
+            ApiStatus::DIDE911AlreadyCanceled => "did_e911_already_canceled",
+            ApiStatus::E911Disable => "e911_disable",
             ApiStatus::InvalidDialmode => "invalid_dialmode",
             ApiStatus::InvalidInboundDialingMode => "invalid_inbound_dialing_mode",
             ApiStatus::NoEmailtofax => "no_emailtofax",
@@ -3413,6 +3419,8 @@ impl ApiStatus {
             "used_speed_dial" => ApiStatus::UsedSpeedDial,
             "used_username" => ApiStatus::UsedUsername,
             "weak_password" => ApiStatus::WeakPassword,
+            "did_e911_already_canceled" => ApiStatus::DIDE911AlreadyCanceled,
+            "e911_disable" => ApiStatus::E911Disable,
             "invalid_dialmode" => ApiStatus::InvalidDialmode,
             "invalid_inbound_dialing_mode" => ApiStatus::InvalidInboundDialingMode,
             "no_emailtofax" => ApiStatus::NoEmailtofax,
@@ -4148,6 +4156,8 @@ impl ApiStatus {
             ApiStatus::UsedSpeedDial => Some("You have an entry with this Speed Dial"),
             ApiStatus::UsedUsername => Some("You already have a subaccount using this Username."),
             ApiStatus::WeakPassword => Some("This Password is too weak or too common"),
+            ApiStatus::DIDE911AlreadyCanceled => Some("DID e911 service is already canceled"),
+            ApiStatus::E911Disable => Some("DID e911 service is not enabled"),
             ApiStatus::InvalidDialmode => Some("This is not a valid SMS dialing mode"),
             ApiStatus::InvalidInboundDialingMode => {
                 Some("This is not a valid inbound dialing mode")
@@ -6155,6 +6165,9 @@ pub struct E911UpdateParams {
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Email that will be updated to the e911 service. (required)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
     /// Additional Address Information that will be updated to the e911 service.
     /// Only available for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -13088,8 +13101,11 @@ pub struct E911InfoResponse {
     /// or the empty-collection code
     /// ([`ApiStatus::is_empty_collection`]) for a list with no entries.
     pub status: ApiStatus,
-    #[serde(default)]
-    pub info: Option<E911InfoResponseInfo>,
+    #[serde(
+        default,
+        deserialize_with = "crate::responses::deserialize_vec_from_single_or_seq"
+    )]
+    pub info: Vec<E911InfoResponseInfo>,
 }
 
 /// Response body for [`Client::e911_provision`] (wire method `e911Provision`).

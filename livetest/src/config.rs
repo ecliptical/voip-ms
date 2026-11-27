@@ -169,9 +169,11 @@ pub struct Cli {
     pub mms_media_url: Option<String>,
 
     // --- e911 (costly) -----------------------------------------------------
-    /// A DID to exercise the e911 area's costly-depth path against. Supplying
-    /// it plus the address fields runs `e911Validate` (validate-only, no
-    /// provisioning). Provisioning additionally requires `--e911-provision`.
+    /// A DID to exercise the e911 area's costly-depth path against. The DID
+    /// alone reads its current record with `e911Info`. With the address
+    /// fields and `--e911-email` as well, it also runs `e911Validate`
+    /// (validate-only, no provisioning). Provisioning additionally requires
+    /// `--e911-provision`.
     #[arg(long)]
     pub e911_did: Option<String>,
 
@@ -209,6 +211,11 @@ pub struct Cli {
     /// e911 zip/postal code (required with `--e911-did`).
     #[arg(long)]
     pub e911_zip: Option<String>,
+
+    /// e911 contact email (required with the address fields): validation and
+    /// provisioning answer `missing_email` without it, so they skip.
+    #[arg(long)]
+    pub e911_email: Option<String>,
 
     /// e911 language, `EN` or `FR` (required for CA addresses; carried through
     /// to provisioning).
@@ -416,8 +423,9 @@ pub struct SmsFixtureConfig {
     pub sms_dst: String,
 }
 
-/// e911 costly-depth inputs. `did` present + a complete address runs
-/// `e911Validate`; provisioning additionally requires `provision`. Each mutator
+/// e911 costly-depth inputs. `did` alone reads the DID's record with
+/// `e911Info`; `did` + a complete address + `email` runs `e911Validate`;
+/// provisioning additionally requires `provision`. Each mutator
 /// is fired only when its inputs are complete, so an incomplete address records
 /// skip (no input) rather than failing.
 pub struct E911Config {
@@ -430,6 +438,7 @@ pub struct E911Config {
     pub state: Option<String>,
     pub country: Option<String>,
     pub zip: Option<String>,
+    pub email: Option<String>,
     pub language: Option<String>,
 }
 
@@ -586,6 +595,7 @@ impl Config {
             state: cli.e911_state.filter(|s| !s.trim().is_empty()),
             country: cli.e911_country.filter(|s| !s.trim().is_empty()),
             zip: cli.e911_zip.filter(|s| !s.trim().is_empty()),
+            email: cli.e911_email.filter(|s| !s.trim().is_empty()),
             language: cli.e911_language.filter(|s| !s.trim().is_empty()),
         };
 

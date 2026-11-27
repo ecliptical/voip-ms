@@ -1008,6 +1008,10 @@
         "doc": "DID with e911 enabled / in process. (required)",
         "required": true
       },
+      "email": {
+        "doc": "Email that will be updated to the e911 service. (required)",
+        "required": true
+      },
       "full_name": {
         "doc": "Full Name that will be updated to the e911 service. (required)",
         "required": true
