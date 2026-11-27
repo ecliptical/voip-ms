@@ -45,7 +45,10 @@ own copy-paste errors (`getResellerMMS` documents its MMS id as `sms`). An entry
 needs a second source: voip.ms's PHP client in its public `API.zip`, which posts
 each parameter under an explicit key without reading the WSDL, or a live call.
 An entry that stops fitting the WSDL fails the parse, with a message naming
-the fix (DEVELOPMENT.md lists the cases).
+the fix (DEVELOPMENT.md lists the cases). `cargo xtask check-params` lists every
+documented parameter the corrected WSDL lacks and every input the docs leave
+out; CI runs it with `--deny`, so each one is corrected or recorded, with the
+reason, in its `DELIBERATE` list.
 
 **How to apply**: When VoIP.ms adds an API method, replace
 `tools/server.wsdl` and run `cargo xtask gen`. Do not hand-edit

@@ -28,13 +28,28 @@ enum Fix {
         from: &'static str,
         to: &'static str,
     },
-    /// The server reads `name`, which the WSDL omits. It is inserted before
-    /// `before`, the position the docs list it in.
+    /// The server reads `name`, which the WSDL omits. It is inserted `at` the
+    /// position the docs list it in.
     Add {
         name: &'static str,
         xsd_type: &'static str,
-        before: &'static str,
+        at: At,
     },
+}
+
+/// Where [`Fix::Add`] inserts a parameter.
+enum At {
+    /// Before this input.
+    Before(&'static str),
+    /// After the last input.
+    End,
+}
+
+const fn add(op: &'static str, name: &'static str, xsd_type: &'static str, at: At) -> Correction {
+    Correction {
+        op,
+        fix: Fix::Add { name, xsd_type, at },
+    }
 }
 
 /// The corrections to the committed WSDL. Each way an entry can stop fitting
@@ -66,7 +81,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "portid",
             xsd_type: "xsd:integer",
-            before: "attachid",
+            at: At::Before("attachid"),
         },
     },
     // The docs list `allow225` after `lock_international` on both methods.
@@ -95,7 +110,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "inbound_dialing_mode",
             xsd_type: "xsd:integer",
-            before: "note",
+            at: At::Before("note"),
         },
     },
     Correction {
@@ -103,7 +118,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "transcription_redaction",
             xsd_type: "xsd:string",
-            before: "transcription_email",
+            at: At::Before("transcription_email"),
         },
     },
     Correction {
@@ -111,7 +126,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "transcription_summary",
             xsd_type: "xsd:string",
-            before: "transcription_email",
+            at: At::Before("transcription_email"),
         },
     },
     Correction {
@@ -119,7 +134,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "transcription_sentiment",
             xsd_type: "xsd:string",
-            before: "transcription_email",
+            at: At::Before("transcription_email"),
         },
     },
     Correction {
@@ -127,7 +142,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "webhook_enable",
             xsd_type: "xsd:integer",
-            before: "sms_sipaccount",
+            at: At::Before("sms_sipaccount"),
         },
     },
     Correction {
@@ -135,7 +150,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "webhook",
             xsd_type: "xsd:string",
-            before: "sms_sipaccount",
+            at: At::Before("sms_sipaccount"),
         },
     },
     Correction {
@@ -143,9 +158,138 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "dialmode",
             xsd_type: "xsd:integer",
-            before: "sms_sipaccount",
+            at: At::Before("sms_sipaccount"),
         },
     },
+    // Each entry from here to `max_attempts` was confirmed live, as its comment
+    // says.
+    //
+    // A reseller client filter: `getCallAccounts` with a client lists only
+    // that client's sub-accounts, `getVoicemails` answers `no_mailbox` for a
+    // client with none, and an unknown id answers `invalid_client` on both.
+    // The PHP client also sends it on `getCallAccounts`.
+    add("getCallAccounts", "client", "xsd:integer", At::End),
+    add("getVoicemails", "client", "xsd:integer", At::End),
+    // `outgoing` drops the account's one incoming recording, and `bogus`
+    // answers `invalid_call_type`.
+    add("getCallRecordings", "call_type", "xsd:string", At::End),
+    // An unknown mailbox answers `invalid_mailbox`.
+    add("getVoicemailFolders", "mailbox", "xsd:integer", At::End),
+    // `wav` returns a RIFF file where `mp3` and the default return MP3 frames.
+    add("getVoicemailMessageFile", "format", "xsd:string", At::End),
+    // 3 and 7 read back on `getCallParking`; 11 answers `invalid_blf_lamps`.
+    add("setCallParking", "blf_lamps", "xsd:integer", At::End),
+    // 1 and 0 are accepted and 7 answers `invalid_attestation_a_enabled`.
+    // `getForwardings` does not report the value.
+    add(
+        "setForwarding",
+        "attestation_a_enabled",
+        "xsd:integer",
+        At::End,
+    ),
+    // Each read back on `getFaxNumbersInfo`. Neither an empty `note` nor a
+    // space clears one already set.
+    add(
+        "setFaxNumberInfo",
+        "fax_to_sip_enabled",
+        "xsd:integer",
+        At::Before("test"),
+    ),
+    add(
+        "setFaxNumberInfo",
+        "fax_to_sip_enabled_account",
+        "xsd:string",
+        At::Before("test"),
+    ),
+    add("setFaxNumberInfo", "note", "xsd:string", At::Before("test")),
+    // A mailbox created for client 637122 with a 15-second delay, then set to
+    // client 637123 and 30 seconds, read back each on `getVoicemails`. A delay
+    // of 7 answers `invalid_transcription_delay`, an unknown client
+    // `invalid_client`.
+    add(
+        "createVoicemail",
+        "client",
+        "xsd:integer",
+        At::Before("email_attachment_format"),
+    ),
+    add(
+        "createVoicemail",
+        "transcription_delay",
+        "xsd:integer",
+        At::End,
+    ),
+    add(
+        "setVoicemail",
+        "client",
+        "xsd:integer",
+        At::Before("email_attachment_format"),
+    ),
+    add(
+        "setVoicemail",
+        "transcription_delay",
+        "xsd:integer",
+        At::End,
+    ),
+    // Each read back on `getSubAccounts` after `createSubAccount` or
+    // `setSubAccount`. `createSubAccount` answers `invalid_default_911` to a
+    // DID with no e911 registration as `default_e911`, which `setSubAccount`
+    // already declares.
+    add(
+        "createSubAccount",
+        "parking_lot",
+        "xsd:integer",
+        At::Before("transcription_start_delay"),
+    ),
+    add(
+        "createSubAccount",
+        "default_e911",
+        "xsd:string",
+        At::Before("dialing_mode"),
+    ),
+    add(
+        "createSubAccount",
+        "call_pickup_behavior",
+        "xsd:integer",
+        At::Before("dialing_mode"),
+    ),
+    add(
+        "setSubAccount",
+        "parking_lot",
+        "xsd:integer",
+        At::Before("transcription_start_delay"),
+    ),
+    add(
+        "setSubAccount",
+        "enable_internal_cnam",
+        "xsd:integer",
+        At::Before("dialing_mode"),
+    ),
+    add(
+        "setSubAccount",
+        "internal_cnam",
+        "xsd:string",
+        At::Before("dialing_mode"),
+    ),
+    add(
+        "setSubAccount",
+        "call_pickup_behavior",
+        "xsd:integer",
+        At::Before("dialing_mode"),
+    ),
+    // Without it both answer `missing_email`, and a malformed one
+    // `invalid_email`, before checking that the DID is on the account.
+    add(
+        "e911Provision",
+        "email",
+        "xsd:string",
+        At::Before("other_info"),
+    ),
+    add(
+        "e911Validate",
+        "email",
+        "xsd:string",
+        At::Before("other_info"),
+    ),
     // Neither the docs nor the PHP client name it, but `getFaxNumbersInfo`
     // reports it and the server reads it. Confirmed live on a fax number: 1, 3,
     // 11 and 99 each read back as sent, 0 and `abc` left the value as it was,
@@ -155,7 +299,7 @@ const CORRECTIONS: &[Correction] = &[
         fix: Fix::Add {
             name: "max_attempts",
             xsd_type: "xsd:integer",
-            before: "test",
+            at: At::Before("test"),
         },
     },
 ];
@@ -163,7 +307,7 @@ const CORRECTIONS: &[Correction] = &[
 const ALLOW_225: Fix = Fix::Add {
     name: "allow225",
     xsd_type: "xsd:integer",
-    before: "international_route",
+    at: At::Before("international_route"),
 };
 
 const ZIP_CODE: Fix = Fix::Rename {
@@ -202,11 +346,7 @@ fn apply_corrections(wsdl: &mut Wsdl, corrections: &[Correction]) -> Result<(), 
                 })?;
                 fields[i].0 = (*to).to_string();
             }
-            Fix::Add {
-                name,
-                xsd_type,
-                before,
-            } => {
+            Fix::Add { name, xsd_type, at } => {
                 if position(name).is_some() {
                     return Err(format!(
                         "stale WSDL correction for {op}: the WSDL now declares {name}; \
@@ -214,12 +354,15 @@ fn apply_corrections(wsdl: &mut Wsdl, corrections: &[Correction]) -> Result<(), 
                     ));
                 }
 
-                let i = position(before).ok_or_else(|| {
-                    format!(
-                        "WSDL correction for {op}: no {before} to insert {name} before; \
-                         anchor it on another field"
-                    )
-                })?;
+                let i = match at {
+                    At::Before(before) => position(before).ok_or_else(|| {
+                        format!(
+                            "WSDL correction for {op}: no {before} to insert {name} before; \
+                             anchor it on another field"
+                        )
+                    })?,
+                    At::End => fields.len(),
+                };
                 fields.insert(i, ((*name).to_string(), (*xsd_type).to_string()));
             }
         }
@@ -282,7 +425,7 @@ mod tests {
         fix: Fix::Add {
             name: "portid",
             xsd_type: "xsd:integer",
-            before: "attachid",
+            at: At::Before("attachid"),
         },
     };
 
@@ -321,6 +464,14 @@ mod tests {
         apply_corrections(&mut wsdl, &[ADD]).unwrap();
         assert_eq!(names(&wsdl, "m"), ["a", "portid", "attachid"]);
         assert_eq!(wsdl.types["mInput"][1].1, "xsd:integer");
+    }
+
+    #[test]
+    fn add_at_the_end_appends_after_the_last_input() {
+        let mut wsdl = wsdl_with("m", &["a", "b"]);
+        let append = add("m", "c", "xsd:integer", At::End);
+        apply_corrections(&mut wsdl, &[append]).unwrap();
+        assert_eq!(names(&wsdl, "m"), ["a", "b", "c"]);
     }
 
     #[test]

@@ -10,6 +10,7 @@
 //!     cargo xtask gen
 
 mod check_flags;
+mod check_params;
 mod check_types;
 mod dump_fields;
 mod dump_methods;
@@ -3158,13 +3159,14 @@ fn main() -> ExitCode {
         "extract-responses" => cmd_extract(&rest),
         "extract-statuses" => cmd_extract_statuses(&rest),
         "check-flags" => check_flags::cmd_check_flags(&rest),
+        "check-params" => check_params::cmd_check_params(&rest),
         "check-types" => check_types::cmd_check_types(&rest),
         "dump-methods" => dump_methods::cmd_dump_methods(),
         "dump-fields" => dump_fields::cmd_dump_fields(),
         other => Err(format!(
             "unknown subcommand `{other}` \
              (expected `gen`, `extract-responses`, `extract-statuses`, \
-             `check-flags`, `check-types`, `dump-methods`, or `dump-fields`)"
+             `check-flags`, `check-params`, `check-types`, `dump-methods`, or `dump-fields`)"
         )),
     };
 

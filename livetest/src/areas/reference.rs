@@ -90,7 +90,7 @@ impl Area for Reference {
             report,
             AREA,
             "getCallAccounts",
-            NoParams,
+            GetCallAccountsParams,
             GetCallAccountsResponse,
             accounts
         );

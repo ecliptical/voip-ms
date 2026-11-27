@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking**: `get_call_accounts` and `get_call_accounts_raw` take a
+  `&GetCallAccountsParams`, whose `client` lists only that reseller client's
+  sub-accounts. A call without a filter passes
+  `&GetCallAccountsParams::default()`.
+- **Breaking**: 22 more parameters the docs list and the WSDL omits are now
+  fields, each confirmed against the live API. A struct literal without
+  `..Default::default()` must add them.
+  - `GetVoicemailsParams::client`, `GetVoicemailFoldersParams::mailbox`,
+    `GetCallRecordingsParams::call_type` (the new `CallRecordingType`: `All`,
+    `Incoming`, `Outgoing`) and `GetVoicemailMessageFileParams::format` (the
+    new `VoicemailFileFormat`: `Mp3`, `Wav`, `Wav49`, `Gsm`).
+  - `SetCallParkingParams::blf_lamps` and
+    `SetForwardingParams::attestation_a_enabled` (`bool`).
+  - `SetFAXNumberInfoParams::fax_to_sip_enabled`,
+    `fax_to_sip_enabled_account` and `note`.
+  - `CreateVoicemailParams` and `SetVoicemailParams`: `client` and
+    `transcription_delay`.
+  - `CreateSubAccountParams`: `parking_lot`, `default_e911` and
+    `call_pickup_behavior`. `SetSubAccountParams`: `parking_lot`,
+    `enable_internal_cnam`, `internal_cnam` and `call_pickup_behavior`.
+  - `E911ProvisionParams::email` and `E911ValidateParams::email`, which
+    voip.ms requires: without it both answer `missing_email`.
 - **Breaking**: `OrderDIDVirtualParams::digits` is
   `virtual_did_digits: Option<VirtualDidDigits>` (was `digits: Option<u64>`),
   and `OrderDIDVirtualParams::new` takes a `VirtualDidDigits`. A virtual DID is
@@ -20,6 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request is built. The field has its own name because `createVoicemail`'s
   `digits`, a mailbox number, stays `u64`: voip.ms drops a mailbox's leading
   zero itself.
+
+### Added
+
+- `cargo xtask check-params` lists every parameter the docs list that the
+  WSDL, after its corrections, does not declare, and every WSDL input the docs
+  leave out. CI and the release workflow run it with `--deny`.
 
 ### Fixed
 

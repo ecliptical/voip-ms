@@ -33,6 +33,28 @@ fn call_pickup_behavior_unknown_preserved() {
 }
 
 #[test]
+fn call_recording_type_wire_roundtrips() {
+    for w in ["all", "incoming", "outgoing"] {
+        assert_eq!(CallRecordingType::from_wire(w).as_wire(), w);
+        // Write-only enum: no `*Response` field reads one, so it carries
+        // `Serialize` alone and the wire string is checked where it lands.
+        assert_eq!(
+            serde_json::to_value(CallRecordingType::from_wire(w)).unwrap(),
+            w
+        );
+    }
+
+    assert_eq!(CallRecordingType::Outgoing.to_string(), "outgoing");
+}
+
+#[test]
+fn call_recording_type_unknown_preserved() {
+    let u = CallRecordingType::from_wire("zzz_unknown");
+    assert_eq!(u.as_wire(), "zzz_unknown");
+    assert_eq!(serde_json::to_value(&u).unwrap(), "zzz_unknown");
+}
+
+#[test]
 fn dialing_mode_wire_roundtrips() {
     for w in ["0", "1", "2"] {
         assert_eq!(DialingMode::from_wire(w).as_wire(), w);
@@ -433,6 +455,29 @@ fn vanity_type_wire_roundtrips() {
 #[test]
 fn vanity_type_unknown_preserved() {
     let u = VanityType::from_wire("zzz_unknown");
+    assert_eq!(u.as_wire(), "zzz_unknown");
+    assert_eq!(serde_json::to_value(&u).unwrap(), "zzz_unknown");
+}
+
+#[test]
+fn voicemail_file_format_wire_roundtrips() {
+    for w in ["mp3", "wav", "wav49", "gsm"] {
+        assert_eq!(VoicemailFileFormat::from_wire(w).as_wire(), w);
+        // Write-only enum: no `*Response` field reads one, so it carries
+        // `Serialize` alone and the wire string is checked where it lands.
+        assert_eq!(
+            serde_json::to_value(VoicemailFileFormat::from_wire(w)).unwrap(),
+            w
+        );
+    }
+
+    // MP3 is `mp3` here, where `EmailAttachmentFormat` writes it `wavmp3`.
+    assert_eq!(VoicemailFileFormat::Mp3.to_string(), "mp3");
+}
+
+#[test]
+fn voicemail_file_format_unknown_preserved() {
+    let u = VoicemailFileFormat::from_wire("zzz_unknown");
     assert_eq!(u.as_wire(), "zzz_unknown");
     assert_eq!(serde_json::to_value(&u).unwrap(), "zzz_unknown");
 }

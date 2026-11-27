@@ -386,12 +386,20 @@
         "doc": "Authorization Type Code (Values from getAuthTypes) (required)",
         "required": true
       },
+      "call_pickup_behavior": {
+        "doc": "1 Can Pick Up and Be Picked Up, 2 Can Pick Up (Can 't be Picked Up), 3 Can Be Picked Up (Can't Pick Up), 4 Disabled (Can't Pick Up nor Get Picked Up)",
+        "required": false
+      },
       "callerid_number": {
         "doc": "Caller ID Override",
         "required": false
       },
       "canada_routing": {
         "doc": "Route Code (Values from getRoutes)",
+        "required": false
+      },
+      "default_e911": {
+        "doc": "e911 Default CallerID",
         "required": false
       },
       "description": {
@@ -474,6 +482,10 @@
         "doc": "NAT Mode Code (Values from getNAT) (required)",
         "required": true
       },
+      "parking_lot": {
+        "doc": "ID for a specific Call Parking (Example: 323)",
+        "required": false
+      },
       "password": {
         "doc": "Sub Account Password (For Password Authentication)",
         "required": false
@@ -552,6 +564,10 @@
         "doc": "True for Attaching WAV files to Message (required)",
         "required": true
       },
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (optional)",
+        "required": false
+      },
       "delete_message": {
         "doc": "True for Deleting Messages (required)",
         "required": true
@@ -602,6 +618,10 @@
       },
       "transcription": {
         "doc": "true to enable Voicemail Transcription",
+        "required": false
+      },
+      "transcription_delay": {
+        "doc": "Delay in seconds before voicemail transcription starts. Use 0 for none, or 5 through 60 in steps of 5. Omit this parameter to leave the current value unchanged.",
         "required": false
       },
       "transcription_format": {
@@ -884,6 +904,10 @@
         "doc": "DID that will be sent to the e911 service. (required)",
         "required": true
       },
+      "email": {
+        "doc": "Email that will be sent to the e911 service. (required)",
+        "required": true
+      },
       "full_name": {
         "doc": "Full Name that will be sent to the e911 service. (required)",
         "required": true
@@ -1034,6 +1058,10 @@
         "doc": "DID with e911 enabled / in process. (required)",
         "required": true
       },
+      "email": {
+        "doc": "Email that will be validated. (required)",
+        "required": true
+      },
       "full_name": {
         "doc": "Full Name that will be validated. (required)",
         "required": true
@@ -1135,6 +1163,12 @@
         "required": false
       }
     },
+    "getCallAccounts": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115)",
+        "required": false
+      }
+    },
     "getCallHuntings": {
       "callhunting": {
         "doc": "ID for a specific Call Hunting (Example: 323)",
@@ -1161,6 +1195,10 @@
       "account": {
         "doc": "Filter Call Recordings by Account (Values from getCallAccounts) (required)",
         "required": true
+      },
+      "call_type": {
+        "doc": "Call Type for Filtering Call Recording (Accepted values: 'all', 'incoming' and 'outgoing')",
+        "required": false
       },
       "date_from": {
         "doc": "Start Date for Filtering Call Recording (Example:'2018-11-01') (required)",
@@ -1955,12 +1993,20 @@
       "folder": {
         "doc": "Folder Name (Example: 'INBOX')",
         "required": false
+      },
+      "mailbox": {
+        "doc": "ID for specific Mailbox (Example: 1001)",
+        "required": false
       }
     },
     "getVoicemailMessageFile": {
       "folder": {
         "doc": "Name for specific Folder (Example: 'INBOX', values from: getVoicemailFolders) (required)",
         "required": true
+      },
+      "format": {
+        "doc": "File format. Default value is mp3. Values: mp3, wav, wav49, gsm.",
+        "required": false
       },
       "mailbox": {
         "doc": "ID for specific Mailbox (Example: 1001) (required)",
@@ -2014,6 +2060,10 @@
       }
     },
     "getVoicemails": {
+      "client": {
+        "doc": "ID for a specific Reseller Client (Example: 561115) (optional)",
+        "required": false
+      },
       "mailbox": {
         "doc": "ID for specific Mailbox (Example: 1001)",
         "required": false
@@ -2850,6 +2900,10 @@
       }
     },
     "setCallParking": {
+      "blf_lamps": {
+        "doc": "You can enable BLF for your Parking Lot and select the amount of BLF Lamps that you require. (Values: 0 to 10) (required)",
+        "required": true
+      },
       "callparking": {
         "doc": "ID for a specific Call Parking (Example: 235 / Leave empty to create a new one)",
         "required": false
@@ -3438,8 +3492,20 @@
         "doc": "Flag to enable the email notifications. Default: false",
         "required": false
       },
+      "fax_to_sip_enabled": {
+        "doc": "Flag to enable Fax to SIP. Default: false",
+        "required": false
+      },
+      "fax_to_sip_enabled_account": {
+        "doc": "Fax to SIP subaccount to use (Values from getSubaccounts) Eg: ######_SubAccount.",
+        "required": false
+      },
       "max_attempts": {
         "doc": "The fax number's maximum number of attempts, which getFaxNumbersInfo reports as `max_attempts` (Example: 5). A call without it sets it to 10, and 0 leaves it as it is",
+        "required": false
+      },
+      "note": {
+        "doc": "Description you wish to indicate for this DID (for your own use, but not mandatory).",
         "required": false
       },
       "test": {
@@ -3482,6 +3548,10 @@
       }
     },
     "setForwarding": {
+      "attestation_a_enabled": {
+        "doc": "If enabled, Forwarded calls will be sent with Attestation A",
+        "required": false
+      },
       "callerid_override": {
         "doc": "Caller ID Override for the Forwarding",
         "required": false
@@ -3906,6 +3976,10 @@
         "doc": "Authorization Type Code (Values from getAuthTypes) (required)",
         "required": true
       },
+      "call_pickup_behavior": {
+        "doc": "1 Can Pick Up and Be Picked Up, 2 Can Pick Up (Can 't be Picked Up), 3 Can Be Picked Up (Can't Pick Up), 4 Disabled (Can't Pick Up nor Get Picked Up)",
+        "required": false
+      },
       "callerid_number": {
         "doc": "Caller ID Override",
         "required": false
@@ -3934,6 +4008,10 @@
         "doc": "DTMF Mode Code (Values from getDTMFModes) (required)",
         "required": true
       },
+      "enable_internal_cnam": {
+        "doc": "Enable Internal CallerID",
+        "required": false
+      },
       "enable_ip_restriction": {
         "doc": "Enable IP Restriction",
         "required": false
@@ -3945,6 +4023,10 @@
       "id": {
         "doc": "Sub Account ID (Example: 10236) (required)",
         "required": true
+      },
+      "internal_cnam": {
+        "doc": "Internal CallerID Name",
+        "required": false
       },
       "internal_dialtime": {
         "doc": "Sub Account Internal Dialtime (Example: 60 -> seconds)",
@@ -3993,6 +4075,10 @@
       "nat": {
         "doc": "NAT Mode Code (Values from getNAT) (required)",
         "required": true
+      },
+      "parking_lot": {
+        "doc": "ID for a specific Call Parking (Example: 323)",
+        "required": false
       },
       "password": {
         "doc": "Sub Account Password (For Password Authentication)",
@@ -4094,6 +4180,10 @@
         "doc": "True for Attaching WAV files to Message (required)",
         "required": true
       },
+      "client": {
+        "doc": "ID for a specific Reseller Client ID (Example: 54374)",
+        "required": false
+      },
       "delete_message": {
         "doc": "True for Deleting Messages (required)",
         "required": true
@@ -4144,6 +4234,10 @@
       },
       "transcription": {
         "doc": "true to enable Voicemail Transcription",
+        "required": false
+      },
+      "transcription_delay": {
+        "doc": "Delay in seconds before voicemail transcription starts. Use 0 for none, or 5 through 60 in steps of 5. Omit this parameter to leave the current value unchanged. (optional)",
         "required": false
       },
       "transcription_format": {
