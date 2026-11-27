@@ -398,6 +398,28 @@ async fn routing_param_serializes_as_tagged_string() {
 }
 
 #[tokio::test]
+async fn virtual_did_digits_keep_leading_zeros_on_the_wire() {
+    use voip_ms::OrderDIDVirtualParams;
+
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "orderDIDVirtual"))
+        .and(query_param("digits", "001"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "success" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let params = OrderDIDVirtualParams {
+        virtual_did_digits: Some("001".parse().unwrap()),
+        ..Default::default()
+    };
+    client.order_did_virtual_raw(&params).await.unwrap();
+}
+
+#[tokio::test]
 async fn flag_params_serialize_to_wire_form() {
     // A `1`/`0` flag param is a plain `Option<bool>`; its `serialize_with`
     // emits `1`/`0`, not the `true`/`false` a bare `bool` would produce, which

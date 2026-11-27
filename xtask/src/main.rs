@@ -75,6 +75,9 @@ const FIELD_IDENT_OVERRIDE: &[(&str, &str, &str)] = &[
     // `getCallerIDFiltering` and `delCallerIDFiltering` take it, and the
     // set reports it, as `filtering`.
     ("SetCallerIDFilteringParams", "filter", "filtering"),
+    // Three digits naming a new virtual DID, where `createVoicemail`'s
+    // `digits` is a mailbox number of one to ten digits.
+    ("OrderDIDVirtualParams", "digits", "virtual_did_digits"),
     // The reference-data lookups: `type` narrows the catalog to one entry, and
     // the docs call the value a code ("Code for a specific Address Type").
     ("E911AddressTypesParams", "type", "code"),
@@ -2602,6 +2605,14 @@ fn cmd_gen() -> Result<(), String> {
             &mut field_type_override,
             (*path).to_string(),
             field_overrides::numeric_id_override(),
+        )?;
+    }
+
+    for path in field_overrides::VIRTUAL_DID_DIGITS_PARAM_PATHS {
+        assign_field_type(
+            &mut field_type_override,
+            (*path).to_string(),
+            field_overrides::virtual_did_digits_override(),
         )?;
     }
 

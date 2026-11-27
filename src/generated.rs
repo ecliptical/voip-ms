@@ -9174,8 +9174,8 @@ impl OrderDIDInternationalTollFreeParams {
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct OrderDIDVirtualParams {
     /// Three Digits for the new Virtual DID (Example: 001) (required)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub digits: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "digits")]
+    pub virtual_did_digits: Option<crate::VirtualDidDigits>,
     /// Main Routing for the DID (required)
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
@@ -9247,16 +9247,22 @@ pub struct OrderDIDVirtualParams {
 
 impl OrderDIDVirtualParams {
     /// A `OrderDIDVirtualParams` with the parameters the VoIP.ms docs mark as
-    /// required: `digits`, `routing`, `pop`, `dial_time` and `cnam`. Every
-    /// other field keeps its default, so struct-update syntax still fills in
-    /// the rest.
+    /// required: `virtual_did_digits`, `routing`, `pop`, `dial_time` and
+    /// `cnam`. Every other field keeps its default, so struct-update syntax
+    /// still fills in the rest.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(digits: u64, routing: crate::Routing, pop: u64, dial_time: u64, cnam: bool) -> Self {
+    pub fn new(
+        virtual_did_digits: crate::VirtualDidDigits,
+        routing: crate::Routing,
+        pop: u64,
+        dial_time: u64,
+        cnam: bool,
+    ) -> Self {
         Self {
-            digits: Some(digits),
+            virtual_did_digits: Some(virtual_did_digits),
             routing: Some(routing),
             pop: Some(pop),
             dial_time: Some(dial_time),
