@@ -146,6 +146,7 @@ voip-ms/
     └── src/
         ├── main.rs              # WSDL+responses+overrides → src/generated.rs
         ├── check_flags.rs       # audit: doc-mined boolean params vs the FLAG_* tables
+        ├── check_params.rs      # audit: doc-listed params vs the corrected WSDL inputs
         ├── check_types.rs       # audit: a field typed one way to read, another to write
         ├── dump_fields.rs       # response shapes → livetest/src/response_fields.rs (also run by gen)
         ├── dump_methods.rs      # src/generated.rs → livetest/src/wire_methods.rs

@@ -56,6 +56,7 @@ jobs:
         run: |
           cargo xtask check-types --deny
           cargo xtask check-flags --deny
+          cargo xtask check-params --deny
 
       - name: Build the docs strictly
         run: RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" cargo doc --no-deps --workspace

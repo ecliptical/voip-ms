@@ -103,6 +103,14 @@ git diff tools/api-responses.json tools/api-statuses.json
 #    the docs dropped the field.
 cargo xtask check-flags
 
+# 4b. Audit the parameter names the docs list against the WSDL inputs, after
+#     CORRECTIONS in xtask/src/wsdl.rs. A documented parameter the WSDL lacks
+#     has no field, so no caller can set it. Each finding gets a CORRECTIONS
+#     entry once a second source agrees with the docs (voip.ms's PHP client in
+#     API.zip, or a live call), or goes in the command's DELIBERATE list with
+#     the reason. Run it after a WSDL update too.
+cargo xtask check-params
+
 # 5. Apply any corrections to tools/api-response-overrides.json (NOT the
 #    generated files), then regenerate src/generated.rs. Heed its warnings:
 #    a parameter documented as base64 but absent from BASE64_FILE_PARAM_PATHS
@@ -122,7 +130,8 @@ cargo xtask dump-methods
 #     for a field holding a different set of values, its own ident in
 #     FIELD_IDENT_OVERRIDE) and a regen; a pair meant to differ goes in the
 #     command's DELIBERATE or DELIBERATE_PARAMS list with the reason. CI runs
-#     this and check-flags with --deny, so a finding left here fails the build.
+#     this, check-flags and check-params with --deny, so a finding left here
+#     fails the build.
 cargo xtask check-types
 
 # 6. Run the quality gate (see "Quality gate" below).
@@ -159,7 +168,7 @@ refresh needs eyes on the diff, not just a green build:
   (`cargo test -p livetest`) fails until every wire method is owned by exactly
   one area.
 * **A WSDL correction that no longer fits** -- every xtask command that parses
-  the WSDL (`gen`, `extract-responses`, `check-flags`, `dump-fields`) fails
+  the WSDL (`gen`, `extract-responses`, `check-flags`, `check-params`, `dump-fields`) fails
   when an entry in `CORRECTIONS` in [xtask/src/wsdl.rs](xtask/src/wsdl.rs)
   stops matching it. The message names the case:
   * "stale WSDL correction": the WSDL now declares the renamed-to or added
@@ -276,6 +285,7 @@ cargo test --workspace --features unchecked-raw
 cargo check --no-default-features --features native-tls
 cargo xtask check-types --deny
 cargo xtask check-flags --deny
+cargo xtask check-params --deny
 RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links" \
   cargo doc --no-deps --workspace
 cargo xtask gen
@@ -494,7 +504,8 @@ the credentials and server auth held as secrets.
 		cannot execute without the live API
 	* coverage summary posted to pull requests via
 		`ecliptical/covdir-report-action`
-	* `cargo xtask check-types --deny` and `check-flags --deny`
+	* `cargo xtask check-types --deny`, `check-flags --deny` and
+		`check-params --deny`
 	* `cargo xtask gen && cargo xtask dump-methods`, then a build and
 		`git diff --exit-code`. Nothing else regenerates, so without this a
 		generator change that altered the emitted surface reaches `main` and is
