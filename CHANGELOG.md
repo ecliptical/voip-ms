@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `SetSMSParams::sms_dialing_mode`'s doc, in rustdoc and
+  `tools/param-docs.json`, says `getDIDsInfo` reports the value as `dialmode`,
+  as the other `setSMS` fields' docs name theirs, so a caller writing back a
+  DID's SMS settings knows where to read the current value.
+
 ## [0.23.0] - 2026-11-16
 
 ### Changed

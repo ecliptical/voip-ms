@@ -241,7 +241,7 @@
     "setDIDInfo.transcription_redaction": "true to redact sensitive information from call transcriptions. Stored only while `transcribe` is true",
     "setDIDInfo.transcription_sentiment": "true to add a sentiment analysis to call transcriptions. Stored only while `transcribe` is true",
     "setDIDInfo.transcription_summary": "true to add a summary to call transcriptions. Stored only while `transcribe` is true",
-    "setSMS.dialmode": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix)",
+    "setSMS.dialmode": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix); getDIDsInfo reports it as `dialmode`",
     "setSMS.webhook": "Webhook URL: SMS and MMS messages the DID receives are sent as a POST request to it (for a 3CX or PortSIP PBX)",
     "setSMS.webhook_enable": "true to send the SMS and MMS messages the DID receives to `webhook`",
     "setQueue.fail_over_routing_join_unavail": "Same as `failover_routing_join_empty`, except that there were still queue members, but all were status unavailable",

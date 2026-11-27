@@ -11790,7 +11790,7 @@ pub struct SetSMSParams {
     /// How messages sent through the API from this DID are addressed (Values: 0
     /// = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10
     /// digits without the +1 prefix; 2 = E.164, the country code first with the
-    /// +1 prefix)
+    /// +1 prefix); getDIDsInfo reports it as `dialmode`
     #[serde(skip_serializing_if = "Option::is_none", rename = "dialmode")]
     pub sms_dialing_mode: Option<SmsDialingMode>,
     /// SIP account or sub-account that will receive the SMS Messages
