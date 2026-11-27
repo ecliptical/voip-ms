@@ -22,10 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   failing field through a path-tracking deserializer such as
   `serde_path_to_error`: `cdr[0].seconds`, or `cdr.seconds` for a single row
   VoIP.ms sends as a bare object. It used to report only `cdr`, because the
-  list helper read the field into a buffered `serde_json::Value` first. The four map fields (`list_status`, `locations`,
-  `media`, `speakers`) read the same way, so a failing entry reports
-  `locations.1713`, or `locations[1]` when VoIP.ms sends the map as an array.
-  What a list or map field accepts is unchanged.
+  list helper read the field into a buffered `serde_json::Value` first. The
+  four map fields (`list_status`, `locations`, `media`, `speakers`) read the
+  same way, so a failing entry reports `locations.1713`, or `locations[1]`
+  when VoIP.ms sends the map as an array. What a list or map field accepts is
+  unchanged.
 
 ## [0.23.0] - 2026-11-16
 
