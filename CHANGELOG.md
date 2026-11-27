@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: `OrderDIDVirtualParams::digits` is
+  `virtual_did_digits: Option<VirtualDidDigits>` (was `digits: Option<u64>`),
+  and `OrderDIDVirtualParams::new` takes a `VirtualDidDigits`. A virtual DID is
+  named by three digits such as `001`, and a `u64` sent `1`, which
+  `orderDIDVirtual` refuses with `invalid_digits` ("Digits must be 3 numbers"),
+  so no virtual DID from `000` to `099` could be ordered. `VirtualDidDigits`
+  parses from a string of exactly three ASCII digits (`"001".parse()`) and is
+  sent verbatim; any other string is a `VirtualDidDigitsError` before a
+  request is built. The field has its own name because `createVoicemail`'s
+  `digits`, a mailbox number, stays `u64`: voip.ms drops a mailbox's leading
+  zero itself.
+
 ### Fixed
 
 - The docs of three `SetSMSParams` fields, in rustdoc and

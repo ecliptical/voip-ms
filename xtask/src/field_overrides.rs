@@ -286,6 +286,24 @@ pub(crate) const NUMERIC_ID_PARAM_PATHS: &[&str] = &[
     "SetCallerIDFilteringParams.filter",
 ];
 
+/// Params that take the three digits naming a new virtual DID, typed
+/// `voip_ms::VirtualDidDigits` so leading zeros reach the wire. Confirmed live:
+/// `orderDIDVirtual` answers `invalid_digits` ("Digits must be 3 numbers") to
+/// `digits=1`, so no number can stand for the documented `001`. Per struct
+/// because `createVoicemail`'s `digits` is a mailbox number, where voip.ms
+/// drops the leading zero itself (see [`U64_FIELDS`]). Keyed
+/// `"StructName.field"`.
+pub(crate) const VIRTUAL_DID_DIGITS_PARAM_PATHS: &[&str] = &["OrderDIDVirtualParams.digits"];
+
+/// The [`FieldOverride`] for a virtual DID's digits. The type serializes as
+/// its digits verbatim, so it needs no serializer.
+pub(crate) fn virtual_did_digits_override() -> FieldOverride {
+    FieldOverride {
+        rust_type: "crate::VirtualDidDigits".into(),
+        ..Default::default()
+    }
+}
+
 /// Response maps of strings keyed by a number, typed `HashMap<u64, String>`
 /// rather than the `HashMap<String, _>` every other map gets, so a key compares
 /// unconverted with the `u64` field elsewhere that names it. `getLocations`
