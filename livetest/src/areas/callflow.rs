@@ -45,6 +45,11 @@ const SAMPLE_RATE: u32 = 8_000;
 /// re-encode on record trimmed 9%.
 const MIN_STORED_FRACTION: f32 = 0.5;
 
+/// Uploads the recording fixture makes before it skips the read-back. voip.ms
+/// stored no readable audio for 11 of 22 uploads of the fixture's WAV in one
+/// measurement, so eight leave about a 1-in-256 chance of a skip.
+const RECORDING_ATTEMPTS: u32 = 8;
+
 #[async_trait(?Send)]
 impl Area for Callflow {
     fn name(&self) -> &'static str {
@@ -626,78 +631,107 @@ async fn static_member_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &m
 /// duration to judge what came back against. `getRecordingFile` is called
 /// directly rather than through [`read_back`], whose drift diff looks at the
 /// response shape and not at the bytes the shape carries.
+///
+/// voip.ms stores some uploads with no readable audio: `setRecording` answers
+/// `success` with an id and `getRecordings` lists it, but `getRecordingFile`
+/// answers `invalid_recording` for that id from the first read on. Such an
+/// upload is retried as a new recording, up to [`RECORDING_ATTEMPTS`] in all,
+/// and a run where every one is stored that way records a skip: curl's own
+/// multipart upload meets the same fault, so it is the server's and not the
+/// transport's.
 async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut Scope) {
     let client = ctx.client;
-    let name = ctx.token.short_marker(6);
-    let wav = tone_wav(FIXTURE_SECONDS);
+    let file = BASE64.encode(tone_wav(FIXTURE_SECONDS));
 
-    let created = client
-        .set_recording(&SetRecordingParams {
-            name: Some(name),
-            file: Some(BASE64.encode(&wav)),
-            ..Default::default()
-        })
-        .await;
+    for attempt in 0..RECORDING_ATTEMPTS {
+        let first = attempt == 0;
+        let created = client
+            .set_recording(&SetRecordingParams {
+                // A distinct name per upload, so no attempt depends on how
+                // voip.ms treats a repeated one.
+                name: Some(ctx.token.short_marker(60 + attempt)),
+                file: Some(file.clone()),
+                ..Default::default()
+            })
+            .await;
 
-    let id = match created {
-        Ok(resp) => match resp.recording {
-            Some(id) => id,
-            None => return fail(report, "fixture:setRecording", "no id returned"),
-        },
-        Err(error) => {
-            return fail(
+        let id = match created {
+            Ok(resp) => match resp.recording {
+                Some(id) => id,
+                None => return fail(report, "fixture:setRecording", "no id returned"),
+            },
+            Err(error) => {
+                return fail(
+                    report,
+                    "fixture:setRecording",
+                    &format!("setRecording: {error}"),
+                );
+            }
+        };
+
+        scope.defer(format!("recording id={id}"), move |client| {
+            Box::pin(async move {
+                tolerate_absent(
+                    client
+                        .del_recording(&DelRecordingParams {
+                            recording: Some(id),
+                        })
+                        .await,
+                )
+            })
+        });
+
+        if first {
+            report.record(AREA, "fixture:setRecording", Outcome::Pass);
+            read_back::<_, GetRecordingsResponse>(
+                client,
                 report,
-                "fixture:setRecording",
-                &format!("setRecording: {error}"),
-            );
-        }
-    };
-
-    report.record(AREA, "fixture:setRecording", Outcome::Pass);
-    scope.defer(format!("recording id={id}"), move |client| {
-        Box::pin(async move {
-            tolerate_absent(
-                client
-                    .del_recording(&DelRecordingParams {
-                        recording: Some(id),
-                    })
-                    .await,
-            )
-        })
-    });
-
-    read_back::<_, GetRecordingsResponse>(
-        client,
-        report,
-        AREA,
-        "fixture:getRecordings",
-        &GetRecordingsParams {
-            recording: Some(id),
-        },
-        |r| Some(r.recordings.len()),
-    )
-    .await;
-
-    match client
-        .get_recording_file(&GetRecordingFileParams {
-            recording: Some(id),
-        })
-        .await
-    {
-        Ok(resp) => match resp.recordings.first().and_then(|r| r.data.as_deref()) {
-            Some(data) => report.record(
                 AREA,
-                "fixture:getRecordingFile",
-                stored_wav(data, FIXTURE_SECONDS),
+                "fixture:getRecordings",
+                &GetRecordingsParams {
+                    recording: Some(id),
+                },
+                |r| Some(r.recordings.len()),
+            )
+            .await;
+        }
+
+        match client
+            .get_recording_file(&GetRecordingFileParams {
+                recording: Some(id),
+            })
+            .await
+        {
+            Ok(resp) => {
+                let outcome = match resp.recordings.first().and_then(|r| r.data.as_deref()) {
+                    Some(data) => stored_wav(data, FIXTURE_SECONDS),
+                    None => Outcome::Fail("no file data returned".to_string()),
+                };
+                return report.record(AREA, "fixture:getRecordingFile", outcome);
+            }
+            Err(Error::Api(ApiStatus::InvalidRecording)) => println!(
+                "[info] {AREA}/fixture:getRecordingFile: recording id={id} was stored \
+                 with no readable audio ({}/{RECORDING_ATTEMPTS})",
+                attempt + 1
             ),
-            None => fail(report, "fixture:getRecordingFile", "no file data returned"),
-        },
-        Err(error) => fail(
-            report,
-            "fixture:getRecordingFile",
-            &format!("getRecordingFile: {error}"),
-        ),
+            Err(error) => {
+                return fail(
+                    report,
+                    "fixture:getRecordingFile",
+                    &format!("getRecordingFile: {error}"),
+                );
+            }
+        }
     }
+
+    report.record(
+        AREA,
+        "fixture:getRecordingFile",
+        Outcome::Skip(format!(
+            "voip.ms stored no readable audio for all {RECORDING_ATTEMPTS} uploads \
+             (invalid_recording on read-back), so the upload's content went unchecked"
+        )),
+    );
 }
 
 /// Whether the stored recording still holds the audio that was uploaded.
