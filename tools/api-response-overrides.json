@@ -243,7 +243,7 @@
     "setDIDInfo.transcription_summary": "true to add a summary to call transcriptions. Stored only while `transcribe` is true",
     "setSMS.dialmode": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix); getDIDsInfo reports it as `dialmode`",
     "setSMS.webhook": "Webhook URL: SMS and MMS messages the DID receives are sent as a POST request to it (for a 3CX or PortSIP PBX)",
-    "setSMS.webhook_enable": "true to send the SMS and MMS messages the DID receives to `webhook`",
+    "setSMS.webhook_enable": "true to send the SMS and MMS messages the DID receives to `webhook`; getDIDsInfo reports it as `webhook_enabled`",
     "setQueue.fail_over_routing_join_unavail": "Same as `failover_routing_join_empty`, except that there were still queue members, but all were status unavailable",
     "setQueue.fail_over_routing_leave_unavail": "Same as `failover_routing_leave_empty`, except that there were still queue members, but all were status unavailable",
     "setRecording.recording": "ID for a specific Recording (Example: 33221 / Leave empty to create a new one)",
@@ -284,6 +284,7 @@
     "setSMS.enable": "true to let the DID receive SMS messages; getDIDsInfo reports it as `sms_enabled` (required)",
     "setSMS.email_address": "Email address the SMS messages the DID receives are sent to; getDIDsInfo reports it as `sms_email`",
     "setSMS.email_enabled": "true to send the SMS messages the DID receives to `email_address`; getDIDsInfo reports it as `sms_email_enabled`",
+    "setSMS.sms_forward_enable": "true to forward the SMS messages the DID receives to the phone number in `sms_forward`; getDIDsInfo reports it as `sms_forward_enabled`",
     "setSMS.url_callback": "URL the SMS messages the DID receives are sent to as a GET request, with {FROM} replaced by the number that sent the message, {TO} by the DID that received it and {MESSAGE} by its content (Example: http://mysite.com/sms.php?to={TO}&from={FROM}&message={MESSAGE}); getDIDsInfo reports it as `sms_url_callback`",
     "setSMS.url_callback_enable": "true to send the SMS messages the DID receives to `url_callback`; getDIDsInfo reports it as `sms_url_callback_enabled`",
     "setSMS.url_callback_retry": "true to resend a message to `url_callback` every 30 minutes until the page answers `ok`; getDIDsInfo reports it as `sms_url_callback_retry`"

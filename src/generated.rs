@@ -11742,8 +11742,8 @@ pub struct SetSMSParams {
     /// reports it as `sms_email`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
-    /// If Enable, SMS Messages received by your DID will be forwarded to the
-    /// phone number provided
+    /// true to forward the SMS messages the DID receives to the phone number in
+    /// `sms_forward`; getDIDsInfo reports it as `sms_forward_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
@@ -11776,7 +11776,8 @@ pub struct SetSMSParams {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub url_callback_retry: Option<bool>,
-    /// true to send the SMS and MMS messages the DID receives to `webhook`
+    /// true to send the SMS and MMS messages the DID receives to `webhook`;
+    /// getDIDsInfo reports it as `webhook_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
