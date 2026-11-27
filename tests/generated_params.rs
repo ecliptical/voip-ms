@@ -816,6 +816,20 @@ fn get_cdr_params_roundtrips() {
 }
 
 #[test]
+fn get_call_accounts_params_roundtrips() {
+    let p = GetCallAccountsParams::default();
+    let v = serde_json::to_value(&p).unwrap();
+    assert!(v.is_object());
+
+    let p2 = GetCallAccountsParams {
+        client: Some(1),
+        ..Default::default()
+    };
+    let v2 = serde_json::to_value(&p2).unwrap();
+    assert!(v2.is_object());
+}
+
+#[test]
 fn get_call_huntings_params_roundtrips() {
     let p = GetCallHuntingsParams::default();
     let v = serde_json::to_value(&p).unwrap();

@@ -25,6 +25,61 @@ use crate::{CLIENT_FIELDS, ParamDocs, repo_root, wsdl};
 /// `wireMethod.param` and the reason.
 const DELIBERATE: &[(&str, &str)] = &[
     (
+        "addLNPPort.imei",
+        "untested: a call the server accepts files a port request with the losing carrier",
+    ),
+    (
+        "createSubAccount.transcription_redaction",
+        "untested live: createSubAccount answers HTTP 503 whenever transcribe is on, \
+         and with it off the switch is not stored",
+    ),
+    (
+        "createSubAccount.transcription_sentiment",
+        "untested live: createSubAccount answers HTTP 503 whenever transcribe is on, \
+         and with it off the switch is not stored",
+    ),
+    (
+        "createSubAccount.transcription_summary",
+        "untested live: createSubAccount answers HTTP 503 whenever transcribe is on, \
+         and with it off the switch is not stored",
+    ),
+    (
+        "e911ProvisionManually.email",
+        "live: the server answers success with no email, a malformed one, and a DID \
+         not on the account, so nothing shows that it reads the field",
+    ),
+    (
+        "e911Update.email",
+        "untested: e911ProvisionManually acted on a DID not on the account, so an e911 \
+         write is not a safe probe",
+    ),
+    (
+        "getVPRIs.vpri",
+        "untested: the test account has no vPRI, and any value answers no_vpri",
+    ),
+    (
+        "getVoicemailTranscriptions.account",
+        "the docs leave it out; untested, since no message on the test account has a \
+         transcription",
+    ),
+    (
+        "setPhonebookGroup.phonebook",
+        "the docs leave it out; live: `abc`, 999999 and empty each succeed and nothing \
+         reads back, so the server appears to ignore it",
+    ),
+    (
+        "setSubAccount.transcribe",
+        "the docs leave it out; live: stored as sent",
+    ),
+    (
+        "setSubAccount.transcription_email",
+        "the docs leave it out; live: stored as sent",
+    ),
+    (
+        "setSubAccount.transcription_locale",
+        "the docs leave it out; live: stored as sent",
+    ),
+    (
         "getResellerMMS.mms",
         "the MMS id; the docs name it `sms`, pasted from getResellerSMS",
     ),

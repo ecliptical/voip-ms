@@ -70,6 +70,12 @@ impl std::str::FromStr for CallPickupBehavior {
     }
 }
 
+impl serde::Serialize for CallPickupBehavior {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_wire())
+    }
+}
+
 impl<'de> serde::Deserialize<'de> for CallPickupBehavior {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Self, D::Error> {
         let s = crate::responses::deserialize_enum_wire_string(d)?;
@@ -4957,6 +4963,9 @@ pub struct CreateSubAccountParams {
     /// Call Transcription Email
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_email: Option<String>,
+    /// ID for a specific Call Parking (Example: 323)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parking_lot: Option<u64>,
     /// Call Transcription Delay Seconds between 0 and 60, Increments of 5
     /// (Example: 10 -> seconds)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -4970,6 +4979,14 @@ pub struct CreateSubAccountParams {
     /// Internal CallerID Name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_cnam: Option<String>,
+    /// e911 Default CallerID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_e911: Option<String>,
+    /// 1 Can Pick Up and Be Picked Up, 2 Can Pick Up (Can 't be Picked Up), 3
+    /// Can Be Picked Up (Can't Pick Up), 4 Disabled (Can't Pick Up nor Get
+    /// Picked Up)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_pickup_behavior: Option<CallPickupBehavior>,
     /// Allows you to dial outgoing calls using either the NANPA configuration
     /// or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 =
     /// E164, 2 = NANPA)
@@ -5048,6 +5065,9 @@ pub struct CreateVoicemailParams {
     /// Code for Language (Values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// ID for a specific Reseller Client (Example: 561115) (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client: Option<u64>,
     /// Code for Email Attachment format (Values from
     /// getVoicemailAttachmentFormats)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -5086,6 +5106,11 @@ pub struct CreateVoicemailParams {
     /// Transcription format ( Values: 'html'/'text')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_format: Option<TranscriptionFormat>,
+    /// Delay in seconds before voicemail transcription starts. Use 0 for none,
+    /// or 5 through 60 in steps of 5. Omit this parameter to leave the current
+    /// value unchanged.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transcription_delay: Option<u64>,
 }
 
 /// \- Deletes a specific Call Hunting from your Account.
@@ -5921,6 +5946,9 @@ pub struct E911ProvisionParams {
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Email that will be sent to the e911 service. (required)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
     /// Additional Address Information that will be sent to the e911 service.
     /// Only available for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -6065,6 +6093,9 @@ pub struct E911ValidateParams {
     /// Canada. Value can be EN (English) or FR (French).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Email that will be validated. (required)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
     /// Additional Address Information that will be validated. Only available
     /// for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -6265,6 +6296,17 @@ impl TryFrom<&GetCDRParams> for GetCDRParamsWire {
     }
 }
 
+/// \- Retrieves all Sub Accounts if no additional parameter is provided.
+/// \- Retrieves Reseller Client Accounts if Reseller Client ID is provided.
+///
+/// Parameters for [`Client::get_call_accounts`] (wire method `getCallAccounts`).
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
+pub struct GetCallAccountsParams {
+    /// ID for a specific Reseller Client (Example: 561115)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client: Option<u64>,
+}
+
 /// \- Retrieves a list of Call Huntings if no additional parameter is provided.
 /// \- Retrieves a specific Call Huntings if a Call Hunting code is provided.
 ///
@@ -6339,6 +6381,10 @@ pub struct GetCallRecordingsParams {
     /// End Date for Filtering Call Recording (Example:'2018-12-01') (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_to: Option<chrono::NaiveDate>,
+    /// Call Type for Filtering Call Recording (Accepted values: 'all',
+    /// 'incoming' and 'outgoing')
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_type: Option<String>,
 }
 
 impl GetCallRecordingsParams {
@@ -8427,6 +8473,9 @@ pub struct GetVoicemailFoldersParams {
     /// Folder Name (Example: 'INBOX')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<VoicemailFolder>,
+    /// ID for specific Mailbox (Example: 1001)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mailbox: Option<u64>,
 }
 
 /// \- Retrieves a specific Voicemail Message File in Base64 format.
@@ -8444,11 +8493,16 @@ pub struct GetVoicemailMessageFileParams {
     /// ID for specific Voicemail Message (Example: 1) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_num: Option<u64>,
+    /// File format. Default value is mp3. Values: mp3, wav, wav49, gsm.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
 }
 
 impl GetVoicemailMessageFileParams {
     /// A `GetVoicemailMessageFileParams` with the parameters the VoIP.ms docs
-    /// mark as required: `mailbox`, `folder` and `message_num`.
+    /// mark as required: `mailbox`, `folder` and `message_num`. Every other
+    /// field keeps its default, so struct-update syntax still fills in the
+    /// rest.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
@@ -8458,6 +8512,7 @@ impl GetVoicemailMessageFileParams {
             mailbox: Some(mailbox),
             folder: Some(folder),
             message_num: Some(message_num),
+            ..Default::default()
         }
     }
 }
@@ -8582,6 +8637,9 @@ pub struct GetVoicemailsParams {
     /// ID for specific Mailbox (Example: 1001)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox: Option<u64>,
+    /// ID for a specific Reseller Client (Example: 561115) (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client: Option<u64>,
 }
 
 /// \- Send a Fax Message attached as a PDF file to an email destination.
@@ -10055,6 +10113,10 @@ pub struct SetCallParkingParams {
     /// call (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub delay: Option<u64>,
+    /// You can enable BLF for your Parking Lot and select the amount of BLF
+    /// Lamps that you require. (Values: 0 to 10) (required)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blf_lamps: Option<u64>,
 }
 
 /// \- Updates a specific Callback if a callback code is provided.
@@ -11065,6 +11127,20 @@ pub struct SetFAXNumberInfoParams {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub url_callback_retry: Option<bool>,
+    /// Flag to enable Fax to SIP. Default: false
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
+    pub fax_to_sip_enabled: Option<bool>,
+    /// Fax to SIP subaccount to use (Values from getSubaccounts) Eg:
+    /// ######_SubAccount.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fax_to_sip_enabled_account: Option<String>,
+    /// Description you wish to indicate for this DID (for your own use, but not
+    /// mandatory).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
     /// The fax number's maximum number of attempts, which getFaxNumbersInfo
     /// reports as `max_attempts` (Example: 5). A call without it sets it to 10,
     /// and 0 leaves it as it is
@@ -11177,6 +11253,12 @@ pub struct SetForwardingParams {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub diversion_header: Option<bool>,
+    /// If enabled, Forwarded calls will be sent with Attestation A
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
+    pub attestation_a_enabled: Option<bool>,
 }
 
 impl SetForwardingParams {
@@ -12011,10 +12093,27 @@ pub struct SetSubAccountParams {
     pub transcription_locale: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_email: Option<String>,
+    /// ID for a specific Call Parking (Example: 323)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parking_lot: Option<u64>,
     /// Call Transcription Delay Seconds between 0 and 60, Increments of 5
     /// (Example: 10 -> seconds)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_start_delay: Option<u64>,
+    /// Enable Internal CallerID
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "crate::responses::serialize_opt_flag_01"
+    )]
+    pub enable_internal_cnam: Option<bool>,
+    /// Internal CallerID Name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub internal_cnam: Option<String>,
+    /// 1 Can Pick Up and Be Picked Up, 2 Can Pick Up (Can 't be Picked Up), 3
+    /// Can Be Picked Up (Can't Pick Up), 4 Disabled (Can't Pick Up nor Get
+    /// Picked Up)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_pickup_behavior: Option<CallPickupBehavior>,
     /// Allows you to dial outgoing calls using either the NANPA configuration
     /// or the E164 configuration. (Values: 0 = Use Main Account Setting, 1 =
     /// E164, 2 = NANPA)
@@ -12150,6 +12249,9 @@ pub struct SetVoicemailParams {
     /// Code for Language (Values from getLanguages) (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// ID for a specific Reseller Client ID (Example: 54374)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client: Option<u64>,
     /// Code for Email Attachment format (Values from
     /// getVoicemailAttachmentFormats)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -12188,6 +12290,11 @@ pub struct SetVoicemailParams {
     /// Transcription format ( Values: 'html'/'text')
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_format: Option<TranscriptionFormat>,
+    /// Delay in seconds before voicemail transcription starts. Use 0 for none,
+    /// or 5 through 60 in steps of 5. Omit this parameter to leave the current
+    /// value unchanged. (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transcription_delay: Option<u64>,
 }
 
 /// \- Signs a new Reseller Client to your Reseller Account.
@@ -20591,17 +20698,16 @@ impl Client {
     /// \- Retrieves Reseller Client Accounts if Reseller Client ID is provided.
     ///
     /// Call the `getCallAccounts` API method and deserialize into [`GetCallAccountsResponse`].
-    ///
-    /// The method takes no parameters.
-    pub async fn get_call_accounts(&self) -> Result<GetCallAccountsResponse> {
-        self.call("getCallAccounts", &NoParams).await
+    pub async fn get_call_accounts(
+        &self,
+        params: &GetCallAccountsParams,
+    ) -> Result<GetCallAccountsResponse> {
+        self.call("getCallAccounts", params).await
     }
 
     /// Call the `getCallAccounts` API method and return the raw JSON envelope.
-    ///
-    /// The method takes no parameters.
-    pub async fn get_call_accounts_raw(&self) -> Result<Value> {
-        self.call_raw("getCallAccounts", &NoParams).await
+    pub async fn get_call_accounts_raw(&self, params: &GetCallAccountsParams) -> Result<Value> {
+        self.call_raw("getCallAccounts", params).await
     }
 
     /// \- Retrieves a list of Call Billing Options.

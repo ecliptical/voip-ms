@@ -250,6 +250,7 @@ async fn voicemail_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
         "fixture:getVoicemails",
         &GetVoicemailsParams {
             mailbox: Some(mailbox),
+            ..Default::default()
         },
         |r| Some(r.voicemails.len()),
     )

@@ -158,6 +158,7 @@ pub(crate) const FLAG_01_FIELDS: &[&str] = &[
     // `url_callback_retry` a fax number is set with. Confirmed live: setting
     // each to `1` and `0` reads back as sent.
     "attach_file",
+    "attestation_a_enabled",
     "burst_enabled",
     "busy",
     "cnam",
