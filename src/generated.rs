@@ -11742,8 +11742,8 @@ pub struct SetSMSParams {
     /// reports it as `sms_email`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
-    /// If Enable, SMS Messages received by your DID will be forwarded to the
-    /// phone number provided
+    /// true to forward the SMS messages the DID receives to the phone number in
+    /// `sms_forward`; getDIDsInfo reports it as `sms_forward_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
@@ -11776,7 +11776,8 @@ pub struct SetSMSParams {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub url_callback_retry: Option<bool>,
-    /// true to send the SMS and MMS messages the DID receives to `webhook`
+    /// true to send the SMS and MMS messages the DID receives to `webhook`;
+    /// getDIDsInfo reports it as `webhook_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
@@ -11790,7 +11791,8 @@ pub struct SetSMSParams {
     /// How messages sent through the API from this DID are addressed (Values: 0
     /// = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10
     /// digits without the +1 prefix; 2 = E.164, the country code first with the
-    /// +1 prefix)
+    /// +1 prefix); getDIDsInfo reports it as `dialmode` (`sms_dialing_mode` on
+    /// the typed response)
     #[serde(skip_serializing_if = "Option::is_none", rename = "dialmode")]
     pub sms_dialing_mode: Option<SmsDialingMode>,
     /// SIP account or sub-account that will receive the SMS Messages

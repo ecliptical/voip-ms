@@ -3815,7 +3815,7 @@
     },
     "setSMS": {
       "dialmode": {
-        "doc": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix)",
+        "doc": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix); getDIDsInfo reports it as `dialmode` (`sms_dialing_mode` on the typed response)",
         "required": false
       },
       "did": {
@@ -3839,7 +3839,7 @@
         "required": false
       },
       "sms_forward_enable": {
-        "doc": "If Enable, SMS Messages received by your DID will be forwarded to the phone number provided",
+        "doc": "true to forward the SMS messages the DID receives to the phone number in `sms_forward`; getDIDsInfo reports it as `sms_forward_enabled`",
         "required": false
       },
       "sms_sipaccount": {
@@ -3867,7 +3867,7 @@
         "required": false
       },
       "webhook_enable": {
-        "doc": "true to send the SMS and MMS messages the DID receives to `webhook`",
+        "doc": "true to send the SMS and MMS messages the DID receives to `webhook`; getDIDsInfo reports it as `webhook_enabled`",
         "required": false
       }
     },
