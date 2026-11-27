@@ -49,11 +49,6 @@ const DELIBERATE: &[(&str, &str)] = &[
          not on the account, so nothing shows that it reads the field",
     ),
     (
-        "e911Update.email",
-        "untested: e911ProvisionManually acted on a DID not on the account, so an e911 \
-         write is not a safe probe",
-    ),
-    (
         "getVPRIs.vpri",
         "untested: the test account has no vPRI, and any value answers no_vpri",
     ),

@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `&GetCallAccountsParams`, whose `client` lists only that reseller client's
   sub-accounts. A call without a filter passes
   `&GetCallAccountsParams::default()`.
-- **Breaking**: 22 more parameters the docs list and the WSDL omits are now
+- **Breaking**: 23 more parameters the docs list and the WSDL omits are now
   fields, each confirmed against the live API. A struct literal without
   `..Default::default()` must add them.
   - `GetVoicemailsParams::client`, `GetVoicemailFoldersParams::mailbox`,
@@ -29,8 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `CreateSubAccountParams`: `parking_lot`, `default_e911` and
     `call_pickup_behavior`. `SetSubAccountParams`: `parking_lot`,
     `enable_internal_cnam`, `internal_cnam` and `call_pickup_behavior`.
-  - `E911ProvisionParams::email` and `E911ValidateParams::email`, which
-    voip.ms requires: without it both answer `missing_email`.
+  - `E911ProvisionParams::email`, `E911UpdateParams::email` and
+    `E911ValidateParams::email`, which voip.ms requires: without it each
+    answers `missing_email`.
 - **Breaking**: `OrderDIDVirtualParams::digits` is
   `virtual_did_digits: Option<VirtualDidDigits>` (was `digits: Option<u64>`),
   and `OrderDIDVirtualParams::new` takes a `VirtualDidDigits`. A virtual DID is

@@ -6160,6 +6160,9 @@ pub struct E911UpdateParams {
     /// (required)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Email that will be updated to the e911 service. (required)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
     /// Additional Address Information that will be updated to the e911 service.
     /// Only available for addresses from Canada.
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -290,6 +290,14 @@ const CORRECTIONS: &[Correction] = &[
         "xsd:string",
         At::Before("other_info"),
     ),
+    // On a provisioned DID, an update with every other documented parameter
+    // set answers `missing_email`.
+    add(
+        "e911Update",
+        "email",
+        "xsd:string",
+        At::Before("other_info"),
+    ),
     // Neither the docs nor the PHP client name it, but `getFaxNumbersInfo`
     // reports it and the server reads it. Confirmed live on a fax number: 1, 3,
     // 11 and 99 each read back as sent, 0 and `abc` left the value as it was,

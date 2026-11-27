@@ -301,6 +301,7 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
             country: Some(address.country.clone()),
             zip_code: Some(address.zip.clone()),
             language: address.language.clone(),
+            email: Some(address.email.clone()),
             ..Default::default()
         })
         .await
@@ -322,10 +323,11 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
     }
 }
 
-/// Send `cancel` until voip.ms stops answering `e911_pending`, at most
-/// `attempts` times (at least once), `wait` apart. `e911_disable` means the
-/// DID has no record left to cancel, so it counts as done; any other answer is
-/// final.
+/// Send `cancel` while voip.ms answers `e911_pending` or the request fails in
+/// transit for a reason repeating may cure, at most `attempts` times (at least
+/// once), `wait` apart. `e911_disable` means the DID has no record left to
+/// cancel, so it counts as done, which also covers a retry after a cancel that
+/// landed but whose answer was lost. Any other answer is final.
 async fn cancel_once_validated<F, Fut, T>(
     mut cancel: F,
     attempts: u32,
@@ -338,22 +340,25 @@ where
     let mut attempt = 1;
     loop {
         match cancel().await {
-            Err(Error::Api(ApiStatus::E911Pending)) if attempt < attempts => {
-                if attempt == 1 {
-                    println!(
-                        "[info] e911Cancel answered e911_pending; retrying every {}s, \
-                         up to {attempts} times",
-                        wait.as_secs()
-                    );
-                }
-
+            Err(Error::Api(ApiStatus::E911Disable)) => return Ok(()),
+            Err(error) if attempt < attempts && worth_another_cancel(&error) => {
+                println!(
+                    "[info] e911Cancel attempt {attempt}/{attempts}: {error}; retrying in {}s",
+                    wait.as_secs()
+                );
                 attempt += 1;
                 tokio::time::sleep(wait).await;
             }
-            Err(Error::Api(ApiStatus::E911Disable)) => return Ok(()),
             result => return tolerate_absent(result),
         }
     }
+}
+
+fn worth_another_cancel(error: &Error) -> bool {
+    matches!(error, Error::Api(ApiStatus::E911Pending))
+        || error
+            .transport()
+            .is_some_and(|failure| failure.retry_outlook() != RetryOutlook::Futile)
 }
 
 fn fail(report: &mut Report, label: &str, error: &str) {
@@ -408,6 +413,31 @@ mod tests {
         let (result, calls) = run(&[Err(ApiStatus::E911Disable)], 5).await;
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(calls, 1);
+    }
+
+    #[tokio::test]
+    async fn a_cancel_that_fails_in_transit_is_retried() {
+        // Port 1 on loopback refuses the connection, which the crate
+        // classifies as worth repeating.
+        let refused = voip_ms::reqwest::Client::new()
+            .get("http://127.0.0.1:1/")
+            .send()
+            .await
+            .expect_err("nothing listens on port 1");
+        let mut refused = Some(Error::from(refused));
+        let calls = Cell::new(0);
+        let result = cancel_once_validated(
+            || {
+                calls.set(calls.get() + 1);
+                let answer = refused.take().map_or(Ok(()), Err);
+                async move { answer }
+            },
+            5,
+            Duration::ZERO,
+        )
+        .await;
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(calls.get(), 2);
     }
 
     #[tokio::test]
