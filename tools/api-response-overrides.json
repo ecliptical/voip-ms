@@ -345,6 +345,7 @@
     "no_vpri"
   ],
   "undocumented_statuses": [
+    { "code": "did_e911_already_canceled",    "description": "DID e911 service is already canceled" },
     { "code": "e911_disable",                 "description": "DID e911 service is not enabled" },
     { "code": "invalid_dialmode",             "description": "This is not a valid SMS dialing mode" },
     { "code": "invalid_inbound_dialing_mode", "description": "This is not a valid inbound dialing mode" },

@@ -17,6 +17,7 @@ const KNOWN_CODES: &[&str] = &[
     "can_have_only_one_profile_without_pin",
     "cancel_failed",
     "conference_member_relation_not_found",
+    "did_e911_already_canceled",
     "did_in_use",
     "did_limit_reached",
     "duplicated_name",

@@ -49,10 +49,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   address, with "expected string, number, or bool, got {...}". A response
   shaped like the docs' sample, a single object, still reads, as a list of
   one.
-- **Breaking**: `ApiStatus` gains `E911Disable`, the code `e911Info` answers
-  for a DID with no e911 record. The docs list it as `e911_disabled`, so it
-  was `ApiStatus::Unknown("e911_disable")`. An exhaustive `match` on
-  `ApiStatus` must add the variant.
+- **Breaking**: `ApiStatus` gains two codes the docs leave out, which were
+  `ApiStatus::Unknown`. An exhaustive `match` on `ApiStatus` must add them.
+  - `E911Disable`, the code `e911Info` answers for a DID with no e911 record.
+    The docs list it as `e911_disabled`.
+  - `DIDE911AlreadyCanceled`, the code `e911Cancel` answers for a DID with no
+    e911 record, whether it was canceled or never existed.
 
 ### Added
 

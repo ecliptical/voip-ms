@@ -325,9 +325,12 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
 
 /// Send `cancel` while voip.ms answers `e911_pending` or the request fails in
 /// transit for a reason repeating may cure, at most `attempts` times (at least
-/// once), `wait` apart. `e911_disable` means the DID has no record left to
-/// cancel, so it counts as done, which also covers a retry after a cancel that
-/// landed but whose answer was lost. Any other answer is final.
+/// once), `wait` apart. A DID with no record left to cancel counts as done,
+/// which also covers a retry after a cancel that landed but whose answer was
+/// lost: `e911Cancel` answers `did_e911_already_canceled` for one, whether
+/// its record was canceled or never existed, and `e911_disable`, which
+/// `e911Info` answers for the same state, is taken the same way. Any other
+/// answer is final.
 async fn cancel_once_validated<F, Fut, T>(
     mut cancel: F,
     attempts: u32,
@@ -340,7 +343,9 @@ where
     let mut attempt = 1;
     loop {
         match cancel().await {
-            Err(Error::Api(ApiStatus::E911Disable)) => return Ok(()),
+            Err(Error::Api(ApiStatus::DIDE911AlreadyCanceled | ApiStatus::E911Disable)) => {
+                return Ok(());
+            }
             Err(error) if attempt < attempts && worth_another_cancel(&error) => {
                 println!(
                     "[info] e911Cancel attempt {attempt}/{attempts}: {error}; retrying in {}s",
@@ -409,10 +414,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_did_with_no_record_left_counts_as_cancelled() {
-        let (result, calls) = run(&[Err(ApiStatus::E911Disable)], 5).await;
-        assert!(result.is_ok(), "{result:?}");
-        assert_eq!(calls, 1);
+    async fn a_did_with_no_record_left_counts_as_canceled() {
+        for status in [ApiStatus::DIDE911AlreadyCanceled, ApiStatus::E911Disable] {
+            let (result, calls) = run(&[Err(status.clone())], 5).await;
+            assert!(result.is_ok(), "{status}: {result:?}");
+            assert_eq!(calls, 1, "{status}");
+        }
     }
 
     #[tokio::test]
