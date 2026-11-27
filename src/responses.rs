@@ -27,12 +27,13 @@ use crate::generated::GetRecordingFileResponse;
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
 use rust_decimal::Decimal;
-use serde::de::value::MapAccessDeserializer;
-use serde::de::{Error as DeError, MapAccess, Unexpected, Visitor};
+use serde::de::value::{BorrowedStrDeserializer, MapAccessDeserializer};
+use serde::de::{Error as DeError, IntoDeserializer, MapAccess, SeqAccess, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer, Serializer};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::convert::Infallible;
+use std::marker::PhantomData;
 use std::str::FromStr;
 
 use crate::types::{Reported, Routing, TransactionDate, WallClock};
@@ -694,6 +695,11 @@ impl<'a> ListRows<'a> {
 /// Deserialize a list field into its rows as [`ListRows`] reads them: an
 /// absent field is no rows too, so an omitted or empty collection is not
 /// distinguished from a present-but-empty one.
+///
+/// The rows are read through `deserializer` itself rather than a buffered
+/// [`Value`], so a path-tracking wrapper such as `serde_path_to_error` reports
+/// a failing row's index and field (`cdr[0].seconds`, or `cdr.seconds` for a
+/// row sent bare), not just the list field.
 pub(crate) fn deserialize_vec_from_single_or_seq<'de, T, D>(
     deserializer: D,
 ) -> Result<Vec<T>, D::Error>
@@ -701,14 +707,98 @@ where
     T: Deserialize<'de>,
     D: Deserializer<'de>,
 {
-    let value = Option::<Value>::deserialize(deserializer)?.unwrap_or(Value::Null);
-    match ListRows::of(&value) {
-        ListRows::Empty => Ok(Vec::new()),
-        ListRows::Seq(_) => Vec::<T>::deserialize(value).map_err(D::Error::custom),
-        ListRows::Single(_) => T::deserialize(value)
-            .map(|v| vec![v])
-            .map_err(D::Error::custom),
+    struct Rows<T>(PhantomData<T>);
+
+    fn one<'de, T, D>(row: D) -> Result<Vec<T>, D::Error>
+    where
+        T: Deserialize<'de>,
+        D: Deserializer<'de>,
+    {
+        T::deserialize(row).map(|row| vec![row])
     }
+
+    impl<'de, T: Deserialize<'de>> Visitor<'de> for Rows<T> {
+        type Value = Vec<T>;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("a list, a single row, null, or an empty string")
+        }
+
+        fn visit_unit<E: DeError>(self) -> Result<Self::Value, E> {
+            Ok(Vec::new())
+        }
+
+        fn visit_none<E: DeError>(self) -> Result<Self::Value, E> {
+            Ok(Vec::new())
+        }
+
+        fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
+            d.deserialize_any(self)
+        }
+
+        fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+            let mut rows = Vec::new();
+            while let Some(row) = seq.next_element()? {
+                rows.push(row);
+            }
+
+            Ok(rows)
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
+            one(MapAccessDeserializer::new(map))
+        }
+
+        fn visit_borrowed_str<E: DeError>(self, s: &'de str) -> Result<Self::Value, E> {
+            if s.trim().is_empty() {
+                return Ok(Vec::new());
+            }
+
+            one(BorrowedStrDeserializer::new(s))
+        }
+
+        fn visit_str<E: DeError>(self, s: &str) -> Result<Self::Value, E> {
+            if s.trim().is_empty() {
+                return Ok(Vec::new());
+            }
+
+            one(s.into_deserializer())
+        }
+
+        fn visit_string<E: DeError>(self, s: String) -> Result<Self::Value, E> {
+            if s.trim().is_empty() {
+                return Ok(Vec::new());
+            }
+
+            one(s.into_deserializer())
+        }
+
+        fn visit_u64<E: DeError>(self, n: u64) -> Result<Self::Value, E> {
+            one(n.into_deserializer())
+        }
+
+        fn visit_i64<E: DeError>(self, n: i64) -> Result<Self::Value, E> {
+            one(n.into_deserializer())
+        }
+
+        fn visit_u128<E: DeError>(self, n: u128) -> Result<Self::Value, E> {
+            one(n.into_deserializer())
+        }
+
+        fn visit_i128<E: DeError>(self, n: i128) -> Result<Self::Value, E> {
+            one(n.into_deserializer())
+        }
+
+        fn visit_f64<E: DeError>(self, n: f64) -> Result<Self::Value, E> {
+            one(n.into_deserializer())
+        }
+
+        fn visit_bool<E: DeError>(self, b: bool) -> Result<Self::Value, E> {
+            one(b.into_deserializer())
+        }
+    }
+
+    deserializer.deserialize_any(Rows(PhantomData))
 }
 
 /// Deserialize a map whose keys are data, not schema, tolerating absence.
@@ -722,6 +812,10 @@ where
 /// type reads the key text as a number. Absent, `null`, and an empty string all
 /// yield an empty map -- the same absent-is-empty convention the list helper
 /// follows. Any other value is an error.
+///
+/// Like the list helper, it reads through `deserializer` itself, so a
+/// path-tracking wrapper reports a failing entry as `locations.1713`, or
+/// `locations[1]` for the array form.
 pub(crate) fn deserialize_map<'de, K, V, D>(
     deserializer: D,
 ) -> Result<std::collections::HashMap<K, V>, D::Error>
@@ -730,27 +824,91 @@ where
     V: Deserialize<'de>,
     D: Deserializer<'de>,
 {
-    let value = Option::<Value>::deserialize(deserializer)?;
-    let entries = match value {
-        None | Some(Value::Null) => return Ok(std::collections::HashMap::new()),
-        Some(Value::String(s)) if s.trim().is_empty() => {
-            return Ok(std::collections::HashMap::new());
+    struct Entries<K, V>(PhantomData<(K, V)>);
+
+    impl<'de, K, V> Visitor<'de> for Entries<K, V>
+    where
+        K: Deserialize<'de> + std::cmp::Eq + std::hash::Hash,
+        V: Deserialize<'de>,
+    {
+        type Value = std::collections::HashMap<K, V>;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("an object, an array, null, or an empty string")
         }
 
-        Some(Value::Object(entries)) => entries,
-        Some(Value::Array(items)) => items
-            .into_iter()
-            .enumerate()
-            .map(|(position, v)| (position.to_string(), v))
-            .collect(),
-        Some(other) => {
-            return Err(D::Error::custom(format!(
-                "expected object or array, got {other}"
-            )));
+        fn visit_unit<E: DeError>(self) -> Result<Self::Value, E> {
+            Ok(Self::Value::new())
         }
-    };
 
-    std::collections::HashMap::<K, V>::deserialize(Value::Object(entries)).map_err(D::Error::custom)
+        fn visit_none<E: DeError>(self) -> Result<Self::Value, E> {
+            Ok(Self::Value::new())
+        }
+
+        fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
+            d.deserialize_any(self)
+        }
+
+        fn visit_str<E: DeError>(self, s: &str) -> Result<Self::Value, E> {
+            if s.trim().is_empty() {
+                return Ok(Self::Value::new());
+            }
+
+            Err(E::invalid_type(Unexpected::Str(s), &self))
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+            let mut entries = Self::Value::new();
+            while let Some((key, value)) = map.next_entry()? {
+                entries.insert(key, value);
+            }
+
+            Ok(entries)
+        }
+
+        fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+            let mut entries = Self::Value::new();
+            let mut position = 0;
+            while let Some(value) = seq.next_element()? {
+                entries.insert(K::deserialize(PositionKey(position, PhantomData))?, value);
+                position += 1;
+            }
+
+            Ok(entries)
+        }
+    }
+
+    deserializer.deserialize_any(Entries(PhantomData))
+}
+
+/// A list position read as a map key, as serde_json reads an object's key: its
+/// decimal text for a string key type, the number for a numeric one.
+struct PositionKey<E>(u64, PhantomData<E>);
+
+macro_rules! position_key_as_number {
+    ($($method:ident)*) => {$(
+        fn $method<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, E> {
+            visitor.visit_u64(self.0)
+        }
+    )*};
+}
+
+impl<'de, E: DeError> Deserializer<'de> for PositionKey<E> {
+    type Error = E;
+
+    fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, E> {
+        visitor.visit_string(self.0.to_string())
+    }
+
+    position_key_as_number! {
+        deserialize_u8 deserialize_u16 deserialize_u32 deserialize_u64 deserialize_u128
+        deserialize_i8 deserialize_i16 deserialize_i32 deserialize_i64 deserialize_i128
+    }
+
+    serde::forward_to_deserialize_any! {
+        bool f32 f64 char str string bytes byte_buf option unit unit_struct
+        newtype_struct seq tuple tuple_struct map struct enum identifier ignored_any
+    }
 }
 
 /// `skip_serializing_if` predicate for true-only flag params (`test`): a
@@ -1323,11 +1481,49 @@ mod tests {
         assert_eq!(null.items, Vec::<u64>::new());
         let blank: VecWrap = serde_json::from_value(json!({"items": ""})).unwrap();
         assert_eq!(blank.items, Vec::<u64>::new());
+        let spaces: VecWrap = serde_json::from_str(r#"{"items": "  "}"#).unwrap();
+        assert_eq!(spaces.items, Vec::<u64>::new());
+        let no_rows: VecWrap = serde_json::from_value(json!({"items": []})).unwrap();
+        assert_eq!(no_rows.items, Vec::<u64>::new());
         let one: VecWrap = serde_json::from_value(json!({"items": 7})).unwrap();
         assert_eq!(one.items, vec![7]);
+        let one_text: VecWrap = serde_json::from_str(r#"{"items": 7}"#).unwrap();
+        assert_eq!(one_text.items, vec![7]);
         let many: VecWrap = serde_json::from_value(json!({"items": [1, 2, 3]})).unwrap();
         assert_eq!(many.items, vec![1, 2, 3]);
         assert!(serde_json::from_value::<VecWrap>(json!({"items": "x"})).is_err());
+    }
+
+    #[test]
+    fn a_failing_row_reports_the_path_into_the_row() {
+        use crate::generated::GetCDRResponse;
+
+        let cases = [
+            (
+                json!({"status": "success", "cdr": [{"seconds": "x"}]}),
+                "cdr[0].seconds",
+            ),
+            (
+                json!({"status": "success", "cdr": [{"seconds": "1"}, {"seconds": "x"}]}),
+                "cdr[1].seconds",
+            ),
+            (
+                json!({"status": "success", "cdr": {"seconds": "x"}}),
+                "cdr.seconds",
+            ),
+        ];
+
+        for (raw, path) in cases {
+            let from_value =
+                serde_path_to_error::deserialize::<_, GetCDRResponse>(&raw).unwrap_err();
+            assert_eq!(from_value.path().to_string(), path, "from a Value: {raw}");
+
+            let text = raw.to_string();
+            let mut from_text = serde_json::Deserializer::from_str(&text);
+            let from_text =
+                serde_path_to_error::deserialize::<_, GetCDRResponse>(&mut from_text).unwrap_err();
+            assert_eq!(from_text.path().to_string(), path, "from text: {raw}");
+        }
     }
 
     #[test]
@@ -1455,7 +1651,7 @@ mod tests {
         entries: HashMap<String, String>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct IdMapWrap {
         #[serde(default, deserialize_with = "deserialize_map")]
         entries: HashMap<u64, String>,
@@ -1501,6 +1697,31 @@ mod tests {
         );
 
         assert!(serde_json::from_value::<IdMapWrap>(json!({"entries": {"x": "Office"}})).is_err());
+
+        let by_name: MapWrap = serde_json::from_value(json!({"entries": ["New", "Old"]})).unwrap();
+        assert_eq!(by_name.entries.get("1").map(String::as_str), Some("Old"));
+    }
+
+    #[test]
+    fn a_failing_entry_reports_the_path_into_the_map() {
+        let cases = [
+            (
+                json!({"entries": {"0": "Office", "1713": 5}}),
+                "entries.1713",
+            ),
+            (json!({"entries": ["Office", 5]}), "entries[1]"),
+        ];
+
+        for (raw, path) in cases {
+            let from_value = serde_path_to_error::deserialize::<_, IdMapWrap>(&raw).unwrap_err();
+            assert_eq!(from_value.path().to_string(), path, "from a Value: {raw}");
+
+            let text = raw.to_string();
+            let mut from_text = serde_json::Deserializer::from_str(&text);
+            let from_text =
+                serde_path_to_error::deserialize::<_, IdMapWrap>(&mut from_text).unwrap_err();
+            assert_eq!(from_text.path().to_string(), path, "from text: {raw}");
+        }
     }
 
     #[derive(serde::Serialize)]
