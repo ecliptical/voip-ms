@@ -45,9 +45,12 @@ const SAMPLE_RATE: u32 = 8_000;
 /// re-encode on record trimmed 9%.
 const MIN_STORED_FRACTION: f32 = 0.5;
 
-/// Uploads the recording fixture makes before it skips the read-back. voip.ms
-/// stored no readable audio for 11 of 22 uploads of the fixture's WAV in one
-/// measurement, so eight leave about a 1-in-256 chance of a skip.
+/// Uploads the recording fixture makes before it skips the read-back. The share
+/// of uploads voip.ms stores with no readable audio follows its health: 7 of 17
+/// of the fixture's WAV while other calls succeeded, 9 of 10 while other calls
+/// answered HTTP 522 and 503. At the first rate, eight attempts all fail about 1
+/// time in 1,200; at the second, about 43% of the time, so a skip is expected
+/// during an outage.
 const RECORDING_ATTEMPTS: u32 = 8;
 
 #[async_trait(?Send)]
@@ -655,16 +658,23 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
             })
             .await;
 
+        let upload = format!("upload {}/{RECORDING_ATTEMPTS}", attempt + 1);
         let id = match created {
             Ok(resp) => match resp.recording {
                 Some(id) => id,
-                None => return fail(report, "fixture:setRecording", "no id returned"),
+                None => {
+                    return fail(
+                        report,
+                        "fixture:setRecording",
+                        &format!("no id returned ({upload})"),
+                    );
+                }
             },
             Err(error) => {
                 return fail(
                     report,
                     "fixture:setRecording",
-                    &format!("setRecording: {error}"),
+                    &format!("setRecording ({upload}): {error}"),
                 );
             }
         };
@@ -711,14 +721,13 @@ async fn recording_fixture(ctx: &AreaCtx<'_>, report: &mut Report, scope: &mut S
             }
             Err(Error::Api(ApiStatus::InvalidRecording)) => println!(
                 "[info] {AREA}/fixture:getRecordingFile: recording id={id} was stored \
-                 with no readable audio ({}/{RECORDING_ATTEMPTS})",
-                attempt + 1
+                 with no readable audio ({upload})"
             ),
             Err(error) => {
                 return fail(
                     report,
                     "fixture:getRecordingFile",
-                    &format!("getRecordingFile: {error}"),
+                    &format!("getRecordingFile ({upload}): {error}"),
                 );
             }
         }
