@@ -1040,9 +1040,92 @@ impl<'de> Deserialize<'de> for TransactionDate {
     }
 }
 
+/// The three digits that name a new virtual DID, such as `001`.
+///
+/// A string, not a number, because the leading zeros are part of the value:
+/// `orderDIDVirtual` answers `invalid_digits` ("Digits must be 3 numbers") to
+/// `digits=1`, so `1` cannot stand for `001`. Parsing accepts exactly three
+/// ASCII digits, so a value VoIP.ms would refuse never reaches the wire.
+///
+/// # Wire format
+///
+/// Serializes as the three digits verbatim (`001`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VirtualDidDigits([u8; 3]);
+
+impl VirtualDidDigits {
+    /// The digits as written, leading zeros included.
+    pub fn as_str(&self) -> &str {
+        std::str::from_utf8(&self.0).expect("parsing admits only ASCII digits")
+    }
+}
+
+impl fmt::Display for VirtualDidDigits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl FromStr for VirtualDidDigits {
+    type Err = VirtualDidDigitsError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.as_bytes() {
+            &[a, b, c] if [a, b, c].iter().all(u8::is_ascii_digit) => Ok(Self([a, b, c])),
+            _ => Err(VirtualDidDigitsError(s.to_string())),
+        }
+    }
+}
+
+impl Serialize for VirtualDidDigits {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+/// Error from parsing [`VirtualDidDigits`]: the input, which is not exactly
+/// three ASCII digits.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VirtualDidDigitsError(pub String);
+
+impl fmt::Display for VirtualDidDigitsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "virtual DID digits must be exactly three digits 0-9, such as `001`; got {:?}",
+            self.0
+        )
+    }
+}
+
+impl std::error::Error for VirtualDidDigitsError {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn virtual_did_digits_keep_leading_zeros() {
+        let digits: VirtualDidDigits = "001".parse().unwrap();
+        assert_eq!(digits.as_str(), "001");
+        assert_eq!(digits.to_string(), "001");
+    }
+
+    #[test]
+    fn virtual_did_digits_refuse_anything_but_three_ascii_digits() {
+        for bad in [
+            "", "1", "01", "0001", "1a1", " 01", "01 ", "١٢٣", "-01", "+01",
+        ] {
+            assert_eq!(
+                bad.parse::<VirtualDidDigits>(),
+                Err(VirtualDidDigitsError(bad.to_string())),
+                "{bad:?} must be refused",
+            );
+        }
+    }
 
     #[test]
     fn parses_documented_tags() {

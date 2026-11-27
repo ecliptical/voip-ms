@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `&GetCallAccountsParams`, whose `client` lists only that reseller client's
   sub-accounts. A call without a filter passes
   `&GetCallAccountsParams::default()`.
-- **Breaking**: 22 more parameters the docs list and the WSDL omits are now fields,
-  each confirmed against the live API. A struct literal without
+- **Breaking**: 22 more parameters the docs list and the WSDL omits are now
+  fields, each confirmed against the live API. A struct literal without
   `..Default::default()` must add them.
   - `GetVoicemailsParams::client`, `GetCallRecordingsParams::call_type`,
     `GetVoicemailFoldersParams::mailbox` and
@@ -30,12 +30,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `enable_internal_cnam`, `internal_cnam` and `call_pickup_behavior`.
   - `E911ProvisionParams::email` and `E911ValidateParams::email`, which
     voip.ms requires: without it both answer `missing_email`.
+- **Breaking**: `OrderDIDVirtualParams::digits` is
+  `virtual_did_digits: Option<VirtualDidDigits>` (was `digits: Option<u64>`),
+  and `OrderDIDVirtualParams::new` takes a `VirtualDidDigits`. A virtual DID is
+  named by three digits such as `001`, and a `u64` sent `1`, which
+  `orderDIDVirtual` refuses with `invalid_digits` ("Digits must be 3 numbers"),
+  so no virtual DID from `000` to `099` could be ordered. `VirtualDidDigits`
+  parses from a string of exactly three ASCII digits (`"001".parse()`) and is
+  sent verbatim; any other string is a `VirtualDidDigitsError` before a
+  request is built. The field has its own name because `createVoicemail`'s
+  `digits`, a mailbox number, stays `u64`: voip.ms drops a mailbox's leading
+  zero itself.
 
 ### Added
 
 - `cargo xtask check-params` lists every parameter the docs list that the
   WSDL, after its corrections, does not declare, and every WSDL input the docs
   leave out. CI and the release workflow run it with `--deny`.
+
+### Fixed
+
+- The docs of three `SetSMSParams` fields, in rustdoc and
+  `tools/param-docs.json`, name the `getDIDsInfo` field that holds the current
+  value, as the other `setSMS` fields' docs do: `sms_dialing_mode`
+  (`dialmode` on the wire, `sms_dialing_mode` on the typed response),
+  `sms_forward_enabled` (`sms_forward_enabled`; the wire name is
+  `sms_forward_enable`) and `webhook_enabled` (`webhook_enabled`; the wire name
+  is `webhook_enable`). A caller writing back a DID's SMS settings now knows
+  where to read each one.
 
 ## [0.23.0] - 2026-11-16
 

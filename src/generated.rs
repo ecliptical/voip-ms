@@ -9232,8 +9232,8 @@ impl OrderDIDInternationalTollFreeParams {
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct OrderDIDVirtualParams {
     /// Three Digits for the new Virtual DID (Example: 001) (required)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub digits: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "digits")]
+    pub virtual_did_digits: Option<crate::VirtualDidDigits>,
     /// Main Routing for the DID (required)
     ///
     /// Format `header:record_id`, where `header` is `account` (a sub-account,
@@ -9305,16 +9305,22 @@ pub struct OrderDIDVirtualParams {
 
 impl OrderDIDVirtualParams {
     /// A `OrderDIDVirtualParams` with the parameters the VoIP.ms docs mark as
-    /// required: `digits`, `routing`, `pop`, `dial_time` and `cnam`. Every
-    /// other field keeps its default, so struct-update syntax still fills in
-    /// the rest.
+    /// required: `virtual_did_digits`, `routing`, `pop`, `dial_time` and
+    /// `cnam`. Every other field keeps its default, so struct-update syntax
+    /// still fills in the rest.
     ///
     /// The marking is the docs' word, not the API's: a field asked for here may
     /// still be optional in practice, and one left out may turn out to be
     /// needed.
-    pub fn new(digits: u64, routing: crate::Routing, pop: u64, dial_time: u64, cnam: bool) -> Self {
+    pub fn new(
+        virtual_did_digits: crate::VirtualDidDigits,
+        routing: crate::Routing,
+        pop: u64,
+        dial_time: u64,
+        cnam: bool,
+    ) -> Self {
         Self {
-            digits: Some(digits),
+            virtual_did_digits: Some(virtual_did_digits),
             routing: Some(routing),
             pop: Some(pop),
             dial_time: Some(dial_time),
@@ -11824,8 +11830,8 @@ pub struct SetSMSParams {
     /// reports it as `sms_email`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
-    /// If Enable, SMS Messages received by your DID will be forwarded to the
-    /// phone number provided
+    /// true to forward the SMS messages the DID receives to the phone number in
+    /// `sms_forward`; getDIDsInfo reports it as `sms_forward_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
@@ -11858,7 +11864,8 @@ pub struct SetSMSParams {
         serialize_with = "crate::responses::serialize_opt_flag_01"
     )]
     pub url_callback_retry: Option<bool>,
-    /// true to send the SMS and MMS messages the DID receives to `webhook`
+    /// true to send the SMS and MMS messages the DID receives to `webhook`;
+    /// getDIDsInfo reports it as `webhook_enabled`
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "crate::responses::serialize_opt_flag_01",
@@ -11872,7 +11879,8 @@ pub struct SetSMSParams {
     /// How messages sent through the API from this DID are addressed (Values: 0
     /// = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10
     /// digits without the +1 prefix; 2 = E.164, the country code first with the
-    /// +1 prefix)
+    /// +1 prefix); getDIDsInfo reports it as `dialmode` (`sms_dialing_mode` on
+    /// the typed response)
     #[serde(skip_serializing_if = "Option::is_none", rename = "dialmode")]
     pub sms_dialing_mode: Option<SmsDialingMode>,
     /// SIP account or sub-account that will receive the SMS Messages

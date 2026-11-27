@@ -273,6 +273,15 @@ in `xtask/src/field_overrides.rs`:
   `PHONE_STRING_FIELDS`: a ZIP of `02134`, a PIN of `0123`, a dial string with
   `*` or `#`, and a prefix voip.ms reports as `MIA [555]` all lose information
   as a number. Here the *response* side moves, and only toward tolerance.
+* **A virtual DID's three digits** (`orderDIDVirtual`'s `digits`, in
+  `VIRTUAL_DID_DIGITS_PARAM_PATHS`) map to [`crate::VirtualDidDigits`] under
+  the ident `virtual_did_digits`. Confirmed live with `test=1`: `digits=1`
+  answers `invalid_digits` ("Digits must be 3 numbers"), so the leading zeros
+  of the documented `001` are part of the value. The type parses only three
+  ASCII digits, so a value voip.ms would refuse cannot be built.
+  `createVoicemail`'s `digits` is a mailbox number, where voip.ms drops the
+  leading zero itself (below), so it stays `u64` and the two get different
+  idents.
 * **`pause` and the reseller fees** (`DECIMAL_FIELDS`) map to
   [`rust_decimal::Decimal`]. `setForwarding` documents `pause` as "0 to 10 in
   increments of 0.5", which `u64` cannot hold and the response already

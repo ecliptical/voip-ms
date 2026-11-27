@@ -2231,7 +2231,7 @@ fn order_did_virtual_params_roundtrips() {
     assert!(v.is_object());
 
     let p2 = OrderDIDVirtualParams {
-        digits: Some(1),
+        virtual_did_digits: Some("001".parse().unwrap()),
         ..Default::default()
     };
     let v2 = serde_json::to_value(&p2).unwrap();
