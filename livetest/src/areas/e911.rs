@@ -101,12 +101,16 @@ impl Area for E911 {
             report.record(
                 AREA,
                 "fixture:e911Validate",
-                Outcome::Skip("--e911-did and address inputs not set".to_string()),
+                Outcome::Skip(
+                    "--e911-did, address inputs and --e911-email not all set".to_string(),
+                ),
             );
             report.record(
                 AREA,
                 "fixture:e911Provision",
-                Outcome::Skip("--e911-did and address inputs not set".to_string()),
+                Outcome::Skip(
+                    "--e911-did, address inputs and --e911-email not all set".to_string(),
+                ),
             );
             return;
         };
