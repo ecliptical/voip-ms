@@ -12,10 +12,16 @@
 //! plus a complete address is supplied: `e911Validate` checks the address
 //! without provisioning anything. Provisioning is gated behind `--e911-provision`
 //! -- only then does the fixture run `e911Provision -> e911Info -> e911Update`
-//! and cancel via `e911Cancel`. Validation is deliberately preferred over
+//! and cancel via `e911Cancel`. voip.ms refuses the cancel with `e911_pending`
+//! while it validates a new address (16 minutes, observed once), so the cancel
+//! retries for up to [`CANCEL_ATTEMPTS`] minutes and holds the run that long.
+//! Validation is deliberately preferred over
 //! provisioning. `e911ProvisionManually` (the manual-review provisioning
 //! variant) is not fired: `e911Provision` is the chosen provisioning path, and
 //! provisioning the same DID twice would leak a second address.
+
+use std::future::Future;
+use std::time::Duration;
 
 use async_trait::async_trait;
 
@@ -31,6 +37,11 @@ use voip_ms::*;
 pub struct E911;
 
 const AREA: &str = "e911";
+
+/// How many times the teardown sends `e911Cancel`, [`CANCEL_RETRY_WAIT`] apart,
+/// while voip.ms answers `e911_pending`.
+const CANCEL_ATTEMPTS: u32 = 30;
+const CANCEL_RETRY_WAIT: Duration = Duration::from_secs(60);
 
 #[async_trait(?Send)]
 impl Area for E911 {
@@ -255,13 +266,15 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
     let cancel_did = address.did.clone();
     scope.defer(format!("e911 did={cancel_did}"), move |client| {
         Box::pin(async move {
-            tolerate_absent(
-                client
-                    .e911_cancel(&E911CancelParams {
-                        did: Some(cancel_did),
-                    })
-                    .await,
+            let params = E911CancelParams {
+                did: Some(cancel_did),
+            };
+            cancel_once_validated(
+                || client.e911_cancel(&params),
+                CANCEL_ATTEMPTS,
+                CANCEL_RETRY_WAIT,
             )
+            .await
         })
     });
 
@@ -309,6 +322,98 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
     }
 }
 
+/// Send `cancel` until voip.ms stops answering `e911_pending`, at most
+/// `attempts` times (at least once), `wait` apart. `e911_disable` means the
+/// DID has no record left to cancel, so it counts as done; any other answer is
+/// final.
+async fn cancel_once_validated<F, Fut, T>(
+    mut cancel: F,
+    attempts: u32,
+    wait: Duration,
+) -> anyhow::Result<()>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T>>,
+{
+    let mut attempt = 1;
+    loop {
+        match cancel().await {
+            Err(Error::Api(ApiStatus::E911Pending)) if attempt < attempts => {
+                if attempt == 1 {
+                    println!(
+                        "[info] e911Cancel answered e911_pending; retrying every {}s, \
+                         up to {attempts} times",
+                        wait.as_secs()
+                    );
+                }
+
+                attempt += 1;
+                tokio::time::sleep(wait).await;
+            }
+            Err(Error::Api(ApiStatus::E911Disable)) => return Ok(()),
+            result => return tolerate_absent(result),
+        }
+    }
+}
+
 fn fail(report: &mut Report, label: &str, error: &str) {
     report.record(AREA, label, Outcome::Fail(error.to_string()));
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    /// Run [`cancel_once_validated`] against `answers`, one per call, and
+    /// return its result with the number of calls it made.
+    async fn run(
+        answers: &[std::result::Result<(), ApiStatus>],
+        attempts: u32,
+    ) -> (anyhow::Result<()>, usize) {
+        let calls = Cell::new(0);
+        let result = cancel_once_validated(
+            || {
+                let answer = answers[calls.get()].clone().map_err(Error::Api);
+                calls.set(calls.get() + 1);
+                async move { answer }
+            },
+            attempts,
+            Duration::ZERO,
+        )
+        .await;
+        (result, calls.get())
+    }
+
+    #[tokio::test]
+    async fn a_pending_cancel_is_retried_until_it_is_accepted() {
+        let pending = Err(ApiStatus::E911Pending);
+        let (result, calls) = run(&[pending.clone(), pending, Ok(())], 5).await;
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(calls, 3);
+    }
+
+    #[tokio::test]
+    async fn a_cancel_still_pending_after_the_last_attempt_fails() {
+        let pending = Err(ApiStatus::E911Pending);
+        let (result, calls) = run(&[pending.clone(), pending.clone(), pending], 3).await;
+        let error = result.expect_err("still pending");
+        assert!(error.to_string().contains("e911_pending"), "{error}");
+        assert_eq!(calls, 3);
+    }
+
+    #[tokio::test]
+    async fn a_did_with_no_record_left_counts_as_cancelled() {
+        let (result, calls) = run(&[Err(ApiStatus::E911Disable)], 5).await;
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(calls, 1);
+    }
+
+    #[tokio::test]
+    async fn any_other_refusal_is_not_retried() {
+        let (result, calls) = run(&[Err(ApiStatus::InvalidCredentials)], 5).await;
+        assert!(result.is_err());
+        assert_eq!(calls, 1);
+    }
 }
