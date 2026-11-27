@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-27
+
 ### Changed
 
 - **Breaking**: `get_call_accounts` and `get_call_accounts_raw` take a
@@ -20,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `GetCallRecordingsParams::call_type` (the new `CallRecordingType`: `All`,
     `Incoming`, `Outgoing`) and `GetVoicemailMessageFileParams::format` (the
     new `VoicemailFileFormat`: `Mp3`, `Wav`, `Wav49`, `Gsm`).
-  - `SetCallParkingParams::blf_lamps` and
+  - `SetCallParkingParams::blf_lamps` (`u64`, 0 to 10) and
     `SetForwardingParams::attestation_a_enabled` (`bool`).
   - `SetFAXNumberInfoParams::fax_to_sip_enabled`,
     `fax_to_sip_enabled_account` and `note`.
@@ -1669,6 +1671,7 @@ a real failed request and asserts nothing it exposes carries the password.
   with coverage instrumentation and Dependabot auto-merge for
   patch/minor cargo updates.
 
+[0.24.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.24.0
 [0.23.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.23.0
 [0.22.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.22.0
 [0.21.0]: https://github.com/ecliptical/voip-ms/releases/tag/v0.21.0
