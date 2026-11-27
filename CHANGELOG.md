@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The docs of three `SetSMSParams` fields, in rustdoc and
   `tools/param-docs.json`, name the `getDIDsInfo` field that holds the current
   value, as the other `setSMS` fields' docs do: `sms_dialing_mode`
-  (`dialmode`), `sms_forward_enabled` (`sms_forward_enabled`; the wire name is
+  (`dialmode` on the wire, `sms_dialing_mode` on the typed response),
+  `sms_forward_enabled` (`sms_forward_enabled`; the wire name is
   `sms_forward_enable`) and `webhook_enabled` (`webhook_enabled`; the wire name
   is `webhook_enable`). A caller writing back a DID's SMS settings now knows
   where to read each one.

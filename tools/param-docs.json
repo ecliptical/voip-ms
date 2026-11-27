@@ -3815,7 +3815,7 @@
     },
     "setSMS": {
       "dialmode": {
-        "doc": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix); getDIDsInfo reports it as `dialmode`",
+        "doc": "How messages sent through the API from this DID are addressed (Values: 0 = no mode chosen, what a DID reports until one is set; 1 = NANPA, 10 digits without the +1 prefix; 2 = E.164, the country code first with the +1 prefix); getDIDsInfo reports it as `dialmode` (`sms_dialing_mode` on the typed response)",
         "required": false
       },
       "did": {
