@@ -42,6 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request is built. The field has its own name because `createVoicemail`'s
   `digits`, a mailbox number, stays `u64`: voip.ms drops a mailbox's leading
   zero itself.
+- **Breaking**: `E911InfoResponse::info` is a `Vec<E911InfoResponseInfo>`
+  (was `Option<E911InfoResponseInfo>`). voip.ms sends the DID's address as a
+  list holding one record, so `e911_info` failed to read any DID that has an
+  address, with "expected string, number, or bool, got {...}". A response
+  shaped like the docs' sample, a single object, still reads, as a list of
+  one.
+- **Breaking**: `ApiStatus` gains `E911Disable`, the code `e911Info` answers
+  for a DID with no e911 record. The docs list it as `e911_disabled`, so it
+  was `ApiStatus::Unknown("e911_disable")`. An exhaustive `match` on
+  `ApiStatus` must add the variant.
 
 ### Added
 

@@ -21,6 +21,7 @@ const KNOWN_CODES: &[&str] = &[
     "did_limit_reached",
     "duplicated_name",
     "duplicated_pin",
+    "e911_disable",
     "e911_disabled",
     "e911_pending",
     "error_deleting_msg",

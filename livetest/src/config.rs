@@ -210,6 +210,11 @@ pub struct Cli {
     #[arg(long)]
     pub e911_zip: Option<String>,
 
+    /// e911 contact email (required with `--e911-did`): validation and
+    /// provisioning answer `missing_email` without it.
+    #[arg(long)]
+    pub e911_email: Option<String>,
+
     /// e911 language, `EN` or `FR` (required for CA addresses; carried through
     /// to provisioning).
     #[arg(long)]
@@ -430,6 +435,7 @@ pub struct E911Config {
     pub state: Option<String>,
     pub country: Option<String>,
     pub zip: Option<String>,
+    pub email: Option<String>,
     pub language: Option<String>,
 }
 
@@ -586,6 +592,7 @@ impl Config {
             state: cli.e911_state.filter(|s| !s.trim().is_empty()),
             country: cli.e911_country.filter(|s| !s.trim().is_empty()),
             zip: cli.e911_zip.filter(|s| !s.trim().is_empty()),
+            email: cli.e911_email.filter(|s| !s.trim().is_empty()),
             language: cli.e911_language.filter(|s| !s.trim().is_empty()),
         };
 

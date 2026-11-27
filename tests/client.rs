@@ -1919,32 +1919,77 @@ fn report_estimated_hold_time_values_are_strings() {
 }
 
 #[test]
-fn e911_info_is_a_nested_object() {
+fn e911_info_is_a_list_of_records() {
     use voip_ms::E911InfoResponse;
 
-    // A provisioned DID's e911 record comes back as a nested `info` object, not
-    // flattened top-level scalars. Modeled as a scalar it failed with
+    // A live answer for a DID with a provisioned address, its values replaced
+    // by the docs' sample. `info` is a list holding the one record; read as a
+    // single object, serde took the list positionally and failed on `did` with
     // "expected string, number, or bool, got {...}".
     let resp: E911InfoResponse = serde_json::from_value(json!({
-        "status": "success",
-        "info": {
-            "did": "7472127447",
-            "status": "2",
-            "full_name": "test",
-            "street_number": "23",
-            "street_name": "W BROAD ST",
-            "address_type": "Hanger",
-            "city": "RICHMOND",
-            "state": "VA",
-            "zip_code": "12345",
-            "country": "US"
-        }
+        "info": [
+            {
+                "address_number": "401",
+                "address_type": "Hanger",
+                "city": "RICHMOND",
+                "country": "US",
+                "did": "7472127447",
+                "email": "user@example.com",
+                "full_name": "test",
+                "language": "EN",
+                "other_info": "",
+                "state": "VA",
+                "street_name": "W BROAD ST",
+                "street_number": "23",
+                "zip_code": "12345"
+            }
+        ],
+        "status": "success"
     }))
     .unwrap();
 
-    let info = resp.info.expect("info object");
+    assert_eq!(resp.status, ApiStatus::Success);
+    let [info] = resp.info.as_slice() else {
+        panic!("expected one record, got {:?}", resp.info);
+    };
     assert_eq!(info.did.as_deref(), Some("7472127447"));
+    assert_eq!(info.full_name.as_deref(), Some("test"));
+    assert_eq!(info.street_number.as_deref(), Some("23"));
+    assert_eq!(info.street_name.as_deref(), Some("W BROAD ST"));
+    assert_eq!(info.address_type.as_deref(), Some("Hanger"));
+    assert_eq!(info.address_number.as_deref(), Some("401"));
     assert_eq!(info.city.as_deref(), Some("RICHMOND"));
+    assert_eq!(info.state.as_deref(), Some("VA"));
+    assert_eq!(info.zip_code.as_deref(), Some("12345"));
+    assert_eq!(info.country.as_deref(), Some("US"));
+    assert_eq!(info.language.as_deref(), Some("EN"));
+    assert_eq!(info.email.as_deref(), Some("user@example.com"));
+    assert_eq!(info.other_info, None);
+}
+
+#[tokio::test]
+async fn e911_info_reports_a_did_without_e911_as_e911_disable() {
+    // The live answer for a DID with no e911 record. The docs list the code as
+    // `e911_disabled`; the server sends `e911_disable`.
+    let (server, client) = fixture().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/rest.php"))
+        .and(query_param("method", "e911Info"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "status": "e911_disable" })))
+        .mount(&server)
+        .await;
+
+    let err = client
+        .e911_info(&voip_ms::E911InfoParams {
+            did: Some("7472127447".into()),
+        })
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err, Error::Api(ApiStatus::E911Disable)),
+        "got {err:?}"
+    );
 }
 
 #[test]

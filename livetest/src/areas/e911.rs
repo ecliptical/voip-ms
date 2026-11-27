@@ -6,7 +6,9 @@
 //! depth. The provision/update/cancel writes are owned but run only at costly
 //! depth.
 //!
-//! At `Depth::Costly`, the safe path runs first and unconditionally when a DID
+//! At `Depth::Costly`, a run given `--e911-did` without `--e911-provision`
+//! first reads that DID's current record with `e911Info`, which costs nothing.
+//! The safe path runs next and unconditionally when a DID
 //! plus a complete address is supplied: `e911Validate` checks the address
 //! without provisioning anything. Provisioning is gated behind `--e911-provision`
 //! -- only then does the fixture run `e911Provision -> e911Info -> e911Update`
@@ -21,6 +23,7 @@ use crate::areas::probe_macros::{probe_list, skip_needs_input};
 use crate::config::{Depth, E911Config};
 use crate::harness::area::{Area, AreaCtx, CostClass};
 use crate::harness::fixtures::{read_back, tolerate_absent};
+use crate::harness::probe::{ProbeOutcome, probe};
 use crate::harness::scope::Scope;
 use crate::harness::{Outcome, Report};
 use voip_ms::*;
@@ -85,6 +88,15 @@ impl Area for E911 {
         );
 
         let cfg = &ctx.config.e911;
+
+        // Provisioning reads the record back itself, so the DID's current
+        // record is read only on a run that does not provision.
+        if let Some(did) = &cfg.did
+            && !cfg.provision
+        {
+            info_fixture(ctx, report, did).await;
+        }
+
         let Some(address) = e911_address(cfg) else {
             report.record(
                 AREA,
@@ -127,6 +139,7 @@ struct E911Address {
     state: String,
     country: String,
     zip: String,
+    email: String,
     language: Option<String>,
 }
 
@@ -140,8 +153,38 @@ fn e911_address(cfg: &E911Config) -> Option<E911Address> {
         state: cfg.state.clone()?,
         country: cfg.country.clone()?,
         zip: cfg.zip.clone()?,
+        email: cfg.email.clone()?,
         language: cfg.language.clone(),
     })
+}
+
+/// Read the DID's current e911 record through the typed path with drift
+/// diffing. A DID with no record answers `e911_disable`, which is a skip: the
+/// run has nothing to read, not a defect.
+async fn info_fixture(ctx: &AreaCtx<'_>, report: &mut Report, did: &str) {
+    const LABEL: &str = "fixture:e911Info";
+    let outcome = probe::<_, E911InfoResponse>(
+        ctx.client,
+        "e911Info",
+        &E911InfoParams {
+            did: Some(did.to_string()),
+        },
+        |r| Some(r.info.len()),
+    )
+    .await;
+
+    if let ProbeOutcome::ApiError(status) = &outcome
+        && status == ApiStatus::E911Disable.as_wire()
+    {
+        report.record(
+            AREA,
+            LABEL,
+            Outcome::Skip("the DID has no e911 record (e911_disable)".to_string()),
+        );
+        return;
+    }
+
+    report.record_probe(AREA, LABEL, outcome);
 }
 
 async fn validate_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E911Address) {
@@ -157,6 +200,7 @@ async fn validate_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E911
             country: Some(address.country.clone()),
             zip_code: Some(address.zip.clone()),
             language: address.language.clone(),
+            email: Some(address.email.clone()),
             ..Default::default()
         })
         .await;
@@ -188,6 +232,7 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
             country: Some(address.country.clone()),
             zip_code: Some(address.zip.clone()),
             language: address.language.clone(),
+            email: Some(address.email.clone()),
             ..Default::default()
         })
         .await;
@@ -224,7 +269,7 @@ async fn provision_fixture(ctx: &AreaCtx<'_>, report: &mut Report, address: &E91
         &E911InfoParams {
             did: Some(address.did.clone()),
         },
-        |r| r.info.as_ref().map(|_| 1),
+        |r| Some(r.info.len()),
     )
     .await;
 
